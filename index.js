@@ -84,7 +84,7 @@ const models = {
   'Coberta': { path: './iaud-coberta.glb', object: null },
 };
 
-// Create UI buttons once all models are loaded
+// Load models
 const loader = new GLTFLoader();
 let loadedCount = 0;
 const totalModels = Object.keys(models).length;
@@ -95,7 +95,7 @@ Object.keys(models).forEach(label => {
       const obj = gltf.scene;
       models[label].object = obj;
       scene.add(obj);
-            loadedCount++;
+      loadedCount++;
     },
     undefined,
     error => console.error(`Error loading ${label}:`, error)
@@ -131,6 +131,23 @@ function createButtonUI() {
   document.body.appendChild(ui);
 }
 
+// Add pins (sprites)
+const spriteTexture = new THREE.TextureLoader().load('./public/pin.png');
+const pinPositions = [
+  new THREE.Vector3(10, 10, 10),
+  new THREE.Vector3(-5, 10, 20),
+];
+const pinSprites = [];
+
+pinPositions.forEach(pos => {
+  const spriteMaterial = new THREE.SpriteMaterial({ map: spriteTexture });
+  const sprite = new THREE.Sprite(spriteMaterial);
+  sprite.position.copy(pos);
+  sprite.scale.set(1, 1, 1);
+  scene.add(sprite);
+  pinSprites.push(sprite);
+});
+
 // Wait until all loaded then add UI
 const uiCheck = setInterval(() => {
   if (loadedCount === totalModels) {
@@ -139,7 +156,7 @@ const uiCheck = setInterval(() => {
   }
 }, 100);
 
-// Popup logic
+// Popup logic for pins
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 canvas.addEventListener('pointerdown', event => {
@@ -147,10 +164,8 @@ canvas.addEventListener('pointerdown', event => {
   pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(pointer, camera);
-  const intersects = raycaster.intersectObjects(
-    Object.values(models).map(m => m.object).filter(o => o), true
-  );
-  if (intersects.length) {
+  const intersects = raycaster.intersectObjects(pinSprites);
+  if (intersects.length > 0) {
     showPopup(event.clientX, event.clientY);
   }
 });
