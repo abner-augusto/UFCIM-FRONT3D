@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import TWEEN from 'three/examples/jsm/libs/tween.module.js';
 
 // Get the canvas element
 const canvas = document.querySelector('canvas.webgl');
@@ -31,7 +32,7 @@ controls.minPolarAngle = 0;             // Prevent looking below horizon
 controls.maxPolarAngle = Math.PI / 2;   // Lock to horizontal ground
 controls.maxDistance = 100;
 controls.minDistance = 30;
-controls.target.set(0, 0, 0);           // Keep target at ground level
+controls.target.set(0, 0, 0);
 controls.update();
 
 // Light
@@ -105,6 +106,8 @@ Object.keys(models).forEach(label => {
 // Create panel buttons
 function createButtonUI() {
   const ui = document.createElement('div');
+  ui.id = 'floor-ui';
+  ui.style.transition = 'opacity 0.3s ease';
   ui.style.position = 'absolute';
   ui.style.top = '50%';
   ui.style.right = '20px';
@@ -117,22 +120,23 @@ function createButtonUI() {
   ui.style.borderRadius = '4px';
   ui.style.zIndex = '10';
 
-  const actions = {
-    Geral: () => Object.values(models).forEach(m => m.object && (m.object.visible = true)),
-    '1º Pavimento': () => Object.entries(models).forEach(([l,m]) => m.object && (m.object.visible = l!=='Coberta')),
-    'Térreo': () => Object.entries(models).forEach(([l,m]) => m.object && (m.object.visible = l==='Térreo'))
-  };
-  Object.entries(actions).forEach(([label, fn]) => {
+  const actionList = [
+    { label: '2', action: () => Object.values(models).forEach(m => m.object && (m.object.visible = true)) },
+    { label: '1', action: () => Object.entries(models).forEach(([l, m]) => m.object && (m.object.visible = l !== 'Coberta')) },
+    { label: '0', action: () => Object.entries(models).forEach(([l, m]) => m.object && (m.object.visible = l === 'Térreo')) }
+  ];
+
+  actionList.forEach(({ label, action }) => {
     const btn = document.createElement('button');
     btn.textContent = label;
-    btn.onclick = fn;
+    btn.onclick = action;
     ui.appendChild(btn);
   });
   document.body.appendChild(ui);
 }
 
 // Add pins (sprites)
-const spriteTexture = new THREE.TextureLoader().load('./public/pin.png');
+const spriteTexture = new THREE.TextureLoader().load('./pin.png');
 const pinPositions = [
   new THREE.Vector3(10, 10, 10),
   new THREE.Vector3(-5, 10, 20),
@@ -166,11 +170,15 @@ canvas.addEventListener('pointerdown', event => {
   raycaster.setFromCamera(pointer, camera);
   const intersects = raycaster.intersectObjects(pinSprites);
   if (intersects.length > 0) {
-    showPopup(event.clientX, event.clientY);
+    const pin = intersects[0].object;
+    showPopup(event.clientX, event.clientY, pin);
   }
 });
 
-function showPopup(x, y) {
+let savedCameraPosition = null;
+let savedTarget = null;
+
+function showPopup(x, y, pin) {
   if (document.getElementById('popup')) return;
   const popup = document.createElement('div');
   popup.id = 'popup';
@@ -189,8 +197,13 @@ function showPopup(x, y) {
     <div>Environment Preview</div>
   `;
   document.body.appendChild(popup);
+  // Fade out floor toggle menu
+  const floorMenu = document.getElementById('floor-ui');
+  if (floorMenu) {
+    floorMenu.style.opacity = '0.05';
+    floorMenu.style.pointerEvents = 'none';
+  }
 
-  // Animate in
   requestAnimationFrame(() => {
     popup.style.transition = 'all 0.3s ease-out';
     popup.style.left = '50%';
@@ -199,31 +212,89 @@ function showPopup(x, y) {
     popup.style.transform = 'translateX(-50%) scale(1)';
     popup.style.width = '85vw';
     popup.style.height = '50vh';
+
+        savedCameraPosition = camera.position.clone();
+    savedTarget = controls.target.clone();
+
+    // Compute direction and distance for camera offset
+    const dir = camera.position.clone().sub(controls.target).normalize();
+    const dist = camera.position.distanceTo(controls.target);
+    const downOffset = 15; // world units to shift target down for top-half centering
+    const newTarget = pin.position.clone().add(new THREE.Vector3(0, -downOffset, 0));
+    const newCamPos = newTarget.clone().add(dir.multiplyScalar(dist));
+
+    // Animate camera position to newCamPos
+    new TWEEN.Tween(camera.position)
+      .to({ x: newCamPos.x, y: newCamPos.y, z: newCamPos.z }, 1000)
+      .easing(TWEEN.Easing.Quadratic.Out)
+      .start();
+
+    // Animate controls.target to newTarget
+    new TWEEN.Tween(controls.target)
+      .to({ x: newTarget.x, y: newTarget.y, z: newTarget.z }, 1000)
+      .easing(TWEEN.Easing.Quadratic.Out)
+      .onUpdate(() => controls.update())
+      .start();
   });
 
-  // Close on close button
   popup.querySelector('#popup-close').addEventListener('click', () => {
-    popup.style.transform = 'translate(-50%,-50%) scale(0)';
-    popup.addEventListener('transitionend', () => popup.remove(), { once: true });
+    closePopup(popup);
   });
 
-  // Close on outside click
+function animateCameraToSavedPosition() {
+  // Check if a saved position exists before starting the animation.
+  if (savedCameraPosition && savedTarget) {
+    // Animate the camera's position.
+    new TWEEN.Tween(camera.position)
+      .to(savedCameraPosition, 1000)
+      .easing(TWEEN.Easing.Quadratic.Out)
+      .start();
+
+    // Animate the controls' target and update them on each frame.
+    new TWEEN.Tween(controls.target)
+      .to(savedTarget, 1000)
+      .easing(TWEEN.Easing.Quadratic.Out)
+      .onUpdate(() => controls.update())
+      .start();
+  }
+}
+
   function handleOutsideClick(e) {
+
     if (!popup.contains(e.target)) {
-      popup.style.transform = 'translate(-50%,-50%) scale(0)';
-      popup.addEventListener('transitionend', () => popup.remove(), { once: true });
+      closePopup(popup);
       document.removeEventListener('pointerdown', handleOutsideClick);
+    if (floorMenu) {
+      floorMenu.style.opacity = '1';
+      floorMenu.style.pointerEvents = 'auto';
+    }
+      animateCameraToSavedPosition();
     }
   }
+
   setTimeout(() => {
     document.addEventListener('pointerdown', handleOutsideClick);
-  }, 0);
+  }, 0); 
+
+  function closePopup(popup) {
+    popup.style.transform = 'translate(-50%,-50%) scale(0)';
+    popup.addEventListener('transitionend', () => popup.remove(), {
+      once: true
+    });
+    const menu = document.getElementById('floor-ui');
+    if (menu) {
+      menu.style.opacity = '1';
+      menu.style.pointerEvents = 'auto';
+    }
+    animateCameraToSavedPosition();
+  }
 }
 
 // Animation loop
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
+  TWEEN.update();
   renderer.render(scene, camera);
 }
 animate();
