@@ -1,14 +1,16 @@
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MODEL_DEFINITIONS } from './config.js';
 
 export class ModelManager {
     constructor(scene) {
         this.scene = scene;
         this.loader = new GLTFLoader();
-        this.models = {
-            'Térreo': { path: './assets/iaud-terreo.glb', object: null, visible: true },
-            '1º Pavimento': { path: './assets/iaud-1opav.glb', object: null, visible: true },
-            'Coberta': { path: './assets/iaud-coberta.glb', object: null, visible: true },
-        };
+        this.models = Object.fromEntries(
+            Object.entries(MODEL_DEFINITIONS).map(([key, value]) => [
+                value.name || key,
+                { path: value.path, object: null, visible: true }
+            ])
+        );
     }
 
     async loadAll() {
@@ -24,7 +26,7 @@ export class ModelManager {
     setVisibility(floorLevel) {
         Object.entries(this.models).forEach(([name, modelData]) => {
             if (!modelData.object) return;
-            
+
             let isVisible = false;
             if (floorLevel === 2) {
                 isVisible = true; // Show all

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { PIN_POSITIONS, PIN_ASSET_PATH } from './config.js';
 
 export class InteractionManager extends THREE.EventDispatcher {
     constructor(camera, scene, canvas) {
@@ -6,31 +7,28 @@ export class InteractionManager extends THREE.EventDispatcher {
         this.camera = camera;
         this.scene = scene;
         this.canvas = canvas;
-        
+
         this.raycaster = new THREE.Raycaster();
         this.pointer = new THREE.Vector2();
         this.interactiveObjects = [];
-        
+
         this._onPointerDown = this._onPointerDown.bind(this);
     }
-    
+
     init() {
         this._createPins();
         this.canvas.addEventListener('pointerdown', this._onPointerDown);
     }
 
     _createPins() {
-        const spriteTexture = new THREE.TextureLoader().load('./assets/pin.png');
-        const pinPositions = [
-            new THREE.Vector3(10, 10, 10),
-            new THREE.Vector3(-5, 10, 20),
-        ];
-
-        pinPositions.forEach(pos => {
+        const spriteTexture = new THREE.TextureLoader().load(PIN_ASSET_PATH);
+        
+        // Use positions from config file
+        PIN_POSITIONS.map(p => new THREE.Vector3(p.x, p.y, p.z)).forEach(pos => {
             const spriteMaterial = new THREE.SpriteMaterial({ map: spriteTexture, depthTest: false });
             const sprite = new THREE.Sprite(spriteMaterial);
             sprite.position.copy(pos);
-            sprite.scale.set(2, 2, 1); // Make pin a bit larger
+            sprite.scale.set(2, 2, 1);
             this.scene.add(sprite);
             this.interactiveObjects.push(sprite);
         });
@@ -51,5 +49,6 @@ export class InteractionManager extends THREE.EventDispatcher {
 
     dispose() {
         this.canvas.removeEventListener('pointerdown', this._onPointerDown);
+        // Clear interactive objects and remove them from the scene if needed
     }
 }
