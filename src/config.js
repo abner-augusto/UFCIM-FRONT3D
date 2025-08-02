@@ -14,10 +14,6 @@ export const CONTROLS_CONFIG = {
 };
 
 // -- INTERACTION -----------------------------------------
-export const PIN_POSITIONS = [
-    { x: 10, y: 10, z: 10 },
-    { x: -5, y: 10, z: 20 },
-];
 export const PIN_ASSET_PATH = './assets/pin.png';
 
 // -- MODELS ----------------------------------------------

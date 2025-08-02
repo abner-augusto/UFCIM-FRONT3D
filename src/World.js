@@ -33,11 +33,11 @@ export class World {
     }
 
     _createLights() {
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        const ambientLight = new THREE.AmbientLight(0xfff9f3, 1.2);
         this.scene.add(ambientLight);
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
-        directionalLight.position.set(-5, 3, 10);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+        directionalLight.position.set(15, 10, -5);
         this.scene.add(directionalLight);
     }
 
@@ -48,7 +48,7 @@ export class World {
             fragmentShader: groundFragmentShader,
             uniforms: {
                 colorCenter: { value: new THREE.Color(0xfbfbfb) },
-                colorEdge: { value: new THREE.Color(0xf0f0f0) }
+                colorEdge: { value: new THREE.Color(0xbdbdbd) }
             },
         });
         const ground = new THREE.Mesh(planeGeometry, planeMaterial);

@@ -2,6 +2,11 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import TWEEN from 'three/examples/jsm/libs/tween.module.js';
 
+// Imports for post-processing
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { CustomOutlinePass } from './postprocessing/CustomOutlinePass.js';
+
 import { World } from './World.js';
 import { ModelManager } from './ModelManager.js';
 import { UIManager } from './UIManager.js';
@@ -23,6 +28,20 @@ export class App {
 
         this.controls = this._createControls();
 
+        // App Composer and Post-processing
+        this.composer = new EffectComposer(this.renderer);
+        const renderPass = new RenderPass(this.scene, this.camera);
+        this.composer.addPass(renderPass);
+
+        this.outlinePass = new CustomOutlinePass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            this.scene,
+            this.camera
+        );
+        // configure outline pass to only see meshes marked on layer 1
+        this.outlinePass.outlineLayer = 1; // custom property used by CustomOutlinePass to filter
+        this.composer.addPass(this.outlinePass);
+
         // App components
         this.world = new World(this.scene);
         this.modelManager = new ModelManager(this.scene);
@@ -43,11 +62,15 @@ export class App {
         });
         this.interactionManager.init();
 
+        this.modelManager.onPinsLoaded = (pins) => {
+        this.interactionManager._createPins(pins);
+        };
+      
         try {
             await this.modelManager.loadAll();
             this.uiManager.createFloorUI(this.modelManager);
         } catch (error) {
-            console.error("Failed to load models:", error);
+            console.error('failed to load models:', error);
         }
 
         window.addEventListener('resize', this._onResize);
@@ -93,13 +116,18 @@ export class App {
         requestAnimationFrame(this.animate);
         this.controls.update();
         TWEEN.update();
-        this.renderer.render(this.scene, this.camera);
+
+        this.composer.render();
     }
 
     _onResize() {
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
-        this._updateRendererSize();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.composer.setSize(window.innerWidth, window.innerHeight);
+        this.outlinePass.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        
     }
     
     dispose() {

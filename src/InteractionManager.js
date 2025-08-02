@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PIN_POSITIONS, PIN_ASSET_PATH } from './config.js';
+import { PIN_ASSET_PATH } from './config.js';
 
 export class InteractionManager extends THREE.EventDispatcher {
     constructor(camera, scene, canvas) {
@@ -16,19 +16,18 @@ export class InteractionManager extends THREE.EventDispatcher {
     }
 
     init() {
-        this._createPins();
         this.canvas.addEventListener('pointerdown', this._onPointerDown);
     }
 
-    _createPins() {
+    _createPins(pins) {
         const spriteTexture = new THREE.TextureLoader().load(PIN_ASSET_PATH);
         
-        // Use positions from config file
-        PIN_POSITIONS.map(p => new THREE.Vector3(p.x, p.y, p.z)).forEach(pos => {
-            const spriteMaterial = new THREE.SpriteMaterial({ map: spriteTexture, depthTest: false });
-            const sprite = new THREE.Sprite(spriteMaterial);
-            sprite.position.copy(pos);
+        pins.forEach(pin => {
+            const material = new THREE.SpriteMaterial({ map: spriteTexture, depthTest: true, depthWrite: true,  });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.copy(pin.position);
             sprite.scale.set(2, 2, 1);
+            sprite.name = pin.id;
             this.scene.add(sprite);
             this.interactiveObjects.push(sprite);
         });
