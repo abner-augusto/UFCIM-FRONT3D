@@ -59,6 +59,7 @@ export class ModelManager {
         try {
             const gltf = await this.loader.loadAsync(modelData.path);
             this.models[name].object = gltf.scene;
+            const floorLevel = Object.keys(this.models).indexOf(name);
 
             gltf.scene.traverse(child => {
             if (child.isMesh) {
@@ -83,7 +84,7 @@ export class ModelManager {
                 const id = child.name.slice(4);
                 const worldPos = new THREE.Vector3();
                 child.getWorldPosition(worldPos);
-                embeddedPins.push({ id, position: worldPos });
+                embeddedPins.push({ id, position: worldPos, floorLevel }); 
             }
             });
 
@@ -99,7 +100,7 @@ export class ModelManager {
 }
             this.scene.add(gltf.scene);
             loaded.push(name);
-            
+
             if (embeddedPins.length > 0 && typeof this.onPinsLoaded === 'function') {
             this.onPinsLoaded(embeddedPins);
             }

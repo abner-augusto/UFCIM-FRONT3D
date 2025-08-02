@@ -68,7 +68,7 @@ export class App {
       
         try {
             await this.modelManager.loadAll();
-            this.uiManager.createFloorUI(this.modelManager);
+            this.uiManager.createFloorUI(this.modelManager, this.interactionManager);
         } catch (error) {
             console.error('failed to load models:', error);
         }

@@ -28,6 +28,7 @@ export class InteractionManager extends THREE.EventDispatcher {
             sprite.position.copy(pin.position);
             sprite.scale.set(2, 2, 1);
             sprite.name = pin.id;
+            sprite.userData.floorLevel = pin.floorLevel;
             this.scene.add(sprite);
             this.interactiveObjects.push(sprite);
         });
@@ -42,8 +43,17 @@ export class InteractionManager extends THREE.EventDispatcher {
         const intersects = this.raycaster.intersectObjects(this.interactiveObjects);
 
         if (intersects.length > 0) {
-            this.dispatchEvent({ type: 'pinClick', pin: intersects[0].object, event });
+            const sprite = intersects[0].object;
+            this.dispatchEvent({ type: 'pinClick', pin: sprite, pinId: sprite.userData.id, event });
         }
+
+    }
+
+    filterPins(floorLevel) {
+    this.interactiveObjects.forEach(sprite => {
+        // floorLevel===2 means “show all”
+        sprite.visible = (floorLevel === 2) || (sprite.userData.floorLevel === floorLevel);
+    });
     }
 
     dispose() {

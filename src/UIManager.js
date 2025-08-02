@@ -5,7 +5,7 @@ export class UIManager {
         this.floorUIContainer = null;
     }
 
-    createFloorUI(modelManager) {
+    createFloorUI(modelManager, interactionManager) {
         const uiContainer = document.createElement('div');
         uiContainer.id = UI_IDS.floorUI;
         uiContainer.className = UI_CLASSES.floorUIContainer;
@@ -19,7 +19,10 @@ export class UIManager {
         floorActions.forEach(({ label, level }) => {
             const btn = document.createElement('button');
             btn.textContent = label;
-            btn.onclick = () => modelManager.setVisibility(level);
+            btn.onclick = () => {
+                modelManager.setVisibility(level);
+                interactionManager.filterPins(level); // Now this works
+            };
             uiContainer.appendChild(btn);
         });
 
