@@ -17,7 +17,7 @@ export class App {
         this.scene = new THREE.Scene();
         this.camera = this._createCamera();
         
-        // **FIX:** Create the renderer first, then set its initial size.
+        // Create the renderer first, then set its initial size.
         this.renderer = this._createRenderer(); 
         this._updateRendererSize();
 
@@ -67,7 +67,6 @@ export class App {
     }
 
     _createRenderer() {
-        // **FIX:** This function now only creates the renderer instance.
         const renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
         renderer.setClearColor(0xeeeeee);
         return renderer;
@@ -86,7 +85,6 @@ export class App {
     }
 
     _updateRendererSize() {
-        // This helper now works for both initialization and resizing.
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     }

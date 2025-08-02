@@ -14,13 +14,24 @@ export class ModelManager {
     }
 
     async loadAll() {
-        const loadPromises = Object.entries(this.models).map(([name, modelData]) => {
-            return this.loader.loadAsync(modelData.path).then(gltf => {
-                this.models[name].object = gltf.scene;
-                this.scene.add(gltf.scene);
-            });
-        });
-        return Promise.all(loadPromises);
+        const loaded = [];
+        const failed = [];
+
+        await Promise.all(
+            Object.entries(this.models).map(async ([name, modelData]) => {
+                try {
+                    const gltf = await this.loader.loadAsync(modelData.path);
+                    this.models[name].object = gltf.scene;
+                    this.scene.add(gltf.scene);
+                    loaded.push(name);
+                } catch (err) {
+                    console.error(`Error loading model "${name}" from ${modelData.path}:`, err);
+                    failed.push({ name, path: modelData.path, error: err });
+                }
+            })
+        );
+
+        return { loaded, failed };
     }
 
     setVisibility(floorLevel) {
