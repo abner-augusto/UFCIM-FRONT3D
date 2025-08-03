@@ -1,6 +1,12 @@
-export default {
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  base: '/', // ensures correct asset paths for Cloudflare
+  build: {
+    outDir: 'dist'
+  },
   server: {
-    host: true, // or '0.0.0.0'
-    port: 5173 // optional, default is 5173
+    host: true,
+    port: 5173
   }
-};
+});

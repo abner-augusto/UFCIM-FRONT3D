@@ -14,13 +14,13 @@ export const CONTROLS_CONFIG = {
 };
 
 // -- INTERACTION -----------------------------------------
-export const PIN_ASSET_PATH = './assets/pin.png';
+export const PIN_ASSET_PATH = '/assets/pin.png';
 
 // -- MODELS ----------------------------------------------
 export const MODEL_DEFINITIONS = {
-    'Térreo': { path: './assets/iaud-terreo.glb' },
-    '1º Pavimento': { path: './assets/iaud-1opav.glb' },
-    'Coberta': { path: './assets/iaud-coberta.glb' },
+    'Térreo': { path: '/assets/iaud-terreo.glb' },
+    '1º Pavimento': { path: '/assets/iaud-1opav.glb' },
+    'Coberta': { path: '/assets/iaud-coberta.glb' },
 };
 
 // -- UI & STYLING -----------------------------------------
