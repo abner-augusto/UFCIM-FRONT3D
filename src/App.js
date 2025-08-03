@@ -76,6 +76,8 @@ export class App {
             console.error('failed to load models:', error);
         }
 
+        this.interactionManager.blockingMeshes = this.modelManager.getAllMeshes();
+
         this.statsPanels = [];
 
         if (this.enableStats) {
@@ -92,7 +94,7 @@ export class App {
             this.statsPanels.push(panel);
             }
         }
-
+        this._createDebugMenu();
         window.addEventListener('resize', this._onResize);
         this.animate();
     }
@@ -125,6 +127,77 @@ export class App {
         controls.target.set(CONTROLS_CONFIG.target.x, CONTROLS_CONFIG.target.y, CONTROLS_CONFIG.target.z);
         controls.update();
         return controls;
+    }
+
+    _createDebugMenu() {
+        const container = document.createElement('div');
+        container.id = 'debug-menu-container';
+        container.style.cssText = `
+            position: fixed;
+            top: 0;
+            right: 0;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            font: 12px sans-serif;
+        `;
+
+        const toggleButton = document.createElement('button');
+        toggleButton.textContent = '☰';
+        toggleButton.style.cssText = `
+            background: #222;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 16px;
+            border-bottom-left-radius: 4px;
+        `;
+
+        const panel = document.createElement('div');
+        panel.style.cssText = `
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 8px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            border-bottom-left-radius: 6px;
+            border-top-left-radius: 6px;
+            border-top-right-radius: 6px;
+            margin-top: 4px;
+        `;
+
+        const statsToggle = document.createElement('button');
+        statsToggle.textContent = 'Stats';
+        statsToggle.style.cssText = 'padding: 4px; cursor: pointer;';
+        statsToggle.onclick = () => {
+            this.enableStats = !this.enableStats;
+            if (this.statsPanels) {
+                this.statsPanels.forEach(panel => {
+                    panel.dom.style.display = this.enableStats ? 'block' : 'none';
+                });
+            }
+        };
+
+        const postToggle = document.createElement('button');
+        postToggle.textContent = `Post: ${this.usePostprocessing ? 'ON' : 'OFF'}`;
+        postToggle.style.cssText = 'padding: 4px; cursor: pointer;';
+        postToggle.onclick = () => {
+            this.usePostprocessing = !this.usePostprocessing;
+            postToggle.textContent = `Post: ${this.usePostprocessing ? 'ON' : 'OFF'}`;
+        };
+
+        toggleButton.onclick = () => {
+            panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+        };
+
+        panel.appendChild(statsToggle);
+        panel.appendChild(postToggle);
+        container.appendChild(toggleButton);
+        container.appendChild(panel);
+        document.body.appendChild(container);
     }
 
     _updateRendererSize() {

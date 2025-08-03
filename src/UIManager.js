@@ -20,8 +20,8 @@ export class UIManager {
             const btn = document.createElement('button');
             btn.textContent = label;
             btn.onclick = () => {
-                modelManager.setVisibility(level);
-                interactionManager.filterPins(level); // Now this works
+                modelManager.setVisibility(level, interactionManager);
+                interactionManager.filterPins(level);
             };
             uiContainer.appendChild(btn);
         });

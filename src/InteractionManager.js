@@ -11,6 +11,7 @@ export class InteractionManager extends THREE.EventDispatcher {
         this.raycaster = new THREE.Raycaster();
         this.pointer = new THREE.Vector2();
         this.interactiveObjects = [];
+        this.blockingMeshes = [];
 
         this._onPointerDown = this._onPointerDown.bind(this);
     }
@@ -40,14 +41,37 @@ export class InteractionManager extends THREE.EventDispatcher {
         this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
         this.raycaster.setFromCamera(this.pointer, this.camera);
-        const intersects = this.raycaster.intersectObjects(this.interactiveObjects);
 
-        if (intersects.length > 0) {
-            const sprite = intersects[0].object;
-            this.dispatchEvent({ type: 'pinClick', pin: sprite, pinId: sprite.userData.id, event });
+        // 1) intersect pins
+        const pinHits = this.raycaster.intersectObjects(this.interactiveObjects, true);
+
+        if (pinHits.length === 0) {
+            return;
         }
 
+        // 2) intersect occluding meshes
+        const blockers = this.blockingMeshes || [];
+        const wallHits = this.raycaster.intersectObjects(blockers, true);
+
+        const pinDist  = pinHits[0].distance;
+        const wallDist = wallHits.length ? wallHits[0].distance : Infinity;
+
+        // 3) compare distances
+        if (wallDist < pinDist) {
+            return;
+        }
+
+        // 4) click is valid on the pin
+        const sprite = pinHits[0].object;
+        this.dispatchEvent({
+            type:  'pinClick',
+            pin:    sprite,
+            pinId:  sprite.userData.id,
+            event
+        });
     }
+
+
 
     filterPins(floorLevel) {
     this.interactiveObjects.forEach(sprite => {

@@ -115,7 +115,9 @@ export class ModelManager {
     }
 
 
-    setVisibility(floorLevel) {
+    setVisibility(floorLevel, interactionManager) {
+        const blockingMeshes = [];
+
         Object.entries(this.models).forEach(([name, modelData]) => {
             if (!modelData.object) return;
 
@@ -127,7 +129,33 @@ export class ModelManager {
             } else if (floorLevel === 0) {
                 isVisible = (name === 'Térreo');
             }
+
             modelData.object.visible = isVisible;
+
+            if (isVisible) {
+                modelData.object.traverse(child => {
+                    if (child.isMesh) blockingMeshes.push(child);
+                });
+            }
         });
+
+        if (interactionManager) {
+            interactionManager.blockingMeshes = blockingMeshes;
+            //console.log(`[ModelManager] Updated blockingMeshes: ${blockingMeshes.length} objects`);
+        }
     }
+
+
+    getAllMeshes() {
+    const meshes = [];
+    Object.values(this.models).forEach(m => {
+        if (m.object) {
+            m.object.traverse(obj => {
+                if (obj.isMesh) meshes.push(obj);
+            });
+        }
+    });
+    return meshes;
+    }
+
 }
