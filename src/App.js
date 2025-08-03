@@ -42,7 +42,7 @@ export class App {
             this.camera
         );
         // configure outline pass to only see meshes marked on layer 1
-        this.outlinePass.outlineLayer = 1; // custom property used by CustomOutlinePass to filter
+        this.outlinePass.outlineLayer = 1;
         this.composer.addPass(this.outlinePass);
 
         // App components
@@ -63,7 +63,8 @@ export class App {
         this.interactionManager.addEventListener('pinClick', (e) => {
             this.popupManager.show(e.pin, e.event);
         });
-        this.interactionManager.init();
+        
+        await this.interactionManager.init();
 
         this.modelManager.onPinsLoaded = (pins) => {
         this.interactionManager._createPins(pins);
@@ -219,7 +220,6 @@ export class App {
         } else {
             this.renderer.render(this.scene, this.camera);
         }
-
         if (this.enableStats && this.statsPanels) {
             this.statsPanels.forEach(p => p.end());
         }

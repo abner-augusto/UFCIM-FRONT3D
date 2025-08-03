@@ -127,6 +127,7 @@ class CustomOutlinePass extends Pass {
 			uniform vec4 screenSize;
 			uniform vec3 outlineColor;
 			uniform vec2 multiplierParameters;
+      uniform float outlineAlpha;
 
 			varying vec2 vUv;
 
@@ -203,7 +204,9 @@ class CustomOutlinePass extends Pass {
 				float outline = saturateValue(surfaceValueDiff + depthDiff);
 			
 				// Combine outline with scene color.
-				vec4 outlineColor = vec4(outlineColor, 1.0);
+
+        vec4 outlineColor = vec4(outlineColor, outlineAlpha);
+
 				gl_FragColor = vec4(mix(sceneColor, outlineColor, outline));
 			}
 			`;
@@ -216,10 +219,14 @@ class CustomOutlinePass extends Pass {
         depthBuffer: {},
         surfaceBuffer: {},
         outlineColor: { value: new THREE.Color(0x000000) },
+        outlineAlpha: { value: 0.8 },
+        transparent: true,
+        blending: THREE.NormalBlending,
+        depthWrite: false,
         //4 scalar values packed in one uniform:
         //  depth multiplier, depth bias
         multiplierParameters: {
-          value: new THREE.Vector2(0.9, 20),
+          value: new THREE.Vector2(0.5, 3),
         },
         cameraNear: { value: this.renderCamera.near },
         cameraFar: { value: this.renderCamera.far },
