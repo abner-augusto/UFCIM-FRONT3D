@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import TWEEN from 'three/examples/jsm/libs/tween.module.js';
+import Stats from 'stats.js';
 
 // Imports for post-processing
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -27,8 +28,10 @@ export class App {
         this._updateRendererSize();
 
         this.controls = this._createControls();
+        this.enableStats = true;
 
         // App Composer and Post-processing
+        this.usePostprocessing = true;
         this.composer = new EffectComposer(this.renderer);
         const renderPass = new RenderPass(this.scene, this.camera);
         this.composer.addPass(renderPass);
@@ -73,6 +76,23 @@ export class App {
             console.error('failed to load models:', error);
         }
 
+        this.statsPanels = [];
+
+        if (this.enableStats) {
+            for (let i = 0; i < 3; i++) {
+            const panel = new Stats();
+            panel.showPanel(i); // 0: fps, 1: ms, 2: mb
+            panel.dom.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: ${i * 80}px;
+                z-index: 10000;
+            `;
+            document.body.appendChild(panel.dom);
+            this.statsPanels.push(panel);
+            }
+        }
+
         window.addEventListener('resize', this._onResize);
         this.animate();
     }
@@ -113,12 +133,25 @@ export class App {
     }
 
     animate() {
+        if (this.enableStats && this.statsPanels) {
+            this.statsPanels.forEach(p => p.begin());
+        }
+
         requestAnimationFrame(this.animate);
         this.controls.update();
         TWEEN.update();
 
-        this.composer.render();
+        if (this.usePostprocessing) {
+            this.composer.render();
+        } else {
+            this.renderer.render(this.scene, this.camera);
+        }
+
+        if (this.enableStats && this.statsPanels) {
+            this.statsPanels.forEach(p => p.end());
+        }
     }
+
 
     _onResize() {
         this.camera.aspect = window.innerWidth / window.innerHeight;
