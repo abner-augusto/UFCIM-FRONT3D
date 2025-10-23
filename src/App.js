@@ -13,6 +13,7 @@ import { ModelManager } from './ModelManager.js';
 import { UIManager } from './UIManager.js';
 import { InteractionManager } from './InteractionManager.js';
 import { PopupManager } from './PopupManager.js';
+import { CameraManager } from './CameraManager.js';
 import { CAMERA_CONFIG, CONTROLS_CONFIG } from './config.js';
 
 export class App {
@@ -28,6 +29,7 @@ export class App {
         this._updateRendererSize();
 
         this.controls = this._createControls();
+        this.cameraManager = new CameraManager(this.camera, this.controls);
         this.enableStats = true;
 
         // App Composer and Post-processing
@@ -50,7 +52,12 @@ export class App {
         this.modelManager = new ModelManager(this.scene);
         this.uiManager = new UIManager();
         this.interactionManager = new InteractionManager(this.camera, this.scene, this.canvas);
-        this.popupManager = new PopupManager(this.camera, this.controls, this.uiManager);
+        this.popupManager = new PopupManager(
+            this.camera,
+            this.controls,
+            this.uiManager,
+            this.cameraManager
+            );
 
         // Bind 'this' to methods
         this.animate = this.animate.bind(this);
@@ -71,10 +78,17 @@ export class App {
         };
       
         try {
-            await this.modelManager.loadAll();
-            this.uiManager.createFloorUI(this.modelManager, this.interactionManager);
+            await this.modelManager.initFromManifest();
+
+            await this.modelManager.showAllBlocks();
+
+            this.uiManager.createFloorUI(
+                this.modelManager,
+                this.interactionManager,
+                this.cameraManager
+            );
         } catch (error) {
-            console.error('failed to load models:', error);
+            console.error('failed to init models from manifest:', error);
         }
 
         this.interactionManager.blockingMeshes = this.modelManager.getAllMeshes();
