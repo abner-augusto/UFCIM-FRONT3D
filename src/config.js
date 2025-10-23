@@ -3,13 +3,13 @@ export const CAMERA_CONFIG = {
     fov: 75,
     near: 0.1,
     far: 1000,
-    position: { x: 50, y: 30, z: 50 },
+    position: { x: 96, y: 60, z: -1 },
 };
 
 export const CONTROLS_CONFIG = {
     enableDamping: true,
     polarAngle: { min: 0, max: Math.PI / 2 },
-    distance: { min: 30, max: 100 },
+    distance: { min: 20, max: 150 },
     target: { x: 0, y: 0, z: 0 },
 };
 

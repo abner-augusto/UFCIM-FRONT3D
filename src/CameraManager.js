@@ -15,6 +15,7 @@ export class CameraManager {
     this.camera = camera;
     this.controls = controls;
     this.savedCameraState = null;
+    this.verticalOffset = -5;
   }
 
   /**
@@ -130,6 +131,7 @@ export class CameraManager {
 
     const newTarget = new THREE.Vector3();
     box.getCenter(newTarget);
+    newTarget.y += this.verticalOffset;
 
     // Keep the same offset (angle and distance) from the target
     const offset = this.camera.position.clone().sub(this.controls.target);
@@ -166,6 +168,7 @@ export class CameraManager {
     const PADDING = 1.1; // 10% padding
 
     const newTarget = box.getCenter(new THREE.Vector3());
+    newTarget.y += this.verticalOffset;
     const boxSize = box.getSize(new THREE.Vector3());
 
     // Get the current camera direction

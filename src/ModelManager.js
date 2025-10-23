@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import FindSurfaces from './postprocessing/FindSurfaces.js';
 
 const MODEL_ROOT = '/assets/models/IAUD';
-const MANIFEST_URL = `./manifest.json`;
+const MANIFEST_URL = `${MODEL_ROOT}/manifest.json`;
 
 export class ModelManager {
   constructor(scene) {
@@ -233,18 +233,18 @@ export class ModelManager {
     mesh.layers.enable(1);
 
     // force white material for unified look
-    const whitePixel = new Uint8Array([255, 255, 255, 255]);
-    const whiteTexture = new THREE.DataTexture(whitePixel, 1, 1, THREE.RGBAFormat);
-    whiteTexture.needsUpdate = true;
-    const applyWhite = (mat) => {
-      if (!mat) return;
-      if ('color' in mat) mat.color.setHex(0xffffff);
-      mat.map = whiteTexture;
-      if (mat.emissive) mat.emissive.setHex(0x000000);
-      mat.needsUpdate = true;
-    };
-    if (Array.isArray(mesh.material)) mesh.material.forEach(applyWhite);
-    else applyWhite(mesh.material);
+    // const whitePixel = new Uint8Array([255, 255, 255, 255]);
+    // const whiteTexture = new THREE.DataTexture(whitePixel, 1, 1, THREE.RGBAFormat);
+    // whiteTexture.needsUpdate = true;
+    // const applyWhite = (mat) => {
+    //   if (!mat) return;
+    //   if ('color' in mat) mat.color.setHex(0xffffff);
+    //   mat.map = whiteTexture;
+    //   if (mat.emissive) mat.emissive.setHex(0x000000);
+    //   mat.needsUpdate = true;
+    // };
+    // if (Array.isArray(mesh.material)) mesh.material.forEach(applyWhite);
+    // else applyWhite(mesh.material);
   }
 
   _applyVisibility(interactionManager = null) {

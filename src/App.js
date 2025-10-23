@@ -12,7 +12,7 @@ import { World } from './World.js';
 import { ModelManager } from './ModelManager.js';
 import { UIManager } from './UIManager.js';
 import { InteractionManager } from './InteractionManager.js';
-import { PopupManager } from './PopupManager.js';
+import { PopupManager } from './PopUpManager.js';
 import { CameraManager } from './CameraManager.js';
 import { CAMERA_CONFIG, CONTROLS_CONFIG } from './config.js';
 
@@ -110,6 +110,7 @@ export class App {
             }
         }
         this._createDebugMenu();
+        this.controls.addEventListener('change', () => this._updateCameraDebugUI());
         window.addEventListener('resize', this._onResize);
         this.animate();
     }
@@ -142,6 +143,15 @@ export class App {
         controls.target.set(CONTROLS_CONFIG.target.x, CONTROLS_CONFIG.target.y, CONTROLS_CONFIG.target.z);
         controls.update();
         return controls;
+    }
+
+    _updateCameraDebugUI() {
+        if (!this._camUI) return;
+        const fmt = (v) => `${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)}`;
+        this._camUI.pos.textContent = `pos: ${fmt(this.camera.position)}`;
+        this._camUI.rot.textContent = `rot (rad): ${this.camera.rotation.x.toFixed(3)}, ${this.camera.rotation.y.toFixed(3)}, ${this.camera.rotation.z.toFixed(3)}`;
+        this._camUI.tgt.textContent = `target: ${fmt(this.controls.target)}`;
+        this._camUI.info.textContent = `fov: ${this.camera.fov} near: ${this.camera.near} far: ${this.camera.far}`;
     }
 
     _createDebugMenu() {
@@ -182,6 +192,7 @@ export class App {
             border-top-left-radius: 6px;
             border-top-right-radius: 6px;
             margin-top: 4px;
+            min-width: 240px;
         `;
 
         const statsToggle = document.createElement('button');
@@ -204,12 +215,82 @@ export class App {
             postToggle.textContent = `Post: ${this.usePostprocessing ? 'ON' : 'OFF'}`;
         };
 
+        // --- new: camera debug block ---
+        const camBox = document.createElement('div');
+        camBox.style.cssText = `
+            border-top: 1px solid rgba(255,255,255,0.15);
+            margin-top: 6px;
+            padding-top: 6px;
+            font-family: monospace;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        `;
+        const camTitle = document.createElement('div');
+        camTitle.innerHTML = '<strong>Camera</strong>';
+
+        const pos = document.createElement('div'); pos.textContent = 'pos: -';
+        const rot = document.createElement('div'); rot.textContent = 'rot: -';
+        const tgt = document.createElement('div'); tgt.textContent = 'target: -';
+        const info = document.createElement('div'); info.textContent = 'fov/near/far: -';
+
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex; gap:6px; margin-top:4px;';
+        const copyBtn = document.createElement('button');
+        copyBtn.textContent = 'Copy';
+        copyBtn.style.cssText = 'flex:1; padding:4px; cursor:pointer;';
+        const logBtn = document.createElement('button');
+        logBtn.textContent = 'Log';
+        logBtn.style.cssText = 'flex:1; padding:4px; cursor:pointer;';
+
+        copyBtn.onclick = () => {
+            const data = {
+                position: this.camera.position.toArray(),
+                rotation: [this.camera.rotation.x, this.camera.rotation.y, this.camera.rotation.z],
+                quaternion: this.camera.quaternion.toArray(),
+                target: this.controls.target.toArray(),
+                fov: this.camera.fov, near: this.camera.near, far: this.camera.far
+            };
+            if (navigator.clipboard?.writeText) {
+                navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+            } else {
+                // fallback prompt for older browsers
+                window.prompt('Copy camera JSON:', JSON.stringify(data));
+            }
+        };
+
+        logBtn.onclick = () => {
+            console.log('CAMERA DEBUG:', {
+                position: this.camera.position.clone(),
+                rotation: this.camera.rotation.clone(),
+                quaternion: this.camera.quaternion.clone(),
+                target: this.controls.target.clone(),
+                fov: this.camera.fov,
+                near: this.camera.near,
+                far: this.camera.far
+            });
+        };
+
+        btnRow.appendChild(copyBtn);
+        btnRow.appendChild(logBtn);
+
+        camBox.appendChild(camTitle);
+        camBox.appendChild(pos);
+        camBox.appendChild(rot);
+        camBox.appendChild(tgt);
+        camBox.appendChild(info);
+        camBox.appendChild(btnRow);
+
+        // store refs for the update loop
+        this._camUI = { pos, rot, tgt, info };
+
         toggleButton.onclick = () => {
             panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
         };
 
         panel.appendChild(statsToggle);
         panel.appendChild(postToggle);
+        panel.appendChild(camBox);
         container.appendChild(toggleButton);
         container.appendChild(panel);
         document.body.appendChild(container);
