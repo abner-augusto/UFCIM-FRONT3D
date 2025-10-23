@@ -3,7 +3,7 @@ export const CAMERA_CONFIG = {
     fov: 75,
     near: 0.1,
     far: 1000,
-    position: { x: 30, y: 20, z: 30 },
+    position: { x: 50, y: 30, z: 50 },
 };
 
 export const CONTROLS_CONFIG = {
