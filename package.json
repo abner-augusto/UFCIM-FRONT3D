@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "vite build",
+    "build": "npm run build:manifest && vite build",
     "build:manifest": "node tools/modelManifest.js"
   },
   "keywords": [],
