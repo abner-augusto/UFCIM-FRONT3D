@@ -33,7 +33,7 @@ export class App {
         this.enableStats = true;
 
         // App Composer and Post-processing
-        this.usePostprocessing = true;
+        this.usePostprocessing = false;
         this.composer = new EffectComposer(this.renderer);
         const renderPass = new RenderPass(this.scene, this.camera);
         this.composer.addPass(renderPass);
