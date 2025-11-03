@@ -32,9 +32,9 @@
         }
       },
       {
-        "file": "floor2.glb",
-        "name": "2º Pavimento",
-        "level": 2,
+        "file": "floor1.glb",
+        "name": "1º Pavimento",
+        "level": 1,
         "bbox": {
           "min": [
             -16.080028533935547,
@@ -83,9 +83,9 @@
         }
       },
       {
-        "file": "floor2.glb",
-        "name": "2º Pavimento",
-        "level": 2,
+        "file": "floor1.glb",
+        "name": "1º Pavimento",
+        "level": 1,
         "bbox": {
           "min": [
             17.23258399963379,
@@ -202,9 +202,9 @@
         }
       },
       {
-        "file": "floor2.glb",
-        "name": "2º Pavimento",
-        "level": 2,
+        "file": "floor1.glb",
+        "name": "1º Pavimento",
+        "level": 1,
         "bbox": {
           "min": [
             -32.283531188964844,
