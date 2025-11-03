@@ -36,5 +36,5 @@ export const GROUND_PLANE_SIZE = 2000.0;
 
 // -- CAMERA BEHAVIOR ---------------------------------------
 export const PIN_FOCUS_TILT_DEG = 45;
-export const PIN_FOCUS_DISTANCE_FACTOR = 0.75;
+export const PIN_FOCUS_DISTANCE_FACTOR = 0.5;
 export const PIN_FOCUS_TARGET_Y_OFFSET = -6;
