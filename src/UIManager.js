@@ -67,6 +67,15 @@ export class UIManager {
         if ((modelManager.maxFloorVisibleByBuilding.get(buildingID) ?? -1) < 0) {
           await modelManager.setFloorLevel(buildingID, 0);
         }
+
+        const floorsMap = this.modelManager.entries.get(buildingID);
+        let newActiveFloor = 0;
+        if (floorsMap && floorsMap.size > 0) {
+          newActiveFloor = Math.max(...floorsMap.keys());
+        }
+
+        await this.modelManager.setFloorLevel(buildingID, newActiveFloor);
+        this.interactionManager.activateFloorPins(buildingID, newActiveFloor);
         
         const blockBox = this.modelManager.getBlockBoundingBox(buildingID);
         if (!blockBox.isEmpty()) {

@@ -16,13 +16,6 @@ export const CONTROLS_CONFIG = {
 // -- INTERACTION -----------------------------------------
 export const PIN_ASSET_PATH = '/assets/pin.png';
 
-// -- MODELS ----------------------------------------------
-export const MODEL_DEFINITIONS = {
-    'Térreo': { path: '/assets/iaud-terreo.glb' },
-    '1º Pavimento': { path: '/assets/iaud-1opav.glb' },
-    'Coberta': { path: '/assets/iaud-coberta.glb' },
-};
-
 // -- UI & STYLING -----------------------------------------
 export const UI_IDS = {
     floorUI: 'floor-ui',
@@ -40,3 +33,8 @@ export const ANIMATION_DURATION = 700; // in milliseconds
 
 // -- WORLD -------------------------------------------------
 export const GROUND_PLANE_SIZE = 2000.0;
+
+// -- CAMERA BEHAVIOR ---------------------------------------
+export const PIN_FOCUS_TILT_DEG = 45;
+export const PIN_FOCUS_DISTANCE_FACTOR = 0.75;
+export const PIN_FOCUS_TARGET_Y_OFFSET = -6;

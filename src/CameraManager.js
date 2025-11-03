@@ -3,7 +3,10 @@ import TWEEN from 'three/examples/jsm/libs/tween.module.js';
 import { 
   ANIMATION_DURATION, 
   CAMERA_CONFIG, 
-  CONTROLS_CONFIG 
+  CONTROLS_CONFIG,
+  PIN_FOCUS_TILT_DEG,
+  PIN_FOCUS_DISTANCE_FACTOR,
+  PIN_FOCUS_TARGET_Y_OFFSET,
 } from './config.js';
 
 export class CameraManager {
@@ -32,12 +35,25 @@ export class CameraManager {
    * Animates the camera to focus on a specific pin.
    * @param {THREE.Object3D} pin The pin sprite to focus on.
    */
-  focusOnPin(pin) {
-    const offset = this.camera.position.clone().sub(this.controls.target);
-    const newTarget = pin.position.clone();
-    newTarget.y -= 15; // Specific offset for pins 
+  focusOnPin(pin, tiltDegrees = PIN_FOCUS_TILT_DEG) {
+    if (!pin) return;
 
-    const newCamPos = newTarget.clone().add(offset);
+    const pinPosition = pin.position.clone();
+    const offset = new THREE.Vector3().subVectors(this.camera.position, this.controls.target);
+    const minDistance = this.controls.minDistance ?? CONTROLS_CONFIG.distance.min ?? 20;
+    const desiredRadius = Math.max(offset.length() * PIN_FOCUS_DISTANCE_FACTOR, minDistance);
+
+    const spherical = new THREE.Spherical().setFromVector3(offset);
+    const clampedTiltDeg = THREE.MathUtils.clamp(tiltDegrees, 0, 89.9);
+    const tiltRad = THREE.MathUtils.degToRad(clampedTiltDeg);
+    const epsilon = 0.0001;
+    spherical.radius = desiredRadius;
+    spherical.phi = Math.max(tiltRad, epsilon);
+
+    const newOffset = new THREE.Vector3().setFromSpherical(spherical);
+    const newTarget = pinPosition.clone();
+    newTarget.y += PIN_FOCUS_TARGET_Y_OFFSET;
+    const newCamPos = newTarget.clone().add(newOffset);
 
     new TWEEN.Tween(this.camera.position)
       .to(newCamPos, ANIMATION_DURATION)

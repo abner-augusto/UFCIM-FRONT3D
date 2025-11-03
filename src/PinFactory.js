@@ -41,9 +41,9 @@ export class PinFactory {
         });
 
         const sprite = new THREE.Sprite(material);
-        const labelOffset = 1.5; // Position pin icon slightly above the label
+        const labelOffset = 1.4; // Position pin icon slightly above the label
         sprite.position.copy(pinData.position).add(new THREE.Vector3(0, labelOffset, 0));
-        sprite.scale.set(2, 2, 1);
+        sprite.scale.set(1.5, 1.5, 1);
         sprite.name = pinData.id;
         sprite.userData.id = pinData.id;
         sprite.userData.floorLevel = pinData.floorLevel;
