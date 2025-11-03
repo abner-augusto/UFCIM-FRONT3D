@@ -16,10 +16,16 @@ export class PopupManager {
 
     this.cameraManager.saveCurrentState();
 
+    const label =
+      pin.userData?.displayName ||
+      pin.userData?.id ||
+      pin.name ||
+      'Unknown Pin';
+
     const popup = this._createPopupElement(
       event.clientX,
       event.clientY,
-      pin.userData.id || pin.name || 'Unknown Pin'
+      label
     );
     this._currentPopup = popup;
 

@@ -74,13 +74,17 @@ export class App {
         await this.interactionManager.init();
 
         this.modelManager.onPinsLoaded = (pins) => {
-        this.interactionManager._createPins(pins);
+            this.interactionManager.addPins(pins);
+        };
+        this.modelManager.onPinsVisibilityChange = (building, floor, visible) => {
+            this.interactionManager.setPinsVisibility(building, floor, visible);
         };
       
         try {
             await this.modelManager.initFromManifest();
 
             await this.modelManager.showAllBlocks();
+            this.interactionManager.clearFloorSelections();
 
             this.uiManager.createFloorUI(
                 this.modelManager,

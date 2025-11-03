@@ -31,6 +31,7 @@ export class UIManager {
     showAllBtn.dataset.building = 'all';
     showAllBtn.addEventListener('click', async () => {
       await modelManager.showAllBlocks();
+      this.interactionManager.clearFloorSelections();
       this._updateBuildingFocus(null);
       this._renderFloorButtons(null);
       this.cameraManager.resetToDefaultState();
@@ -60,6 +61,7 @@ export class UIManager {
         this.modelManager.enableBuilding(buildingID, true);
 
         modelManager.focusBuilding(buildingID);
+        this.interactionManager.resetPinsForBuilding(buildingID);
         this._updateBuildingFocus(buildingID);
 
         if ((modelManager.maxFloorVisibleByBuilding.get(buildingID) ?? -1) < 0) {
@@ -145,6 +147,7 @@ export class UIManager {
       cameraManager.focusOnObjectAtCurrentDistance(floorObject);
     }
     interactionManager.blockingMeshes = modelManager.getAllMeshes();
+    interactionManager.activateFloorPins(focused, level);
     this._highlightActiveFloors(level);
   }
 
@@ -184,15 +187,16 @@ export class UIManager {
       this.floorBar.appendChild(btn);
     }
 
-    const level = this.modelManager.maxFloorVisibleByBuilding.get(buildingID) ?? 0;
-    this._highlightActiveFloors(level);
+    const activeFloor = this.interactionManager.getActiveFloor(buildingID);
+    this._highlightActiveFloors(typeof activeFloor === 'number' ? activeFloor : null);
   }
 
   _highlightActiveFloors(level) {
     const buttons = this.floorBar.querySelectorAll('button');
     buttons.forEach((b) => {
       const f = Number(b.dataset.floor);
-      b.classList.toggle('active', f <= level);
+      const highlight = typeof level === 'number' ? f === level : false;
+      b.classList.toggle('active', highlight);
     });
   }
 

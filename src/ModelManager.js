@@ -24,6 +24,7 @@ export class ModelManager {
     // helpers
     this.findSurfaces = new FindSurfaces();
     this.onPinsLoaded = null;                  // optional callback
+    this.onPinsVisibilityChange = null;        // optional callback
   }
 
   async initFromManifest() {
@@ -48,8 +49,28 @@ export class ModelManager {
 
       // 2. Iterate the floors array and build the entries
       buildingData.floors.forEach((floorInfo) => {
-        // floorInfo = { file, name, level, bbox }
+        // floorInfo = { file, name, level, bbox, pins? }
         const floorLevel = floorInfo.level;
+
+        const bboxMin = floorInfo?.bbox?.min ?? [0, 0, 0];
+        const bboxMax = floorInfo?.bbox?.max ?? [0, 0, 0];
+        const floorBBox = new THREE.Box3(
+          new THREE.Vector3(...bboxMin),
+          new THREE.Vector3(...bboxMax)
+        );
+
+        const manifestPins = Array.isArray(floorInfo.pins) ? floorInfo.pins : [];
+        const pins = manifestPins
+          .map((pin) => {
+            if (!pin || !pin.id) return null;
+            const posArray = Array.isArray(pin.position) ? pin.position : null;
+            if (!posArray || posArray.length !== 3) return null;
+            return {
+              ...pin,
+              position: new THREE.Vector3(posArray[0], posArray[1], posArray[2]),
+            };
+          })
+          .filter(Boolean);
 
         floorsMap.set(floorLevel, {
           key: `${buildingID}:floor${floorLevel}`,
@@ -61,10 +82,9 @@ export class ModelManager {
 
           // --- Store the new data ---
           name: floorInfo.name, // e.g., "Térreo"
-          bbox: new THREE.Box3( // The floor's specific bbox
-            new THREE.Vector3(...floorInfo.bbox.min),
-            new THREE.Vector3(...floorInfo.bbox.max)
-          )
+          bbox: floorBBox, // The floor's specific bbox
+          pins,
+          pinsLoaded: false,
         });
       });
 
@@ -198,26 +218,74 @@ export class ModelManager {
 
       const yOffset = 0.5;
       entry.object.position.y += yOffset;
-      const embeddedPins = [];
       gltf.scene.traverse((child) => {
         if (child.isMesh) {
           this._prepMesh(child);
         }
-        if (child.name?.startsWith('Pin_')) {
-          const id = child.name.slice(4);
-          const worldPos = new THREE.Vector3();
-          child.getWorldPosition(worldPos);
-          embeddedPins.push({ id, position: worldPos, floorLevel: floor, building });
-        }
       });
 
       this.scene.add(gltf.scene);
-      if (embeddedPins.length && typeof this.onPinsLoaded === 'function') {
-        this.onPinsLoaded(embeddedPins);
-      }
+      this._emitPinsForEntry(entry);
     } catch (err) {
       console.error(`Failed loading ${building}/floor${floor}:`, err);
     }
+  }
+
+  _maybePopulatePinsFromScene(entry) {
+    if (!entry.object) return;
+
+    const fallbackPins = [];
+    entry.object.updateMatrixWorld(true);
+    entry.object.traverse((child) => {
+      if (!child?.name || !child.name.startsWith('Pin_')) return;
+      const id = child.name.slice(4).trim();
+      if (!id) return;
+
+      const worldPos = new THREE.Vector3();
+      child.getWorldPosition(worldPos);
+      const localPos = worldPos.clone();
+      entry.object.worldToLocal(localPos);
+
+      fallbackPins.push({
+        id,
+        position: new THREE.Vector3(localPos.x, localPos.y, localPos.z),
+      });
+    });
+
+    if (fallbackPins.length > 0) {
+      entry.pins = fallbackPins;
+    }
+  }
+
+  _emitPinsForEntry(entry) {
+    if (!entry.object || entry.pinsLoaded) return;
+
+    if (!Array.isArray(entry.pins) || entry.pins.length === 0) {
+      this._maybePopulatePinsFromScene(entry);
+    }
+
+    if (!Array.isArray(entry.pins) || entry.pins.length === 0) {
+      entry.pinsLoaded = true;
+      return;
+    }
+
+    entry.object.updateMatrixWorld(true);
+
+    if (typeof this.onPinsLoaded === 'function') {
+      const payload = entry.pins.map((pin) => ({
+        ...pin,
+        position: pin.position.clone(),
+        building: entry.building,
+        floorLevel: entry.floor,
+        parent: entry.object,
+        displayName: typeof pin.displayName === 'string'
+          ? pin.displayName
+          : (typeof pin.label === 'string' ? pin.label : pin.id),
+      }));
+      this.onPinsLoaded(payload);
+    }
+
+    entry.pinsLoaded = true;
   }
 
   _prepMesh(mesh) {
@@ -261,6 +329,9 @@ export class ModelManager {
           if (shouldShow) {
             entry.object.traverse((c) => c.isMesh && blockingMeshes.push(c));
           }
+        }
+        if (typeof this.onPinsVisibilityChange === 'function') {
+          this.onPinsVisibilityChange(building, floor, shouldShow);
         }
       }
     }

@@ -20,12 +20,19 @@ export class PinFactory {
     }
 
     createPinAndLabel(pinData) {
-        const pinSprite = this._createPinSprite(pinData);
-        const labelSprite = this._createLabelSprite(pinData);
+        const displayName = this._formatLabelText(pinData.displayName ?? pinData.id);
+        const pinSprite = this._createPinSprite(pinData, displayName);
+        const labelSprite = this._createLabelSprite(pinData, displayName);
         return { pinSprite, labelSprite };
     }
 
-    _createPinSprite(pinData) {
+    _formatLabelText(rawText = '') {
+        const withSpaces = rawText.replace(/_/g, ' ');
+        const collapsedWhitespace = withSpaces.replace(/\s+/g, ' ').trim();
+        return collapsedWhitespace.length > 0 ? collapsedWhitespace : rawText;
+    }
+
+    _createPinSprite(pinData, displayName) {
         const material = new THREE.SpriteMaterial({
             map: this.pinTexture,
             color: new THREE.Color(pinData.color || '#1fd97c'),
@@ -40,12 +47,14 @@ export class PinFactory {
         sprite.name = pinData.id;
         sprite.userData.id = pinData.id;
         sprite.userData.floorLevel = pinData.floorLevel;
+        sprite.userData.building = pinData.building;
+        sprite.userData.displayName = displayName;
 
         return sprite;
     }
 
-    _createLabelSprite(pinData) {
-        const canvas = this._createLabelCanvas(pinData.id);
+    _createLabelSprite(pinData, labelText) {
+        const canvas = this._createLabelCanvas(labelText);
         const texture = new THREE.CanvasTexture(canvas);
         texture.needsUpdate = true;
 
@@ -62,6 +71,7 @@ export class PinFactory {
         sprite.scale.set(scaleX, scaleY, 1);
         sprite.position.copy(pinData.position);
         sprite.name = `${pinData.id}_label`;
+        sprite.userData.displayName = labelText;
 
         return sprite;
     }

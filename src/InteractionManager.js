@@ -14,6 +14,8 @@ export class InteractionManager extends THREE.EventDispatcher {
         this.labelSprites = [];
         this.blockingMeshes = [];
         this.pinFactory = null;
+        this.pinGroups = new Map();
+        this.activeFloorByBuilding = new Map();
 
         this._onPointerDown = this._onPointerDown.bind(this);
     }
@@ -24,17 +26,104 @@ export class InteractionManager extends THREE.EventDispatcher {
         this.canvas.addEventListener('pointerdown', this._onPointerDown);
     }
 
-    _createPins(pins) {
-        pins.forEach(pinData => {
-            // Use the factory to create the pin and label
-            const { pinSprite, labelSprite } = this.pinFactory.createPinAndLabel(pinData);
+    _getOrCreateBuildingPinMap(building) {
+        if (!this.pinGroups.has(building)) {
+            this.pinGroups.set(building, new Map());
+        }
+        return this.pinGroups.get(building);
+    }
 
-            this.scene.add(pinSprite);
-            this.interactiveObjects.push(pinSprite);
+    _shouldDisplayPin(building, floorLevel, parentVisible) {
+        const activeFloor = this.activeFloorByBuilding.get(building);
+        if (activeFloor === null) return false;
+        if (activeFloor === undefined) return parentVisible;
+        return parentVisible && activeFloor === floorLevel;
+    }
 
-            this.scene.add(labelSprite);
-            this.labelSprites.push(labelSprite);
+    _updateGroupVisibility(building, group) {
+        const shouldDisplay = this._shouldDisplayPin(building, group.level, group.parentVisible);
+        group.pins.forEach((sprite) => {
+            sprite.visible = shouldDisplay;
         });
+        group.labels.forEach((sprite) => {
+            sprite.visible = shouldDisplay;
+        });
+    }
+
+    _updatePinsForBuilding(building) {
+        const buildingMap = this.pinGroups.get(building);
+        if (!buildingMap) return;
+        buildingMap.forEach((group) => this._updateGroupVisibility(building, group));
+    }
+
+    addPins(pins) {
+        if (!Array.isArray(pins) || pins.length === 0) return;
+
+        pins.forEach((pinData) => {
+            const position = pinData.position instanceof THREE.Vector3
+                ? pinData.position.clone()
+                : new THREE.Vector3(...(pinData.position ?? [0, 0, 0]));
+            const parent = pinData.parent ?? this.scene;
+
+            const preparedData = { ...pinData, position };
+            const { pinSprite, labelSprite } = this.pinFactory.createPinAndLabel(preparedData);
+
+            parent.add(pinSprite);
+            parent.add(labelSprite);
+
+            this.interactiveObjects.push(pinSprite);
+            this.labelSprites.push(labelSprite);
+
+            const building = pinData.building;
+            const floorLevel = pinData.floorLevel;
+
+            const buildingMap = this._getOrCreateBuildingPinMap(building);
+            const floorGroup = buildingMap.get(floorLevel) ?? {
+                pins: [],
+                labels: [],
+                parentVisible: parent.visible,
+                level: floorLevel,
+            };
+            floorGroup.parentVisible = parent.visible;
+            floorGroup.pins.push(pinSprite);
+            floorGroup.labels.push(labelSprite);
+            buildingMap.set(floorLevel, floorGroup);
+
+            this._updateGroupVisibility(building, floorGroup);
+        });
+    }
+
+    _createPins(pins) {
+        this.addPins(pins);
+    }
+
+    setPinsVisibility(building, floorLevel, visible) {
+        const buildingMap = this.pinGroups.get(building);
+        if (!buildingMap) return;
+        const group = buildingMap.get(floorLevel);
+        if (!group) return;
+
+        group.parentVisible = visible;
+        this._updateGroupVisibility(building, group);
+    }
+
+    resetPinsForBuilding(building) {
+        this.activeFloorByBuilding.set(building, null);
+        this._updatePinsForBuilding(building);
+    }
+
+    activateFloorPins(building, floorLevel) {
+        this.activeFloorByBuilding.set(building, floorLevel);
+        this._updatePinsForBuilding(building);
+    }
+
+    clearFloorSelections() {
+        this.activeFloorByBuilding.clear();
+        this.pinGroups.forEach((_, building) => this._updatePinsForBuilding(building));
+    }
+
+    getActiveFloor(building) {
+        return this.activeFloorByBuilding.get(building);
     }
 
     changePinColor(pinId, hexColor) {
@@ -77,14 +166,13 @@ export class InteractionManager extends THREE.EventDispatcher {
     }
 
     filterPins(floorLevel) {
-        this.interactiveObjects.forEach(sprite => {
-            // Show all for the top level (2), otherwise match the floor level
-            sprite.visible = (floorLevel === 2) || (sprite.userData.floorLevel === floorLevel);
-        });
-        this.labelSprites.forEach(label => {
-            const id = label.name.replace(/_label$/, '');
-            const sprite = this.interactiveObjects.find(s => s.userData.id === id);
-            label.visible = sprite ? sprite.visible : false;
+        if (floorLevel === 2 || floorLevel === undefined || floorLevel === null) {
+            this.clearFloorSelections();
+            return;
+        }
+
+        this.pinGroups.forEach((_, building) => {
+            this.activateFloorPins(building, floorLevel);
         });
     }
 

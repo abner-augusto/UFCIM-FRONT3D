@@ -9,7 +9,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { Box3 } from 'three';
+import { Box3, Vector3 } from 'three';
 import { TextDecoder } from 'util';
 
 if (typeof global.TextDecoder === 'undefined') {
@@ -61,13 +61,16 @@ function getPrettyFloorName(floorNum) {
 
 
 // --- 2. BOUNDS CALCULATION ---
-async function computeDocBounds(filePath) {
+async function computeFloorData(filePath) {
   let data;
   try {
     data = await fs.readFile(filePath);
   } catch (e) {
     console.warn(`    [WARN] Failed to read file: ${filePath}`);
-    return { min: [0, 0, 0], max: [0, 0, 0] };
+    return {
+      bbox: { min: [0, 0, 0], max: [0, 0, 0] },
+      pins: [],
+    };
   }
 
   // Convert Node.js Buffer to ArrayBuffer
@@ -81,22 +84,49 @@ async function computeDocBounds(filePath) {
 
     // Use Three.js to calculate the bounding box of the whole scene
     const bbox = new Box3();
+    gltf.scene.updateMatrixWorld(true);
     bbox.setFromObject(gltf.scene);
+
+    const pins = [];
+    gltf.scene.traverse((child) => {
+      if (!child?.name || !child.name.startsWith('Pin_')) return;
+      const id = child.name.slice(4).trim();
+      if (!id) return;
+
+      const worldPos = new Vector3();
+      child.getWorldPosition(worldPos);
+      const localPos = worldPos.clone();
+      gltf.scene.worldToLocal(localPos);
+
+      pins.push({
+        id,
+        position: [localPos.x, localPos.y, localPos.z],
+      });
+    });
 
     if (bbox.isEmpty()) {
       console.warn(`    [WARN] Three.js found an empty bounding box for: ${filePath}`);
-      return { min: [0, 0, 0], max: [0, 0, 0] };
+      return {
+        bbox: { min: [0, 0, 0], max: [0, 0, 0] },
+        pins,
+      };
     }
 
     // Return the bbox in our simple format
     return {
-      min: [bbox.min.x, bbox.min.y, bbox.min.z],
-      max: [bbox.max.x, bbox.max.y, bbox.max.z],
+      bbox: {
+        min: [bbox.min.x, bbox.min.y, bbox.min.z],
+        max: [bbox.max.x, bbox.max.y, bbox.max.z],
+      },
+      pins,
     };
 
   } catch (e) {
     console.warn(`    [WARN] Three.js failed to parse GLB: ${filePath} -> ${e.message}`);
-    return { min: [0, 0, 0], max: [0, 0, 0] };
+    return {
+      bbox: { min: [0, 0, 0], max: [0, 0, 0] },
+      pins: [],
+    };
   }
 }
 
@@ -158,19 +188,26 @@ async function buildManifest(rootPath) {
       console.log(`  [MATCH] Found floor file: ${glbName}`);
 
       let floorBBox = { min: [0, 0, 0], max: [0, 0, 0] };
+      let pins = [];
       try {
-        floorBBox = await computeDocBounds(filePath);
+        const floorData = await computeFloorData(filePath);
+        floorBBox = floorData.bbox;
+        pins = floorData.pins;
       } catch (e) {
         console.warn(`    [WARN] Could not process bounds for: ${filePath} -> ${e.message}`);
       }
 
       console.log(`    -> bbox ${JSON.stringify(floorBBox)}`);
+      if (pins.length) {
+        console.log(`    -> pins ${pins.length}`);
+      }
 
       floorsData.push({
         file: glbName,
         name: getPrettyFloorName(floorNum),
         level: floorNum,
         bbox: floorBBox,
+        pins,
       });
 
       buildingBBox.expandByBox(floorBBox);
