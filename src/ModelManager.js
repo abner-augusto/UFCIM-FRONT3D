@@ -4,6 +4,7 @@ import FindSurfaces from './postprocessing/FindSurfaces.js';
 
 const MODEL_ROOT = '/assets/models/IAUD';
 const MANIFEST_URL = `${MODEL_ROOT}/manifest.json`;
+const PIN_NAME_REGEX = /^Pin(#)?_(.+)$/;
 
 export class ModelManager {
   constructor(scene) {
@@ -65,8 +66,10 @@ export class ModelManager {
             if (!pin || !pin.id) return null;
             const posArray = Array.isArray(pin.position) ? pin.position : null;
             if (!posArray || posArray.length !== 3) return null;
+            const opensPopup = pin.opensPopup !== false;
             return {
               ...pin,
+              opensPopup,
               position: new THREE.Vector3(posArray[0], posArray[1], posArray[2]),
             };
           })
@@ -237,9 +240,13 @@ export class ModelManager {
     const fallbackPins = [];
     entry.object.updateMatrixWorld(true);
     entry.object.traverse((child) => {
-      if (!child?.name || !child.name.startsWith('Pin_')) return;
-      const id = child.name.slice(4).trim();
+      if (!child?.name) return;
+      const match = PIN_NAME_REGEX.exec(child.name);
+      if (!match) return;
+      const [, silentFlag, rawId] = match;
+      const id = rawId.trim();
       if (!id) return;
+      const opensPopup = silentFlag !== '#';
 
       const worldPos = new THREE.Vector3();
       child.getWorldPosition(worldPos);
@@ -249,6 +256,7 @@ export class ModelManager {
       fallbackPins.push({
         id,
         position: new THREE.Vector3(localPos.x, localPos.y, localPos.z),
+        opensPopup,
       });
     });
 

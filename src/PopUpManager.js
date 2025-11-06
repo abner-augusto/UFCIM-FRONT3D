@@ -1,11 +1,12 @@
 import { UI_IDS, UI_CLASSES, ANIMATION_DURATION } from './config.js';
 
 export class PopupManager {
-  constructor(camera, controls, uiManager, cameraManager) {
+  constructor(camera, controls, uiManager, cameraManager, interactionManager = null) {
     this.camera = camera;
     this.controls = controls;
     this.uiManager = uiManager;
     this.cameraManager = cameraManager;
+    this.interactionManager = interactionManager;
 
     this._currentPopup = null;
     this._handleOutsideClick = null;
@@ -13,9 +14,16 @@ export class PopupManager {
     this._selectedPinState = null;
     this._selectedLabel = null;
     this._selectedLabelState = null;
+    this._interactionLocked = false;
+    this._controlsLocked = false;
+    this._pendingControlUnlock = null;
   }
 
   show(pin, event) {
+    if (pin?.userData?.opensPopup === false) {
+      this._focusPinWithoutPopup(pin);
+      return;
+    }
     if (document.getElementById(UI_IDS.popup)) return;
 
     this.cameraManager.saveCurrentState();
@@ -42,17 +50,26 @@ export class PopupManager {
     this.uiManager.toggleFloorUI(false);
 
     popup.querySelector(`.${UI_CLASSES.popupCloseButton}`)
-      .addEventListener('click', () => this.close());
+      .addEventListener('click', () => this.close({ triggeredByPointer: true }));
     
+    if (this._handleOutsideClick) {
+      document.removeEventListener('pointerdown', this._handleOutsideClick);
+      this._handleOutsideClick = null;
+    }
+
     this._handleOutsideClick = (e) => {
-      if (!popup.contains(e.target)) this.close();
+      if (!popup.contains(e.target)) this.close({ triggeredByPointer: true });
     };
     setTimeout(() => document.addEventListener('pointerdown', this._handleOutsideClick), 0);
   }
 
-  close() {
+  close(options = {}) {
+    const {
+      restoreCamera = true,
+      triggeredByPointer = false,
+    } = options;
     const popup = this._currentPopup;
-    if (!popup) return;
+    const controlsLocked = this._controlsLocked;
 
     this._restoreSelectedPin();
 
@@ -61,17 +78,37 @@ export class PopupManager {
       this._handleOutsideClick = null;
     }
 
-    this.cameraManager.restoreSavedState();
+    if (restoreCamera) {
+      this.cameraManager.restoreSavedState({ keepControlsDisabled: controlsLocked });
+    } else {
+      this.cameraManager.savedCameraState = null;
+    }
 
     this.uiManager.toggleFloorUI(true);
 
-    popup.style.transform = 'translate(-50%, 150%) scale(0.5)';
-    popup.style.opacity = '0';
+    if (popup) {
+      popup.style.transform = 'translate(-50%, 150%) scale(0.5)';
+      popup.style.opacity = '0';
 
-    popup.addEventListener('transitionend', () => {
-      popup.remove();
+      popup.addEventListener('transitionend', () => {
+        popup.remove();
+        this._currentPopup = null;
+      }, { once: true });
+    } else {
       this._currentPopup = null;
-    }, { once: true });
+    }
+
+    if (this._interactionLocked) {
+      this._interactionLocked = false;
+      if (this.interactionManager && typeof this.interactionManager.setInteractionsEnabled === 'function') {
+        this.interactionManager.setInteractionsEnabled(true);
+      }
+    }
+
+    if (controlsLocked) {
+      this._scheduleControlsUnlock(triggeredByPointer);
+      this._controlsLocked = false;
+    }
   }
 
   _createPopupElement(x, y, pinId) {
@@ -111,15 +148,34 @@ export class PopupManager {
   }
 
   dispose() {
-    this._restoreSelectedPin();
+    this.close({ restoreCamera: false });
+  }
+
+  _focusPinWithoutPopup(pin) {
+    if (!pin) return;
+
+    if (!this._interactionLocked && this.interactionManager && typeof this.interactionManager.setInteractionsEnabled === 'function') {
+      this.interactionManager.setInteractionsEnabled(false);
+      this._interactionLocked = true;
+    }
+
+    this.cameraManager.saveCurrentState();
+    this._applySelectedPin(pin);
+    this._currentPopup = null;
+
+    this._clearPendingControlUnlock();
+    this.cameraManager.focusOnPin(pin, undefined, { keepControlsDisabled: true });
+    this._controlsLocked = true;
+    this.controls.enabled = false;
+    this.uiManager.toggleFloorUI(false);
+
     if (this._handleOutsideClick) {
       document.removeEventListener('pointerdown', this._handleOutsideClick);
       this._handleOutsideClick = null;
     }
-    if (this._currentPopup) {
-      this._currentPopup.remove();
-      this._currentPopup = null;
-    }
+
+    this._handleOutsideClick = () => this.close({ triggeredByPointer: true });
+    setTimeout(() => document.addEventListener('pointerdown', this._handleOutsideClick), 0);
   }
 
   _applySelectedPin(pin) {
@@ -171,5 +227,31 @@ export class PopupManager {
     const labelName = `${pin.userData?.id || pin.name}_label`;
     if (!pin.parent) return null;
     return pin.parent.getObjectByName(labelName);
+  }
+
+  _scheduleControlsUnlock(triggeredByPointer) {
+    if (!this.controls) return;
+
+    const unlock = () => {
+      this.controls.enabled = true;
+      this._clearPendingControlUnlock();
+    };
+
+    if (triggeredByPointer) {
+      this._clearPendingControlUnlock();
+      this._pendingControlUnlock = () => {
+        unlock();
+      };
+      window.addEventListener('pointerup', this._pendingControlUnlock, false);
+    } else {
+      unlock();
+    }
+  }
+
+  _clearPendingControlUnlock() {
+    if (this._pendingControlUnlock) {
+      window.removeEventListener('pointerup', this._pendingControlUnlock, false);
+      this._pendingControlUnlock = null;
+    }
   }
 }

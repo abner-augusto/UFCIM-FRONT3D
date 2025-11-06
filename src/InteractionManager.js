@@ -16,6 +16,7 @@ export class InteractionManager extends THREE.EventDispatcher {
         this.pinFactory = null;
         this.pinGroups = new Map();
         this.activeFloorByBuilding = new Map();
+        this._interactionsEnabled = true;
 
         this._onPointerDown = this._onPointerDown.bind(this);
     }
@@ -65,7 +66,11 @@ export class InteractionManager extends THREE.EventDispatcher {
                 : new THREE.Vector3(...(pinData.position ?? [0, 0, 0]));
             const parent = pinData.parent ?? this.scene;
 
-            const preparedData = { ...pinData, position };
+            const preparedData = {
+                ...pinData,
+                position,
+                opensPopup: pinData.opensPopup !== false,
+            };
             const { pinSprite, labelSprite } = this.pinFactory.createPinAndLabel(preparedData);
 
             parent.add(pinSprite);
@@ -140,6 +145,7 @@ export class InteractionManager extends THREE.EventDispatcher {
     }
 
     _onPointerDown(event) {
+        if (!this._interactionsEnabled) return;
         const rect = this.canvas.getBoundingClientRect();
         this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -179,5 +185,9 @@ export class InteractionManager extends THREE.EventDispatcher {
     dispose() {
         this.canvas.removeEventListener('pointerdown', this._onPointerDown);
         // Add disposal for factory-created objects if necessary
+    }
+
+    setInteractionsEnabled(enabled) {
+        this._interactionsEnabled = !!enabled;
     }
 }

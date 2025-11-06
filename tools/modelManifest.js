@@ -17,6 +17,7 @@ if (typeof global.TextDecoder === 'undefined') {
 }
 
 const FLOOR_RX = /^floor(\d+)\.glb$/i;
+const PIN_NAME_REGEX = /^Pin(#)?_(.+)$/;
 const loader = new GLTFLoader();
 
 // ---------------- AABB helper ----------------
@@ -89,19 +90,27 @@ async function computeFloorData(filePath) {
 
     const pins = [];
     gltf.scene.traverse((child) => {
-      if (!child?.name || !child.name.startsWith('Pin_')) return;
-      const id = child.name.slice(4).trim();
+      if (!child?.name) return;
+      const match = PIN_NAME_REGEX.exec(child.name);
+      if (!match) return;
+      const [, silentFlag, rawId] = match;
+      const id = rawId.trim();
       if (!id) return;
+
+      const opensPopup = silentFlag !== '#';
 
       const worldPos = new Vector3();
       child.getWorldPosition(worldPos);
       const localPos = worldPos.clone();
       gltf.scene.worldToLocal(localPos);
 
-      pins.push({
+      const pinEntry = {
         id,
         position: [localPos.x, localPos.y, localPos.z],
-      });
+      };
+      if (!opensPopup) pinEntry.opensPopup = false;
+
+      pins.push(pinEntry);
     });
 
     if (bbox.isEmpty()) {

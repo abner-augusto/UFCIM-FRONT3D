@@ -34,8 +34,12 @@ export class CameraManager {
   /**
    * Animates the camera to focus on a specific pin.
    * @param {THREE.Object3D} pin The pin sprite to focus on.
+   * @param {number} tiltDegrees Optional tilt override.
+   * @param {object} options Additional focus options.
+   * @param {boolean} options.keepControlsDisabled Keep orbit controls disabled after the tween completes.
    */
-  focusOnPin(pin, tiltDegrees = PIN_FOCUS_TILT_DEG) {
+  focusOnPin(pin, tiltDegrees = PIN_FOCUS_TILT_DEG, options = {}) {
+    const { keepControlsDisabled = false } = options;
     if (!pin) return;
 
     const pinPosition = pin.position.clone();
@@ -67,7 +71,9 @@ export class CameraManager {
       .to(newTarget, ANIMATION_DURATION)
       .easing(TWEEN.Easing.Quadratic.Out)
       .onComplete(() => {
-        this.controls.enabled = true;
+        if (!keepControlsDisabled) {
+          this.controls.enabled = true;
+        }
       })
       .start();
   }

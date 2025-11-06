@@ -56,7 +56,8 @@ export class App {
             this.camera,
             this.controls,
             this.uiManager,
-            this.cameraManager
+            this.cameraManager,
+            this.interactionManager
             );
 
         // Bind 'this' to methods

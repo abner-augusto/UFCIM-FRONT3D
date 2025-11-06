@@ -49,6 +49,7 @@ export class PinFactory {
         sprite.userData.floorLevel = pinData.floorLevel;
         sprite.userData.building = pinData.building;
         sprite.userData.displayName = displayName;
+        sprite.userData.opensPopup = pinData.opensPopup !== false;
 
         return sprite;
     }
