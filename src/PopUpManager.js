@@ -26,6 +26,11 @@ export class PopupManager {
     }
     if (document.getElementById(UI_IDS.popup)) return;
 
+    if (!this._interactionLocked && this.interactionManager && typeof this.interactionManager.setInteractionsEnabled === 'function') {
+      this.interactionManager.setInteractionsEnabled(false);
+      this._interactionLocked = true;
+    }
+
     this.cameraManager.saveCurrentState();
 
     const label =
