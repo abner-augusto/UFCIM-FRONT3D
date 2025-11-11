@@ -45,7 +45,8 @@ export class InteractionManager extends THREE.EventDispatcher {
     _updateGroupVisibility(building, group) {
         const shouldDisplay = this._shouldDisplayPin(building, group.level, group.parentVisible);
         group.pins.forEach((sprite) => {
-            sprite.visible = shouldDisplay;
+            const opensPopup = sprite.userData?.opensPopup !== false;
+            sprite.visible = shouldDisplay && opensPopup;
         });
         group.labels.forEach((sprite) => {
             sprite.visible = shouldDisplay;
@@ -80,7 +81,11 @@ export class InteractionManager extends THREE.EventDispatcher {
             this.interactiveObjects.push(pinSprite);
             this.labelSprites.push(labelSprite);
             labelSprite.userData.pinSprite = pinSprite;
-            this.clickTargets.push(pinSprite, labelSprite);
+            // Only make the pin sprite a click target if it opens a popup.
+            if (preparedData.opensPopup !== false) {
+                this.clickTargets.push(pinSprite);
+            }
+            this.clickTargets.push(labelSprite);
 
             const building = pinData.building;
             const floorLevel = pinData.floorLevel;
@@ -97,6 +102,7 @@ export class InteractionManager extends THREE.EventDispatcher {
             floorGroup.labels.push(labelSprite);
             buildingMap.set(floorLevel, floorGroup);
 
+            // Ensure initial visibility respects opensPopup flag for the pin sprite
             this._updateGroupVisibility(building, floorGroup);
         });
     }
