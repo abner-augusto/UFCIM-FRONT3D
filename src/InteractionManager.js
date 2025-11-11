@@ -12,6 +12,7 @@ export class InteractionManager extends THREE.EventDispatcher {
         this.pointer = new THREE.Vector2();
         this.interactiveObjects = [];
         this.labelSprites = [];
+        this.clickTargets = [];
         this.blockingMeshes = [];
         this.pinFactory = null;
         this.pinGroups = new Map();
@@ -78,6 +79,8 @@ export class InteractionManager extends THREE.EventDispatcher {
 
             this.interactiveObjects.push(pinSprite);
             this.labelSprites.push(labelSprite);
+            labelSprite.userData.pinSprite = pinSprite;
+            this.clickTargets.push(pinSprite, labelSprite);
 
             const building = pinData.building;
             const floorLevel = pinData.floorLevel;
@@ -122,8 +125,15 @@ export class InteractionManager extends THREE.EventDispatcher {
         this._updatePinsForBuilding(building);
     }
 
-    clearFloorSelections() {
+    clearFloorSelections(hidePins = false) {
         this.activeFloorByBuilding.clear();
+        if (hidePins) {
+            this.pinGroups.forEach((_, building) => {
+                this.activeFloorByBuilding.set(building, null);
+                this._updatePinsForBuilding(building);
+            });
+            return;
+        }
         this.pinGroups.forEach((_, building) => this._updatePinsForBuilding(building));
     }
 
@@ -151,7 +161,7 @@ export class InteractionManager extends THREE.EventDispatcher {
         this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
         this.raycaster.setFromCamera(this.pointer, this.camera);
-        const pinHits = this.raycaster.intersectObjects(this.interactiveObjects, true);
+        const pinHits = this.raycaster.intersectObjects(this.clickTargets, true);
         if (pinHits.length === 0) return;
 
         const wallHits = this.blockingMeshes.length
@@ -162,7 +172,8 @@ export class InteractionManager extends THREE.EventDispatcher {
         const wallDist = wallHits.length ? wallHits[0].distance : Infinity;
         if (wallDist < pinDist) return;
 
-        const sprite = pinHits[0].object;
+        const hitObject = pinHits[0].object;
+        const sprite = hitObject.userData?.pinSprite ?? hitObject;
         this.dispatchEvent({
             type: 'pinClick',
             pin: sprite,

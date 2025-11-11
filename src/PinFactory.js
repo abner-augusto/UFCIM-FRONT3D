@@ -2,11 +2,16 @@ import * as THREE from 'three';
 import { PIN_ASSET_PATH } from './config.js';
 
 const LABEL_STYLE = {
-    scale: {
-        x: 16,
-        y: 8,
+    pixelToWorldScale: 0.05, // world units per canvas pixel
+    pinMargin: 0.1, // gap between label top and pin bottom
+    padding: {
+        x: 4,
+        y: 2
     }
 };
+
+const PIN_LABEL_LINE_LIMIT = 7;
+const PIN_SPRITE_SCALE = 1.8;
 
 export class PinFactory {
     constructor() {
@@ -21,18 +26,61 @@ export class PinFactory {
 
     createPinAndLabel(pinData) {
         const displayName = this._formatLabelText(pinData.displayName ?? pinData.id);
-        const pinSprite = this._createPinSprite(pinData, displayName);
         const labelSprite = this._createLabelSprite(pinData, displayName);
+
+        const labelWorldHeight = labelSprite.scale.y;
+        const pinWorldHeight = PIN_SPRITE_SCALE;
+        const pinOffsetY = labelWorldHeight + (pinWorldHeight / 2) + LABEL_STYLE.pinMargin;
+
+        const pinPosition = pinData.position.clone().add(new THREE.Vector3(0, pinOffsetY, 0));
+        const pinSprite = this._createPinSprite(pinData, displayName, pinPosition);
+
         return { pinSprite, labelSprite };
     }
 
     _formatLabelText(rawText = '') {
         const withSpaces = rawText.replace(/_/g, ' ');
         const collapsedWhitespace = withSpaces.replace(/\s+/g, ' ').trim();
-        return collapsedWhitespace.length > 0 ? collapsedWhitespace : rawText;
+        const cleanedText = collapsedWhitespace.length > 0 ? collapsedWhitespace : rawText;
+        return this._wrapLabelText(cleanedText, PIN_LABEL_LINE_LIMIT);
     }
 
-    _createPinSprite(pinData, displayName) {
+    _wrapLabelText(text, limit) {
+        if (!text || !limit || limit <= 0) {
+            return text;
+        }
+
+        const words = text.split(' ');
+        const lines = [];
+        let currentLine = '';
+
+        const pushLine = () => {
+            if (currentLine) {
+                lines.push(currentLine);
+                currentLine = '';
+            }
+        };
+
+        words.forEach((word) => {
+            if (!word) {
+                return;
+            }
+
+            const prospective = currentLine ? `${currentLine} ${word}` : word;
+            if (prospective.length > limit && currentLine) {
+                pushLine();
+                currentLine = word;
+            } else {
+                currentLine = prospective;
+            }
+        });
+
+        pushLine();
+
+        return lines.join('\n');
+    }
+
+    _createPinSprite(pinData, displayName, position) {
         const material = new THREE.SpriteMaterial({
             map: this.pinTexture,
             color: new THREE.Color(pinData.color || '#1fd97c'),
@@ -41,9 +89,9 @@ export class PinFactory {
         });
 
         const sprite = new THREE.Sprite(material);
-        const labelOffset = 1.6; // Position pin icon slightly above the label
-        sprite.position.copy(pinData.position).add(new THREE.Vector3(0, labelOffset, 0));
-        sprite.scale.set(1.8, 1.8, 1);
+        sprite.position.copy(position);
+        sprite.scale.set(PIN_SPRITE_SCALE, PIN_SPRITE_SCALE, 1);
+        sprite.renderOrder = 1;
         sprite.name = pinData.id;
         sprite.userData.id = pinData.id;
         sprite.userData.floorLevel = pinData.floorLevel;
@@ -67,10 +115,15 @@ export class PinFactory {
         });
 
         const sprite = new THREE.Sprite(material);
-        const scaleX = canvas.width / LABEL_STYLE.scale.x;
-        const scaleY = canvas.height / (LABEL_STYLE.scale.y * 2); // Adjust based on canvas height calculation
+        const pixelToWorldScale = LABEL_STYLE.pixelToWorldScale;
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const scaleX = canvasWidth * pixelToWorldScale;
+        const scaleY = canvasHeight * pixelToWorldScale;
         sprite.scale.set(scaleX, scaleY, 1);
-        sprite.position.copy(pinData.position);
+        const labelOffsetY = scaleY / 2;
+        sprite.position.copy(pinData.position).add(new THREE.Vector3(0, labelOffsetY, 0));
+        sprite.renderOrder = 2;
         sprite.name = `${pinData.id}_label`;
         sprite.userData.displayName = labelText;
 
@@ -92,17 +145,30 @@ export class PinFactory {
         const style = getComputedStyle(tempLabel);
         const font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
         ctx.font = font;
-        const textMetrics = ctx.measureText(text);
-        const textWidth = Math.ceil(textMetrics.width);
-        const padding = parseInt(style.paddingLeft) || 10;
-        const borderRadius = parseInt(style.borderRadius) || 8;
-        const rectHeight = parseInt(style.height) || 40;
 
-        const canvasWidth = textWidth + padding * 2;
-        const canvasHeight = rectHeight * 2;
+        const paddingConfig = LABEL_STYLE.padding || {};
+        const parsedPaddingLeft = parseInt(style.paddingLeft, 10);
+        const parsedPaddingRight = parseInt(style.paddingRight, 10);
+        const parsedPaddingTop = parseInt(style.paddingTop, 10);
+        const parsedPaddingBottom = parseInt(style.paddingBottom, 10);
+        const paddingLeft = paddingConfig.left ?? paddingConfig.x ?? (Number.isNaN(parsedPaddingLeft) ? 10 : parsedPaddingLeft);
+        const paddingRight = paddingConfig.right ?? paddingConfig.x ?? (Number.isNaN(parsedPaddingRight) ? paddingLeft : parsedPaddingRight);
+        const paddingTop = paddingConfig.top ?? paddingConfig.y ?? (Number.isNaN(parsedPaddingTop) ? 8 : parsedPaddingTop);
+        const paddingBottom = paddingConfig.bottom ?? paddingConfig.y ?? (Number.isNaN(parsedPaddingBottom) ? paddingTop : parsedPaddingBottom);
+        const borderRadius = parseInt(style.borderRadius, 10) || 8;
+        const borderWidth = parseInt(style.borderWidth, 10) || 2;
 
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
+        const lines = text.split('\n');
+        const lineHeight = this._resolveLineHeight(style);
+        const lineWidths = lines.map(line => Math.ceil(ctx.measureText(line).width));
+        const textWidth = Math.max(...lineWidths, 0);
+        const textBlockHeight = lineHeight * lines.length;
+
+        const rectWidth = textWidth + paddingLeft + paddingRight;
+        const rectHeight = textBlockHeight + paddingTop + paddingBottom;
+
+        canvas.width = rectWidth + borderWidth * 2;
+        canvas.height = rectHeight + borderWidth * 2;
 
         ctx.font = font;
 
@@ -110,15 +176,15 @@ export class PinFactory {
         const bgColor = style.backgroundColor || 'white';
         const borderColor = style.borderColor || 'black';
         const textColor = style.color || 'black';
-        const borderWidth = parseInt(style.borderWidth) || 2;
 
         // Draw background with border
-        const rectY = (canvasHeight - rectHeight) / 2;
+        const rectX = borderWidth;
+        const rectY = borderWidth;
         ctx.fillStyle = bgColor;
         ctx.strokeStyle = borderColor;
         ctx.lineWidth = borderWidth;
         ctx.beginPath();
-        ctx.roundRect(0, rectY, canvasWidth, rectHeight, borderRadius);
+        ctx.roundRect(rectX, rectY, rectWidth, rectHeight, borderRadius);
         ctx.fill();
         ctx.stroke();
 
@@ -126,12 +192,33 @@ export class PinFactory {
         ctx.fillStyle = textColor;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(text, canvasWidth / 2, canvasHeight / 2);
+        const labelCenterX = rectX + rectWidth / 2;
+        const firstLineY = rectY + paddingTop + lineHeight / 2;
+        lines.forEach((line, index) => {
+            const lineY = firstLineY + index * lineHeight;
+            ctx.fillText(line, labelCenterX, lineY);
+        });
 
         // Clean up temp element
         document.body.removeChild(tempLabel);
 
         return canvas;
+    }
+
+    _resolveLineHeight(style) {
+        const rawLineHeight = style.lineHeight;
+        if (!rawLineHeight || rawLineHeight === 'normal') {
+            const fontSize = parseInt(style.fontSize, 10) || 12;
+            return Math.round(fontSize * 1.2);
+        }
+
+        const parsed = parseInt(rawLineHeight, 10);
+        if (!Number.isNaN(parsed)) {
+            return parsed;
+        }
+
+        const fontSize = parseInt(style.fontSize, 10) || 12;
+        return Math.round(fontSize * 1.2);
     }
 
 }

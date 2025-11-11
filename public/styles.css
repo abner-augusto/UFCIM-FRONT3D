@@ -196,7 +196,8 @@
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid #549ba8;
   border-radius: 3px;
-  white-space: nowrap;
+  white-space: pre-line;
+  line-height: 1.2;
   transform: translateX(-50%) translateY(-100%);
   position: absolute;
   will-change: transform;

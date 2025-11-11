@@ -31,9 +31,10 @@ export class UIManager {
     showAllBtn.dataset.building = 'all';
     showAllBtn.addEventListener('click', async () => {
       await modelManager.showAllBlocks();
-      this.interactionManager.clearFloorSelections();
+      this.interactionManager.clearFloorSelections(true);
       this._updateBuildingFocus(null);
       this._renderFloorButtons(null);
+      this.interactionManager.blockingMeshes = this.modelManager.getAllMeshes();
       this.cameraManager.resetToDefaultState();
     });
     buildingBar.appendChild(showAllBtn);
@@ -71,11 +72,12 @@ export class UIManager {
         const floorsMap = this.modelManager.entries.get(buildingID);
         let newActiveFloor = 0;
         if (floorsMap && floorsMap.size > 0) {
-          newActiveFloor = Math.max(...floorsMap.keys());
+          newActiveFloor = Math.min(...floorsMap.keys());
         }
 
         await this.modelManager.setFloorLevel(buildingID, newActiveFloor);
         this.interactionManager.activateFloorPins(buildingID, newActiveFloor);
+        this.interactionManager.blockingMeshes = this.modelManager.getAllMeshes();
         
         const blockBox = this.modelManager.getBlockBoundingBox(buildingID);
         if (!blockBox.isEmpty()) {
@@ -121,16 +123,16 @@ export class UIManager {
     const dateTimeBar = document.createElement('div');
     dateTimeBar.id = 'datetime-bar';
 
-    const dateBtn = document.createElement('button');
-    dateBtn.textContent = 'Data 📅';
-    dateBtn.className = 'ui-btn';
+    // const dateBtn = document.createElement('button');
+    // dateBtn.textContent = 'Data 📅';
+    // dateBtn.className = 'ui-btn';
 
-    const turnoBtn = document.createElement('button');
-    turnoBtn.textContent = 'Turno 🕒';
-    turnoBtn.className = 'ui-btn';
+    // const turnoBtn = document.createElement('button');
+    // turnoBtn.textContent = 'Turno 🕒';
+    // turnoBtn.className = 'ui-btn';
 
-    dateTimeBar.appendChild(dateBtn);
-    dateTimeBar.appendChild(turnoBtn);
+    // dateTimeBar.appendChild(dateBtn);
+    // dateTimeBar.appendChild(turnoBtn);
     uiContainer.appendChild(dateTimeBar);
 
     // --- INITIAL RENDER ---------------------------------------------

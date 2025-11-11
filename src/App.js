@@ -85,7 +85,7 @@ export class App {
             await this.modelManager.initFromManifest();
 
             await this.modelManager.showAllBlocks();
-            this.interactionManager.clearFloorSelections();
+            this.interactionManager.clearFloorSelections(true);
 
             this.uiManager.createFloorUI(
                 this.modelManager,
