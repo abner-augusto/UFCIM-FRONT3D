@@ -5,6 +5,9 @@ export class UIManager {
     this.floorUIContainer = null;
     this.buildingBar = null;
     this.floorBar = null;
+    this.searchInput = null;
+    this.searchResultsContainer = null;
+    this._handleDocumentClick = null;
     this.modelManager = null;
     this.interactionManager = null;
     this.cameraManager = null;
@@ -109,15 +112,30 @@ export class UIManager {
     searchInput.placeholder = 'Pesquisa';
     searchInput.id = 'search-input';
     searchInput.className = 'ui-btn';
+    this.searchInput = searchInput;
     
     const filterBtn = document.createElement('button');
     filterBtn.innerHTML = '▼';
     filterBtn.id = 'filter-btn';
     filterBtn.className = 'ui-btn active';
+    filterBtn.addEventListener('click', () => this._showAllPinsSearch());
+
+    const searchResultsContainer = document.createElement('div');
+    searchResultsContainer.id = 'search-results';
+    this.searchResultsContainer = searchResultsContainer;
 
     searchBar.appendChild(searchInput);
     searchBar.appendChild(filterBtn);
+    searchBar.appendChild(searchResultsContainer);
     uiContainer.appendChild(searchBar);
+
+    this.searchInput.addEventListener('input', () => this._onSearchInput());
+    this._handleDocumentClick = (event) => {
+      if (!searchBar.contains(event.target)) {
+        this._clearSearchResults();
+      }
+    };
+    document.addEventListener('click', this._handleDocumentClick);
 
     // --- DATE/TIME BAR (Row 4 Placeholder) --------------------
     const dateTimeBar = document.createElement('div');
@@ -233,5 +251,91 @@ export class UIManager {
       this.floorUIContainer.style.opacity = show ? '1' : '0.1';
       this.floorUIContainer.style.pointerEvents = show ? 'auto' : 'none';
     }
+  }
+
+  _onSearchInput() {
+    if (!this.searchInput) return;
+    const searchTerm = this.searchInput.value.trim().toLowerCase();
+    if (searchTerm.length < 2) {
+      this._clearSearchResults();
+      return;
+    }
+
+    const allPins = this.interactionManager?.getAllPins?.() ?? [];
+    const results = allPins.filter((pin) => {
+      const label = pin.userData.displayName ?? pin.userData.id ?? '';
+      return label.toLowerCase().includes(searchTerm);
+    });
+
+    this._renderSearchResults(results);
+  }
+
+  _showAllPinsSearch() {
+    const allPins = this.interactionManager?.getAllPins?.() ?? [];
+    if (this.searchInput) {
+      this.searchInput.value = '';
+    }
+    this._renderSearchResults(allPins);
+  }
+
+  _renderSearchResults(results) {
+    if (!this.searchResultsContainer) return;
+    this.searchResultsContainer.innerHTML = '';
+
+    if (results.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'search-result-item no-results';
+      empty.textContent = 'Nenhum resultado';
+      this.searchResultsContainer.appendChild(empty);
+      this.searchResultsContainer.style.display = 'block';
+      return;
+    }
+
+    results.forEach((pin) => {
+      const item = document.createElement('div');
+      item.className = 'search-result-item';
+      item.textContent = pin.userData.displayName ?? pin.userData.id ?? 'Pin';
+      item.addEventListener('click', () => this._handleSearchResultClick(pin));
+      this.searchResultsContainer.appendChild(item);
+    });
+
+    this.searchResultsContainer.style.display = 'block';
+  }
+
+  async _handleSearchResultClick(pin) {
+    if (!pin) return;
+    const building = pin.userData.building;
+    const floorLevel = pin.userData.floorLevel;
+    if (!building || typeof floorLevel !== 'number') {
+      console.warn('Search result missing building or floor info', pin);
+      return;
+    }
+
+    for (const b of Object.keys(this.modelManager.manifest)) {
+      this.modelManager.enableBuilding(b, false);
+    }
+    this.modelManager.enableBuilding(building, true);
+    await this.modelManager.setFloorLevel(building, floorLevel);
+
+    this.interactionManager.activateFloorPins(building, floorLevel);
+    this.interactionManager.blockingMeshes = this.modelManager.getAllMeshes();
+
+    this.modelManager.focusBuilding(building);
+    this._updateBuildingFocus(building);
+    this._renderFloorButtons(building);
+    this._highlightActiveFloors(floorLevel);
+
+    this.cameraManager.focusOnPin(pin);
+
+    if (this.searchInput) {
+      this.searchInput.value = '';
+    }
+    this._clearSearchResults();
+  }
+
+  _clearSearchResults() {
+    if (!this.searchResultsContainer) return;
+    this.searchResultsContainer.innerHTML = '';
+    this.searchResultsContainer.style.display = 'none';
   }
 }

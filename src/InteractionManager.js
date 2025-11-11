@@ -141,6 +141,10 @@ export class InteractionManager extends THREE.EventDispatcher {
         return this.activeFloorByBuilding.get(building);
     }
 
+    getAllPins() {
+        return this.interactiveObjects.filter(obj => !obj.name.endsWith('_label'));
+    }
+
     changePinColor(pinId, hexColor) {
         const sprite = this.interactiveObjects.find(s => s.userData.id === pinId);
         if (!sprite) return;
