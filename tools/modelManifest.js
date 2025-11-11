@@ -166,9 +166,20 @@ async function buildManifest(rootPath) {
   console.log(`[DEBUG] Filtered down to ${buildingDirs.length} building directories.`);
 
   for (const buildingEntry of buildingDirs) {
-    const buildingID = buildingEntry.name;
-    const buildingDir = path.join(rootPath, buildingID);
-    console.log(`\n--- Processing Building: ${buildingID} ---`);
+    const buildingID_raw = buildingEntry.name;
+    const buildingDir = path.join(rootPath, buildingID_raw);
+    console.log(`\n--- Processing Building: ${buildingID_raw} ---`);
+
+    let isHidden = false;
+    let manifestKey = buildingID_raw; // This will be the key in the JSON
+
+    // Check for the _hidden suffix
+    if (buildingID_raw.toLowerCase().endsWith('_hidden')) {
+        isHidden = true;
+        // Get the name before "_hidden" (e.g., "entorno")
+        manifestKey = buildingID_raw.substring(0, buildingID_raw.length - 7);
+        console.log(`  [INFO] Folder marked as hidden. Manifest key will be: ${manifestKey}`);
+    }
 
     const buildingBBox = new SimpleBox3();
     const floorsData = [];
@@ -225,13 +236,20 @@ async function buildManifest(rootPath) {
     floorsData.sort((a, b) => a.level - b.level);
 
     if (floorsData.length > 0) {
-      manifest[buildingID] = {
-        name: getPrettyBuildingName(buildingID),
+      // Use the clean 'manifestKey' as the property in the JSON
+      manifest[manifestKey] = {
+        name: getPrettyBuildingName(manifestKey), // Get pretty name from the clean key
         bbox: buildingBBox.toJSON(),
         floors: floorsData,
+        sourceDir: buildingID_raw,
       };
+
+      // Add the hidden flag if it was set
+      if (isHidden) {
+          manifest[manifestKey].hidden = true;
+      }
     } else {
-      console.log(`[WARN] No floor files found for building: ${buildingID}`);
+      console.log(`[WARN] No floor files found for building: ${buildingID_raw}`);
     }
   }
 

@@ -49,6 +49,8 @@ export class ModelManager {
       }
 
       // 2. Iterate the floors array and build the entries
+      const sourceDir = buildingData.sourceDir || buildingID;
+
       buildingData.floors.forEach((floorInfo) => {
         // floorInfo = { file, name, level, bbox, pins? }
         const floorLevel = floorInfo.level;
@@ -79,7 +81,7 @@ export class ModelManager {
           key: `${buildingID}:floor${floorLevel}`,
           building: buildingID,
           floor: floorLevel,
-          path: `${MODEL_ROOT}/${buildingID}/${floorInfo.file}`,
+          path: `${MODEL_ROOT}/${sourceDir}/${floorInfo.file}`,
           object: null,
           visible: false,
 

@@ -113,7 +113,8 @@
         },
         "pins": []
       }
-    ]
+    ],
+    "sourceDir": "bloco1"
   },
   "bloco2": {
     "name": "Bloco2",
@@ -209,7 +210,8 @@
         },
         "pins": []
       }
-    ]
+    ],
+    "sourceDir": "bloco2"
   },
   "bloco3": {
     "name": "Bloco3",
@@ -356,7 +358,8 @@
         },
         "pins": []
       }
-    ]
+    ],
+    "sourceDir": "bloco3"
   },
   "bloco4": {
     "name": "Bloco4",
@@ -446,7 +449,8 @@
         },
         "pins": []
       }
-    ]
+    ],
+    "sourceDir": "bloco4"
   },
   "entorno": {
     "name": "Entorno",
@@ -481,7 +485,9 @@
         },
         "pins": []
       }
-    ]
+    ],
+    "sourceDir": "entorno_hidden",
+    "hidden": true
   },
   "pavilhao": {
     "name": "Pavilhao",
@@ -588,6 +594,7 @@
         },
         "pins": []
       }
-    ]
+    ],
+    "sourceDir": "pavilhao"
   }
 }
