@@ -165,7 +165,7 @@ function main() {
     .description('Convert qt.Ativos.xlsx to pins_db_popup.json')
     .requiredOption('-i, --input <file>', 'Input XLSX file')
     .requiredOption('-o, --output <file>', 'Output JSON file')
-    .option('--pretty', 'Pretty print JSON output', false);
+    .option('--no-pretty', 'Disable pretty printed JSON output');
 
   program.parse(process.argv);
   const options = program.opts();
