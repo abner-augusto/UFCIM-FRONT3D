@@ -16,6 +16,7 @@ import { PopupManager } from './PopUpManager.js';
 import { CameraManager } from './CameraManager.js';
 import { CAMERA_CONFIG, CONTROLS_CONFIG } from './config.js';
 import { UFCIMAPI } from './UFCIMAPI.js';
+import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
 export class App {
     constructor(canvas) {
@@ -62,6 +63,7 @@ export class App {
             );
         this._uiControlsEnabled = false;
         this.api = null;
+        this.debugGui = null;
 
         // Bind 'this' to methods
         this.animate = this.animate.bind(this);
@@ -164,161 +166,61 @@ export class App {
     }
 
     _createDebugMenu() {
-        const container = document.createElement('div');
-        container.id = 'debug-menu-container';
-        container.style.cssText = `
-            position: fixed;
-            top: 0;
-            right: 0;
-            z-index: 10000;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            font: 12px sans-serif;
-        `;
+        if (this.debugGui) {
+            this.debugGui.destroy();
+        }
+        this.debugGui = new GUI({ title: 'Debug', closeFolders: true });
 
-        const toggleButton = document.createElement('button');
-        toggleButton.textContent = '☰';
-        toggleButton.style.cssText = `
-            background: #222;
-            color: white;
-            border: none;
-            padding: 6px 10px;
-            cursor: pointer;
-            font-size: 16px;
-            border-bottom-left-radius: 4px;
-        `;
-
-        const panel = document.createElement('div');
-        panel.style.cssText = `
-            background: rgba(0, 0, 0, 0.85);
-            color: #fff;
-            padding: 8px;
-            display: none;
-            flex-direction: column;
-            gap: 6px;
-            border-bottom-left-radius: 6px;
-            border-top-left-radius: 6px;
-            border-top-right-radius: 6px;
-            margin-top: 4px;
-            min-width: 240px;
-        `;
-
-        const statsToggle = document.createElement('button');
-        statsToggle.textContent = `Stats: ${this.enableStats ? 'ON' : 'OFF'}`;
-        statsToggle.style.cssText = 'padding: 4px; cursor: pointer;';
-        statsToggle.onclick = () => {
-            this.enableStats = !this.enableStats;
-            statsToggle.textContent = `Stats: ${this.enableStats ? 'ON' : 'OFF'}`;
-            if (this.enableStats) {
+        const togglesFolder = this.debugGui.addFolder('Toggles');
+        togglesFolder.add(this, 'enableStats').name('Stats').onChange((value) => {
+            if (value) {
                 this._createStatsPanels();
-                this.statsPanels.forEach(panel => {
-                    panel.dom.style.display = 'block';
-                });
-            } else if (this.statsPanels) {
-                this.statsPanels.forEach(panel => {
-                    panel.dom.style.display = 'none';
-                });
-            }
-        };
-
-        const postToggle = document.createElement('button');
-        postToggle.textContent = `Post: ${this.usePostprocessing ? 'ON' : 'OFF'}`;
-        postToggle.style.cssText = 'padding: 4px; cursor: pointer;';
-        postToggle.onclick = () => {
-            this.usePostprocessing = !this.usePostprocessing;
-            postToggle.textContent = `Post: ${this.usePostprocessing ? 'ON' : 'OFF'}`;
-        };
-
-        const uiToggle = document.createElement('button');
-        uiToggle.textContent = `UI Ctrl: ${this._uiControlsEnabled ? 'ON' : 'OFF'}`;
-        uiToggle.style.cssText = 'padding: 4px; cursor: pointer;';
-        uiToggle.onclick = () => {
-            this._uiControlsEnabled = !this._uiControlsEnabled;
-            this.uiManager?.setControlsEnabled?.(this._uiControlsEnabled);
-            uiToggle.textContent = `UI Ctrl: ${this._uiControlsEnabled ? 'ON' : 'OFF'}`;
-        };
-
-        // --- new: camera debug block ---
-        const camBox = document.createElement('div');
-        camBox.style.cssText = `
-            border-top: 1px solid rgba(255,255,255,0.15);
-            margin-top: 6px;
-            padding-top: 6px;
-            font-family: monospace;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        `;
-        const camTitle = document.createElement('div');
-        camTitle.innerHTML = '<strong>Camera</strong>';
-
-        const pos = document.createElement('div'); pos.textContent = 'pos: -';
-        const rot = document.createElement('div'); rot.textContent = 'rot: -';
-        const tgt = document.createElement('div'); tgt.textContent = 'target: -';
-        const info = document.createElement('div'); info.textContent = 'fov/near/far: -';
-
-        const btnRow = document.createElement('div');
-        btnRow.style.cssText = 'display:flex; gap:6px; margin-top:4px;';
-        const copyBtn = document.createElement('button');
-        copyBtn.textContent = 'Copy';
-        copyBtn.style.cssText = 'flex:1; padding:4px; cursor:pointer;';
-        const logBtn = document.createElement('button');
-        logBtn.textContent = 'Log';
-        logBtn.style.cssText = 'flex:1; padding:4px; cursor:pointer;';
-
-        copyBtn.onclick = () => {
-            const data = {
-                position: this.camera.position.toArray(),
-                rotation: [this.camera.rotation.x, this.camera.rotation.y, this.camera.rotation.z],
-                quaternion: this.camera.quaternion.toArray(),
-                target: this.controls.target.toArray(),
-                fov: this.camera.fov, near: this.camera.near, far: this.camera.far
-            };
-            if (navigator.clipboard?.writeText) {
-                navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+                this._setStatsVisibility(true);
             } else {
-                // fallback prompt for older browsers
-                window.prompt('Copy camera JSON:', JSON.stringify(data));
+                this._setStatsVisibility(false);
+            }
+        });
+        togglesFolder.add(this, 'usePostprocessing').name('Post-processing');
+        togglesFolder.add(this, '_uiControlsEnabled').name('UI Controls').onChange((v) => {
+            this.uiManager?.setControlsEnabled?.(v);
+        });
+        togglesFolder.close();
+
+        const cameraFolder = this.debugGui.addFolder('Camera');
+        const cameraActions = {
+            copy: () => {
+                const data = {
+                    position: this.camera.position.toArray(),
+                    rotation: [this.camera.rotation.x, this.camera.rotation.y, this.camera.rotation.z],
+                    quaternion: this.camera.quaternion.toArray(),
+                    target: this.controls.target.toArray(),
+                    fov: this.camera.fov,
+                    near: this.camera.near,
+                    far: this.camera.far
+                };
+                const json = JSON.stringify(data, null, 2);
+                if (navigator.clipboard?.writeText) {
+                    navigator.clipboard.writeText(json);
+                } else {
+                    window.prompt('Copy camera JSON:', json);
+                }
+            },
+            log: () => {
+                console.log('CAMERA DEBUG:', {
+                    position: this.camera.position.clone(),
+                    rotation: this.camera.rotation.clone(),
+                    quaternion: this.camera.quaternion.clone(),
+                    target: this.controls.target.clone(),
+                    fov: this.camera.fov,
+                    near: this.camera.near,
+                    far: this.camera.far
+                });
             }
         };
-
-        logBtn.onclick = () => {
-            console.log('CAMERA DEBUG:', {
-                position: this.camera.position.clone(),
-                rotation: this.camera.rotation.clone(),
-                quaternion: this.camera.quaternion.clone(),
-                target: this.controls.target.clone(),
-                fov: this.camera.fov,
-                near: this.camera.near,
-                far: this.camera.far
-            });
-        };
-
-        btnRow.appendChild(copyBtn);
-        btnRow.appendChild(logBtn);
-
-        camBox.appendChild(camTitle);
-        camBox.appendChild(pos);
-        camBox.appendChild(rot);
-        camBox.appendChild(tgt);
-        camBox.appendChild(info);
-        camBox.appendChild(btnRow);
-
-        // store refs for the update loop
-        this._camUI = { pos, rot, tgt, info };
-
-        toggleButton.onclick = () => {
-            panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
-        };
-
-        panel.appendChild(statsToggle);
-        panel.appendChild(postToggle);
-        panel.appendChild(uiToggle);
-        panel.appendChild(camBox);
-        container.appendChild(toggleButton);
-        container.appendChild(panel);
-        document.body.appendChild(container);
+        cameraFolder.add(cameraActions, 'copy').name('Copy camera');
+        cameraFolder.add(cameraActions, 'log').name('Log camera');
+        cameraFolder.close();
+        this.debugGui.close();
     }
 
     _updateRendererSize() {
@@ -360,6 +262,10 @@ export class App {
         window.removeEventListener('resize', this._onResize);
         this.interactionManager.dispose();
         this.popupManager.dispose();
+        if (this.debugGui) {
+            this.debugGui.destroy();
+            this.debugGui = null;
+        }
     }
 
     _createStatsPanels() {
@@ -378,5 +284,12 @@ export class App {
             document.body.appendChild(panel.dom);
             this.statsPanels.push(panel);
         }
+    }
+
+    _setStatsVisibility(show) {
+        if (!this.statsPanels) return;
+        this.statsPanels.forEach((panel) => {
+            panel.dom.style.display = show ? 'block' : 'none';
+        });
     }
 }
