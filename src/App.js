@@ -35,19 +35,7 @@ export class App {
         this.enableStats = false;
 
         // App Composer and Post-processing
-        this.usePostprocessing = false;
-        this.composer = new EffectComposer(this.renderer);
-        const renderPass = new RenderPass(this.scene, this.camera);
-        this.composer.addPass(renderPass);
-
-        this.outlinePass = new CustomOutlinePass(
-            new THREE.Vector2(window.innerWidth, window.innerHeight),
-            this.scene,
-            this.camera
-        );
-        // configure outline pass to only see meshes marked on layer 1
-        this.outlinePass.outlineLayer = 1;
-        this.composer.addPass(this.outlinePass);
+        this._setupPostProcessing();
 
         // App components
         this.world = new World(this.scene);
@@ -76,41 +64,11 @@ export class App {
 
     async init() {
         this.world.setup();
+        this._setupEventListeners();
 
-        this.interactionManager.addEventListener('pinClick', (e) => {
-            this.popupManager.show(e.pin, e.event);
-        });
-        
-        await this.interactionManager.init();
-
-        this.modelManager.onPinsLoaded = (pins) => {
-            this.interactionManager.addPins(pins);
-        };
-        this.modelManager.onPinsVisibilityChange = (building, floor, visible) => {
-            this.interactionManager.setPinsVisibility(building, floor, visible);
-        };
-      
-        try {
-            await this.modelManager.initFromManifest();
-
-            await this.modelManager.showAllBlocks();
-            this.interactionManager.clearFloorSelections(true);
-
-            this.uiManager.createFloorUI(
-                this.modelManager,
-                this.interactionManager,
-                this.cameraManager
-            );
-            this.uiManager?.setControlsEnabled?.(this._uiControlsEnabled);
-            this.api = new UFCIMAPI({
-                modelManager: this.modelManager,
-                interactionManager: this.interactionManager,
-                cameraManager: this.cameraManager,
-                uiManager: this.uiManager,
-                popupManager: this.popupManager,
-            });
-        } catch (error) {
-            console.error('failed to init models from manifest:', error);
+        const modelsLoaded = await this._loadModels();
+        if (modelsLoaded) {
+            await this._initializeUI();
         }
 
         this.interactionManager.blockingMeshes = this.modelManager.getAllMeshes();
@@ -247,6 +205,50 @@ export class App {
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         
     }
+
+    _setupEventListeners() {
+        this.interactionManager.addEventListener('pinClick', (e) => {
+            this.popupManager.show(e.pin, e.event);
+        });
+    }
+
+    async _loadModels() {
+        await this.interactionManager.init();
+
+        this.modelManager.onPinsLoaded = (pins) => {
+            this.interactionManager.addPins(pins);
+        };
+        this.modelManager.onPinsVisibilityChange = (building, floor, visible) => {
+            this.interactionManager.setPinsVisibility(building, floor, visible);
+        };
+      
+        try {
+            await this.modelManager.initFromManifest();
+
+            await this.modelManager.showAllBlocks();
+            this.interactionManager.clearFloorSelections(true);
+            return true;
+        } catch (error) {
+            console.error('failed to init models from manifest:', error);
+            return false;
+        }
+    }
+
+    async _initializeUI() {
+        this.uiManager.createFloorUI(
+            this.modelManager,
+            this.interactionManager,
+            this.cameraManager
+        );
+        this.uiManager?.setControlsEnabled?.(this._uiControlsEnabled);
+        this.api = new UFCIMAPI({
+            modelManager: this.modelManager,
+            interactionManager: this.interactionManager,
+            cameraManager: this.cameraManager,
+            uiManager: this.uiManager,
+            popupManager: this.popupManager,
+        });
+    }
     
     dispose() {
         window.removeEventListener('resize', this._onResize);
@@ -277,5 +279,21 @@ export class App {
         this.statsPanels.forEach((panel) => {
             panel.dom.style.display = show ? 'block' : 'none';
         });
+    }
+
+    _setupPostProcessing() {
+        this.usePostprocessing = false;
+        this.composer = new EffectComposer(this.renderer);
+        const renderPass = new RenderPass(this.scene, this.camera);
+        this.composer.addPass(renderPass);
+
+        this.outlinePass = new CustomOutlinePass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            this.scene,
+            this.camera
+        );
+        // configure outline pass to only see meshes marked on layer 1
+        this.outlinePass.outlineLayer = 1;
+        this.composer.addPass(this.outlinePass);
     }
 }
