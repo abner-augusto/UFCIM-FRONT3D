@@ -58,10 +58,6 @@ export class App {
         this._onResize = this._onResize.bind(this);
     }
 
-    getAPI() {
-        return this.api?.getAPI?.();
-    }
-
     async init() {
         this.world.setup();
         this._setupEventListeners();
@@ -81,6 +77,66 @@ export class App {
         this._createDebugMenu();
         window.addEventListener('resize', this._onResize);
         this.animate();
+    }
+
+    _setupEventListeners() {
+        this.interactionManager.addEventListener('pinClick', (e) => {
+            this.popupManager.show(e.pin, e.event);
+        });
+    }
+
+    async _loadModels() {
+        await this.interactionManager.init();
+
+        this.modelManager.onPinsLoaded = (pins) => {
+            this.interactionManager.addPins(pins);
+        };
+        this.modelManager.onPinsVisibilityChange = (building, floor, visible) => {
+            this.interactionManager.setPinsVisibility(building, floor, visible);
+        };
+      
+        try {
+            await this.modelManager.initFromManifest();
+
+            await this.modelManager.showAllBlocks();
+            this.interactionManager.clearFloorSelections(true);
+            return true;
+        } catch (error) {
+            console.error('failed to init models from manifest:', error);
+            return false;
+        }
+    }
+
+    async _initializeUI() {
+        this.uiManager.createFloorUI(
+            this.modelManager,
+            this.interactionManager,
+            this.cameraManager
+        );
+        this.uiManager?.setControlsEnabled?.(this._uiControlsEnabled);
+        this.api = new UFCIMAPI({
+            modelManager: this.modelManager,
+            interactionManager: this.interactionManager,
+            cameraManager: this.cameraManager,
+            uiManager: this.uiManager,
+            popupManager: this.popupManager,
+        });
+    }
+
+    _setupPostProcessing() {
+        this.usePostprocessing = false;
+        this.composer = new EffectComposer(this.renderer);
+        const renderPass = new RenderPass(this.scene, this.camera);
+        this.composer.addPass(renderPass);
+
+        this.outlinePass = new CustomOutlinePass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            this.scene,
+            this.camera
+        );
+        // configure outline pass to only see meshes marked on layer 1
+        this.outlinePass.outlineLayer = 1;
+        this.composer.addPass(this.outlinePass);
     }
 
     _createCamera() {
@@ -176,26 +232,6 @@ export class App {
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     }
 
-    animate() {
-        if (this.enableStats && this.statsPanels) {
-            this.statsPanels.forEach(p => p.begin());
-        }
-
-        requestAnimationFrame(this.animate);
-        this.controls.update();
-        TWEEN.update();
-
-        if (this.usePostprocessing) {
-            this.composer.render();
-        } else {
-            this.renderer.render(this.scene, this.camera);
-        }
-        if (this.enableStats && this.statsPanels) {
-            this.statsPanels.forEach(p => p.end());
-        }
-    }
-
-
     _onResize() {
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
@@ -204,60 +240,6 @@ export class App {
         this.outlinePass.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         
-    }
-
-    _setupEventListeners() {
-        this.interactionManager.addEventListener('pinClick', (e) => {
-            this.popupManager.show(e.pin, e.event);
-        });
-    }
-
-    async _loadModels() {
-        await this.interactionManager.init();
-
-        this.modelManager.onPinsLoaded = (pins) => {
-            this.interactionManager.addPins(pins);
-        };
-        this.modelManager.onPinsVisibilityChange = (building, floor, visible) => {
-            this.interactionManager.setPinsVisibility(building, floor, visible);
-        };
-      
-        try {
-            await this.modelManager.initFromManifest();
-
-            await this.modelManager.showAllBlocks();
-            this.interactionManager.clearFloorSelections(true);
-            return true;
-        } catch (error) {
-            console.error('failed to init models from manifest:', error);
-            return false;
-        }
-    }
-
-    async _initializeUI() {
-        this.uiManager.createFloorUI(
-            this.modelManager,
-            this.interactionManager,
-            this.cameraManager
-        );
-        this.uiManager?.setControlsEnabled?.(this._uiControlsEnabled);
-        this.api = new UFCIMAPI({
-            modelManager: this.modelManager,
-            interactionManager: this.interactionManager,
-            cameraManager: this.cameraManager,
-            uiManager: this.uiManager,
-            popupManager: this.popupManager,
-        });
-    }
-    
-    dispose() {
-        window.removeEventListener('resize', this._onResize);
-        this.interactionManager.dispose();
-        this.popupManager.dispose();
-        if (this.debugGui) {
-            this.debugGui.destroy();
-            this.debugGui = null;
-        }
     }
 
     _createStatsPanels() {
@@ -281,19 +263,36 @@ export class App {
         });
     }
 
-    _setupPostProcessing() {
-        this.usePostprocessing = false;
-        this.composer = new EffectComposer(this.renderer);
-        const renderPass = new RenderPass(this.scene, this.camera);
-        this.composer.addPass(renderPass);
+    animate() {
+        if (this.enableStats && this.statsPanels) {
+            this.statsPanels.forEach(p => p.begin());
+        }
 
-        this.outlinePass = new CustomOutlinePass(
-            new THREE.Vector2(window.innerWidth, window.innerHeight),
-            this.scene,
-            this.camera
-        );
-        // configure outline pass to only see meshes marked on layer 1
-        this.outlinePass.outlineLayer = 1;
-        this.composer.addPass(this.outlinePass);
+        requestAnimationFrame(this.animate);
+        this.controls.update();
+        TWEEN.update();
+
+        if (this.usePostprocessing) {
+            this.composer.render();
+        } else {
+            this.renderer.render(this.scene, this.camera);
+        }
+        if (this.enableStats && this.statsPanels) {
+            this.statsPanels.forEach(p => p.end());
+        }
+    }
+
+    getAPI() {
+        return this.api?.getAPI?.();
+    }
+
+    dispose() {
+        window.removeEventListener('resize', this._onResize);
+        this.interactionManager.dispose();
+        this.popupManager.dispose();
+        if (this.debugGui) {
+            this.debugGui.destroy();
+            this.debugGui = null;
+        }
     }
 }
