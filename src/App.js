@@ -30,7 +30,7 @@ export class App {
 
         this.controls = this._createControls();
         this.cameraManager = new CameraManager(this.camera, this.controls);
-        this.enableStats = true;
+        this.enableStats = false;
 
         // App Composer and Post-processing
         this.usePostprocessing = false;
@@ -59,6 +59,7 @@ export class App {
             this.cameraManager,
             this.interactionManager
             );
+        this._uiControlsEnabled = false;
 
         // Bind 'this' to methods
         this.animate = this.animate.bind(this);
@@ -106,6 +107,7 @@ export class App {
                 this.interactionManager,
                 this.cameraManager
             );
+            this.uiManager?.setControlsEnabled?.(this._uiControlsEnabled);
         } catch (error) {
             console.error('failed to init models from manifest:', error);
         }
@@ -115,18 +117,7 @@ export class App {
         this.statsPanels = [];
 
         if (this.enableStats) {
-            for (let i = 0; i < 3; i++) {
-            const panel = new Stats();
-            panel.showPanel(i); // 0: fps, 1: ms, 2: mb
-            panel.dom.style.cssText = `
-                position: absolute;
-                top: 0;
-                left: ${i * 80}px;
-                z-index: 10000;
-            `;
-            document.body.appendChild(panel.dom);
-            this.statsPanels.push(panel);
-            }
+            this._createStatsPanels();
         }
         this._createDebugMenu();
         this.controls.addEventListener('change', () => this._updateCameraDebugUI());
@@ -215,13 +206,19 @@ export class App {
         `;
 
         const statsToggle = document.createElement('button');
-        statsToggle.textContent = 'Stats';
+        statsToggle.textContent = `Stats: ${this.enableStats ? 'ON' : 'OFF'}`;
         statsToggle.style.cssText = 'padding: 4px; cursor: pointer;';
         statsToggle.onclick = () => {
             this.enableStats = !this.enableStats;
-            if (this.statsPanels) {
+            statsToggle.textContent = `Stats: ${this.enableStats ? 'ON' : 'OFF'}`;
+            if (this.enableStats) {
+                this._createStatsPanels();
                 this.statsPanels.forEach(panel => {
-                    panel.dom.style.display = this.enableStats ? 'block' : 'none';
+                    panel.dom.style.display = 'block';
+                });
+            } else if (this.statsPanels) {
+                this.statsPanels.forEach(panel => {
+                    panel.dom.style.display = 'none';
                 });
             }
         };
@@ -232,6 +229,15 @@ export class App {
         postToggle.onclick = () => {
             this.usePostprocessing = !this.usePostprocessing;
             postToggle.textContent = `Post: ${this.usePostprocessing ? 'ON' : 'OFF'}`;
+        };
+
+        const uiToggle = document.createElement('button');
+        uiToggle.textContent = `UI Ctrl: ${this._uiControlsEnabled ? 'ON' : 'OFF'}`;
+        uiToggle.style.cssText = 'padding: 4px; cursor: pointer;';
+        uiToggle.onclick = () => {
+            this._uiControlsEnabled = !this._uiControlsEnabled;
+            this.uiManager?.setControlsEnabled?.(this._uiControlsEnabled);
+            uiToggle.textContent = `UI Ctrl: ${this._uiControlsEnabled ? 'ON' : 'OFF'}`;
         };
 
         // --- new: camera debug block ---
@@ -309,6 +315,7 @@ export class App {
 
         panel.appendChild(statsToggle);
         panel.appendChild(postToggle);
+        panel.appendChild(uiToggle);
         panel.appendChild(camBox);
         container.appendChild(toggleButton);
         container.appendChild(panel);
@@ -580,5 +587,23 @@ export class App {
         window.removeEventListener('resize', this._onResize);
         this.interactionManager.dispose();
         this.popupManager.dispose();
+    }
+
+    _createStatsPanels() {
+        if (this.statsPanels && this.statsPanels.length > 0) return;
+        this.statsPanels = [];
+        for (let i = 0; i < 3; i++) {
+            const panel = new Stats();
+            panel.showPanel(i); // 0: fps, 1: ms, 2: mb
+            panel.dom.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: ${i * 80}px;
+                z-index: 10000;
+            `;
+            panel.dom.style.display = 'block';
+            document.body.appendChild(panel.dom);
+            this.statsPanels.push(panel);
+        }
     }
 }

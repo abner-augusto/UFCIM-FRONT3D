@@ -5,6 +5,7 @@ export class UIManager {
     this.floorUIContainer = null;
     this.buildingBar = null;
     this.floorBar = null;
+    this.searchBar = null;
     this.searchInput = null;
     this.searchResultsContainer = null;
     this._handleDocumentClick = null;
@@ -128,6 +129,7 @@ export class UIManager {
     searchBar.appendChild(filterBtn);
     searchBar.appendChild(searchResultsContainer);
     uiContainer.appendChild(searchBar);
+    this.searchBar = searchBar;
 
     this.searchInput.addEventListener('input', () => this._onSearchInput());
     this._handleDocumentClick = (event) => {
@@ -159,6 +161,15 @@ export class UIManager {
 
     this._updateBuildingFocus(null);
     this._renderFloorButtons(null);
+  }
+
+  setControlsEnabled(enabled) {
+    if (this.floorUIContainer) {
+      this.floorUIContainer.style.display = enabled ? '' : 'none';
+    }
+    if (!enabled) {
+      this._clearSearchResults();
+    }
   }
 
   // ------------------------------------------------------------------
