@@ -1,6 +1,6 @@
 # UFCIM Front 3D
 
-Interactive 3D viewer for the IAUD campus built with Vite and Three.js. The app loads modular GLB files per building/floor, renders them with custom post-processing, and overlays clickable pins that open rich popups backed by data converted from Excel spreadsheets.
+Interactive 3D viewer for the IAUD campus built with Vite and Three.js. The app loads modular GLB files per building/floor, renders them with custom post-processing, exposes a public viewer API, and overlays clickable pins that open rich popups backed by data converted from Excel spreadsheets.
 
 ## Highlights
 - **Three.js scene orchestration** (`src/App.js`, `World.js`, `CameraManager.js`) with OrbitControls, tweened camera motions, stats overlays, and a gradient ground plane.
@@ -8,6 +8,7 @@ Interactive 3D viewer for the IAUD campus built with Vite and Three.js. The app 
 - **Interactive pins & popups** created by `PinFactory` / `InteractionManager`; metadata is loaded from `public/assets/pins_db_popup.json` and rendered through `PopupManager` with camera focus + UI dimming.
 - **Custom rendering passes** (`src/postprocessing/CustomOutlinePass.js`, `FindSurfaces.js`) to highlight meshes on a dedicated outline layer.
 - **UI toolkit** (`UIManager.js`) that provides building filters, floor selectors, and placeholder controls for search/date blocks, all styled by `public/styles.css`.
+- **Viewer API** (`UFCIMAPI.js`, exposed via `window.UFCIM` from `main.js`) for focusing pins/floors/buildings, resetting camera, and changing pin colors; also reachable through `postMessage`.
 
 ## Getting Started
 | Command | Purpose |
@@ -50,6 +51,7 @@ Ensure both the manifest and popup DB are regenerated after adding/changing mode
 |-- src/
 |   |-- main.js                   # DOM bootstrapper
 |   |-- App.js                    # Wires scene, managers, and loop
+|   |-- UFCIMAPI.js               # Public API surface (focus, reset, pin colors)
 |   |-- config.js                 # Camera/UI constants
 |   |-- CameraManager.js          # Camera tweens, fit-to-box, focus-on-pin
 |   |-- InteractionManager.js     # Raycasting, pin filtering, events
@@ -77,6 +79,63 @@ Ensure both the manifest and popup DB are regenerated after adding/changing mode
 - Modify UI colors/spacing inside `public/styles.css`. All UI buttons share the `.ui-btn` class for easy theming.
 - To disable performance panels, toggle `this.enableStats` inside `App.init`.
 - Add new popup fields by extending the template in `PopupManager._createPopupElement` and ensuring the Excel-to-JSON converter emits those properties.
+
+## Viewer API (console & postMessage)
+
+The app exposes a stable viewer API after initialization at `window.UFCIM` (set in `src/main.js` via `App.getAPI()`). All methods return booleans or promises.
+
+**Methods**
+- `focusOnPin(pinId, options?)` — Focus camera and optionally open popup (`options.openPopup?: boolean`).
+- `focusOnFloor(buildingId, floorLevel, options?)` — Enable building, set floor, focus camera on that floor.
+- `focusOnBuilding(buildingId, options?)` — Enable only that building and fit camera to its bounding box.
+- `resetCamera()` — Restore camera to default config position/target.
+- `setPinColor(pinId, colorHex)` — Set a pin’s color (e.g. `'#ff00ff'`).
+- `setPinColorPreset(pinId, presetIndex)` — Use presets (`0` green, `1` yellow, `2` red).
+
+### Using from the browser console
+Run these after the app finishes loading:
+```js
+// Focus a pin by id; open popup too
+window.UFCIM.focusOnPin('LABCAD', { openPopup: true });
+
+// Focus a specific floor
+window.UFCIM.focusOnFloor('bloco1', 0);
+
+// Focus a building (hides pins until a floor/pin is focused)
+window.UFCIM.focusOnBuilding('bloco1');
+
+// Reset camera
+window.UFCIM.resetCamera();
+
+// Change pin color directly or via preset
+window.UFCIM.setPinColor('LABCAD', '#ff00ff');
+window.UFCIM.setPinColorPreset('LABCAD', 2); // red
+```
+
+### Using from another frame via postMessage
+The viewer listens for `message` events (currently accepts all origins; lock down later). Message contract:
+```ts
+type UFCIMMessage =
+  | { type: 'ufcim.focusOnPin'; payload: { pinId: string; options?: { openPopup?: boolean } } }
+  | { type: 'ufcim.focusOnFloor'; payload: { buildingId: string; floorLevel: number; options?: any } }
+  | { type: 'ufcim.focusOnBuilding'; payload: { buildingId: string; options?: any } }
+  | { type: 'ufcim.resetCamera'; payload?: {} }
+  | { type: 'ufcim.setPinColor'; payload: { pinId: string; color: string } }
+  | { type: 'ufcim.setPinColorPreset'; payload: { pinId: string; presetIndex: number } };
+```
+
+Example from a parent page embedding the viewer in an `<iframe id="viewer">`:
+```js
+function sendUfcimMessage(type, payload) {
+  const iframe = document.getElementById('viewer');
+  iframe.contentWindow.postMessage({ type, payload }, '*'); // TODO: replace '*' with allowed origin
+}
+
+sendUfcimMessage('ufcim.focusOnPin', { pinId: 'LABCAD', options: { openPopup: true } });
+sendUfcimMessage('ufcim.focusOnBuilding', { buildingId: 'bloco1' });
+sendUfcimMessage('ufcim.resetCamera', {});
+sendUfcimMessage('ufcim.setPinColorPreset', { pinId: 'LABCAD', presetIndex: 1 });
+```
 
 ## Troubleshooting
 - **Blank scene**: check that the canvas exists (`<canvas class="webgl">`) and that GLB assets + manifest are present under `public/assets/models/IAUD`.
