@@ -243,3 +243,10 @@
   pointer-events: none;
   transition: opacity 0.25s ease;
 }
+
+/* Stats panels (debug) */
+.stats-panel {
+  position: absolute;
+  top: 0;
+  z-index: 10000;
+}

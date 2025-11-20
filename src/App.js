@@ -121,7 +121,6 @@ export class App {
             this._createStatsPanels();
         }
         this._createDebugMenu();
-        this.controls.addEventListener('change', () => this._updateCameraDebugUI());
         window.addEventListener('resize', this._onResize);
         this.animate();
     }
@@ -154,15 +153,6 @@ export class App {
         controls.target.set(CONTROLS_CONFIG.target.x, CONTROLS_CONFIG.target.y, CONTROLS_CONFIG.target.z);
         controls.update();
         return controls;
-    }
-
-    _updateCameraDebugUI() {
-        if (!this._camUI) return;
-        const fmt = (v) => `${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)}`;
-        this._camUI.pos.textContent = `pos: ${fmt(this.camera.position)}`;
-        this._camUI.rot.textContent = `rot (rad): ${this.camera.rotation.x.toFixed(3)}, ${this.camera.rotation.y.toFixed(3)}, ${this.camera.rotation.z.toFixed(3)}`;
-        this._camUI.tgt.textContent = `target: ${fmt(this.controls.target)}`;
-        this._camUI.info.textContent = `fov: ${this.camera.fov} near: ${this.camera.near} far: ${this.camera.far}`;
     }
 
     _createDebugMenu() {
@@ -274,12 +264,8 @@ export class App {
         for (let i = 0; i < 3; i++) {
             const panel = new Stats();
             panel.showPanel(i); // 0: fps, 1: ms, 2: mb
-            panel.dom.style.cssText = `
-                position: absolute;
-                top: 0;
-                left: ${i * 80}px;
-                z-index: 10000;
-            `;
+            panel.dom.classList.add('stats-panel');
+            panel.dom.style.left = `${i * 80}px`;
             panel.dom.style.display = 'block';
             document.body.appendChild(panel.dom);
             this.statsPanels.push(panel);
