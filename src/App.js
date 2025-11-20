@@ -15,6 +15,7 @@ import { InteractionManager } from './InteractionManager.js';
 import { PopupManager } from './PopUpManager.js';
 import { CameraManager } from './CameraManager.js';
 import { CAMERA_CONFIG, CONTROLS_CONFIG } from './config.js';
+import { UFCIMAPI } from './UFCIMAPI.js';
 
 export class App {
     constructor(canvas) {
@@ -60,6 +61,7 @@ export class App {
             this.interactionManager
             );
         this._uiControlsEnabled = false;
+        this.api = null;
 
         // Bind 'this' to methods
         this.animate = this.animate.bind(this);
@@ -67,17 +69,7 @@ export class App {
     }
 
     getAPI() {
-        return {
-            focusOnPin: (pinId, options) => this._apiFocusOnPin(pinId, options),
-            focusOnFloor: (buildingId, floorLevel, options) =>
-                this._apiFocusOnFloor(buildingId, floorLevel, options),
-            focusOnBuilding: (buildingId, options) =>
-                this._apiFocusOnBuilding(buildingId, options),
-            setPinColor: (pinId, color) => this._apiSetPinColor(pinId, color),
-            setPinColorPreset: (pinId, presetIndex) =>
-                this._apiSetPinColorPreset(pinId, presetIndex),
-            resetCamera: () => this.cameraManager?.resetToDefaultState?.(),
-        };
+        return this.api?.getAPI?.();
     }
 
     async init() {
@@ -108,6 +100,13 @@ export class App {
                 this.cameraManager
             );
             this.uiManager?.setControlsEnabled?.(this._uiControlsEnabled);
+            this.api = new UFCIMAPI({
+                modelManager: this.modelManager,
+                interactionManager: this.interactionManager,
+                cameraManager: this.cameraManager,
+                uiManager: this.uiManager,
+                popupManager: this.popupManager,
+            });
         } catch (error) {
             console.error('failed to init models from manifest:', error);
         }
@@ -355,232 +354,6 @@ export class App {
         this.outlinePass.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         
-    }
-
-    _closePopupIfOpen(options = {}) {
-        if (this.popupManager?._currentPopup) {
-            this.popupManager.close({ restoreCamera: false, ...options });
-        }
-    }
-
-    async _focusPinInternal(pin, options = {}) {
-        const { openPopup = false } = options;
-
-        if (!pin) {
-            console.warn('UFCIM API: focusOnPin called with invalid pin');
-            return false;
-        }
-
-        this._closePopupIfOpen({ restoreCamera: false });
-
-        const building = pin.userData.building;
-        const floorLevel = pin.userData.floorLevel;
-
-        if (building && typeof floorLevel === 'number') {
-            for (const b of Object.keys(this.modelManager.manifest || {})) {
-                this.modelManager.enableBuilding(b, false);
-            }
-            this.modelManager.enableBuilding(building, true);
-
-            if (this.modelManager.setFloorLevel) {
-                await this.modelManager.setFloorLevel(building, floorLevel);
-            }
-
-            if (this.interactionManager.activateFloorPins) {
-                this.interactionManager.activateFloorPins(building, floorLevel);
-            }
-
-            if (this.interactionManager.blockingMeshes !== undefined &&
-                this.modelManager.getAllMeshes) {
-                this.interactionManager.blockingMeshes = this.modelManager.getAllMeshes();
-            }
-
-            if (this.modelManager.focusBuilding) {
-                this.modelManager.focusBuilding(building);
-            }
-
-            this.uiManager?._updateBuildingFocus?.(building);
-            this.uiManager?._renderFloorButtons?.(building);
-            this.uiManager?._highlightActiveFloors?.(floorLevel);
-        }
-
-        if (openPopup && this.popupManager?.show) {
-            await this.popupManager.show(pin, null);
-        } else if (this.cameraManager.focusOnPin) {
-            this.cameraManager.focusOnPin(pin);
-        } else {
-            console.warn('UFCIM API: cameraManager.focusOnPin not implemented');
-        }
-
-        return true;
-    }
-
-    async _apiFocusOnPin(pinId, options = {}) {
-        const { openPopup = false } = options;
-
-        if (!this.interactionManager || !this.modelManager || !this.cameraManager) {
-            console.warn('UFCIM API: focusOnPin called before app initialized');
-            return false;
-        }
-
-        const allPins = this.interactionManager.getAllPins
-            ? this.interactionManager.getAllPins()
-            : [];
-
-        const pin = allPins.find((p) => p.userData?.id === pinId);
-        if (!pin) {
-            console.warn(`UFCIM API: pin not found: ${pinId}`);
-            return false;
-        }
-
-        return this._focusPinInternal(pin, { openPopup });
-    }
-
-    async _apiFocusOnFloor(buildingId, floorLevel, options = {}) {
-        if (!this.modelManager || !this.interactionManager || !this.cameraManager) {
-            console.warn('UFCIM API: focusOnFloor called before app initialized');
-            return false;
-        }
-
-        if (!this.modelManager.entries?.has(buildingId)) {
-            console.warn(`UFCIM API: building not found: ${buildingId}`);
-            return false;
-        }
-
-        const floorsMap = this.modelManager.entries.get(buildingId);
-        if (!floorsMap?.has(floorLevel)) {
-            console.warn(
-                `UFCIM API: floor ${floorLevel} not found for building ${buildingId}`
-            );
-            return false;
-        }
-
-        this._closePopupIfOpen({ restoreCamera: false });
-
-        for (const b of Object.keys(this.modelManager.manifest || {})) {
-            this.modelManager.enableBuilding(b, false);
-        }
-        this.modelManager.enableBuilding(buildingId, true);
-
-        if (this.modelManager.setFloorLevel) {
-            await this.modelManager.setFloorLevel(buildingId, floorLevel);
-        }
-
-        if (this.interactionManager.activateFloorPins) {
-            this.interactionManager.activateFloorPins(buildingId, floorLevel);
-        }
-
-        if (this.interactionManager.blockingMeshes !== undefined &&
-            this.modelManager.getAllMeshes) {
-            this.interactionManager.blockingMeshes = this.modelManager.getAllMeshes();
-        }
-
-        if (this.modelManager.focusBuilding) {
-            this.modelManager.focusBuilding(buildingId);
-        }
-
-        this.uiManager?._updateBuildingFocus?.(buildingId);
-        this.uiManager?._renderFloorButtons?.(buildingId);
-        this.uiManager?._highlightActiveFloors?.(floorLevel);
-
-        const floorObj = this.modelManager.getFloorObject
-            ? this.modelManager.getFloorObject(buildingId, floorLevel)
-            : null;
-
-        if (floorObj && this.cameraManager.focusOnObjectAtCurrentDistance) {
-            this.cameraManager.focusOnObjectAtCurrentDistance(floorObj);
-        } else if (this.modelManager.getBlockBoundingBox &&
-                   this.cameraManager.fitCameraToBox) {
-            const box = this.modelManager.getBlockBoundingBox(buildingId);
-            if (!box.isEmpty()) {
-                this.cameraManager.fitCameraToBox(box);
-            }
-        }
-
-        return true;
-    }
-
-    async _apiFocusOnBuilding(buildingId, options = {}) {
-        if (!this.modelManager || !this.cameraManager) {
-            console.warn('UFCIM API: focusOnBuilding called before app initialized');
-            return false;
-        }
-
-        if (!this.modelManager.entries?.has(buildingId)) {
-            console.warn(`UFCIM API: building not found: ${buildingId}`);
-            return false;
-        }
-
-        this._closePopupIfOpen({ restoreCamera: false });
-
-        for (const b of Object.keys(this.modelManager.manifest || {})) {
-            this.modelManager.enableBuilding(b, false);
-        }
-        this.modelManager.enableBuilding(buildingId, true);
-        this.interactionManager?.clearFloorSelections?.(true);
-
-        const floorsMap = this.modelManager.entries.get(buildingId);
-        const floorIndices = floorsMap ? [...floorsMap.keys()] : [];
-        if (floorIndices.length > 0 && this.modelManager.setFloorLevel) {
-            const maxLevel = Math.max(...floorIndices);
-            await this.modelManager.setFloorLevel(buildingId, maxLevel);
-        }
-
-        if (this.modelManager.getBlockBoundingBox &&
-            this.cameraManager.fitCameraToBox) {
-            const box = this.modelManager.getBlockBoundingBox(buildingId);
-            if (!box.isEmpty()) {
-                this.cameraManager.fitCameraToBox(box);
-            }
-        }
-
-        if (this.modelManager.focusBuilding) {
-            this.modelManager.focusBuilding(buildingId);
-        }
-
-        this.uiManager?._updateBuildingFocus?.(buildingId);
-        this.uiManager?._renderFloorButtons?.(buildingId);
-
-        return true;
-    }
-
-    _findPinById(pinId) {
-        if (!this.interactionManager?.getAllPins) return null;
-        const allPins = this.interactionManager.getAllPins();
-        return allPins.find((p) => p.userData?.id === pinId) || null;
-    }
-
-    _applyPinColor(pin, color) {
-        if (!pin || !this.interactionManager?.changePinColor) return false;
-        this.interactionManager.changePinColor(pin.userData.id, color);
-        return true;
-    }
-
-    _getPresetColor(presetIndex) {
-        const presets = ['#00b050', '#f2c200', '#d32f2f']; // green, yellow, red
-        return presets[presetIndex] ?? null;
-    }
-
-    _apiSetPinColor(pinId, color) {
-        if (!this.interactionManager) {
-            console.warn('UFCIM API: setPinColor called before app initialized');
-            return false;
-        }
-        const pin = this._findPinById(pinId);
-        if (!pin) {
-            console.warn(`UFCIM API: pin not found: ${pinId}`);
-            return false;
-        }
-        return this._applyPinColor(pin, color);
-    }
-
-    _apiSetPinColorPreset(pinId, presetIndex) {
-        const color = this._getPresetColor(presetIndex);
-        if (!color) {
-            console.warn(`UFCIM API: invalid preset index ${presetIndex}`);
-            return false;
-        }
-        return this._apiSetPinColor(pinId, color);
     }
     
     dispose() {
