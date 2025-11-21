@@ -32,7 +32,7 @@
         },
         "pins": [
           {
-            "id": "Sala_de_Leitura_(Biblioteca)",
+            "id": "Sala de Leitura (Biblioteca)",
             "position": [
               8.22884750366211,
               0.75,
@@ -44,7 +44,7 @@
             "id": "LEAU",
             "position": [
               -13.784961700439453,
-              0.75,
+              2.6158530712127686,
               -32.86994934082031
             ],
             "opensPopup": false
@@ -53,7 +53,7 @@
             "id": "Administração",
             "position": [
               26.589092254638672,
-              0.75,
+              2.6158530712127686,
               -13.6475191116333
             ],
             "opensPopup": false
@@ -68,27 +68,28 @@
             "opensPopup": false
           },
           {
-            "id": "Atelier_Digital",
+            "id": "Atelier Digital",
             "position": [
               26.980796813964844,
               0.75,
               -29.668245315551758
-            ]
+            ],
+            "opensPopup": true
           },
           {
-            "id": "Acervo_(Bibilioteca)",
+            "id": "Acervo (Bibilioteca)",
             "position": [
               -3.5069971084594727,
-              0.75,
+              2.6158530712127686,
               -32.85227584838867
             ],
             "opensPopup": false
           },
           {
-            "id": "Administrativo_(Biblioteca)",
+            "id": "Administrativo (Biblioteca)",
             "position": [
               18.021671295166016,
-              0.75,
+              2.6158530712127686,
               -36.07769012451172
             ],
             "opensPopup": false
@@ -149,12 +150,13 @@
         },
         "pins": [
           {
-            "id": "Sala_01",
+            "id": "Sala 01",
             "position": [
               21.82400131225586,
               0.75,
               8.090646743774414
-            ]
+            ],
+            "opensPopup": true
           },
           {
             "id": "Auditório",
@@ -162,15 +164,17 @@
               32.56779861450195,
               0.75,
               8.619897842407227
-            ]
+            ],
+            "opensPopup": true
           },
           {
-            "id": "Sala_03",
+            "id": "Sala 03",
             "position": [
               32.77949905395508,
               0.75,
               17.987640380859375
-            ]
+            ],
+            "opensPopup": true
           },
           {
             "id": "Lehab",
@@ -182,7 +186,7 @@
             "opensPopup": false
           },
           {
-            "id": "Loja_01",
+            "id": "Loja 01",
             "position": [
               32.72971725463867,
               0.75,
@@ -246,42 +250,46 @@
         },
         "pins": [
           {
-            "id": "Sala_05",
+            "id": "Sala 05",
             "position": [
               33.8380012512207,
               0.75,
               31.65995979309082
-            ]
+            ],
+            "opensPopup": true
           },
           {
-            "id": "Sala_06",
+            "id": "Sala 06",
             "position": [
               21.315982818603516,
               0.75,
               31.65995979309082
-            ]
+            ],
+            "opensPopup": true
           },
           {
-            "id": "Sala_07",
+            "id": "Sala 07",
             "position": [
               3.7174720764160156,
               0.75,
               31.65995979309082
-            ]
+            ],
+            "opensPopup": true
           },
           {
-            "id": "Sala_08",
+            "id": "Sala 08",
             "position": [
               -10.609519958496094,
               0.75,
               31.65995979309082
-            ]
+            ],
+            "opensPopup": true
           },
           {
-            "id": "Centro_Acadêmico",
+            "id": "Centro Acadêmico",
             "position": [
               -23.605342864990234,
-              0.75,
+              2.018472194671631,
               32.67525863647461
             ],
             "opensPopup": false
@@ -306,7 +314,7 @@
         },
         "pins": [
           {
-            "id": "Sala_12_(manutenção)",
+            "id": "Sala 12 (manutenção)",
             "position": [
               -10.064155578613281,
               3.9000000953674316,
@@ -315,28 +323,31 @@
             "opensPopup": false
           },
           {
-            "id": "Sala_11",
+            "id": "Sala 11",
             "position": [
               4.319546699523926,
               3.9000000953674316,
               29.926036834716797
-            ]
+            ],
+            "opensPopup": true
           },
           {
-            "id": "Sala_10",
+            "id": "Sala 10",
             "position": [
               18.512104034423828,
               3.9000000953674316,
               29.59153175354004
-            ]
+            ],
+            "opensPopup": true
           },
           {
-            "id": "Sala_09",
+            "id": "Sala 09",
             "position": [
               32.75244903564453,
               3.9000000953674316,
               30.642831802368164
-            ]
+            ],
+            "opensPopup": true
           }
         ]
       },
@@ -403,7 +414,7 @@
             "opensPopup": false
           },
           {
-            "id": "BHO_Masculino",
+            "id": "BHO Masculino",
             "position": [
               -23.05337142944336,
               3.7590482234954834,
@@ -412,7 +423,7 @@
             "opensPopup": false
           },
           {
-            "id": "BHO_Feminino",
+            "id": "BHO Feminino",
             "position": [
               -23.114952087402344,
               3.7590482234954834,
@@ -421,7 +432,7 @@
             "opensPopup": false
           },
           {
-            "id": "Sala_Professores",
+            "id": "Sala Professores",
             "position": [
               -23.377485275268555,
               4.1136860847473145,
@@ -531,15 +542,16 @@
             "opensPopup": false
           },
           {
-            "id": "Sala_13",
+            "id": "Sala 13",
             "position": [
               -10.38699722290039,
               0.75,
               18.406036376953125
-            ]
+            ],
+            "opensPopup": true
           },
           {
-            "id": "Oficina_Digital",
+            "id": "Oficina Digital",
             "position": [
               -7.997515678405762,
               0.75,
@@ -567,12 +579,13 @@
         },
         "pins": [
           {
-            "id": "Atelier_digital_1",
+            "id": "Atelier digital 1",
             "position": [
               -8.098407745361328,
               2.728200912475586,
               2.716949462890625
-            ]
+            ],
+            "opensPopup": true
           }
         ]
       },

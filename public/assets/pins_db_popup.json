@@ -1,7 +1,7 @@
 {
   "rooms": [
     {
-      "id": "Sala_01",
+      "id": "Sala 01",
       "displayName": "Sala 01",
       "capacidade": 36,
       "ar_condicionado": 2,
@@ -10,7 +10,7 @@
       "projetor": 0
     },
     {
-      "id": "Sala_03",
+      "id": "Sala 03",
       "displayName": "Sala 03",
       "capacidade": 36,
       "ar_condicionado": 1,
@@ -19,7 +19,7 @@
       "projetor": 1
     },
     {
-      "id": "Sala_05",
+      "id": "Sala 05",
       "displayName": "Sala 05",
       "capacidade": 36,
       "ar_condicionado": 1,
@@ -28,7 +28,7 @@
       "projetor": 1
     },
     {
-      "id": "Sala_06",
+      "id": "Sala 06",
       "displayName": "Sala 06",
       "capacidade": 36,
       "ar_condicionado": 1,
@@ -37,7 +37,7 @@
       "projetor": 1
     },
     {
-      "id": "Sala_07",
+      "id": "Sala 07",
       "displayName": "Sala 07",
       "capacidade": 36,
       "ar_condicionado": 1,
@@ -46,7 +46,7 @@
       "projetor": 1
     },
     {
-      "id": "Sala_08",
+      "id": "Sala 08",
       "displayName": "Sala 08",
       "capacidade": 36,
       "ar_condicionado": 1,
@@ -55,7 +55,7 @@
       "projetor": 1
     },
     {
-      "id": "Sala_09",
+      "id": "Sala 09",
       "displayName": "Sala 09",
       "capacidade": 46,
       "ar_condicionado": 2,
@@ -64,7 +64,7 @@
       "projetor": 1
     },
     {
-      "id": "Sala_10",
+      "id": "Sala 10",
       "displayName": "Sala 10",
       "capacidade": 46,
       "ar_condicionado": 2,
@@ -73,7 +73,7 @@
       "projetor": 1
     },
     {
-      "id": "Sala_11",
+      "id": "Sala 11",
       "displayName": "Sala 11",
       "capacidade": 46,
       "ar_condicionado": 2,
@@ -82,7 +82,7 @@
       "projetor": 1
     },
     {
-      "id": "Sala_13",
+      "id": "Sala 13",
       "displayName": "Sala 13",
       "capacidade": 20,
       "ar_condicionado": 2,

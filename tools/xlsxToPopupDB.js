@@ -16,10 +16,6 @@ const HEADERS = {
 
 const ILUM_PLACEHOLDER = 'Natural + Led';
 
-function normalizeId(value) {
-  return value.replace(/\s+/g, '_');
-}
-
 function parseQuantity(value) {
   if (value === null || value === undefined) return 0;
   if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -82,7 +78,7 @@ function buildRooms(rows, headerRowIndex, headerRow) {
     }
     if (!lastZone || !rawItem) continue;
 
-    const roomId = normalizeId(lastZone);
+    const roomId = lastZone;
     if (!rooms.has(roomId)) {
       rooms.set(roomId, {
         id: roomId,

@@ -1,26 +1,175 @@
 #!/usr/bin/env node
 /* Generate a manifest.json for IAUD models.
-   - package.json should include: "type": "module"
-   - Requires @gltf-transform/core AND three
+   - Parses GLB structure directly to avoid Draco decoding dependencies in Node.js
+   - Requires: three (for Matrix/Vector math)
 */
 
 import { Command } from 'commander';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { Box3, Vector3 } from 'three';
-import { TextDecoder } from 'util';
-
-if (typeof global.TextDecoder === 'undefined') {
-  global.TextDecoder = TextDecoder;
-}
+import * as THREE from 'three'; 
 
 const FLOOR_RX = /^floor(\d+)\.glb$/i;
 const PIN_NAME_REGEX = /^Pin(#)?_(.+)$/;
-const loader = new GLTFLoader();
 
-// ---------------- AABB helper ----------------
+// --- 1. LOW LEVEL GLB PARSER -----------------------------------
+// We parse the GLB binary chunks to extract the JSON without decoding geometry.
+
+async function parseGLB(filePath) {
+    const buffer = await fs.readFile(filePath);
+    
+    // Header: magic(4) + version(4) + length(4)
+    const magic = buffer.readUInt32LE(0);
+    if (magic !== 0x46546C67) throw new Error('Not a valid GLB file'); // 'glTF'
+    
+    const length = buffer.readUInt32LE(8);
+    let offset = 12;
+    
+    let json = null;
+
+    while (offset < length) {
+        const chunkLength = buffer.readUInt32LE(offset);
+        const chunkType = buffer.readUInt32LE(offset + 4);
+        
+        // chunkType 0x4E4F534A is 'JSON'
+        if (chunkType === 0x4E4F534A) {
+            const jsonBuf = buffer.subarray(offset + 8, offset + 8 + chunkLength);
+            json = JSON.parse(jsonBuf.toString('utf8'));
+            break; // We only need the JSON
+        }
+        
+        offset += 8 + chunkLength;
+    }
+
+    if (!json) throw new Error('No JSON chunk found in GLB');
+    return json;
+}
+
+// --- 2. HIERARCHY TRAVERSAL ------------------------------------
+
+function getAccessorBounds(json, accessorIndex) {
+    const accessor = json.accessors?.[accessorIndex];
+    if (!accessor || !accessor.min || !accessor.max) return null;
+    return {
+        min: new THREE.Vector3(...accessor.min),
+        max: new THREE.Vector3(...accessor.max)
+    };
+}
+
+function traverseNodes(json, nodeIndex, parentMatrix, result) {
+    const node = json.nodes?.[nodeIndex];
+    if (!node) return;
+
+    // 1. Calculate Local Matrix
+    const localMatrix = new THREE.Matrix4();
+    if (node.matrix) {
+        localMatrix.fromArray(node.matrix);
+    } else {
+        if (node.translation) localMatrix.setPosition(new THREE.Vector3(...node.translation));
+        if (node.rotation) {
+            const q = new THREE.Quaternion(...node.rotation);
+            localMatrix.makeRotationFromQuaternion(q);
+        }
+        if (node.scale) localMatrix.scale(new THREE.Vector3(...node.scale));
+    }
+
+    // 2. Calculate World Matrix
+    const worldMatrix = parentMatrix.clone().multiply(localMatrix);
+
+    // 3. Process Name (Pins)
+    if (node.name) {
+        const match = PIN_NAME_REGEX.exec(node.name);
+        if (match) {
+            const [, silentFlag, rawId] = match;
+            const id = rawId.trim();
+            if (id) {
+                const pos = new THREE.Vector3().setFromMatrixPosition(worldMatrix);
+                result.pins.push({
+                    id,
+                    position: [pos.x, pos.y, pos.z], // Save as array
+                    opensPopup: silentFlag !== '#'
+                });
+            }
+        }
+    }
+
+    // 4. Process Mesh (Bounding Box)
+    if (node.mesh !== undefined) {
+        const mesh = json.meshes[node.mesh];
+        if (mesh && mesh.primitives) {
+            mesh.primitives.forEach(prim => {
+                const posAccessor = prim.attributes.POSITION;
+                if (posAccessor !== undefined) {
+                    const bounds = getAccessorBounds(json, posAccessor);
+                    if (bounds) {
+                        // Transform the AABB corners to finding the world AABB
+                        const box = new THREE.Box3(bounds.min, bounds.max);
+                        box.applyMatrix4(worldMatrix);
+                        result.bbox.expandByPoint(box.min);
+                        result.bbox.expandByPoint(box.max);
+                    }
+                }
+            });
+        }
+    }
+
+    // 5. Recurse Children
+    if (node.children) {
+        node.children.forEach(childIdx => {
+            traverseNodes(json, childIdx, worldMatrix, result);
+        });
+    }
+}
+
+// --- 3. LOGIC & OUTPUT -----------------------------------------
+
+async function computeFloorData(filePath) {
+    try {
+        const json = await parseGLB(filePath);
+        
+        const result = {
+            bbox: new THREE.Box3(),
+            pins: []
+        };
+        
+        // Scene Root
+        const scene = json.scenes?.[json.scene || 0];
+        if (scene && scene.nodes) {
+            const rootMatrix = new THREE.Matrix4();
+            // In GLTF, Y is up, but sometimes tools export differently. 
+            // Usually standard Three.js loading handles rotation.
+            // Assuming standard GLTF (Y-Up), no extra rotation needed unless file is weird.
+            
+            scene.nodes.forEach(nodeIdx => {
+                traverseNodes(json, nodeIdx, rootMatrix, result);
+            });
+        }
+
+        // Handle empty boxes
+        let finalBBox = { min: [0,0,0], max: [0,0,0] };
+        if (!result.bbox.isEmpty()) {
+            finalBBox = {
+                min: [result.bbox.min.x, result.bbox.min.y, result.bbox.min.z],
+                max: [result.bbox.max.x, result.bbox.max.y, result.bbox.max.z]
+            };
+        }
+
+        return {
+            bbox: finalBBox,
+            pins: result.pins
+        };
+
+    } catch (e) {
+        console.warn(`    [WARN] Failed to process ${path.basename(filePath)}: ${e.message}`);
+        return {
+            bbox: { min: [0, 0, 0], max: [0, 0, 0] },
+            pins: [],
+        };
+    }
+}
+
+// ---------------- AABB helper for Global Building ----------------
 class SimpleBox3 {
   constructor() {
     this.min = [Infinity, Infinity, Infinity];
@@ -36,17 +185,13 @@ class SimpleBox3 {
     this.max[1] = Math.max(this.max[1], bbox.max[1]);
     this.max[2] = Math.max(this.max[2], bbox.max[2]);
   }
-  isEmpty() {
-    return !Number.isFinite(this.min[0]);
-  }
   toJSON() {
-    return this.isEmpty()
+    return !Number.isFinite(this.min[0])
       ? { min: [0, 0, 0], max: [0, 0, 0] }
-      : { min: [this.min[0], this.min[1], this.min[2]], max: [this.max[0], this.max[1], this.max[2]] };
+      : { min: this.min, max: this.max };
   }
 }
 
-// ---------------- Pretty names ----------------
 function getPrettyBuildingName(folderName) {
   return folderName
     .replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -60,110 +205,21 @@ function getPrettyFloorName(floorNum) {
   return floorNum === 0 ? 'Térreo' : `${floorNum}º Pavimento`;
 }
 
-
-// --- 2. BOUNDS CALCULATION ---
-async function computeFloorData(filePath) {
-  let data;
-  try {
-    data = await fs.readFile(filePath);
-  } catch (e) {
-    console.warn(`    [WARN] Failed to read file: ${filePath}`);
-    return {
-      bbox: { min: [0, 0, 0], max: [0, 0, 0] },
-      pins: [],
-    };
-  }
-
-  // Convert Node.js Buffer to ArrayBuffer
-  const arrayBuffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
-
-  try {
-    // Parse the GLB data in memory
-    const gltf = await new Promise((resolve, reject) => {
-      loader.parse(arrayBuffer, '', resolve, reject);
-    });
-
-    // Use Three.js to calculate the bounding box of the whole scene
-    const bbox = new Box3();
-    gltf.scene.updateMatrixWorld(true);
-    bbox.setFromObject(gltf.scene);
-
-    const pins = [];
-    gltf.scene.traverse((child) => {
-      if (!child?.name) return;
-      const match = PIN_NAME_REGEX.exec(child.name);
-      if (!match) return;
-      const [, silentFlag, rawId] = match;
-      const id = rawId.trim();
-      if (!id) return;
-
-      const opensPopup = silentFlag !== '#';
-
-      const worldPos = new Vector3();
-      child.getWorldPosition(worldPos);
-      const localPos = worldPos.clone();
-      gltf.scene.worldToLocal(localPos);
-
-      const pinEntry = {
-        id,
-        position: [localPos.x, localPos.y, localPos.z],
-      };
-      if (!opensPopup) pinEntry.opensPopup = false;
-
-      pins.push(pinEntry);
-    });
-
-    if (bbox.isEmpty()) {
-      console.warn(`    [WARN] Three.js found an empty bounding box for: ${filePath}`);
-      return {
-        bbox: { min: [0, 0, 0], max: [0, 0, 0] },
-        pins,
-      };
-    }
-
-    // Return the bbox in our simple format
-    return {
-      bbox: {
-        min: [bbox.min.x, bbox.min.y, bbox.min.z],
-        max: [bbox.max.x, bbox.max.y, bbox.max.z],
-      },
-      pins,
-    };
-
-  } catch (e) {
-    console.warn(`    [WARN] Three.js failed to parse GLB: ${filePath} -> ${e.message}`);
-    return {
-      bbox: { min: [0, 0, 0], max: [0, 0, 0] },
-      pins: [],
-    };
-  }
-}
-
 // ---------------- Manifest build ----------------
 async function buildManifest(rootPath) {
   try {
     const st = await fs.stat(rootPath);
     if (!st.isDirectory()) throw new Error('Root exists but is not a directory');
   } catch {
-    console.error(`Error: Root directory does not exist or is not a directory: ${rootPath}`);
+    console.error(`Error: Root directory does not exist: ${rootPath}`);
     process.exit(1);
   }
 
-  console.log(`[DEBUG] Scanning root: ${rootPath}`);
-
   const manifest = {};
   const allEntries = await fs.readdir(rootPath, { withFileTypes: true });
-
-  console.log(`[DEBUG] Found ${allEntries.length} total entries in root:`);
-  for (const entry of allEntries) {
-    console.log(`  - ${entry.name} (is directory: ${entry.isDirectory()})`);
-  }
-
   const buildingDirs = allEntries
     .filter((e) => e.isDirectory())
     .sort((a, b) => a.name.localeCompare(b.name));
-
-  console.log(`[DEBUG] Filtered down to ${buildingDirs.length} building directories.`);
 
   for (const buildingEntry of buildingDirs) {
     const buildingID_raw = buildingEntry.name;
@@ -171,88 +227,52 @@ async function buildManifest(rootPath) {
     console.log(`\n--- Processing Building: ${buildingID_raw} ---`);
 
     let isHidden = false;
-    let manifestKey = buildingID_raw; // This will be the key in the JSON
-
-    // Check for the _hidden suffix
+    let manifestKey = buildingID_raw;
     if (buildingID_raw.toLowerCase().endsWith('_hidden')) {
         isHidden = true;
-        // Get the name before "_hidden" (e.g., "entorno")
         manifestKey = buildingID_raw.substring(0, buildingID_raw.length - 7);
-        console.log(`  [INFO] Folder marked as hidden. Manifest key will be: ${manifestKey}`);
     }
 
     const buildingBBox = new SimpleBox3();
     const floorsData = [];
-
     let dirFiles = [];
-    try {
-        dirFiles = await fs.readdir(buildingDir);
-    } catch (e) {
-        console.warn(` [WARN] Could not read directory: ${buildingDir}. Skipping.`);
-        continue;
-    }
+    try { dirFiles = await fs.readdir(buildingDir); } catch(e) {}
     
     const glbFiles = dirFiles.filter((f) => f.toLowerCase().endsWith('.glb'));
-    console.log(`[DEBUG] Found ${glbFiles.length} glb files in this directory:`);
-    console.log(glbFiles);
 
     for (const glbName of glbFiles) {
       const m = FLOOR_RX.exec(glbName);
-      if (!m) {
-        console.log(`  [SKIP] ${glbName} does not match 'floor<N>.glb'`);
-        continue;
-      }
+      if (!m) continue;
 
       const floorNum = parseInt(m[1], 10);
       const filePath = path.join(buildingDir, glbName);
-      console.log(`  [MATCH] Found floor file: ${glbName}`);
+      console.log(`  [MATCH] Floor ${floorNum}: ${glbName}`);
 
-      let floorBBox = { min: [0, 0, 0], max: [0, 0, 0] };
-      let pins = [];
-      try {
-        const floorData = await computeFloorData(filePath);
-        floorBBox = floorData.bbox;
-        pins = floorData.pins;
-      } catch (e) {
-        console.warn(`    [WARN] Could not process bounds for: ${filePath} -> ${e.message}`);
-      }
-
-      console.log(`    -> bbox ${JSON.stringify(floorBBox)}`);
-      if (pins.length) {
-        console.log(`    -> pins ${pins.length}`);
-      }
-
+      const floorData = await computeFloorData(filePath);
+      
+      console.log(`    -> Pins: ${floorData.pins.length}`);
+      
       floorsData.push({
         file: glbName,
         name: getPrettyFloorName(floorNum),
         level: floorNum,
-        bbox: floorBBox,
-        pins,
+        bbox: floorData.bbox,
+        pins: floorData.pins,
       });
-
-      buildingBBox.expandByBox(floorBBox);
+      buildingBBox.expandByBox(floorData.bbox);
     }
 
     floorsData.sort((a, b) => a.level - b.level);
-
     if (floorsData.length > 0) {
-      // Use the clean 'manifestKey' as the property in the JSON
       manifest[manifestKey] = {
-        name: getPrettyBuildingName(manifestKey), // Get pretty name from the clean key
+        name: getPrettyBuildingName(manifestKey),
         bbox: buildingBBox.toJSON(),
         floors: floorsData,
         sourceDir: buildingID_raw,
       };
-
-      // Add the hidden flag if it was set
-      if (isHidden) {
-          manifest[manifestKey].hidden = true;
-      }
-    } else {
-      console.log(`[WARN] No floor files found for building: ${buildingID_raw}`);
+      if (isHidden) manifest[manifestKey].hidden = true;
     }
   }
-
   return manifest;
 }
 
@@ -260,37 +280,25 @@ async function buildManifest(rootPath) {
 async function main() {
   const program = new Command();
   program
-    .description('Generate a manifest.json with bounds and names.')
-    .option('--root <path>', 'Root folder that contains building folders', 'public/assets/models/IAUD')
-    .option('--out <path>', 'Output path for manifest.json (default: <root>/manifest.json)')
+    .description('Generate manifest.json from GLB files (supports Draco)')
+    .option('--root <path>', 'Root folder', 'public/assets/models/IAUD')
+    .option('--out <path>', 'Output file', 'public/assets/models/IAUD/manifest.json')
     .parse(process.argv);
-
+  
   const opts = program.opts();
-  const resolvedRoot = path.resolve(opts.root);
-  const outPath = opts.out ? path.resolve(opts.out) : path.join(resolvedRoot, 'manifest.json');
+  const root = path.resolve(opts.root);
+  const out = path.resolve(opts.out);
 
-  console.log('--- Manifest Generator ---');
-  console.log(`[DEBUG] Resolved Root Path: ${resolvedRoot}`);
-  console.log(`[DEBUG] Resolved Out Path:  ${outPath}`);
-  console.log('--------------------------');
-
-  console.log('Generating manifest... (this may take a moment)');
-  const manifest = await buildManifest(resolvedRoot);
-
-  await fs.mkdir(path.dirname(outPath), { recursive: true });
-  await fs.writeFile(outPath, JSON.stringify(manifest, null, 2), 'utf-8');
-
-  const totalBuildings = Object.keys(manifest).length;
-  const totalFloors = Object.values(manifest).reduce((sum, b) => sum + (b.floors?.length || 0), 0);
-  console.log(`\nWrote ${outPath}  (buildings: ${totalBuildings}, floors: ${totalFloors})`);
+  console.log(`Generating manifest from: ${root}`);
+  const manifest = await buildManifest(root);
+  
+  await fs.mkdir(path.dirname(out), { recursive: true });
+  await fs.writeFile(out, JSON.stringify(manifest, null, 2), 'utf-8');
+  console.log(`\nSaved manifest to: ${out}`);
 }
 
-// Run only when invoked directly
 const currentScriptPath = fileURLToPath(import.meta.url);
 const nodeProcessPath = path.resolve(process.argv[1] || '');
 if (currentScriptPath === nodeProcessPath) {
-  main().catch((err) => {
-    console.error('[FATAL ERROR]', err);
-    process.exit(1);
-  });
+  main().catch(console.error);
 }
