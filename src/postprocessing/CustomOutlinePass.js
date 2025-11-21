@@ -12,37 +12,44 @@ class CustomOutlinePass extends Pass {
     this.renderCamera = camera;
     this.resolution = new THREE.Vector2(resolution.x, resolution.y);
 
-    this.fsQuad = new FullScreenQuad(null);
-    this.fsQuad.material = this.createOutlinePostProcessMaterial();
+    // Outline shader temporarily disabled; keeping placeholders to revisit later.
+    // this.fsQuad = new FullScreenQuad(null);
+    // this.fsQuad.material = this.createOutlinePostProcessMaterial();
 
     // Create a buffer to store the normals of the scene onto
     // or store the "surface IDs"
-    const surfaceBuffer = new THREE.WebGLRenderTarget(
-      this.resolution.x,
-      this.resolution.y
-    );
-    surfaceBuffer.texture.format = THREE.RGBAFormat;
-    surfaceBuffer.texture.type = THREE.HalfFloatType;
-    surfaceBuffer.texture.minFilter = THREE.NearestFilter;
-    surfaceBuffer.texture.magFilter = THREE.NearestFilter;
-    surfaceBuffer.texture.generateMipmaps = false;
-    surfaceBuffer.stencilBuffer = false;
-    this.surfaceBuffer = surfaceBuffer;
+    // const surfaceBuffer = new THREE.WebGLRenderTarget(
+    //   this.resolution.x,
+    //   this.resolution.y
+    // );
+    // surfaceBuffer.texture.format = THREE.RGBAFormat;
+    // surfaceBuffer.texture.type = THREE.HalfFloatType;
+    // surfaceBuffer.texture.minFilter = THREE.NearestFilter;
+    // surfaceBuffer.texture.magFilter = THREE.NearestFilter;
+    // surfaceBuffer.texture.generateMipmaps = false;
+    // surfaceBuffer.stencilBuffer = false;
+    // this.surfaceBuffer = surfaceBuffer;
 
-    this.normalOverrideMaterial = new THREE.MeshNormalMaterial();
-    this.surfaceIdOverrideMaterial = getSurfaceIdMaterial();
+    // this.normalOverrideMaterial = new THREE.MeshNormalMaterial();
+    // this.surfaceIdOverrideMaterial = getSurfaceIdMaterial();
+
+    // Track disabled state to short-circuit render
+    this.outlineDisabled = true;
   }
 
   dispose() {
+    if (this.outlineDisabled) return;
     this.surfaceBuffer.dispose();
     this.fsQuad.dispose();
   }
 
   updateMaxSurfaceId(maxSurfaceId) {
+    if (this.outlineDisabled) return;
     this.surfaceIdOverrideMaterial.uniforms.maxSurfaceId.value = maxSurfaceId;
   }
 
   setSize(width, height) {
+    if (this.outlineDisabled) return;
     this.surfaceBuffer.setSize(width, height);
     this.resolution.set(width, height);
 
@@ -55,6 +62,8 @@ class CustomOutlinePass extends Pass {
   }
 
   render(renderer, writeBuffer, readBuffer) {
+    if (this.outlineDisabled) return;
+
     // Turn off writing to the depth buffer
     // because we need to read from it in the subsequent passes.
     const depthBufferValue = writeBuffer.depthBuffer;
