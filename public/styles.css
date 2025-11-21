@@ -250,3 +250,47 @@
   top: 0;
   z-index: 10000;
 }
+
+/* Loading screen */
+#loading-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  z-index: 2000;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+#loading-screen.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#loading-screen .loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 26px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+}
+
+#loading-screen .loading-logo {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+}
+
+#loading-screen .loading-text {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: #264d55;
+}
