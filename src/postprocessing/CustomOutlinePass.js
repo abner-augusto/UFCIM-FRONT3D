@@ -1,9 +1,6 @@
 import * as THREE from "three";
 import { Pass } from "three/examples/jsm/postprocessing/Pass.js";
 import { FullScreenQuad } from "three/examples/jsm/postprocessing/Pass.js";
-import {
-  getSurfaceIdMaterial,
-} from "./FindSurfaces.js";
 
 // Follows the structure of
 // 		https://github.com/mrdoob/three.js/blob/master/examples/jsm/postprocessing/OutlinePass.js
@@ -246,3 +243,29 @@ class CustomOutlinePass extends Pass {
 }
 
 export { CustomOutlinePass };
+
+function getSurfaceIdMaterial() {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      maxSurfaceId: { value: 1 },
+    },
+    vertexShader: `
+      varying vec2 v_uv;
+      varying vec3 vColor;
+      void main() {
+        v_uv = uv;
+        vColor = color.rgb;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      varying vec2 v_uv;
+      varying vec3 vColor;
+      uniform float maxSurfaceId;
+      void main() {
+        gl_FragColor = vec4(vColor, 1.0);
+      }
+    `,
+    vertexColors: true,
+  });
+}
