@@ -38,6 +38,25 @@ The default entry point is `index.html`, which mounts a `<canvas class="webgl">`
 
 Ensure both the manifest and popup DB are regenerated after adding/changing models or source data; `npm run build` runs the manifest step automatically, but you must call `npm run build:pins` manually whenever the spreadsheet changes.
 
+## Pins por bloco e andar (manifest.json)
+Tabela derivada de `public/assets/models/IAUD/manifest.json`; andares sem registros estao marcados como "Nenhum pin listado". Inclui o ID usado pela API (`buildingId` em `focusOnBuilding/focusOnFloor`).
+
+| ID (API) | Bloco | Andar | Pins |
+| --- | --- | --- | --- |
+| bloco1 | Bloco1 | Terreo (0) | Sala de Leitura (Biblioteca); LEAU; Administra��o; LABCAD; Atelier Digital; Acervo (Bibilioteca); Administrativo (Biblioteca) |
+| bloco1 | Bloco1 | 1º Pavimento (1) | Nenhum pin listado |
+| bloco2 | Bloco2 | Terreo (0) | Sala 01; Audit�rio; Sala 03; Lehab; Loja 01 |
+| bloco2 | Bloco2 | 1º Pavimento (1) | Nenhum pin listado |
+| bloco3 | Bloco3 | Terreo (0) | Sala 05; Sala 06; Sala 07; Sala 08; Centro Acad�mico |
+| bloco3 | Bloco3 | 1º Pavimento (1) | Sala 12 (manuten��o); Sala 11; Sala 10; Sala 09 |
+| bloco3 | Bloco3 | 2º Pavimento (2) | Nenhum pin listado |
+| bloco4 | Bloco4 | Terreo (0) | Cantina; BHO Masculino; BHO Feminino; Sala Professores |
+| bloco4 | Bloco4 | 1º Pavimento (1) | Nenhum pin listado |
+| pavilhao | Pavilhao | Terreo (0) | LED; Sala 13; Oficina Digital |
+| pavilhao | Pavilhao | 1º Pavimento (1) | Atelier digital 1 |
+| pavilhao | Pavilhao | 2º Pavimento (2) | Nenhum pin listado |
+| entorno | Entorno | Terreo (0) | Nenhum pin listado |
+
 ## Project Structure
 ```
 .
