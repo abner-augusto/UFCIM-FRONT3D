@@ -1,8 +1,8 @@
 // -- CAMERA & CONTROLS ----------------------------------
 export const CAMERA_CONFIG = {
     fov: 75,
-    near: 0.1,
-    far: 1000,
+    near: 1,
+    far: 300,
     position: { x: 96, y: 60, z: -1 },
 };
 
