@@ -49,7 +49,7 @@ export class App {
             this.cameraManager,
             this.interactionManager
             );
-        this._uiControlsEnabled = false;
+        this._uiControlsEnabled = true;
         this.api = null;
         this.debugGui = null;
 
