@@ -39,6 +39,7 @@ export class UIManager {
       this._updateBuildingFocus(null);
       this._renderFloorButtons(null);
       this.interactionManager.blockingMeshes = this.modelManager.getAllMeshes();
+      this.cameraManager?.applyDefaultZoomLimits?.();
       this.cameraManager.resetToDefaultState();
     });
     buildingBar.appendChild(showAllBtn);
@@ -82,6 +83,7 @@ export class UIManager {
         await this.modelManager.setFloorLevel(buildingID, newActiveFloor);
         this.interactionManager.activateFloorPins(buildingID, newActiveFloor);
         this.interactionManager.blockingMeshes = this.modelManager.getAllMeshes();
+        this.cameraManager?.applyBlockFocusZoomLimits?.();
         
         const blockBox = this.modelManager.getBlockBoundingBox(buildingID);
         if (!blockBox.isEmpty()) {

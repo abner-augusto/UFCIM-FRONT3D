@@ -85,6 +85,8 @@ export class UFCIMAPI {
             this.uiManager?._highlightActiveFloors?.(floorLevel);
         }
 
+        this.cameraManager?.applyBlockFocusZoomLimits?.();
+
         if (openPopup && this.popupManager?.show) {
             await this.popupManager.show(pin, null);
         } else if (this.cameraManager.focusOnPin) {
@@ -159,6 +161,7 @@ export class UFCIMAPI {
         this.uiManager?._updateBuildingFocus?.(buildingId);
         this.uiManager?._renderFloorButtons?.(buildingId);
         this.uiManager?._highlightActiveFloors?.(floorLevel);
+        this.cameraManager?.applyBlockFocusZoomLimits?.();
 
         const floorObj = this.modelManager.getFloorObject
             ? this.modelManager.getFloorObject(buildingId, floorLevel)
@@ -217,6 +220,7 @@ export class UFCIMAPI {
 
         this.uiManager?._updateBuildingFocus?.(buildingId);
         this.uiManager?._renderFloorButtons?.(buildingId);
+        this.cameraManager?.applyBlockFocusZoomLimits?.();
 
         return true;
     }

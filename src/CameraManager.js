@@ -4,6 +4,7 @@ import {
   ANIMATION_DURATION, 
   CAMERA_CONFIG, 
   CONTROLS_CONFIG,
+  BLOCK_FOCUS_MIN_DISTANCE,
   PIN_FOCUS_TILT_DEG,
   PIN_FOCUS_DISTANCE_FACTOR,
   PIN_FOCUS_TARGET_Y_OFFSET,
@@ -19,6 +20,10 @@ export class CameraManager {
     this.controls = controls;
     this.savedCameraState = null;
     this.verticalOffset = -5;
+    this.defaultDistances = {
+      min: controls.minDistance,
+      max: controls.maxDistance,
+    };
   }
 
   /**
@@ -110,6 +115,7 @@ export class CameraManager {
   resetToDefaultState() {
     const newPos = CAMERA_CONFIG.position;
     const newTarget = CONTROLS_CONFIG.target;
+    this.applyDefaultZoomLimits();
 
     // Animate camera position
     new TWEEN.Tween(this.camera.position)
@@ -221,5 +227,21 @@ export class CameraManager {
       .easing(TWEEN.Easing.Quadratic.Out)
       .onComplete(() => { this.controls.enabled = true; })
       .start();
+  }
+
+  applyBlockFocusZoomLimits() {
+    const min = BLOCK_FOCUS_MIN_DISTANCE ?? this.defaultDistances.min ?? CONTROLS_CONFIG.distance.min;
+    this.controls.minDistance = Math.max(min, 0.1);
+    // Ensure maxDistance is not lower than minDistance
+    if (this.controls.maxDistance < this.controls.minDistance) {
+      this.controls.maxDistance = this.controls.minDistance + 1;
+    }
+    this.controls.update();
+  }
+
+  applyDefaultZoomLimits() {
+    this.controls.minDistance = this.defaultDistances.min ?? CONTROLS_CONFIG.distance.min;
+    this.controls.maxDistance = this.defaultDistances.max ?? CONTROLS_CONFIG.distance.max;
+    this.controls.update();
   }
 }

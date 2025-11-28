@@ -13,6 +13,9 @@ export const CONTROLS_CONFIG = {
     target: { x: 0, y: 0, z: 0 },
 };
 
+// Minimum zoom distance when focusing a single block/floor to avoid getting too close
+export const BLOCK_FOCUS_MIN_DISTANCE = 35;
+
 // -- INTERACTION -----------------------------------------
 export const PIN_ASSET_PATH = '/assets/pin.png';
 
