@@ -17,7 +17,7 @@ export class UFCIMAPI {
             setPinColor: (pinId, color) => this.setPinColor(pinId, color),
             setPinColorPreset: (pinId, presetIndex) =>
                 this.setPinColorPreset(pinId, presetIndex),
-            resetCamera: () => this.cameraManager?.resetToDefaultState?.(),
+            resetView: (options) => this.resetView(options),
         };
     }
 
@@ -95,6 +95,35 @@ export class UFCIMAPI {
             console.warn('UFCIM API: cameraManager.focusOnPin not implemented');
         }
 
+        return true;
+    }
+
+    /**
+     * Emulates the "Todos" button: show all blocks, hide pins, and reset camera/zoom.
+     * @param {object} options
+     * @param {boolean} options.closePopup Close any open popup (default: true)
+     */
+    async resetView(options = {}) {
+        const { closePopup = true } = options;
+
+        if (!this.modelManager || !this.interactionManager || !this.cameraManager) {
+            console.warn('UFCIM API: resetView called before app initialized');
+            return false;
+        }
+
+        if (closePopup) {
+            this.popupManager?.close?.({ restoreCamera: false });
+        }
+
+        await this.modelManager.showAllBlocks();
+        this.interactionManager.clearFloorSelections?.(true);
+        this.interactionManager.blockingMeshes = this.modelManager.getAllMeshes();
+
+        this.uiManager?._updateBuildingFocus?.(null);
+        this.uiManager?._renderFloorButtons?.(null);
+
+        this.cameraManager?.applyDefaultZoomLimits?.();
+        this.cameraManager?.resetToDefaultState?.();
         return true;
     }
 

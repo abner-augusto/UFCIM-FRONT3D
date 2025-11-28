@@ -43,12 +43,12 @@ Table derived from `public/assets/models/IAUD/manifest.json`; floors without ent
 
 | ID (API) | Bloco | Andar | Pins |
 | --- | --- | --- | --- |
-| bloco1 | Bloco 01 | Terreo (0) | Sala de Leitura (Biblioteca); LEAU; Administra��o; LABCAD; Atelier Digital; Acervo (Bibilioteca); Administrativo (Biblioteca) |
+| bloco1 | Bloco 01 | Terreo (0) | Sala de Leitura (Biblioteca); LEAU; Administração; LABCAD; Atelier Digital; Acervo (Bibilioteca); Administrativo (Biblioteca) |
 | bloco1 | Bloco 01 | 1º Pavimento (1) | Nenhum pin listado |
-| bloco2 | Bloco 02 | Terreo (0) | Sala 01; Audit�rio; Sala 03; Lehab; Loja 01 |
+| bloco2 | Bloco 02 | Terreo (0) | Sala 01; Auditório; Sala 03; Lehab; Loja 01 |
 | bloco2 | Bloco 02 | 1º Pavimento (1) | Nenhum pin listado |
 | bloco3 | Bloco 03 | Terreo (0) | Sala 05; Sala 06; Sala 07; Sala 08; Centro Acad�mico |
-| bloco3 | Bloco 03 | 1º Pavimento (1) | Sala 12 (manuten��o); Sala 11; Sala 10; Sala 09 |
+| bloco3 | Bloco 03 | 1º Pavimento (1) | Sala 12 (manutenção); Sala 11; Sala 10; Sala 09 |
 | bloco3 | Bloco 03 | 2º Pavimento (2) | Nenhum pin listado |
 | bloco4 | Bloco 04 | Terreo (0) | Cantina; BHO Masculino; BHO Feminino; Sala Professores |
 | bloco4 | Bloco 04 | 1º Pavimento (1) | Nenhum pin listado |
@@ -107,7 +107,7 @@ The app exposes a stable viewer API after initialization at `window.UFCIM` (set 
 - `focusOnPin(pinId, options?)` — Focus camera and optionally open popup (`options.openPopup?: boolean`).
 - `focusOnFloor(buildingId, floorLevel, options?)` — Enable building, set floor, focus camera on that floor.
 - `focusOnBuilding(buildingId, options?)` — Enable only that building and fit camera to its bounding box.
-- `resetCamera()` — Restore camera to default config position/target.
+- `resetView()` - Show all blocks, hide pins, and reset camera/zoom.
 - `setPinColor(pinId, colorHex)` — Set a pin’s color (e.g. `'#ff00ff'`).
 - `setPinColorPreset(pinId, presetIndex)` — Use presets (`0` green, `1` yellow, `2` red).
 
@@ -124,7 +124,7 @@ window.UFCIM.focusOnFloor('bloco1', 0);
 window.UFCIM.focusOnBuilding('bloco1');
 
 // Reset camera
-window.UFCIM.resetCamera();
+window.UFCIM.resetView();
 
 // Change pin color directly or via preset
 window.UFCIM.setPinColor('LABCAD', '#ff00ff');
@@ -138,7 +138,7 @@ type UFCIMMessage =
   | { type: 'ufcim.focusOnPin'; payload: { pinId: string; options?: { openPopup?: boolean } } }
   | { type: 'ufcim.focusOnFloor'; payload: { buildingId: string; floorLevel: number; options?: any } }
   | { type: 'ufcim.focusOnBuilding'; payload: { buildingId: string; options?: any } }
-  | { type: 'ufcim.resetCamera'; payload?: {} }
+  | { type: 'ufcim.resetView'; payload?: {} }
   | { type: 'ufcim.setPinColor'; payload: { pinId: string; color: string } }
   | { type: 'ufcim.setPinColorPreset'; payload: { pinId: string; presetIndex: number } };
 ```
@@ -152,7 +152,7 @@ function sendUfcimMessage(type, payload) {
 
 sendUfcimMessage('ufcim.focusOnPin', { pinId: 'LABCAD', options: { openPopup: true } });
 sendUfcimMessage('ufcim.focusOnBuilding', { buildingId: 'bloco1' });
-sendUfcimMessage('ufcim.resetCamera', {});
+sendUfcimMessage('ufcim.resetView', {});
 sendUfcimMessage('ufcim.setPinColorPreset', { pinId: 'LABCAD', presetIndex: 1 });
 ```
 
