@@ -164,6 +164,15 @@ export class InteractionManager extends THREE.EventDispatcher {
         }
     }
 
+    _isWorldVisible(object) {
+        let current = object;
+        while (current) {
+            if (!current.visible) return false;
+            current = current.parent;
+        }
+        return true;
+    }
+
     _onPointerDown(event) {
         if (!this._interactionsEnabled) return;
         const rect = this.canvas.getBoundingClientRect();
@@ -171,7 +180,8 @@ export class InteractionManager extends THREE.EventDispatcher {
         this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
         this.raycaster.setFromCamera(this.pointer, this.camera);
-        const pinHits = this.raycaster.intersectObjects(this.clickTargets, true);
+        const visibleTargets = this.clickTargets.filter((obj) => this._isWorldVisible(obj));
+        const pinHits = this.raycaster.intersectObjects(visibleTargets, true);
         if (pinHits.length === 0) return;
 
         const wallHits = this.blockingMeshes.length
