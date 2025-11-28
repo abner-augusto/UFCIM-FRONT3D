@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.0](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v1.0.0...v1.1.0) (2025-11-28)
+
+
+### Features
+
+* Add dynamic camera zoom for block focus ([9b42f90](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/9b42f90bf0dbbc06194726b047ff95ae5c1f9fa9))
+* Rename resetCamera to resetView ([50fcba5](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/50fcba5c907fa7670109ae50054b22488cff58f9))
+
+
+### Performance Improvements
+
+* Increase camera near clipping plane to 1 ([4e4a43b](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/4e4a43b93bc9e24f69b3c9a57871c2bdf219343c))
+
 ## 1.0.0 (2025-11-28)
 
 
