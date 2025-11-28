@@ -7,6 +7,16 @@ const LABEL_STYLE = {
     padding: {
         x: 4,
         y: 2
+    },
+    font: "600 12px 'Roboto', sans-serif", // locked font for consistent label rendering
+    colors: {
+        background: 'rgba(255, 255, 255, 0.98)',
+        border: '#549ba8',
+        text: '#0f1e22'
+    },
+    border: {
+        radius: 3,
+        width: 1
     }
 };
 
@@ -22,6 +32,14 @@ export class PinFactory {
     async loadAssets() {
         // Pre-load the pin texture so it's ready for use
         this.pinTexture = await this.textureLoader.loadAsync(PIN_ASSET_PATH);
+        // Preload the label font so canvas measurements stay consistent
+        if (LABEL_STYLE.font && document.fonts?.load) {
+            try {
+                await document.fonts.load(LABEL_STYLE.font);
+            } catch (err) {
+                console.warn('Pin label font failed to preload; falling back to default', err);
+            }
+        }
     }
 
     createPinAndLabel(pinData) {
@@ -143,7 +161,7 @@ export class PinFactory {
         document.body.appendChild(tempLabel);
 
         const style = getComputedStyle(tempLabel);
-        const font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+        const font = LABEL_STYLE.font || `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
         ctx.font = font;
 
         const paddingConfig = LABEL_STYLE.padding || {};
@@ -155,8 +173,10 @@ export class PinFactory {
         const paddingRight = paddingConfig.right ?? paddingConfig.x ?? (Number.isNaN(parsedPaddingRight) ? paddingLeft : parsedPaddingRight);
         const paddingTop = paddingConfig.top ?? paddingConfig.y ?? (Number.isNaN(parsedPaddingTop) ? 8 : parsedPaddingTop);
         const paddingBottom = paddingConfig.bottom ?? paddingConfig.y ?? (Number.isNaN(parsedPaddingBottom) ? paddingTop : parsedPaddingBottom);
-        const borderRadius = parseInt(style.borderRadius, 10) || 8;
-        const borderWidth = parseInt(style.borderWidth, 10) || 2;
+
+        const borderConfig = LABEL_STYLE.border || {};
+        const borderRadius = (borderConfig.radius ?? parseInt(style.borderRadius, 10)) || 8;
+        const borderWidth = (borderConfig.width ?? parseInt(style.borderWidth, 10)) || 2;
 
         const lines = text.split('\n');
         const lineHeight = this._resolveLineHeight(style);
@@ -172,10 +192,10 @@ export class PinFactory {
 
         ctx.font = font;
 
-        // Colors from CSS
-        const bgColor = style.backgroundColor || 'white';
-        const borderColor = style.borderColor || 'black';
-        const textColor = style.color || 'black';
+        // Colors: prefer locked palette to avoid dark-mode overrides
+        const bgColor = LABEL_STYLE.colors?.background || style.backgroundColor || 'white';
+        const borderColor = LABEL_STYLE.colors?.border || style.borderColor || 'black';
+        const textColor = LABEL_STYLE.colors?.text || style.color || 'black';
 
         // Draw background with border
         const rectX = borderWidth;
