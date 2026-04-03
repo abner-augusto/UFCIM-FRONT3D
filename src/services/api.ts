@@ -1,8 +1,10 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const IS_DEV_AUTH = import.meta.env.VITE_DEV_AUTH === 'true';
 
 function getHeaders(token: string | null): HeadersInit {
   const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  // Dev auth middleware returns 401 if Authorization header is present — skip it in dev
+  if (token && !IS_DEV_AUTH) headers['Authorization'] = `Bearer ${token}`;
   return headers;
 }
 
@@ -48,7 +50,7 @@ export const api = {
     }).then((r) => r.json() as Promise<{ token: string }>),
 
   // Users
-  getMe: (token: string) =>
+  getMe: (token: string | null) =>
     request<{ id: string; name: string; email: string; registration: string; role: string }>(
       '/users/me', token
     ),
