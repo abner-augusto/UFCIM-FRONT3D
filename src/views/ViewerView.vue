@@ -24,7 +24,8 @@ onMounted(async () => {
   const campusId = route.params.campusId as string;
   try {
     const result = await api.listSpaces(auth.token, { campus: campusId });
-    for (const space of result.data) {
+    const spaces: Space[] = result?.data ?? (Array.isArray(result) ? (result as unknown as Space[]) : []);
+    for (const space of spaces) {
       if (space.modelId) spacesByModelId.set(space.modelId, space);
     }
   } catch (e) {

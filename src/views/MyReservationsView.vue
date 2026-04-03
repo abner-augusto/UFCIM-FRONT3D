@@ -21,7 +21,7 @@ async function loadReservations() {
   errorMsg.value = null;
   try {
     const result = await api.getMyReservations(auth.token);
-    reservations.value = result.data;
+    reservations.value = result?.data ?? (Array.isArray(result) ? (result as unknown as Reservation[]) : []);
   } catch {
     errorMsg.value = 'Não foi possível carregar suas reservas.';
   } finally {
