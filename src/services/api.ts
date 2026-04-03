@@ -1,4 +1,5 @@
 import type { Space } from '@/types/space';
+import type { Availability, Reservation, Notification } from '@/types/reservation';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const IS_DEV_AUTH = import.meta.env.VITE_DEV_AUTH === 'true';
@@ -66,28 +67,28 @@ export const api = {
   getSpace: (token: string | null, id: string) =>
     request<Space>(`/spaces/${id}`, token),
 
-  getAvailability: (token: string, spaceId: string, date: string) =>
-    request<any>(`/spaces/${spaceId}/availability?date=${date}`, token),
+  getAvailability: (token: string | null, spaceId: string, date: string) =>
+    request<Availability>(`/spaces/${spaceId}/availability?date=${date}`, token),
 
   // Reservations
-  createReservation: (token: string, body: { spaceId: string; date: string; timeSlot: string }) =>
-    request<any>('/reservations', token, { method: 'POST', body: JSON.stringify(body) }),
+  createReservation: (token: string | null, body: { spaceId: string; date: string; timeSlot: string; purpose: string }) =>
+    request<Reservation>('/reservations', token, { method: 'POST', body: JSON.stringify(body) }),
 
-  getMyReservations: (token: string, page = 1, limit = 20) =>
-    request<{ data: any[]; pagination: any }>(
+  getMyReservations: (token: string | null, page = 1, limit = 20) =>
+    request<{ data: Reservation[]; pagination: any }>(
       `/reservations/mine?page=${page}&limit=${limit}`, token
     ),
 
-  cancelReservation: (token: string, id: string) =>
-    request<any>(`/reservations/${id}/cancel`, token, { method: 'PATCH' }),
+  cancelReservation: (token: string | null, id: string) =>
+    request<Reservation>(`/reservations/${id}/cancel`, token, { method: 'PATCH' }),
 
   // Notifications
-  getNotifications: (token: string) =>
-    request<{ data: any[] }>('/notifications', token),
+  getNotifications: (token: string | null) =>
+    request<{ data: Notification[] }>('/notifications', token),
 
-  markNotificationRead: (token: string, id: string) =>
-    request<any>(`/notifications/${id}/read`, token, { method: 'PATCH' }),
+  markNotificationRead: (token: string | null, id: string) =>
+    request<Notification>(`/notifications/${id}/read`, token, { method: 'PATCH' }),
 
-  markAllRead: (token: string) =>
-    request<any>('/notifications/read-all', token, { method: 'PATCH' }),
+  markAllRead: (token: string | null) =>
+    request<void>('/notifications/read-all', token, { method: 'PATCH' }),
 };
