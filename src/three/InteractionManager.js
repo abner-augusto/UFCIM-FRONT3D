@@ -49,7 +49,9 @@ export class InteractionManager extends THREE.EventDispatcher {
             sprite.visible = shouldDisplay && opensPopup;
         });
         group.labels.forEach((sprite) => {
-            sprite.visible = shouldDisplay;
+            const pinSprite = sprite.userData?.pinSprite;
+            const pinOpensPopup = pinSprite ? pinSprite.userData?.opensPopup !== false : true;
+            sprite.visible = shouldDisplay && pinOpensPopup;
         });
     }
 
@@ -200,14 +202,40 @@ export class InteractionManager extends THREE.EventDispatcher {
             pinId: sprite.userData.id,
             event
         });
-        window.dispatchEvent(new CustomEvent('ufcim:pin-click', {
-            detail: {
-                pinId: sprite.userData.id,
-                displayName: sprite.userData.displayName || sprite.name,
-                building: sprite.userData.building,
-                floorLevel: sprite.userData.floorLevel,
+    }
+
+    /**
+     * Hide all pins that don't have a matching backend space and colour the
+     * ones that do.  Call this after the viewer is ready and backend spaces
+     * have been fetched.
+     *
+     * @param {Set<string>} activeModelIds - set of modelId values returned by the API
+     * @param {Map<string, string>} [colorMap]  - optional map of modelId → hex color
+     */
+    applyBackendFilter(activeModelIds, colorMap = new Map()) {
+        const allPinIds = this.interactiveObjects
+            .map(s => s.userData?.id)
+            .filter(Boolean);
+        console.log('[PinFilter] 3D pin ids:', allPinIds);
+        console.log('[PinFilter] backend ids:', [...activeModelIds]);
+
+        this.interactiveObjects.forEach((sprite) => {
+            const id = sprite.userData?.id;
+            if (!id) return;
+            const isActive = activeModelIds.has(id);
+            console.log(`[PinFilter] pin "${id}" → ${isActive ? 'VISIBLE' : 'hidden'}`);
+            sprite.userData.opensPopup = isActive;
+            if (isActive) {
+                const color = colorMap.get(id) ?? '#1D9E75';
+                sprite.material.color.set(color);
             }
-        }));
+        });
+        // Re-apply floor/building visibility rules so the change takes effect
+        this.pinGroups.forEach((buildingMap, building) => {
+            buildingMap.forEach((group) => {
+                this._updateGroupVisibility(building, group);
+            });
+        });
     }
 
     filterPins(floorLevel) {

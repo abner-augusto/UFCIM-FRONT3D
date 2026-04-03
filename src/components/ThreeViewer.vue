@@ -6,6 +6,7 @@ let threeApp: any = null;
 
 const emit = defineEmits<{
   'pin-click': [detail: { pinId: string; displayName: string; building: string; floorLevel: number }];
+  'ready': [];
 }>();
 
 function onPinClick(event: Event) {
@@ -28,6 +29,7 @@ onMounted(async () => {
   }
 
   window.addEventListener('ufcim:pin-click', onPinClick);
+  emit('ready');
 });
 
 onUnmounted(() => {
@@ -41,6 +43,9 @@ onUnmounted(() => {
 
 defineExpose({
   getAPI: () => threeApp?.api ?? null,
+  filterPinsToBackendSpaces: (activeModelIds: Set<string>, colorMap?: Map<string, string>) => {
+    threeApp?.interactionManager?.applyBackendFilter(activeModelIds, colorMap ?? new Map());
+  },
 });
 </script>
 

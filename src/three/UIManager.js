@@ -259,6 +259,17 @@ export class UIManager {
     });
   }
 
+  dispose() {
+    if (this._handleDocumentClick) {
+      document.removeEventListener('click', this._handleDocumentClick);
+      this._handleDocumentClick = null;
+    }
+    if (this.floorUIContainer) {
+      this.floorUIContainer.remove();
+      this.floorUIContainer = null;
+    }
+  }
+
   toggleFloorUI(show) {
     if (this.floorUIContainer) {
       this.floorUIContainer.style.opacity = show ? '1' : '0.1';

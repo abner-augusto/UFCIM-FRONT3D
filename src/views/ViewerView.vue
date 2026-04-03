@@ -5,6 +5,7 @@ import { useReservationStore } from '@/stores/reservation';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
 import type { Space } from '@/types/space';
+import { campuses } from '@/data/campuses';
 import ThreeViewer from '@/components/ThreeViewer.vue';
 import RoomPopup from '@/components/RoomPopup.vue';
 
@@ -19,17 +20,37 @@ const showPopup = ref(false);
 
 // Map<modelId, Space> — built on mount, used for O(1) pin lookup
 const spacesByModelId = new Map<string, Space>();
+let viewerReady = false;
+let spacesLoaded = false;
+
+function applyPinFilter() {
+  if (!viewerReady || !spacesLoaded) return;
+  const activeModelIds = new Set(spacesByModelId.keys());
+  console.log('[PinFilter] viewerReady:', viewerReady, '| spacesLoaded:', spacesLoaded);
+  console.log('[PinFilter] backend modelIds:', [...activeModelIds]);
+  viewerRef.value?.filterPinsToBackendSpaces(activeModelIds);
+}
+
+function handleViewerReady() {
+  viewerReady = true;
+  applyPinFilter();
+}
 
 onMounted(async () => {
   const campusId = route.params.campusId as string;
+  // Backend stores campus as the shortName (e.g. "Benfica"), not the route id ("benfica")
+  const campusFilter = campuses.find(c => c.id === campusId)?.shortName ?? campusId;
   try {
-    const result = await api.listSpaces(auth.token, { campus: campusId });
+    const result = await api.listSpaces(auth.token, { campus: campusFilter });
     const spaces: Space[] = result?.data ?? (Array.isArray(result) ? (result as unknown as Space[]) : []);
     for (const space of spaces) {
       if (space.modelId) spacesByModelId.set(space.modelId, space);
     }
   } catch (e) {
     console.error('Falha ao carregar espaços:', e);
+  } finally {
+    spacesLoaded = true;
+    applyPinFilter();
   }
 });
 
@@ -54,7 +75,7 @@ function closePopup() {
 
 <template>
   <div class="viewer-view">
-    <ThreeViewer ref="viewerRef" @pin-click="handlePinClick" />
+    <ThreeViewer ref="viewerRef" @ready="handleViewerReady" @pin-click="handlePinClick" />
     <RoomPopup
       v-if="showPopup && selectedSpace"
       :space="selectedSpace"
