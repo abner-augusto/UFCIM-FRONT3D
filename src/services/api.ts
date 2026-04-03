@@ -1,3 +1,5 @@
+import type { Space } from '@/types/space';
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const IS_DEV_AUTH = import.meta.env.VITE_DEV_AUTH === 'true';
 
@@ -56,13 +58,13 @@ export const api = {
     ),
 
   // Spaces
-  listSpaces: (token: string, params?: { campus?: string; type?: string }) =>
-    request<{ data: any[]; pagination: any }>(
+  listSpaces: (token: string | null, params?: { campus?: string; type?: string; modelId?: string }) =>
+    request<{ data: Space[]; pagination: any }>(
       `/spaces?${new URLSearchParams(params as any)}`, token
     ),
 
-  getSpace: (token: string, id: string) =>
-    request<any>(`/spaces/${id}`, token),
+  getSpace: (token: string | null, id: string) =>
+    request<Space>(`/spaces/${id}`, token),
 
   getAvailability: (token: string, spaceId: string, date: string) =>
     request<any>(`/spaces/${spaceId}/availability?date=${date}`, token),

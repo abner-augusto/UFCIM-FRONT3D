@@ -33,6 +33,7 @@ export class PopupManager {
     this._interactionLocked = false;
     this._controlsLocked = false;
     this._pendingControlUnlock = null;
+    this.vueManaged = false;
   }
 
   async show(pin, event) {
@@ -40,6 +41,20 @@ export class PopupManager {
       this._focusPinWithoutPopup(pin);
       return;
     }
+
+    if (this.vueManaged) {
+      const label = pin.userData?.displayName || pin.userData?.id || pin.name || 'Sala';
+      window.dispatchEvent(new CustomEvent('ufcim:pin-click', {
+        detail: {
+          pinId: pin.userData?.id,
+          displayName: label,
+          building: pin.userData?.building ?? '',
+          floorLevel: pin.userData?.floorLevel ?? 0,
+        },
+      }));
+      return;
+    }
+
     if (document.getElementById(UI_IDS.popup)) return;
 
     if (!this._interactionLocked && this.interactionManager && typeof this.interactionManager.setInteractionsEnabled === 'function') {
