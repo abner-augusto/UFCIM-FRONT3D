@@ -200,6 +200,14 @@ export class InteractionManager extends THREE.EventDispatcher {
             pinId: sprite.userData.id,
             event
         });
+        window.dispatchEvent(new CustomEvent('ufcim:pin-click', {
+            detail: {
+                pinId: sprite.userData.id,
+                displayName: sprite.userData.displayName || sprite.name,
+                building: sprite.userData.building,
+                floorLevel: sprite.userData.floorLevel,
+            }
+        }));
     }
 
     filterPins(floorLevel) {

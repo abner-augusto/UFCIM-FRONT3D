@@ -1,4 +1,4 @@
-import { App } from './App.js';
+import { App } from './three/App.js';
 
 function createLoadingScreen() {
     const overlay = document.createElement('div');

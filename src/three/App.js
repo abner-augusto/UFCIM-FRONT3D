@@ -268,7 +268,7 @@ export class App {
             this.statsPanels.forEach(p => p.begin());
         }
 
-        requestAnimationFrame(this.animate);
+        this._animationFrameId = requestAnimationFrame(this.animate);
         this.controls.update();
         TWEEN.update();
 
@@ -287,12 +287,63 @@ export class App {
     }
 
     dispose() {
+        // Stop animation loop
+        if (this._animationFrameId) {
+            cancelAnimationFrame(this._animationFrameId);
+            this._animationFrameId = null;
+        }
+
+        // Remove resize listener
         window.removeEventListener('resize', this._onResize);
-        this.interactionManager.dispose();
-        this.popupManager.dispose();
+
+        // Dispose sub-managers
+        this.popupManager?.dispose();
+        this.interactionManager?.dispose();
+        this.uiManager?.dispose?.();
+
+        // Destroy debug GUI
         if (this.debugGui) {
             this.debugGui.destroy();
             this.debugGui = null;
+        }
+
+        // Remove stats panels
+        if (this.statsPanels) {
+            this.statsPanels.forEach((panel) => panel.dom.remove());
+            this.statsPanels = [];
+        }
+
+        // Dispose all Three.js scene objects
+        this.scene?.traverse((object) => {
+            if (object.geometry) object.geometry.dispose();
+            if (object.material) {
+                const materials = Array.isArray(object.material)
+                    ? object.material
+                    : [object.material];
+                materials.forEach((m) => {
+                    m.map?.dispose();
+                    m.normalMap?.dispose();
+                    m.roughnessMap?.dispose();
+                    m.metalnessMap?.dispose();
+                    m.dispose();
+                });
+            }
+        });
+
+        // Dispose postprocessing
+        this.composer?.dispose?.();
+        this.outlinePass?.dispose?.();
+
+        // Dispose controls
+        this.controls?.dispose();
+
+        // Dispose renderer (releases WebGL context)
+        this.renderer?.dispose();
+        this.renderer = null;
+
+        // Clear scene
+        while (this.scene?.children.length > 0) {
+            this.scene.remove(this.scene.children[0]);
         }
     }
 }
