@@ -1,0 +1,68 @@
+import { createRouter, createWebHashHistory } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+
+const router = createRouter({
+  history: createWebHashHistory(),
+  routes: [
+    {
+      path: '/',
+      redirect: '/campus',
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('@/views/LoginView.vue'),
+      meta: { guestOnly: true },
+    },
+    {
+      path: '/campus',
+      name: 'campus-select',
+      component: () => import('@/views/CampusSelectView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/campus/:campusId/viewer',
+      name: 'viewer',
+      component: () => import('@/views/ViewerView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/reserva/:spaceId',
+      name: 'reservation',
+      component: () => import('@/views/ReservationView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/reserva/confirmar',
+      name: 'reservation-confirm',
+      component: () => import('@/views/ConfirmReservationView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/minhas-reservas',
+      name: 'my-reservations',
+      component: () => import('@/views/MyReservationsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/notificacoes',
+      name: 'notifications',
+      component: () => import('@/views/NotificationsView.vue'),
+      meta: { requiresAuth: true },
+    },
+  ],
+});
+
+router.beforeEach((to) => {
+  const auth = useAuthStore();
+
+  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    return { name: 'login' };
+  }
+
+  if (to.meta.guestOnly && auth.isAuthenticated) {
+    return { name: 'campus-select' };
+  }
+});
+
+export default router;
