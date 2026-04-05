@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
+import { hasRole, CAN_BLOCK } from '@/utils/roles';
 
 const auth = useAuthStore();
 const router = useRouter();
+
+const canBlock = computed(() => hasRole(auth.userRole, CAN_BLOCK));
 
 function logout() {
   auth.logout();
@@ -18,10 +22,11 @@ function logout() {
     </div>
     <nav class="header-nav">
       <router-link to="/minhas-reservas">Minhas Reservas</router-link>
+      <router-link v-if="canBlock" to="/meus-bloqueios">Meus Bloqueios</router-link>
       <router-link to="/notificacoes">Notificações</router-link>
     </nav>
     <div class="header-right">
-      <span class="header-user">{{ auth.user?.name }}</span>
+      <router-link to="/perfil" class="header-user">{{ auth.user?.name }}</router-link>
       <button @click="logout" class="header-logout">Sair</button>
     </div>
   </header>
@@ -66,6 +71,10 @@ function logout() {
 .header-user {
   font-size: 0.85rem;
   color: #777;
+  text-decoration: none;
+}
+.header-user:hover {
+  color: #1D9E75;
 }
 .header-logout {
   padding: 0.4rem 0.8rem;

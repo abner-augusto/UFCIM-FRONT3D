@@ -50,6 +50,24 @@ const router = createRouter({
       component: () => import('@/views/NotificationsView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/espacos/:spaceId/bloquear',
+      name: 'blocking-create',
+      component: () => import('@/views/BlockingCreateView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/meus-bloqueios',
+      name: 'my-blockings',
+      component: () => import('@/views/MyBlockingsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/perfil',
+      name: 'profile',
+      component: () => import('@/views/ProfileView.vue'),
+      meta: { requiresAuth: true },
+    },
   ],
 });
 
