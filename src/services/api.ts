@@ -1,5 +1,5 @@
 import type { Space } from '@/types/space';
-import type { Availability, Reservation, Notification } from '@/types/reservation';
+import type { Availability, Reservation, Notification, Blocking } from '@/types/reservation';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const IS_DEV_AUTH = import.meta.env.VITE_DEV_AUTH === 'true';
@@ -54,7 +54,7 @@ export const api = {
 
   // Users
   getMe: (token: string | null) =>
-    request<{ id: string; name: string; email: string; registration: string; role: string }>(
+    request<{ id: string; name: string; email: string; registration: string; role: string; department?: string }>(
       '/users/me', token
     ),
 
@@ -71,8 +71,26 @@ export const api = {
     request<Availability>(`/spaces/${spaceId}/availability?date=${date}`, token),
 
   // Reservations
-  createReservation: (token: string | null, body: { spaceId: string; date: string; timeSlot: string; purpose: string }) =>
-    request<Reservation>('/reservations', token, { method: 'POST', body: JSON.stringify(body) }),
+  createReservation: (
+    token: string | null,
+    body: { spaceId: string; date: string; startTime: string; endTime: string; purpose: string }
+  ) => request<Reservation>('/reservations', token, { method: 'POST', body: JSON.stringify(body) }),
+
+  createRecurringReservation: (
+    token: string | null,
+    body: {
+      spaceId: string;
+      startDate: string;
+      endDate: string;
+      dayOfWeek: number; // 0 = Sunday, 6 = Saturday
+      startTime: string;
+      endTime: string;
+      description: string;
+    }
+  ) => request<{ created: number; skipped: number }>('/reservations/recurring', token, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  }),
 
   getMyReservations: (token: string | null, page = 1, limit = 20) =>
     request<{ data: Reservation[]; pagination: any }>(
@@ -81,6 +99,18 @@ export const api = {
 
   cancelReservation: (token: string | null, id: string) =>
     request<Reservation>(`/reservations/${id}/cancel`, token, { method: 'PATCH' }),
+
+  // Blockings
+  getBlockings: (token: string | null, spaceId: string) =>
+    request<{ data: Blocking[] }>(`/blockings/space/${spaceId}`, token),
+
+  createBlocking: (
+    token: string | null,
+    body: { spaceId: string; date: string; startTime: string; endTime: string; blockType: string; reason?: string }
+  ) => request<Blocking>('/blockings', token, { method: 'POST', body: JSON.stringify(body) }),
+
+  removeBlocking: (token: string | null, id: string) =>
+    request<Blocking>(`/blockings/${id}/remove`, token, { method: 'PATCH' }),
 
   // Notifications
   getNotifications: (token: string | null) =>

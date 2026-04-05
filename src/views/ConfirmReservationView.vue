@@ -41,7 +41,8 @@ async function handleConfirm() {
     await api.createReservation(auth.token, {
       spaceId: reservationStore.spaceId!,
       date: reservationStore.date!,
-      timeSlot: reservationStore.timeSlot!,
+      startTime: reservationStore.startTime!,
+      endTime: reservationStore.endTime!,
       purpose: reservationStore.purpose!,
     });
     reservationStore.reset();
@@ -72,7 +73,7 @@ async function handleConfirm() {
       </div>
       <div class="confirm-row">
         <span class="confirm-label">Período</span>
-        <span class="confirm-value">{{ slotLabel(reservationStore.timeSlot!) }}</span>
+        <span class="confirm-value">{{ slotLabel(reservationStore.selectedSlot!) }}</span>
       </div>
       <div class="confirm-row">
         <span class="confirm-label">Finalidade</span>
