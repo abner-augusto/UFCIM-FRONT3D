@@ -7,15 +7,18 @@ export const TIME_SLOT_RANGES: Record<TimeSlot, { startTime: string; endTime: st
   evening:   { startTime: '18:00', endTime: '22:00' },
 };
 
-export interface Availability {
-  date: string;
-  spaceId: string;
-  hours: Record<string, boolean>; // e.g. { "08:00": true, "09:00": false, ... }
+export interface AvailabilitySlot {
+  startTime: string; // "HH:00"
+  endTime: string;   // "HH:00" (last slot of day uses "24:00")
+  status: 'available' | 'reserved' | 'blocked' | 'closed';
 }
 
+// The availability endpoint returns AvailabilitySlot[] directly (no wrapper object).
+export type Availability = AvailabilitySlot[];
+
 /**
- * Returns true only if all hours in the slot's range are available.
- * morning: 08:00–11:00, afternoon: 13:00–16:00, evening: 18:00–21:00
+ * Returns true only if every hourly slot in the named range is 'available'.
+ * morning: 08:00–12:00, afternoon: 13:00–17:00, evening: 18:00–22:00
  */
 export function isSlotAvailable(availability: Availability, slot: TimeSlot): boolean {
   const { startTime, endTime } = TIME_SLOT_RANGES[slot];
@@ -23,7 +26,8 @@ export function isSlotAvailable(availability: Availability, slot: TimeSlot): boo
   const endHour = parseInt(endTime.split(':')[0], 10);
   for (let h = startHour; h < endHour; h++) {
     const key = `${String(h).padStart(2, '0')}:00`;
-    if (!availability.hours[key]) return false;
+    const entry = availability.find(s => s.startTime === key);
+    if (!entry || entry.status !== 'available') return false;
   }
   return true;
 }
@@ -68,9 +72,9 @@ export const BLOCK_TYPE_LABELS: Record<Blocking['blockType'], string> = {
 };
 
 export const TIME_SLOT_LABELS: Record<TimeSlot, string> = {
-  morning: 'Manhã (08h–12h)',
-  afternoon: 'Tarde (13h–17h)',
-  evening: 'Noite (18h–22h)',
+  morning: 'Manhã',
+  afternoon: 'Tarde',
+  evening: 'Noite',
 };
 
 export const PURPOSE_OPTIONS = [

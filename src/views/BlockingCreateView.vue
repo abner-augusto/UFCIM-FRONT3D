@@ -105,7 +105,7 @@ async function handleSubmit() {
             :class="{ 'slot-btn--selected': selectedSlot === slot }"
             @click="selectedSlot = slot as TimeSlot"
           >
-            {{ label }}
+            {{ label }} ({{ TIME_SLOT_RANGES[slot as TimeSlot].startTime }}–{{ TIME_SLOT_RANGES[slot as TimeSlot].endTime }})
           </button>
         </div>
       </div>

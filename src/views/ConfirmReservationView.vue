@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useReservationStore } from '@/stores/reservation';
@@ -22,8 +22,13 @@ onMounted(() => {
 const purposeLabel = (value: string) =>
   PURPOSE_OPTIONS.find((o) => o.value === value)?.label ?? value;
 
-const slotLabel = (slot: string) =>
-  TIME_SLOT_LABELS[slot as keyof typeof TIME_SLOT_LABELS] ?? slot;
+const periodLabel = computed(() => {
+  const range = `${reservationStore.startTime}–${reservationStore.endTime}`;
+  if (reservationStore.selectedSlot) {
+    return `${range} (${TIME_SLOT_LABELS[reservationStore.selectedSlot]})`;
+  }
+  return range;
+});
 
 const dateLabel = (iso: string) =>
   new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR', {
@@ -73,7 +78,7 @@ async function handleConfirm() {
       </div>
       <div class="confirm-row">
         <span class="confirm-label">Período</span>
-        <span class="confirm-value">{{ slotLabel(reservationStore.selectedSlot!) }}</span>
+        <span class="confirm-value">{{ periodLabel }}</span>
       </div>
       <div class="confirm-row">
         <span class="confirm-label">Finalidade</span>

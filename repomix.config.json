@@ -1,0 +1,43 @@
+{
+  "output": {
+    "filePath": "repomix-output.xml",
+    "style": "xml",
+    "headerText": "UFCIM-FRONT3D — Vue 3 + Three.js reservation frontend",
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "showLineNumbers": true,
+    "copyToClipboard": false
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.vue",
+    "src/**/*.js",
+    "index.html",
+    "vite.config.ts",
+    "tsconfig.json",
+    "package.json",
+    "CLAUDE.md",
+    "public/assets/models/IAUD/manifest.json",
+    "public/assets/pins_db_popup.json"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "public/assets/models/**/*.glb",
+      "public/assets/models/**/*.gltf",
+      "public/assets/fonts/**",
+      "public/assets/pin.png",
+      "public/assets/pin.bak",
+      "node_modules/**",
+      "dist/**",
+      "*.lock",
+      "package-lock.json",
+      "data/**",
+      "tools/**",
+      "CHANGELOG.md",
+      "UFCIM_FRONTEND_BUILD_PLAN.md",
+      "repomix-output.xml"
+    ]
+  }
+}

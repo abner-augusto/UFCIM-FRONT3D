@@ -27,7 +27,7 @@ export const campuses: Campus[] = [
     neighborhood: 'Benfica',
     buildings: ['Instituto de Arquitetura e Design (IAUD)'],
     active: true,
-    description: 'Instituto de Arquitetura e Design da UFC',
+    description: 'IAUD, FACED, FEAAC, FADIR e Centro de Humanidades',
     departments: [
       {
         id: 'iaud',

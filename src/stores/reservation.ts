@@ -13,7 +13,7 @@ export const useReservationStore = defineStore('reservation', () => {
   const purpose = ref<string | null>(null);
 
   const isReady = computed(() =>
-    !!(spaceId.value && date.value && selectedSlot.value && purpose.value)
+    !!(spaceId.value && date.value && startTime.value && endTime.value && purpose.value)
   );
 
   function setSpace(id: string, name: string) {
@@ -26,6 +26,13 @@ export const useReservationStore = defineStore('reservation', () => {
     selectedSlot.value = slot;
     startTime.value = TIME_SLOT_RANGES[slot].startTime;
     endTime.value = TIME_SLOT_RANGES[slot].endTime;
+  }
+
+  function setCustomSchedule(d: string, start: string, end: string) {
+    date.value = d;
+    selectedSlot.value = null;
+    startTime.value = start;
+    endTime.value = end;
   }
 
   function setPurpose(p: string) {
@@ -46,6 +53,6 @@ export const useReservationStore = defineStore('reservation', () => {
     spaceId, spaceName, date,
     selectedSlot, startTime, endTime,
     purpose, isReady,
-    setSpace, setSchedule, setPurpose, reset,
+    setSpace, setSchedule, setCustomSchedule, setPurpose, reset,
   };
 });

@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useReservationStore } from '@/stores/reservation';
 import { api } from '@/services/api';
 import type { Space } from '@/types/space';
-import type { Availability, TimeSlot } from '@/types/reservation';
+import type { Availability, AvailabilitySlot, TimeSlot } from '@/types/reservation';
 import { TIME_SLOT_LABELS, TIME_SLOT_RANGES, PURPOSE_OPTIONS, isSlotAvailable } from '@/types/reservation';
 import { hasRole, CAN_RESERVE, CAN_CREATE_RECURRING } from '@/utils/roles';
 
@@ -19,11 +19,21 @@ const spaceId = route.params.spaceId as string;
 const space = ref<Space | null>(null);
 const availability = ref<Availability | null>(null);
 const selectedDate = ref('');
-const selectedSlot = ref<TimeSlot | null>(null);
 const selectedPurpose = ref('');
 const loadingSpace = ref(true);
 const loadingAvailability = ref(false);
 const errorMsg = ref<string | null>(null);
+
+// ── Selection mode ──────────────────────────────────────────────
+type SelectionMode = 'slots' | 'hours';
+const selectionMode = ref<SelectionMode>('slots');
+
+// Named-slot mode
+const selectedSlot = ref<TimeSlot | null>(null);
+
+// Hour-by-hour mode
+const pickedStart = ref<string | null>(null);
+const pickedEnd = ref<string | null>(null);
 
 // Recurring reservation state
 const isRecurring = ref(false);
@@ -56,6 +66,8 @@ onMounted(async () => {
 watch(selectedDate, async (date) => {
   if (!date) return;
   selectedSlot.value = null;
+  pickedStart.value = null;
+  pickedEnd.value = null;
   loadingAvailability.value = true;
   try {
     availability.value = await api.getAvailability(auth.token, spaceId, date);
@@ -66,24 +78,137 @@ watch(selectedDate, async (date) => {
   }
 });
 
+watch(selectionMode, () => {
+  selectedSlot.value = null;
+  pickedStart.value = null;
+  pickedEnd.value = null;
+});
+
+// ── Named-slot helpers ──────────────────────────────────────────
 function checkSlotAvailable(slot: TimeSlot): boolean {
   if (!availability.value) return false;
   return isSlotAvailable(availability.value, slot);
 }
 
-function canContinue() {
-  return selectedDate.value && selectedSlot.value && selectedPurpose.value;
+// ── Hour-picker helpers ─────────────────────────────────────────
+const sortedHours = computed<AvailabilitySlot[]>(() => {
+  if (!availability.value) return [];
+  return [...availability.value].sort((a, b) => a.startTime.localeCompare(b.startTime));
+});
+
+function hourLabel(h: string): string {
+  return h.replace(':00', 'h');
+}
+
+function isHourAvailable(slot: AvailabilitySlot): boolean {
+  return slot.status === 'available';
+}
+
+function hoursInRange(start: string, end: string): string[] {
+  const result: string[] = [];
+  for (const s of sortedHours.value) {
+    if (s.startTime >= start && s.startTime < end) result.push(s.startTime);
+  }
+  return result;
+}
+
+function rangeFullyAvailable(start: string, end: string): boolean {
+  const hours = hoursInRange(start, end);
+  return hours.every(h => {
+    const s = sortedHours.value.find(x => x.startTime === h);
+    return s?.status === 'available';
+  });
+}
+
+function getHourState(slot: AvailabilitySlot): 'available' | 'selected' | 'endpoint' | 'unavailable' {
+  if (!isHourAvailable(slot)) return 'unavailable';
+  const h = slot.startTime;
+  if (!pickedStart.value) return 'available';
+  if (pickedEnd.value) {
+    if (h === pickedStart.value || h === pickedEnd.value) return 'endpoint';
+    if (h > pickedStart.value && h < pickedEnd.value) return 'selected';
+    return 'available';
+  }
+  if (h === pickedStart.value) return 'endpoint';
+  return 'available';
+}
+
+function handleHourClick(slot: AvailabilitySlot) {
+  if (!isHourAvailable(slot)) return;
+  const h = slot.startTime;
+
+  // Nothing picked yet → set start
+  if (!pickedStart.value) {
+    pickedStart.value = h;
+    pickedEnd.value = null;
+    return;
+  }
+
+  // Clicking the already-picked start → clear
+  if (h === pickedStart.value && !pickedEnd.value) {
+    pickedStart.value = null;
+    return;
+  }
+
+  // Both already set → restart from clicked hour
+  if (pickedEnd.value) {
+    pickedStart.value = h;
+    pickedEnd.value = null;
+    return;
+  }
+
+  // Start is set, no end yet → set end
+  const [lo, hi] = h > pickedStart.value
+    ? [pickedStart.value, h]
+    : [h, pickedStart.value];
+
+  // endTime of the range = endTime of the last slot in the selection
+  const lastSlot = sortedHours.value.find(s => s.startTime === hi);
+  const rangeEnd = lastSlot?.endTime ?? hi;
+
+  if (!rangeFullyAvailable(lo, rangeEnd)) {
+    // Range contains unavailable hours — restart
+    pickedStart.value = h;
+    pickedEnd.value = null;
+    return;
+  }
+
+  pickedStart.value = lo;
+  pickedEnd.value = hi; // hi is the startTime of the last selected hour
+}
+
+const customRangeEnd = computed<string | null>(() => {
+  if (!pickedEnd.value) return null;
+  const lastSlot = sortedHours.value.find(s => s.startTime === pickedEnd.value);
+  return lastSlot?.endTime ?? null;
+});
+
+const customRangeLabel = computed<string | null>(() => {
+  if (!pickedStart.value) return null;
+  if (!pickedEnd.value) return `A partir de ${hourLabel(pickedStart.value)} — selecione o horário final`;
+  return `${hourLabel(pickedStart.value)} – ${hourLabel(customRangeEnd.value ?? pickedEnd.value)}`;
+});
+
+// ── Can continue? ───────────────────────────────────────────────
+function canContinue(): boolean {
+  if (!selectedDate.value || !selectedPurpose.value) return false;
+  if (selectionMode.value === 'slots') return !!selectedSlot.value;
+  return !!(pickedStart.value && pickedEnd.value);
 }
 
 function handleContinue() {
   if (!canContinue() || !space.value) return;
   reservationStore.setSpace(spaceId, space.value.name);
-  reservationStore.setSchedule(selectedDate.value, selectedSlot.value!);
+  if (selectionMode.value === 'slots') {
+    reservationStore.setSchedule(selectedDate.value, selectedSlot.value!);
+  } else {
+    reservationStore.setCustomSchedule(selectedDate.value, pickedStart.value!, customRangeEnd.value!);
+  }
   reservationStore.setPurpose(selectedPurpose.value);
   router.push({ name: 'reservation-confirm' });
 }
 
-// Recurring form validation
+// ── Recurring ───────────────────────────────────────────────────
 const recurringMinEndDate = computed(() => {
   if (!recurringStartDate.value) return today;
   const d = new Date(recurringStartDate.value + 'T12:00:00');
@@ -145,7 +270,7 @@ async function handleRecurring() {
         <p v-if="space.capacity" class="space-capacity">Capacidade: {{ space.capacity }} pessoas</p>
       </div>
 
-      <!-- Recurring toggle — only for professor / staff -->
+      <!-- Recurring toggle -->
       <div v-if="canRecurring" class="form-section recurring-toggle-row">
         <label class="toggle-label">
           <input type="checkbox" v-model="isRecurring" />
@@ -157,18 +282,27 @@ async function handleRecurring() {
       <template v-if="!isRecurring">
         <div class="form-section">
           <label class="form-label">Data da reserva</label>
-          <input
-            type="date"
-            class="form-input"
-            v-model="selectedDate"
-            :min="today"
-          />
+          <input type="date" class="form-input" v-model="selectedDate" :min="today" />
         </div>
 
         <div v-if="selectedDate" class="form-section">
-          <label class="form-label">Período</label>
+          <div class="period-mode-bar">
+            <button
+              class="mode-btn"
+              :class="{ 'mode-btn--active': selectionMode === 'slots' }"
+              @click="selectionMode = 'slots'"
+            >Períodos</button>
+            <button
+              class="mode-btn"
+              :class="{ 'mode-btn--active': selectionMode === 'hours' }"
+              @click="selectionMode = 'hours'"
+            >Horários</button>
+          </div>
+
           <div v-if="loadingAvailability" class="state-msg">Verificando disponibilidade...</div>
-          <div v-else class="slot-grid">
+
+          <!-- Named slots -->
+          <div v-else-if="selectionMode === 'slots'" class="slot-grid">
             <button
               v-for="(label, slot) in TIME_SLOT_LABELS"
               :key="slot"
@@ -180,12 +314,31 @@ async function handleRecurring() {
               :disabled="!checkSlotAvailable(slot as TimeSlot)"
               @click="selectedSlot = slot as TimeSlot"
             >
-              {{ label }}
+              {{ label }} ({{ TIME_SLOT_RANGES[slot as TimeSlot].startTime }}–{{ TIME_SLOT_RANGES[slot as TimeSlot].endTime }})
             </button>
+          </div>
+
+          <!-- Hour-by-hour picker -->
+          <div v-else class="hour-picker">
+            <p class="hour-picker__hint">
+              {{ customRangeLabel ?? 'Toque em um horário para iniciar a seleção' }}
+            </p>
+            <div class="hour-grid">
+              <button
+                v-for="s in sortedHours"
+                :key="s.startTime"
+                class="hour-btn"
+                :class="`hour-btn--${getHourState(s)}`"
+                :disabled="!isHourAvailable(s)"
+                @click="handleHourClick(s)"
+              >
+                {{ hourLabel(s.startTime) }}
+              </button>
+            </div>
           </div>
         </div>
 
-        <div v-if="selectedSlot" class="form-section">
+        <div v-if="selectedSlot || (selectionMode === 'hours' && pickedStart && pickedEnd)" class="form-section">
           <label class="form-label">Finalidade</label>
           <select class="form-input" v-model="selectedPurpose">
             <option value="" disabled>Selecione uma finalidade</option>
@@ -197,11 +350,7 @@ async function handleRecurring() {
 
         <p v-if="errorMsg" class="state-error">{{ errorMsg }}</p>
 
-        <button
-          class="continue-btn"
-          :disabled="!canContinue()"
-          @click="handleContinue"
-        >
+        <button class="continue-btn" :disabled="!canContinue()" @click="handleContinue">
           Continuar
         </button>
       </template>
@@ -210,22 +359,12 @@ async function handleRecurring() {
       <template v-else>
         <div class="form-section">
           <label class="form-label">Data de início</label>
-          <input
-            type="date"
-            class="form-input"
-            v-model="recurringStartDate"
-            :min="today"
-          />
+          <input type="date" class="form-input" v-model="recurringStartDate" :min="today" />
         </div>
 
         <div class="form-section">
           <label class="form-label">Data de fim</label>
-          <input
-            type="date"
-            class="form-input"
-            v-model="recurringEndDate"
-            :min="recurringMinEndDate"
-          />
+          <input type="date" class="form-input" v-model="recurringEndDate" :min="recurringMinEndDate" />
         </div>
 
         <div class="form-section">
@@ -252,7 +391,7 @@ async function handleRecurring() {
               :class="{ 'slot-btn--selected': selectedSlot === slot }"
               @click="selectedSlot = slot as TimeSlot"
             >
-              {{ label }}
+              {{ label }} ({{ TIME_SLOT_RANGES[slot as TimeSlot].startTime }}–{{ TIME_SLOT_RANGES[slot as TimeSlot].endTime }})
             </button>
           </div>
         </div>
@@ -312,22 +451,10 @@ async function handleRecurring() {
   padding: 1rem 1.25rem;
   margin-bottom: 1.5rem;
 }
-.space-info h2 {
-  margin: 0 0 0.25rem;
-  font-size: 1.1rem;
-}
-.space-info p {
-  margin: 0;
-  color: #666;
-  font-size: 0.85rem;
-}
-.space-capacity {
-  margin-top: 0.35rem !important;
-}
-.recurring-toggle-row {
-  display: flex;
-  align-items: center;
-}
+.space-info h2 { margin: 0 0 0.25rem; font-size: 1.1rem; }
+.space-info p  { margin: 0; color: #666; font-size: 0.85rem; }
+.space-capacity { margin-top: 0.35rem !important; }
+.recurring-toggle-row { display: flex; align-items: center; }
 .toggle-label {
   display: flex;
   align-items: center;
@@ -337,9 +464,7 @@ async function handleRecurring() {
   color: #333;
   cursor: pointer;
 }
-.form-section {
-  margin-bottom: 1.25rem;
-}
+.form-section { margin-bottom: 1.25rem; }
 .form-label {
   display: block;
   font-size: 0.9rem;
@@ -355,11 +480,34 @@ async function handleRecurring() {
   font-size: 0.95rem;
   box-sizing: border-box;
 }
-.slot-grid {
+
+/* Mode toggle */
+.period-mode-bar {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
 }
+.mode-btn {
+  flex: 1;
+  padding: 0.5rem;
+  border: none;
+  background: white;
+  font-size: 0.875rem;
+  cursor: pointer;
+  color: #555;
+  transition: background 0.15s, color 0.15s;
+}
+.mode-btn + .mode-btn { border-left: 1px solid #ddd; }
+.mode-btn--active {
+  background: #1D9E75;
+  color: white;
+  font-weight: 600;
+}
+
+/* Named slots */
+.slot-grid { display: flex; flex-direction: column; gap: 0.5rem; }
 .slot-btn {
   padding: 0.75rem 1rem;
   border: 1px solid #ddd;
@@ -381,6 +529,48 @@ async function handleRecurring() {
   cursor: not-allowed;
   background: #f5f5f5;
 }
+
+/* Hour picker */
+.hour-picker__hint {
+  font-size: 0.8rem;
+  color: #888;
+  margin: 0 0 0.6rem;
+  min-height: 1.2em;
+}
+.hour-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
+}
+.hour-btn {
+  padding: 0.55rem 0;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.hour-btn--available:hover { border-color: #1D9E75; }
+.hour-btn--selected {
+  background: #e8f5f0;
+  border-color: #1D9E75;
+  color: #1D9E75;
+}
+.hour-btn--endpoint {
+  background: #1D9E75;
+  border-color: #1D9E75;
+  color: white;
+  font-weight: 600;
+}
+.hour-btn--unavailable {
+  opacity: 0.35;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+
+/* Continue */
 .continue-btn {
   width: 100%;
   padding: 0.85rem;
@@ -393,27 +583,9 @@ async function handleRecurring() {
   cursor: pointer;
   margin-top: 0.5rem;
 }
-.continue-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.continue-btn:hover:not(:disabled) {
-  background: #178a65;
-}
-.state-msg {
-  color: #888;
-  font-size: 0.9rem;
-  padding: 0.5rem 0;
-}
-.state-error {
-  color: #c0392b;
-  font-size: 0.9rem;
-  margin-bottom: 0.75rem;
-}
-.state-success {
-  color: #1D9E75;
-  font-size: 0.9rem;
-  font-weight: 500;
-  margin-bottom: 0.75rem;
-}
+.continue-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.continue-btn:hover:not(:disabled) { background: #178a65; }
+.state-msg   { color: #888; font-size: 0.9rem; padding: 0.5rem 0; }
+.state-error { color: #c0392b; font-size: 0.9rem; margin-bottom: 0.75rem; }
+.state-success { color: #1D9E75; font-size: 0.9rem; font-weight: 500; margin-bottom: 0.75rem; }
 </style>
