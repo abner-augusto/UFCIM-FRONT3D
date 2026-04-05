@@ -3,7 +3,8 @@ import { ref, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
 import type { Reservation } from '@/types/reservation';
-import { TIME_SLOT_LABELS, STATUS_LABELS } from '@/types/reservation';
+import { TIME_SLOT_LABELS, TIME_SLOT_RANGES, STATUS_LABELS } from '@/types/reservation';
+import type { TimeSlot } from '@/types/reservation';
 
 const auth = useAuthStore();
 
@@ -48,6 +49,13 @@ const dateLabel = (iso: string) =>
     month: 'long',
     year: 'numeric',
   });
+
+function periodLabel(startTime: string, endTime: string): string {
+  const namedSlot = (Object.entries(TIME_SLOT_RANGES) as [TimeSlot, { startTime: string; endTime: string }][])
+    .find(([, r]) => r.startTime === startTime && r.endTime === endTime);
+  const range = `${startTime}–${endTime}`;
+  return namedSlot ? `${range} (${TIME_SLOT_LABELS[namedSlot[0]]})` : range;
+}
 </script>
 
 <template>
@@ -65,7 +73,7 @@ const dateLabel = (iso: string) =>
         <div class="reservation-card__info">
           <h3>{{ r.spaceName }}</h3>
           <p>{{ dateLabel(r.date) }}</p>
-          <p>{{ TIME_SLOT_LABELS[r.timeSlot] }}</p>
+          <p>{{ periodLabel(r.startTime, r.endTime) }}</p>
         </div>
         <div class="reservation-card__right">
           <span class="status-badge" :class="`status-badge--${r.status}`">
