@@ -21,6 +21,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/campus/:campusId/departamento',
+      name: 'department-select',
+      component: () => import('@/views/DepartmentSelectView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/campus/:campusId/viewer',
       name: 'viewer',
       component: () => import('@/views/ViewerView.vue'),

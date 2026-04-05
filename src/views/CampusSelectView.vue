@@ -9,7 +9,12 @@ const campusStore = useCampusStore();
 
 function handleSelect(campusId: string) {
   campusStore.selectCampus(campusId);
-  router.push({ name: 'viewer', params: { campusId } });
+  const campus = campuses.find(c => c.id === campusId);
+  if (campus?.departments?.length) {
+    router.push({ name: 'department-select', params: { campusId } });
+  } else {
+    router.push({ name: 'viewer', params: { campusId } });
+  }
 }
 </script>
 

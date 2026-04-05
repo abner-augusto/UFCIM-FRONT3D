@@ -1,3 +1,11 @@
+export interface Department {
+  id: string;
+  name: string;
+  shortName: string;
+  description: string;
+  active: boolean;
+}
+
 export interface Campus {
   id: string;
   name: string;
@@ -7,6 +15,7 @@ export interface Campus {
   buildings: string[];
   active: boolean;
   description: string;
+  departments?: Department[];
 }
 
 export const campuses: Campus[] = [
@@ -19,6 +28,43 @@ export const campuses: Campus[] = [
     buildings: ['Instituto de Arquitetura e Design (IAUD)'],
     active: true,
     description: 'Instituto de Arquitetura e Design da UFC',
+    departments: [
+      {
+        id: 'iaud',
+        name: 'Instituto de Arquitetura e Design',
+        shortName: 'IAUD',
+        description: 'Cursos de Arquitetura e Urbanismo e Design',
+        active: true,
+      },
+      {
+        id: 'faced',
+        name: 'Faculdade de Educação',
+        shortName: 'FACED',
+        description: 'Cursos de licenciatura e pedagogia',
+        active: false,
+      },
+      {
+        id: 'feaac',
+        name: 'Faculdade de Economia, Administração, Atuária e Contabilidade',
+        shortName: 'FEAAC',
+        description: 'Economia, Administração, Atuária e Contabilidade',
+        active: false,
+      },
+      {
+        id: 'fadir',
+        name: 'Faculdade de Direito',
+        shortName: 'FADIR',
+        description: 'Curso de Direito',
+        active: false,
+      },
+      {
+        id: 'humanidades',
+        name: 'Centro de Humanidades',
+        shortName: 'Centro de Humanidades',
+        description: 'Ciências Sociais, Filosofia, Psicologia e História',
+        active: false,
+      },
+    ],
   },
   {
     id: 'pici',
