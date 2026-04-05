@@ -8,6 +8,7 @@
     "build": "npm run build:manifest && vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "type-check": "vue-tsc --noEmit",
+    "test": "vitest run",
     "build:manifest": "node tools/modelManifest.js scan public/assets/models/IAUD",
     "build:pins": "node tools/xlsxToPopupDB.js --input data/qt.Ativos.xlsx --output public/assets/pins_db_popup.json"
   },
@@ -28,6 +29,7 @@
     "commander": "^14.0.1",
     "typescript": "^6.0.2",
     "vite-plugin-pwa": "^1.2.0",
+    "vitest": "^4.1.2",
     "vue-tsc": "^3.2.6",
     "workbox-precaching": "^7.4.0",
     "xlsx": "^0.18.5"

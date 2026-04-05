@@ -6,6 +6,10 @@ import { hasRole, CAN_RESERVE, CAN_BLOCK } from '@/utils/roles';
 
 const props = defineProps<{
   space: Space;
+  reserveDisabled?: boolean;
+  reserveDisabledReason?: string | null;
+  blockingReason?: string | null;
+  loadingReservationState?: boolean;
 }>();
 
 defineEmits<{
@@ -64,10 +68,22 @@ const openHours = computed(() => {
       </ul>
       <p v-if="space.description" class="room-popup__description">{{ space.description }}</p>
 
+      <div v-if="blockingReason" class="room-popup__notice">
+        <p class="room-popup__notice-label">Motivo do bloqueio</p>
+        <p class="room-popup__notice-text">{{ blockingReason }}</p>
+      </div>
+
       <div class="room-popup__actions">
-        <button v-if="canReserve" class="room-popup__reserve" @click="$emit('reserve')">
+        <button
+          v-if="canReserve"
+          class="room-popup__reserve"
+          :disabled="reserveDisabled || loadingReservationState"
+          @click="$emit('reserve')"
+        >
           Fazer Reserva
         </button>
+        <p v-if="loadingReservationState" class="room-popup__action-hint">Verificando disponibilidade...</p>
+        <p v-else-if="reserveDisabledReason" class="room-popup__action-hint">{{ reserveDisabledReason }}</p>
         <button v-if="canBlock" class="room-popup__block" @click="$emit('block')">
           Bloquear Espaço
         </button>
@@ -137,6 +153,24 @@ const openHours = computed(() => {
   font-size: 0.85rem;
   margin: 0.75rem 0 0;
 }
+.room-popup__notice {
+  margin-top: 0.9rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: #f8f8f8;
+}
+.room-popup__notice-label {
+  margin: 0 0 0.25rem;
+  color: #555;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.room-popup__notice-text {
+  margin: 0;
+  color: #333;
+  font-size: 0.85rem;
+}
 .room-popup__actions {
   margin-top: 0.5rem;
   display: flex;
@@ -155,6 +189,15 @@ const openHours = computed(() => {
 }
 .room-popup__reserve:hover {
   background: #178a65;
+}
+.room-popup__reserve:disabled {
+  background: #b8c8c2;
+  cursor: not-allowed;
+}
+.room-popup__action-hint {
+  margin: 0;
+  color: #666;
+  font-size: 0.8rem;
 }
 .room-popup__block {
   width: 100%;

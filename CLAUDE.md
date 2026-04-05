@@ -8,6 +8,8 @@ UFCIM-FRONT3D — the frontend SPA for UFCIM (Federal University of Ceará Infra
 
 The backend API lives in a separate repository and is already complete (Hono + Drizzle ORM on Cloudflare Workers + D1). This frontend consumes it.
 
+Before making changes that depend on backend contracts, endpoints, payloads, or business rules, always read `docs/UFCIM-API-REFERENCE.md`.
+
 ## Stack
 
 | Layer | Technology | Notes |

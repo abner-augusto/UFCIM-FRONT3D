@@ -5,8 +5,8 @@ import { useAuthStore } from '@/stores/auth';
 import { useReservationStore } from '@/stores/reservation';
 import { api } from '@/services/api';
 import type { Space } from '@/types/space';
-import type { Availability, AvailabilitySlot, TimeSlot } from '@/types/reservation';
-import { TIME_SLOT_LABELS, TIME_SLOT_RANGES, PURPOSE_OPTIONS, isSlotAvailable } from '@/types/reservation';
+import type { Availability, AvailabilitySlot, Blocking, TimeSlot } from '@/types/reservation';
+import { BLOCK_TYPE_LABELS, TIME_SLOT_LABELS, TIME_SLOT_RANGES, PURPOSE_OPTIONS, isSlotAvailable } from '@/types/reservation';
 import { hasRole, CAN_RESERVE, CAN_CREATE_RECURRING } from '@/utils/roles';
 
 const route = useRoute();
@@ -22,7 +22,9 @@ const selectedDate = ref('');
 const selectedPurpose = ref('');
 const loadingSpace = ref(true);
 const loadingAvailability = ref(false);
+const loadingBlockings = ref(false);
 const errorMsg = ref<string | null>(null);
+const blockings = ref<Blocking[]>([]);
 
 // ── Selection mode ──────────────────────────────────────────────
 type SelectionMode = 'slots' | 'hours';
@@ -54,11 +56,26 @@ onMounted(async () => {
     router.replace({ name: 'campus-select' });
     return;
   }
+  loadingBlockings.value = true;
   try {
-    space.value = await api.getSpace(auth.token, spaceId);
+    const [spaceResult, blockingResult] = await Promise.allSettled([
+      api.getSpace(auth.token, spaceId),
+      api.getBlockings(auth.token, spaceId),
+    ]);
+
+    if (spaceResult.status === 'fulfilled') {
+      space.value = spaceResult.value;
+    } else {
+      errorMsg.value = 'Não foi possível carregar os dados do espaço.';
+    }
+
+    if (blockingResult.status === 'fulfilled') {
+      blockings.value = blockingResult.value;
+    }
   } catch {
     errorMsg.value = 'Não foi possível carregar os dados do espaço.';
   } finally {
+    loadingBlockings.value = false;
     loadingSpace.value = false;
   }
 });
@@ -89,6 +106,27 @@ function checkSlotAvailable(slot: TimeSlot): boolean {
   if (!availability.value) return false;
   return isSlotAvailable(availability.value, slot);
 }
+
+function formatBlockingReason(blocking: Blocking): string {
+  const typeLabel = BLOCK_TYPE_LABELS[blocking.blockType];
+  const reason = blocking.reason?.trim();
+  const timeRange = `${blocking.startTime}–${blocking.endTime}`;
+  return reason ? `${timeRange} · ${typeLabel}: ${reason}` : `${timeRange} · ${typeLabel}`;
+}
+
+const selectedDateBlockings = computed(() => {
+  if (!selectedDate.value) return [];
+  return blockings.value.filter(
+    (blocking) => blocking.status === 'active' && blocking.date === selectedDate.value,
+  );
+});
+
+const reservationStatusMessage = computed(() => {
+  if (space.value?.isActive === false) {
+    return 'Este espaço não está disponível para reserva.';
+  }
+  return null;
+});
 
 // ── Hour-picker helpers ─────────────────────────────────────────
 const sortedHours = computed<AvailabilitySlot[]>(() => {
@@ -191,6 +229,7 @@ const customRangeLabel = computed<string | null>(() => {
 
 // ── Can continue? ───────────────────────────────────────────────
 function canContinue(): boolean {
+  if (space.value?.isActive === false) return false;
   if (!selectedDate.value || !selectedPurpose.value) return false;
   if (selectionMode.value === 'slots') return !!selectedSlot.value;
   return !!(pickedStart.value && pickedEnd.value);
@@ -218,6 +257,7 @@ const recurringMinEndDate = computed(() => {
 
 function canSubmitRecurring() {
   return (
+    space.value?.isActive !== false &&
     recurringStartDate.value &&
     recurringEndDate.value &&
     recurringEndDate.value > recurringStartDate.value &&
@@ -243,7 +283,7 @@ async function handleRecurring() {
       endTime,
       description: recurringDescription.value.trim(),
     });
-    recurringSuccessMsg.value = `${result.created} reservas criadas, ${result.skipped} conflitos ignorados.`;
+    recurringSuccessMsg.value = `${result.created.length} reservas criadas, ${result.skipped.length} conflitos ignorados.`;
     setTimeout(() => router.push({ name: 'my-reservations' }), 2000);
   } catch (e: any) {
     errorMsg.value = e?.message || 'Não foi possível criar as reservas recorrentes.';
@@ -270,6 +310,7 @@ async function handleRecurring() {
         <p v-if="space.capacity" class="space-capacity">Capacidade: {{ space.capacity }} pessoas</p>
         <p v-if="space.department" class="space-meta">{{ space.department }}</p>
         <p v-if="space.hvac" class="space-meta">🌡 {{ space.hvac }}</p>
+        <p v-if="reservationStatusMessage" class="space-warning">{{ reservationStatusMessage }}</p>
       </div>
 
       <!-- Recurring toggle -->
@@ -285,6 +326,17 @@ async function handleRecurring() {
         <div class="form-section">
           <label class="form-label">Data da reserva</label>
           <input type="date" class="form-input" v-model="selectedDate" :min="today" />
+          <p v-if="loadingBlockings && selectedDate" class="form-hint">Verificando bloqueios do dia...</p>
+          <div v-else-if="selectedDateBlockings.length" class="blocking-notice">
+            <p class="blocking-notice__title">Bloqueios neste dia</p>
+            <p
+              v-for="blocking in selectedDateBlockings"
+              :key="blocking.id"
+              class="blocking-notice__item"
+            >
+              {{ formatBlockingReason(blocking) }}
+            </p>
+          </div>
         </div>
 
         <div v-if="selectedDate" class="form-section">
@@ -456,6 +508,11 @@ async function handleRecurring() {
 .space-info h2 { margin: 0 0 0.25rem; font-size: 1.1rem; }
 .space-info p  { margin: 0; color: #666; font-size: 0.85rem; }
 .space-capacity { margin-top: 0.35rem !important; }
+.space-warning {
+  margin-top: 0.5rem !important;
+  color: #b42318 !important;
+  font-weight: 600;
+}
 .recurring-toggle-row { display: flex; align-items: center; }
 .toggle-label {
   display: flex;
@@ -481,6 +538,28 @@ async function handleRecurring() {
   border-radius: 8px;
   font-size: 0.95rem;
   box-sizing: border-box;
+}
+.form-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: #666;
+}
+.blocking-notice {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #f8f8f8;
+}
+.blocking-notice__title {
+  margin: 0 0 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #555;
+}
+.blocking-notice__item {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  color: #666;
 }
 
 /* Mode toggle */

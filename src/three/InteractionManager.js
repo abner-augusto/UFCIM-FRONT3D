@@ -159,6 +159,16 @@ export class InteractionManager extends THREE.EventDispatcher {
         sprite.material.color.set(hexColor);
     }
 
+    setPinOpacity(pinId, opacity) {
+        const sprite = this.interactiveObjects.find(s => s.userData.id === pinId);
+        if (!sprite) return;
+        sprite.material.opacity = opacity;
+        sprite.material.transparent = true;
+        sprite.userData.opensPopup = opacity > 0;
+        const building = sprite.userData.building;
+        if (building) this._updatePinsForBuilding(building);
+    }
+
     promptPinColor(pinId) {
         const hex = window.prompt(`Enter a hex color for pin ${pinId} (e.g. #ff0000):`, '#ffffff');
         if (hex) {

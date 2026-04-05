@@ -102,6 +102,8 @@ export class PinFactory {
         const material = new THREE.SpriteMaterial({
             map: this.pinTexture,
             color: new THREE.Color(pinData.color || '#1fd97c'),
+            transparent: true,
+            alphaTest: 0.05,
             depthTest: true,
             depthWrite: false
         });
