@@ -75,9 +75,9 @@ const openHours = computed(() => {
 
       <div class="room-popup__actions">
         <button
-          v-if="canReserve"
+          v-if="canReserve && !reserveDisabled"
           class="room-popup__reserve"
-          :disabled="reserveDisabled || loadingReservationState"
+          :disabled="loadingReservationState"
           @click="$emit('reserve')"
         >
           Fazer Reserva

@@ -6,13 +6,14 @@ import type { PeriodKey } from '@/utils/period';
 
 export type { PeriodKey } from '@/utils/period';
 
-export type PinStatus = 'available' | 'partial' | 'reserved' | 'blocked';
+export type PinStatus = 'available' | 'partial' | 'reserved' | 'blocked' | 'closed';
 
 export const PERIOD_COLORS: Record<PinStatus, string> = {
   available: '#00b050',
   partial: '#f2c200',
   reserved: '#d32f2f',
   blocked: '#000000',
+  closed: '#d32f2f', // visually same as reserved, but semantically distinct
 };
 
 export function derivePinStatus(
@@ -25,7 +26,7 @@ export function derivePinStatus(
   );
   const openSlots = periodSlots.filter((slot) => slot.status !== 'closed');
 
-  if (openSlots.length === 0) return 'reserved';
+  if (openSlots.length === 0) return 'closed';
   if (openSlots.some((slot) => slot.status === 'blocked')) return 'blocked';
 
   const availableCount = openSlots.filter((slot) => slot.status === 'available').length;

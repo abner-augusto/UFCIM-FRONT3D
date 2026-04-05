@@ -44,8 +44,8 @@ describe('derivePinStatus', () => {
     expectStatus('morning', { '07:00': 'closed' }, 'available');
   });
 
-  it('returns reserved when all slots in the period are closed', () => {
-    expectStatus('morning', rangeOverrides(['07:00', '08:00', '09:00', '10:00', '11:00'], 'closed'), 'reserved');
+  it('returns closed when all slots in the period are closed', () => {
+    expectStatus('morning', rangeOverrides(['07:00', '08:00', '09:00', '10:00', '11:00'], 'closed'), 'closed');
   });
 
   it('evaluates the evening range correctly', () => {

@@ -11,7 +11,7 @@ import RoomPopup from '@/components/RoomPopup.vue';
 import PeriodSelector from '@/components/PeriodSelector.vue';
 import { getCurrentPeriod } from '@/utils/period';
 import { usePinAvailability, PERIOD_COLORS } from '@/composables/usePinAvailability';
-import type { PeriodKey } from '@/composables/usePinAvailability';
+import type { PeriodKey, PinStatus } from '@/composables/usePinAvailability';
 import { BLOCK_TYPE_LABELS, TIME_SLOT_RANGES, type Blocking } from '@/types/reservation';
 
 const route = useRoute();
@@ -33,6 +33,7 @@ const popupReservationStateLoading = ref(false);
 
 // Map<modelId, Space> — built on mount, used for O(1) pin lookup
 const spacesByModelId = new Map<string, Space>();
+let cachedStatusMap = new Map<string, PinStatus>();
 let viewerReady = false;
 let spacesLoaded = false;
 let colorUpdateSeq = 0;
@@ -55,10 +56,34 @@ async function updatePopupReservationState(space: Space) {
   popupReserveDisabled.value = false;
   popupReserveDisabledReason.value = null;
   popupBlockingReason.value = null;
+  popupReservationStateLoading.value = false;
 
   if (space.isActive === false) {
     popupReserveDisabled.value = true;
     popupReserveDisabledReason.value = 'Este espaço não está disponível para reserva.';
+    return;
+  }
+
+  const pinStatus = space.modelId ? cachedStatusMap.get(space.modelId) : undefined;
+  
+  if (pinStatus === 'closed') {
+    popupReserveDisabled.value = true;
+    popupReserveDisabledReason.value = 'Este espaço está fechado neste turno.';
+    return;
+  }
+
+  if (pinStatus === 'reserved') {
+    popupReserveDisabled.value = true;
+    popupReserveDisabledReason.value = 'Este espaço já está totalmente reservado neste turno.';
+    return;
+  }
+
+  if (pinStatus === 'blocked') {
+    popupReserveDisabled.value = true;
+    popupReserveDisabledReason.value = 'Este espaço está bloqueado para o turno selecionado.';
+  }
+
+  if (pinStatus === 'available' || pinStatus === 'partial') {
     return;
   }
 
@@ -102,6 +127,8 @@ async function applyPinColors() {
   );
 
   if (seq !== colorUpdateSeq) return;
+
+  cachedStatusMap = statusMap;
 
   const colorMap = new Map<string, string>();
   for (const [modelId, status] of statusMap.entries()) {
