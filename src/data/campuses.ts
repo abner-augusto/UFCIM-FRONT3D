@@ -27,7 +27,7 @@ export const campuses: Campus[] = [
     neighborhood: 'Benfica',
     buildings: ['Instituto de Arquitetura e Design (IAUD)'],
     active: true,
-    description: 'IAUD, FACED, FEAAC, FADIR e Centro de Humanidades',
+    description: 'Centro das Humanidades, Artes, Letras e Cultura. Abriga a Reitoria e importantes centros como CH, FADIR, FEAAC e FACED.',
     departments: [
       {
         id: 'iaud',
@@ -74,7 +74,7 @@ export const campuses: Campus[] = [
     neighborhood: 'Pici',
     buildings: [],
     active: false,
-    description: 'Campus principal com centros de Ciências, Tecnologia e Agronomia',
+    description: 'Maior campus em extensão, focado em Ciências Exatas, Tecnologia e Ciências Agrárias.',
   },
   {
     id: 'porangabucu',
@@ -84,7 +84,7 @@ export const campuses: Campus[] = [
     neighborhood: 'Porangabuçu',
     buildings: [],
     active: false,
-    description: 'Faculdade de Medicina e Hospital Universitário',
+    description: 'Especializado na área da Saúde, abrigando a Faculdade de Medicina, Farmácia, Odontologia e Enfermagem, além do Complexo Hospitalar.',
   },
   {
     id: 'quixada',
@@ -94,7 +94,7 @@ export const campuses: Campus[] = [
     neighborhood: '',
     buildings: [],
     active: false,
-    description: 'Campus de Ciência da Computação e Design Digital',
+    description: 'Referência em Tecnologia da Informação, com cursos de Ciência da Computação, Engenharia de Software, Sistemas de Informação, Redes e Design Digital.',
   },
   {
     id: 'sobral',
@@ -104,7 +104,7 @@ export const campuses: Campus[] = [
     neighborhood: '',
     buildings: [],
     active: false,
-    description: 'Engenharias e Ciências da Saúde',
+    description: 'Foco consolidado nas áreas de Saúde e Tecnologia, oferecendo cursos como Medicina, Odontologia e Engenharias.',
   },
   {
     id: 'russas',
@@ -114,7 +114,7 @@ export const campuses: Campus[] = [
     neighborhood: '',
     buildings: [],
     active: false,
-    description: 'Engenharias e Ciência da Computação',
+    description: 'Focado em Engenharia e Tecnologia para a região do Vale do Jaguaribe, incluindo Ciência da Computação e Engenharia de Software.',
   },
   {
     id: 'crateus',
@@ -124,6 +124,6 @@ export const campuses: Campus[] = [
     neighborhood: '',
     buildings: [],
     active: false,
-    description: 'Sistemas de Informação e Engenharia Civil',
+    description: 'Atende a região dos Sertões de Crateús com foco em Engenharias (Civil, Ambiental, de Minas), Ciência da Computação e Sistemas de Informação.',
   },
 ];
