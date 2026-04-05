@@ -48,7 +48,6 @@ async function handleConfirm() {
       date: reservationStore.date!,
       startTime: reservationStore.startTime!,
       endTime: reservationStore.endTime!,
-      purpose: reservationStore.purpose!,
     });
     reservationStore.reset();
     router.push({ name: 'my-reservations' });

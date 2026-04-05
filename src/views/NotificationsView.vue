@@ -19,8 +19,7 @@ async function loadNotifications() {
   loading.value = true;
   errorMsg.value = null;
   try {
-    const result = await api.getNotifications(auth.token);
-    notifications.value = result?.data ?? (Array.isArray(result) ? (result as unknown as Notification[]) : []);
+    notifications.value = await api.getNotifications(auth.token);
   } catch {
     errorMsg.value = 'Não foi possível carregar as notificações.';
   } finally {

@@ -17,7 +17,7 @@ const loadingSpace = ref(true);
 
 const selectedDate = ref('');
 const selectedSlot = ref<TimeSlot | null>(null);
-const selectedBlockType = ref<'maintenance' | 'administrative' | 'event' | ''>('');
+const selectedBlockType = ref<'maintenance' | 'administrative' | ''>('');
 const reason = ref('');
 
 const loading = ref(false);

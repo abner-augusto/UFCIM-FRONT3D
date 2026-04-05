@@ -26,7 +26,10 @@ async function request<T>(
     throw new ApiError(res.status, error.error || res.statusText, error.code, error.details);
   }
 
-  return res.json();
+  // The API never returns 204, but guard against empty bodies defensively
+  const text = await res.text();
+  if (!text) return undefined as unknown as T;
+  return JSON.parse(text) as T;
 }
 
 export class ApiError extends Error {
@@ -58,11 +61,9 @@ export const api = {
       '/users/me', token
     ),
 
-  // Spaces
-  listSpaces: (token: string | null, params?: { campus?: string; type?: string; modelId?: string }) =>
-    request<{ data: Space[]; pagination: any }>(
-      `/spaces?${new URLSearchParams(params as any)}`, token
-    ),
+  // Spaces — GET /spaces returns array directly (no data wrapper)
+  listSpaces: (token: string | null, params?: { campus?: string; block?: string; department?: string; type?: string }) =>
+    request<Space[]>(`/spaces?${new URLSearchParams(params as any)}`, token),
 
   getSpace: (token: string | null, id: string) =>
     request<Space>(`/spaces/${id}`, token),
@@ -70,10 +71,10 @@ export const api = {
   getAvailability: (token: string | null, spaceId: string, date: string) =>
     request<Availability>(`/spaces/${spaceId}/availability?date=${date}`, token),
 
-  // Reservations
+  // Reservations — GET /reservations/mine returns array directly
   createReservation: (
     token: string | null,
-    body: { spaceId: string; date: string; startTime: string; endTime: string; purpose: string }
+    body: { spaceId: string; date: string; startTime: string; endTime: string }
   ) => request<Reservation>('/reservations', token, { method: 'POST', body: JSON.stringify(body) }),
 
   createRecurringReservation: (
@@ -87,22 +88,22 @@ export const api = {
       endTime: string;
       description: string;
     }
-  ) => request<{ created: number; skipped: number }>('/reservations/recurring', token, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  }),
+  ) => request<{ recurrenceId: string; created: Reservation[]; skipped: string[] }>(
+    '/reservations/recurring', token, { method: 'POST', body: JSON.stringify(body) }
+  ),
 
   getMyReservations: (token: string | null, page = 1, limit = 20) =>
-    request<{ data: Reservation[]; pagination: any }>(
-      `/reservations/mine?page=${page}&limit=${limit}`, token
-    ),
+    request<Reservation[]>(`/reservations/mine?page=${page}&limit=${limit}`, token),
 
   cancelReservation: (token: string | null, id: string) =>
     request<Reservation>(`/reservations/${id}/cancel`, token, { method: 'PATCH' }),
 
-  // Blockings
-  getBlockings: (token: string | null, spaceId: string) =>
-    request<{ data: Blocking[] }>(`/blockings/space/${spaceId}`, token),
+  // Blockings — GET /blockings/space/:id returns array directly
+  getBlockings: (token: string | null, spaceId: string, date?: string) =>
+    request<Blocking[]>(
+      `/blockings/space/${spaceId}${date ? `?date=${date}` : ''}`,
+      token
+    ),
 
   createBlocking: (
     token: string | null,
@@ -112,13 +113,13 @@ export const api = {
   removeBlocking: (token: string | null, id: string) =>
     request<Blocking>(`/blockings/${id}/remove`, token, { method: 'PATCH' }),
 
-  // Notifications
+  // Notifications — GET /notifications returns array directly
   getNotifications: (token: string | null) =>
-    request<{ data: Notification[] }>('/notifications', token),
+    request<Notification[]>('/notifications', token),
 
   markNotificationRead: (token: string | null, id: string) =>
     request<Notification>(`/notifications/${id}/read`, token, { method: 'PATCH' }),
 
   markAllRead: (token: string | null) =>
-    request<void>('/notifications/read-all', token, { method: 'PATCH' }),
+    request<{ updated: number }>('/notifications/read-all', token, { method: 'PATCH' }),
 };

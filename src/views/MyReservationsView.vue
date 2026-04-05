@@ -21,8 +21,7 @@ async function loadReservations() {
   loading.value = true;
   errorMsg.value = null;
   try {
-    const result = await api.getMyReservations(auth.token);
-    reservations.value = result?.data ?? (Array.isArray(result) ? (result as unknown as Reservation[]) : []);
+    reservations.value = await api.getMyReservations(auth.token);
   } catch {
     errorMsg.value = 'Não foi possível carregar suas reservas.';
   } finally {
@@ -71,7 +70,7 @@ function periodLabel(startTime: string, endTime: string): string {
     <ul v-else class="reservation-list">
       <li v-for="r in reservations" :key="r.id" class="reservation-card">
         <div class="reservation-card__info">
-          <h3>{{ r.spaceName }}</h3>
+          <h3>{{ r.space?.number ?? r.spaceId }}</h3>
           <p>{{ dateLabel(r.date) }}</p>
           <p>{{ periodLabel(r.startTime, r.endTime) }}</p>
         </div>
@@ -80,7 +79,7 @@ function periodLabel(startTime: string, endTime: string): string {
             {{ STATUS_LABELS[r.status] }}
           </span>
           <button
-            v-if="r.status === 'pending' || r.status === 'confirmed'"
+            v-if="r.status === 'confirmed'"
             class="cancel-btn"
             :disabled="cancelling === r.id"
             @click="handleCancel(r.id)"
@@ -141,10 +140,9 @@ h1 {
   border-radius: 999px;
   font-weight: 500;
 }
-.status-badge--pending { background: #fef3c7; color: #92400e; }
 .status-badge--confirmed { background: #d1fae5; color: #065f46; }
-.status-badge--cancelled { background: #fee2e2; color: #991b1b; }
-.status-badge--completed { background: #f0f0f0; color: #555; }
+.status-badge--canceled  { background: #fee2e2; color: #991b1b; }
+.status-badge--modified  { background: #fef3c7; color: #92400e; }
 .cancel-btn {
   font-size: 0.8rem;
   padding: 0.3rem 0.7rem;
