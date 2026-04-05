@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { Space } from '@/types/space';
+import { useAuthStore } from '@/stores/auth';
+import { hasRole, CAN_RESERVE, CAN_BLOCK } from '@/utils/roles';
 
 defineProps<{
   space: Space;
@@ -8,7 +11,18 @@ defineProps<{
 defineEmits<{
   close: [];
   reserve: [];
+  block: [];
 }>();
+
+const auth = useAuthStore();
+const canReserve = computed(() => hasRole(auth.userRole, CAN_RESERVE));
+const canBlock = computed(() => hasRole(auth.userRole, CAN_BLOCK));
+
+const EQUIPMENT_STATUS_LABELS: Record<string, string> = {
+  operational: 'Operacional',
+  under_maintenance: 'Em manutenção',
+  decommissioned: 'Desativado',
+};
 </script>
 
 <template>
@@ -33,8 +47,29 @@ defineEmits<{
         </li>
       </ul>
 
+      <!-- Equipment section -->
+      <div v-if="space.equipment && space.equipment.length > 0" class="room-popup__equipment">
+        <p class="equipment-heading">Equipamentos</p>
+        <ul class="equipment-list">
+          <li v-for="item in space.equipment" :key="item.id" class="equipment-item">
+            <span class="equipment-name">{{ item.name }}</span>
+            <span
+              class="equipment-badge"
+              :class="`equipment-badge--${item.status}`"
+            >
+              {{ EQUIPMENT_STATUS_LABELS[item.status] ?? item.status }}
+            </span>
+          </li>
+        </ul>
+      </div>
+
       <div class="room-popup__actions">
-        <button class="room-popup__reserve" @click="$emit('reserve')">Reservar</button>
+        <button v-if="canReserve" class="room-popup__reserve" @click="$emit('reserve')">
+          Fazer Reserva
+        </button>
+        <button v-if="canBlock" class="room-popup__block" @click="$emit('block')">
+          Bloquear Espaço
+        </button>
       </div>
     </div>
   </div>
@@ -96,8 +131,57 @@ defineEmits<{
   font-weight: 500;
   color: #222;
 }
+.room-popup__equipment {
+  margin-bottom: 1.25rem;
+}
+.equipment-heading {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 0 0 0.5rem;
+}
+.equipment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.equipment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+.equipment-name {
+  color: #333;
+}
+.equipment-badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.15rem 0.5rem;
+  border-radius: 20px;
+}
+.equipment-badge--operational {
+  background: #e8f5f0;
+  color: #1D9E75;
+}
+.equipment-badge--under_maintenance {
+  background: #fff8e1;
+  color: #f59e0b;
+}
+.equipment-badge--decommissioned {
+  background: #f5f5f5;
+  color: #888;
+}
 .room-popup__actions {
   margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 .room-popup__reserve {
   width: 100%;
@@ -111,5 +195,18 @@ defineEmits<{
 }
 .room-popup__reserve:hover {
   background: #178a65;
+}
+.room-popup__block {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #1D9E75;
+  border-radius: 8px;
+  background: none;
+  color: #1D9E75;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.room-popup__block:hover {
+  background: #e8f5f0;
 }
 </style>

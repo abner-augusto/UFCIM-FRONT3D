@@ -67,6 +67,11 @@ function handleReserve() {
   router.push({ name: 'reservation', params: { spaceId: selectedSpace.value.id } });
 }
 
+function handleBlock() {
+  if (!selectedSpace.value) return;
+  router.push({ name: 'blocking-create', params: { spaceId: selectedSpace.value.id } });
+}
+
 function closePopup() {
   showPopup.value = false;
   selectedSpace.value = null;
@@ -81,6 +86,7 @@ function closePopup() {
       :space="selectedSpace"
       @close="closePopup"
       @reserve="handleReserve"
+      @block="handleBlock"
     />
   </div>
 </template>

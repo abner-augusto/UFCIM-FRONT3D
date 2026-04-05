@@ -1,3 +1,11 @@
+export interface Equipment {
+  id: string;
+  name: string;
+  type: string;
+  status: 'operational' | 'under_maintenance' | 'decommissioned';
+  assetId: string | null;
+}
+
 export interface Space {
   id: string;
   name: string;
@@ -9,4 +17,5 @@ export interface Space {
   campus: string;
   description: string | null;
   isActive: boolean;
+  equipment: Equipment[];
 }
