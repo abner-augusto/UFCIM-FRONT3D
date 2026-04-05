@@ -266,8 +266,10 @@ async function handleRecurring() {
     <div v-else-if="space" class="reservation-form">
       <div class="space-info">
         <h2>{{ space.name }}</h2>
-        <p>{{ space.building }}<span v-if="space.floor"> — Andar {{ space.floor }}</span></p>
+        <p>Bloco {{ space.block }} · {{ space.campus }}</p>
         <p v-if="space.capacity" class="space-capacity">Capacidade: {{ space.capacity }} pessoas</p>
+        <p v-if="space.department" class="space-meta">{{ space.department }}</p>
+        <p v-if="space.hvac" class="space-meta">🌡 {{ space.hvac }}</p>
       </div>
 
       <!-- Recurring toggle -->

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { Space } from '@/types/space';
+import { SPACE_TYPE_LABELS, type Space } from '@/types/space';
 import { useAuthStore } from '@/stores/auth';
 import { hasRole, CAN_RESERVE, CAN_BLOCK } from '@/utils/roles';
 
-defineProps<{
+const props = defineProps<{
   space: Space;
 }>();
 
@@ -17,12 +17,11 @@ defineEmits<{
 const auth = useAuthStore();
 const canReserve = computed(() => hasRole(auth.userRole, CAN_RESERVE));
 const canBlock = computed(() => hasRole(auth.userRole, CAN_BLOCK));
-
-const EQUIPMENT_STATUS_LABELS: Record<string, string> = {
-  operational: 'Operacional',
-  under_maintenance: 'Em manutenção',
-  decommissioned: 'Desativado',
-};
+const typeLabel = computed(() => SPACE_TYPE_LABELS[props.space.type] ?? props.space.type);
+const openHours = computed(() => {
+  if (!props.space.closedFrom || !props.space.closedTo) return null;
+  return `${props.space.closedTo} – ${props.space.closedFrom}`;
+});
 </script>
 
 <template>
@@ -30,38 +29,40 @@ const EQUIPMENT_STATUS_LABELS: Record<string, string> = {
     <div class="room-popup">
       <button class="room-popup__close" @click="$emit('close')">&times;</button>
       <h2>{{ space.name }}</h2>
-      <p class="room-popup__meta">{{ space.building }} — Andar {{ space.floor ?? '–' }}</p>
+      <p class="room-popup__meta">Bloco {{ space.block }} · {{ space.campus }}</p>
+      <p v-if="space.department" class="room-popup__meta">{{ space.department }}</p>
 
       <ul class="room-popup__stats">
+        <li v-if="typeLabel">
+          <span class="stat-label">Tipo</span>
+          <span class="stat-value">{{ typeLabel }}</span>
+        </li>
         <li v-if="space.capacity != null">
           <span class="stat-label">Capacidade</span>
           <span class="stat-value">{{ space.capacity }} pessoas</span>
         </li>
-        <li v-if="space.type">
-          <span class="stat-label">Tipo</span>
-          <span class="stat-value">{{ space.type }}</span>
+        <li v-if="space.furniture">
+          <span class="stat-label">Mobiliário</span>
+          <span class="stat-value">{{ space.furniture }}</span>
         </li>
-        <li v-if="space.description">
-          <span class="stat-label">Descrição</span>
-          <span class="stat-value">{{ space.description }}</span>
+        <li v-if="space.lighting">
+          <span class="stat-label">Iluminação</span>
+          <span class="stat-value">{{ space.lighting }}</span>
+        </li>
+        <li v-if="space.hvac">
+          <span class="stat-label">Climatização</span>
+          <span class="stat-value">{{ space.hvac }}</span>
+        </li>
+        <li v-if="space.multimedia">
+          <span class="stat-label">Multimídia</span>
+          <span class="stat-value">{{ space.multimedia }}</span>
+        </li>
+        <li v-if="openHours">
+          <span class="stat-label">Horário de funcionamento</span>
+          <span class="stat-value">{{ openHours }}</span>
         </li>
       </ul>
-
-      <!-- Equipment section -->
-      <div v-if="space.equipment && space.equipment.length > 0" class="room-popup__equipment">
-        <p class="equipment-heading">Equipamentos</p>
-        <ul class="equipment-list">
-          <li v-for="item in space.equipment" :key="item.id" class="equipment-item">
-            <span class="equipment-name">{{ item.name }}</span>
-            <span
-              class="equipment-badge"
-              :class="`equipment-badge--${item.status}`"
-            >
-              {{ EQUIPMENT_STATUS_LABELS[item.status] ?? item.status }}
-            </span>
-          </li>
-        </ul>
-      </div>
+      <p v-if="space.description" class="room-popup__description">{{ space.description }}</p>
 
       <div class="room-popup__actions">
         <button v-if="canReserve" class="room-popup__reserve" @click="$emit('reserve')">
@@ -131,51 +132,10 @@ const EQUIPMENT_STATUS_LABELS: Record<string, string> = {
   font-weight: 500;
   color: #222;
 }
-.room-popup__equipment {
-  margin-bottom: 1.25rem;
-}
-.equipment-heading {
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #888;
-  margin: 0 0 0.5rem;
-}
-.equipment-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-.equipment-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.room-popup__description {
+  color: #666;
   font-size: 0.85rem;
-}
-.equipment-name {
-  color: #333;
-}
-.equipment-badge {
-  font-size: 0.75rem;
-  font-weight: 500;
-  padding: 0.15rem 0.5rem;
-  border-radius: 20px;
-}
-.equipment-badge--operational {
-  background: #e8f5f0;
-  color: #1D9E75;
-}
-.equipment-badge--under_maintenance {
-  background: #fff8e1;
-  color: #f59e0b;
-}
-.equipment-badge--decommissioned {
-  background: #f5f5f5;
-  color: #888;
+  margin: 0.75rem 0 0;
 }
 .room-popup__actions {
   margin-top: 0.5rem;
