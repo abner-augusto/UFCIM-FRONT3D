@@ -14,21 +14,32 @@ interface User {
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(sessionStorage.getItem('ufcim_token'));
   const user = ref<User | null>(null);
+  const unreadCount = ref(0);
 
   const isAuthenticated = computed(() => !!token.value);
   const userRole = computed(() => user.value?.role ?? null);
 
-  function setAuth(jwt: string, userData: User) {
+  function setAuth(jwt: string, userData: User, unread = 0) {
     token.value = jwt;
     user.value = userData;
+    unreadCount.value = unread;
     sessionStorage.setItem('ufcim_token', jwt);
+  }
+
+  function setUnreadCount(count: number) {
+    unreadCount.value = count;
+  }
+
+  function clearUnreadCount() {
+    unreadCount.value = 0;
   }
 
   function logout() {
     token.value = null;
     user.value = null;
+    unreadCount.value = 0;
     sessionStorage.removeItem('ufcim_token');
   }
 
-  return { token, user, isAuthenticated, userRole, setAuth, logout };
+  return { token, user, unreadCount, isAuthenticated, userRole, setAuth, setUnreadCount, clearUnreadCount, logout };
 });

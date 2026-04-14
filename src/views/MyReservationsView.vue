@@ -70,7 +70,7 @@ function periodLabel(startTime: string, endTime: string): string {
     <ul v-else class="reservation-list">
       <li v-for="r in reservations" :key="r.id" class="reservation-card">
         <div class="reservation-card__info">
-          <h3>{{ r.space?.number ?? r.spaceId }}</h3>
+          <h3>{{ r.space?.name ?? r.space?.number ?? r.spaceId }}</h3>
           <p>{{ dateLabel(r.date) }}</p>
           <p>{{ periodLabel(r.startTime, r.endTime) }}</p>
         </div>
@@ -140,9 +140,10 @@ h1 {
   border-radius: 999px;
   font-weight: 500;
 }
-.status-badge--confirmed { background: #d1fae5; color: #065f46; }
-.status-badge--canceled  { background: #fee2e2; color: #991b1b; }
-.status-badge--modified  { background: #fef3c7; color: #92400e; }
+.status-badge--confirmed  { background: #d1fae5; color: #065f46; }
+.status-badge--canceled   { background: #fee2e2; color: #991b1b; }
+.status-badge--modified   { background: #fef3c7; color: #92400e; }
+.status-badge--overridden { background: #ede9fe; color: #5b21b6; }
 .cancel-btn {
   font-size: 0.8rem;
   padding: 0.3rem 0.7rem;

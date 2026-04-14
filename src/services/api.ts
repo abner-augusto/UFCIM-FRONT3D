@@ -57,7 +57,7 @@ export const api = {
 
   // Users
   getMe: (token: string | null) =>
-    request<{ id: string; name: string; email: string; registration: string; role: string; department?: string }>(
+    request<{ id: string; name: string; email: string; registration: string; role: string; department?: string; unreadCount: number }>(
       '/users/me', token
     ),
 
@@ -74,7 +74,7 @@ export const api = {
   // Reservations — GET /reservations/mine returns array directly
   createReservation: (
     token: string | null,
-    body: { spaceId: string; date: string; startTime: string; endTime: string }
+    body: { spaceId: string; date: string; startTime: string; endTime: string; purpose?: string }
   ) => request<Reservation>('/reservations', token, { method: 'POST', body: JSON.stringify(body) }),
 
   createRecurringReservation: (
@@ -98,7 +98,11 @@ export const api = {
   cancelReservation: (token: string | null, id: string) =>
     request<Reservation>(`/reservations/${id}/cancel`, token, { method: 'PATCH' }),
 
-  // Blockings — GET /blockings/space/:id returns array directly
+  // Blockings — GET /blockings/mine returns array directly
+  getMyBlockings: (token: string | null) =>
+    request<Blocking[]>('/blockings/mine', token),
+
+  // GET /blockings/space/:id returns array directly
   getBlockings: (token: string | null, spaceId: string, date?: string) =>
     request<Blocking[]>(
       `/blockings/space/${spaceId}${date ? `?date=${date}` : ''}`,

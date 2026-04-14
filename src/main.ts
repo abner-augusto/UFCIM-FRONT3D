@@ -20,7 +20,7 @@ if (auth.token && !auth.user) {
       email: me.email,
       registration: me.registration,
       role: me.role as any,
-    }))
+    }, me.unreadCount ?? 0))
     .catch(() => auth.logout()) // token is invalid/expired — clear it
     .finally(() => app.mount('#app'));
 } else {

@@ -3,8 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
-import { TIME_SLOT_LABELS, TIME_SLOT_RANGES, BLOCK_TYPE_LABELS } from '@/types/reservation';
-import type { TimeSlot } from '@/types/reservation';
+import { BLOCK_TYPE_LABELS } from '@/types/reservation';
 import { hasRole, CAN_BLOCK } from '@/utils/roles';
 
 const route = useRoute();
@@ -16,7 +15,6 @@ const spaceName = ref<string | null>(null);
 const loadingSpace = ref(true);
 
 const selectedDate = ref('');
-const selectedSlot = ref<TimeSlot | null>(null);
 const selectedBlockType = ref<'maintenance' | 'administrative' | ''>('');
 const reason = ref('');
 
@@ -25,6 +23,73 @@ const errorMsg = ref<string | null>(null);
 const successMsg = ref<string | null>(null);
 
 const today = new Date().toISOString().split('T')[0];
+
+// Hour selection mode
+type HourMode = 'full_day' | 'custom';
+const hourMode = ref<HourMode>('full_day');
+
+const pickedStart = ref<string | null>(null);
+const pickedEnd = ref<string | null>(null);
+
+const ALL_HOURS = Array.from({ length: 24 }, (_, i) => {
+  const h = String(i).padStart(2, '0');
+  return { startTime: `${h}:00`, endTime: `${String(i + 1).padStart(2, '0')}:00` };
+});
+
+const resolvedStart = computed(() => {
+  if (hourMode.value === 'full_day') return '00:00';
+  return pickedStart.value;
+});
+
+const resolvedEnd = computed(() => {
+  if (hourMode.value === 'full_day') return '23:00';
+  if (pickedEnd.value) {
+    const slot = ALL_HOURS.find(h => h.startTime === pickedEnd.value);
+    return slot?.endTime ?? pickedEnd.value;
+  }
+  if (pickedStart.value) {
+    const slot = ALL_HOURS.find(h => h.startTime === pickedStart.value);
+    return slot?.endTime ?? null;
+  }
+  return null;
+});
+
+const canSubmit = computed(() =>
+  selectedDate.value &&
+  selectedBlockType.value &&
+  resolvedStart.value !== null &&
+  resolvedEnd.value !== null &&
+  resolvedStart.value < resolvedEnd.value
+);
+
+function handleHourClick(h: string) {
+  if (!pickedStart.value) {
+    pickedStart.value = h;
+    pickedEnd.value = null;
+    return;
+  }
+  if (h === pickedStart.value && !pickedEnd.value) {
+    pickedStart.value = null;
+    return;
+  }
+  if (pickedEnd.value) {
+    pickedStart.value = h;
+    pickedEnd.value = null;
+    return;
+  }
+  const [lo, hi] = h > pickedStart.value
+    ? [pickedStart.value, h]
+    : [h, pickedStart.value];
+  pickedStart.value = lo;
+  pickedEnd.value = hi;
+}
+
+function getHourState(h: string): 'available' | 'selected' | 'endpoint' {
+  if (!pickedStart.value) return 'available';
+  if (h === pickedStart.value || h === pickedEnd.value) return 'endpoint';
+  if (pickedEnd.value && h > pickedStart.value && h < pickedEnd.value) return 'selected';
+  return 'available';
+}
 
 onMounted(async () => {
   if (!hasRole(auth.userRole, CAN_BLOCK)) {
@@ -41,23 +106,17 @@ onMounted(async () => {
   }
 });
 
-const canSubmit = computed(() =>
-  selectedDate.value &&
-  selectedSlot.value &&
-  selectedBlockType.value
-);
-
 async function handleSubmit() {
-  if (!canSubmit.value || !selectedSlot.value || !selectedBlockType.value) return;
-  const { startTime, endTime } = TIME_SLOT_RANGES[selectedSlot.value];
+  if (!canSubmit.value || !selectedBlockType.value ||
+      !resolvedStart.value || !resolvedEnd.value) return;
   loading.value = true;
   errorMsg.value = null;
   try {
     await api.createBlocking(auth.token, {
       spaceId,
       date: selectedDate.value,
-      startTime,
-      endTime,
+      startTime: resolvedStart.value,
+      endTime: resolvedEnd.value,
       blockType: selectedBlockType.value,
       reason: reason.value.trim() || undefined,
     });
@@ -97,17 +156,44 @@ async function handleSubmit() {
 
       <div class="form-section">
         <label class="form-label">Período</label>
-        <div class="slot-grid">
+
+        <div class="hour-mode-toggle">
           <button
-            v-for="(label, slot) in TIME_SLOT_LABELS"
-            :key="slot"
-            class="slot-btn"
-            :class="{ 'slot-btn--selected': selectedSlot === slot }"
-            @click="selectedSlot = slot as TimeSlot"
+            class="mode-btn"
+            :class="{ 'mode-btn--active': hourMode === 'full_day' }"
+            @click="hourMode = 'full_day'; pickedStart = null; pickedEnd = null"
           >
-            {{ label }} ({{ TIME_SLOT_RANGES[slot as TimeSlot].startTime }}–{{ TIME_SLOT_RANGES[slot as TimeSlot].endTime }})
+            Dia inteiro
+          </button>
+          <button
+            class="mode-btn"
+            :class="{ 'mode-btn--active': hourMode === 'custom' }"
+            @click="hourMode = 'custom'"
+          >
+            Horário personalizado
           </button>
         </div>
+
+        <div v-if="hourMode === 'custom'" class="hour-grid">
+          <button
+            v-for="slot in ALL_HOURS"
+            :key="slot.startTime"
+            class="hour-btn"
+            :class="{
+              'hour-btn--endpoint': getHourState(slot.startTime) === 'endpoint',
+              'hour-btn--selected': getHourState(slot.startTime) === 'selected',
+            }"
+            @click="handleHourClick(slot.startTime)"
+          >
+            {{ slot.startTime.replace(':00', 'h') }}
+          </button>
+        </div>
+
+        <p v-if="resolvedStart && resolvedEnd" class="period-summary">
+          {{ hourMode === 'full_day'
+              ? 'Bloqueio para o dia inteiro (00:00 – 23:00)'
+              : `${resolvedStart} – ${resolvedEnd}` }}
+        </p>
       </div>
 
       <div class="form-section">
@@ -204,26 +290,56 @@ async function handleSubmit() {
   resize: vertical;
   font-family: inherit;
 }
-.slot-grid {
+.hour-mode-toggle {
   display: flex;
-  flex-direction: column;
   gap: 0.5rem;
+  margin-bottom: 0.75rem;
 }
-.slot-btn {
-  padding: 0.75rem 1rem;
+.mode-btn {
+  padding: 0.5rem 1rem;
   border: 1px solid #ddd;
   border-radius: 8px;
   background: white;
+  font-size: 0.875rem;
   cursor: pointer;
-  text-align: left;
-  font-size: 0.9rem;
-  transition: border-color 0.15s, background 0.15s;
 }
-.slot-btn--selected {
+.mode-btn--active {
   border-color: #1D9E75;
   background: #e8f5f0;
   color: #1D9E75;
   font-weight: 600;
+}
+.hour-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+.hour-btn {
+  padding: 0.4rem 0;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: white;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.1s, border-color 0.1s;
+}
+.hour-btn:hover { border-color: #1D9E75; }
+.hour-btn--endpoint {
+  background: #1D9E75;
+  border-color: #1D9E75;
+  color: white;
+  font-weight: 600;
+}
+.hour-btn--selected {
+  background: #d4edea;
+  border-color: #1D9E75;
+}
+.period-summary {
+  font-size: 0.85rem;
+  color: #555;
+  margin: 0.25rem 0 0;
 }
 .submit-btn {
   width: 100%;

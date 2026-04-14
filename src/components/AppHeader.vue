@@ -4,13 +4,13 @@ import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
 import { hasRole, CAN_BLOCK } from '@/utils/roles';
 
-const auth = useAuthStore();
+const authStore = useAuthStore();
 const router = useRouter();
 
-const canBlock = computed(() => hasRole(auth.userRole, CAN_BLOCK));
+const canBlock = computed(() => hasRole(authStore.userRole, CAN_BLOCK));
 
 function logout() {
-  auth.logout();
+  authStore.logout();
   router.push({ name: 'login' });
 }
 </script>
@@ -23,10 +23,15 @@ function logout() {
     <nav class="header-nav">
       <router-link to="/minhas-reservas">Minhas Reservas</router-link>
       <router-link v-if="canBlock" to="/meus-bloqueios">Meus Bloqueios</router-link>
-      <router-link to="/notificacoes">Notificações</router-link>
+      <router-link to="/notificacoes" class="notif-link">
+        Notificações
+        <span v-if="authStore.unreadCount > 0" class="notif-badge">
+          {{ authStore.unreadCount >= 100 ? '99+' : authStore.unreadCount }}
+        </span>
+      </router-link>
     </nav>
     <div class="header-right">
-      <router-link to="/perfil" class="header-user">{{ auth.user?.name }}</router-link>
+      <router-link to="/perfil" class="header-user">{{ authStore.user?.name }}</router-link>
       <button @click="logout" class="header-logout">Sair</button>
     </div>
   </header>
@@ -83,5 +88,25 @@ function logout() {
   background: none;
   cursor: pointer;
   font-size: 0.85rem;
+}
+.notif-link {
+  position: relative;
+}
+.notif-badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  background: #c0392b;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  line-height: 1;
 }
 </style>

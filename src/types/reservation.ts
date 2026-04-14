@@ -1,5 +1,5 @@
 export type TimeSlot = 'morning' | 'afternoon' | 'evening';
-export type ReservationStatus = 'confirmed' | 'canceled' | 'modified';
+export type ReservationStatus = 'confirmed' | 'canceled' | 'modified' | 'overridden';
 
 export const TIME_SLOT_RANGES: Record<TimeSlot, { startTime: string; endTime: string }> = {
   morning:   { startTime: '07:00', endTime: '12:00' },
@@ -42,9 +42,10 @@ export interface Reservation {
   status: ReservationStatus;
   changeOrigin: string | null;
   recurrenceId: string | null;
+  purpose?: string | null;
   createdAt: string;
   updatedAt: string;
-  space?: { id: string; number: string; block?: string; campus?: string; [key: string]: any };
+  space?: { id: string; number: string; name?: string; block?: string; campus?: string; [key: string]: any };
 }
 
 export interface Notification {
@@ -62,6 +63,13 @@ export interface Blocking {
   id: string;
   spaceId: string;
   spaceName?: string;
+  space?: {
+    id: string;
+    number: string;
+    name: string;
+    block: string;
+    campus: string;
+  };
   date: string;
   startTime: string;
   endTime: string;
@@ -93,4 +101,5 @@ export const STATUS_LABELS: Record<ReservationStatus, string> = {
   confirmed: 'Confirmada',
   canceled: 'Cancelada',
   modified: 'Modificada',
+  overridden: 'Sobreposta por bloqueio',
 };

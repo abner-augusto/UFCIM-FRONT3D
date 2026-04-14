@@ -12,6 +12,7 @@ const errorMsg = ref<string | null>(null);
 const markingAll = ref(false);
 
 onMounted(async () => {
+  auth.clearUnreadCount();
   await loadNotifications();
 });
 
@@ -42,6 +43,7 @@ async function markAllRead() {
   try {
     await api.markAllRead(auth.token);
     notifications.value.forEach((n) => (n.read = true));
+    auth.clearUnreadCount();
   } catch {
     errorMsg.value = 'Erro ao marcar todas como lidas.';
   } finally {

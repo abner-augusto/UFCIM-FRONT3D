@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { SPACE_TYPE_LABELS, type Space } from '@/types/space';
+import { SPACE_TYPE_LABELS, EQUIPMENT_STATUS_LABELS, type Space } from '@/types/space';
 import { useAuthStore } from '@/stores/auth';
 import { hasRole, CAN_RESERVE, CAN_BLOCK } from '@/utils/roles';
 
@@ -67,6 +67,18 @@ const openHours = computed(() => {
         </li>
       </ul>
       <p v-if="space.description" class="room-popup__description">{{ space.description }}</p>
+
+      <div v-if="space.equipment?.length" class="room-popup__equipment">
+        <p class="room-popup__section-title">Equipamentos</p>
+        <ul class="equipment-list">
+          <li v-for="item in space.equipment" :key="item.id" class="equipment-item">
+            <span class="equipment-name">{{ item.name }}</span>
+            <span class="equipment-status" :class="`equipment-status--${item.status}`">
+              {{ EQUIPMENT_STATUS_LABELS[item.status] }}
+            </span>
+          </li>
+        </ul>
+      </div>
 
       <div v-if="blockingReason" class="room-popup__notice">
         <p class="room-popup__notice-label">Motivo do bloqueio</p>
@@ -212,4 +224,39 @@ const openHours = computed(() => {
 .room-popup__block:hover {
   background: #e8f5f0;
 }
+.room-popup__section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #999;
+  letter-spacing: 0.05em;
+  margin: 1rem 0 0.5rem;
+}
+.equipment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.equipment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.825rem;
+}
+.equipment-name {
+  color: #444;
+}
+.equipment-status {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+.equipment-status--working          { background: #d1fae5; color: #065f46; }
+.equipment-status--broken           { background: #fee2e2; color: #991b1b; }
+.equipment-status--under_repair     { background: #fef3c7; color: #92400e; }
+.equipment-status--replacement_scheduled { background: #fef3c7; color: #92400e; }
 </style>

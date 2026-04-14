@@ -25,7 +25,7 @@ async function loginAs(_role: string) {
         email: userData.email,
         registration: userData.registration,
         role: userData.role as any,
-      });
+      }, userData.unreadCount ?? 0);
     } else {
       const { token } = await api.devLogin(_role);
       const userData = await api.getMe(token);
@@ -35,7 +35,7 @@ async function loginAs(_role: string) {
         email: userData.email,
         registration: userData.registration,
         role: userData.role as any,
-      });
+      }, userData.unreadCount ?? 0);
     }
     router.push({ name: 'campus-select' });
   } catch (e) {
