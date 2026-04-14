@@ -112,58 +112,58 @@ function lidarComReserva() { /* ... */ }
 
 ```
 src/
-├── main.ts                       # Vue app entry point
-├── App.vue                       # Root layout (<router-view>)
+├── main.ts
+├── App.vue
 ├── router/
-│   └── index.ts                  # Routes + navigation guards
+│   └── index.ts
 ├── stores/
-│   ├── auth.ts                   # User, token, role
-│   ├── campus.ts                 # Selected campus
-│   └── reservation.ts            # Active reservation flow
+│   ├── auth.ts          # token, user, unreadCount, setAuth, clearUnreadCount, logout
+│   ├── campus.ts
+│   └── reservation.ts   # spaceId, spaceName, date, startTime, endTime, purpose, isReady
 ├── views/
 │   ├── LoginView.vue             # /login
 │   ├── CampusSelectView.vue      # /campus
+│   ├── DepartmentSelectView.vue  # /campus/:campusId/departamento
 │   ├── ViewerView.vue            # /campus/:campusId/viewer
 │   ├── ReservationView.vue       # /reserva/:spaceId
 │   ├── ConfirmReservationView.vue # /reserva/confirmar
 │   ├── MyReservationsView.vue    # /minhas-reservas
-│   └── NotificationsView.vue     # /notificacoes
+│   ├── NotificationsView.vue     # /notificacoes
+│   ├── BlockingCreateView.vue    # /espacos/:spaceId/bloquear
+│   ├── MyBlockingsView.vue       # /meus-bloqueios
+│   └── ProfileView.vue           # /perfil
 ├── components/
-│   ├── ThreeViewer.vue           # Three.js lifecycle wrapper
-│   ├── RoomPopup.vue             # Room info popup (replaces PopUpManager DOM)
-│   ├── CampusCard.vue            # Campus selection card
-│   ├── ReservationCard.vue       # Single reservation display
-│   ├── CalendarPicker.vue        # Date + time slot selector
-│   ├── AppHeader.vue             # Top navigation bar
-│   ├── AppSidebar.vue            # Side navigation (mobile drawer)
-│   └── StatusBadge.vue           # Availability status indicator
+│   ├── ThreeViewer.vue       # Wrapper do ciclo de vida Three.js
+│   ├── RoomPopup.vue         # Popup de sala com equipment
+│   ├── CampusCard.vue        # Card de seleção de campus
+│   ├── AppHeader.vue         # Navegação superior com badge de notificações
+│   └── PeriodSelector.vue    # Seletor de turno para o viewer
 ├── composables/
-│   ├── useApi.ts                 # Authenticated fetch wrapper
-│   ├── useAuth.ts                # Login/logout logic
-│   └── useReservation.ts         # Reservation flow logic
+│   ├── useApi.ts             # Fetch wrapper autenticado
+│   └── usePinAvailability.ts # Busca e computa status dos pins no viewer
 ├── services/
-│   └── api.ts                    # Backend endpoint definitions
+│   └── api.ts                # Cliente tipado da API
 ├── types/
-│   ├── api.ts                    # API response types
-│   ├── campus.ts                 # Campus/building types
-│   └── reservation.ts            # Reservation types
-├── three/                        # ← existing Three.js code (relocated)
-│   ├── App.js
-│   ├── UFCIMAPI.js
-│   ├── CameraManager.js
-│   ├── InteractionManager.js
-│   ├── ModelManager.js
-│   ├── PopUpManager.js
-│   ├── UIManager.js
-│   ├── PinFactory.js
-│   ├── World.js
-│   ├── config.js
-│   └── postprocessing/
-│       ├── CustomOutlinePass.js
-│       └── FindSurfaces.js
-├── assets/                       # Vue-managed static assets (icons, etc.)
-└── styles/
-    └── variables.css             # CSS custom properties (design tokens)
+│   ├── space.ts              # Space, Equipment, SPACE_TYPE_LABELS, EQUIPMENT_STATUS_LABELS
+│   └── reservation.ts        # Reservation, Blocking, Notification, enums, PURPOSE_OPTIONS
+├── utils/
+│   ├── roles.ts              # hasRole, CAN_RESERVE, CAN_BLOCK, CAN_CREATE_RECURRING
+│   └── period.ts             # PeriodKey, getCurrentPeriod
+├── data/
+│   └── campuses.ts           # Lista estática de campi
+└── three/                    # Código Three.js existente (não modificar)
+    ├── App.js
+    ├── UFCIMAPI.js
+    ├── CameraManager.js
+    ├── InteractionManager.js
+    ├── ModelManager.js
+    ├── PopUpManager.js
+    ├── UIManager.js
+    ├── PinFactory.js
+    ├── World.js
+    ├── config.js
+    └── postprocessing/
+        └── CustomOutlinePass.js
 ```
 
 ## Naming Conventions
@@ -187,14 +187,18 @@ src/
 
 | Path | Name | Component | Guard | Notes |
 |------|------|-----------|-------|-------|
-| `/login` | `login` | `LoginView` | guest only | Redirect to `/campus` if already logged in |
-| `/campus` | `campus-select` | `CampusSelectView` | auth required | Campus selection |
-| `/campus/:campusId/viewer` | `viewer` | `ViewerView` | auth + campus | 3D maquete |
-| `/reserva/:spaceId` | `reservation` | `ReservationView` | auth | Calendar + form |
-| `/reserva/confirmar` | `reservation-confirm` | `ConfirmReservationView` | auth + reservation data | Summary |
-| `/minhas-reservas` | `my-reservations` | `MyReservationsView` | auth | User's bookings |
-| `/notificacoes` | `notifications` | `NotificationsView` | auth | Alerts |
-| `/` | — | redirect | — | → `/campus` if auth, else `/login` |
+| `/login` | `login` | `LoginView` | guest only | Redireciona para `/campus` se já autenticado |
+| `/campus` | `campus-select` | `CampusSelectView` | auth required | Seleção de campus |
+| `/campus/:campusId/departamento` | `department-select` | `DepartmentSelectView` | auth required | Seleção de departamento |
+| `/campus/:campusId/viewer` | `viewer` | `ViewerView` | auth required | Maquete 3D |
+| `/reserva/:spaceId` | `reservation` | `ReservationView` | auth required | Calendário + formulário |
+| `/reserva/confirmar` | `reservation-confirm` | `ConfirmReservationView` | auth required | Resumo e confirmação |
+| `/minhas-reservas` | `my-reservations` | `MyReservationsView` | auth required | Reservas do usuário |
+| `/notificacoes` | `notifications` | `NotificationsView` | auth required | Notificações |
+| `/espacos/:spaceId/bloquear` | `blocking-create` | `BlockingCreateView` | auth required | Roles: professor, staff, maintenance |
+| `/meus-bloqueios` | `my-blockings` | `MyBlockingsView` | auth required | Roles: professor, staff, maintenance |
+| `/perfil` | `profile` | `ProfileView` | auth required | Perfil do usuário |
+| `/` | — | redirect | — | → `/campus` se auth, senão `/login` |
 
 ## Navigation Guards
 
@@ -215,14 +219,18 @@ Key endpoints consumed by this frontend:
 
 | Method | Path | Used by |
 |--------|------|---------|
-| `POST` | `/dev/login` | LoginView (dev auth) |
-| `GET` | `/users/me` | Auth store (profile) |
-| `GET` | `/spaces` | ViewerView (room list) |
-| `GET` | `/spaces/:id` | RoomPopup (details) |
-| `GET` | `/spaces/:id/availability` | CalendarPicker |
+| `GET` | `/users/me` | Auth store (profile + `unreadCount`) |
+| `GET` | `/spaces` | ViewerView |
+| `GET` | `/spaces/:id` | RoomPopup (detalhes + equipment) |
+| `GET` | `/spaces/:id/availability` | ReservationView |
 | `POST` | `/reservations` | ConfirmReservationView |
+| `POST` | `/reservations/recurring` | ReservationView (fluxo recorrente) |
 | `GET` | `/reservations/mine` | MyReservationsView |
 | `PATCH` | `/reservations/:id/cancel` | MyReservationsView |
+| `POST` | `/blockings` | BlockingCreateView |
+| `PATCH` | `/blockings/:id/remove` | MyBlockingsView |
+| `GET` | `/blockings/mine` | MyBlockingsView |
+| `GET` | `/blockings/space/:spaceId` | ViewerView (estado dos pins) |
 | `GET` | `/notifications` | NotificationsView |
 | `PATCH` | `/notifications/:id/read` | NotificationsView |
 | `PATCH` | `/notifications/read-all` | NotificationsView |

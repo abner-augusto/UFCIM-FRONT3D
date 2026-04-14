@@ -42,7 +42,7 @@ const resolvedStart = computed(() => {
 });
 
 const resolvedEnd = computed(() => {
-  if (hourMode.value === 'full_day') return '23:00';
+  if (hourMode.value === 'full_day') return '24:00';
   if (pickedEnd.value) {
     const slot = ALL_HOURS.find(h => h.startTime === pickedEnd.value);
     return slot?.endTime ?? pickedEnd.value;
@@ -191,7 +191,7 @@ async function handleSubmit() {
 
         <p v-if="resolvedStart && resolvedEnd" class="period-summary">
           {{ hourMode === 'full_day'
-              ? 'Bloqueio para o dia inteiro (00:00 – 23:00)'
+              ? 'Bloqueio para o dia inteiro (00:00 – 24:00)'
               : `${resolvedStart} – ${resolvedEnd}` }}
         </p>
       </div>

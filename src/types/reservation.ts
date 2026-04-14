@@ -91,10 +91,11 @@ export const TIME_SLOT_LABELS: Record<TimeSlot, string> = {
 };
 
 export const PURPOSE_OPTIONS = [
-  { value: 'estudo', label: 'Estudo' },
-  { value: 'reuniao', label: 'Reunião' },
-  { value: 'aula', label: 'Aula' },
-  { value: 'evento', label: 'Evento' },
+  { value: 'class', label: 'Aula' },
+  { value: 'group_study', label: 'Estudo em grupo' },
+  { value: 'meeting', label: 'Reunião' },
+  { value: 'event', label: 'Evento' },
+  { value: 'other', label: 'Outro' },
 ] as const;
 
 export const STATUS_LABELS: Record<ReservationStatus, string> = {
