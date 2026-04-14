@@ -3,6 +3,21 @@
 > **Purpose:** Step-by-step instructions for Claude Code to transform the UFCIM-FRONT3D viewer into a full Vue 3 SPA with authentication, campus selection, room reservation, and user management.
 >
 > **Rule:** Follow phases in order. Each phase is self-contained with inputs, outputs, and acceptance criteria. Do not skip ahead. Run acceptance checks before moving to the next phase.
+>
+> **Status (atualizado 2026-04-13):**
+>
+> | Fase | Descrição | Status |
+> |------|-----------|--------|
+> | Phase 0 | Pre-flight checks | ✅ Concluída |
+> | Phase 1 | Install & Configure | ✅ Concluída |
+> | Phase 2 | Relocate Three.js | ✅ Concluída |
+> | Phase 3 | Vue App Shell | ✅ Concluída |
+> | Phase 4 | Campus Selection | ✅ Concluída |
+> | Phase 5 | Three.js Viewer Integration | ✅ Concluída |
+> | Phase 6 | Reservation Flow | ✅ Concluída |
+> | Phase 7 | Polish & PWA | 🔄 Parcial (type-check ✅, responsive ⬜, PWA ⬜) |
+> | Phase 8 | Refinamentos v1 | ✅ Concluída |
+> | Phase 9 | Backlog | ⬜ Não iniciada |
 
 ### Global Rule — Language
 
@@ -1541,3 +1556,104 @@ List from `api.getNotifications()`. Each item shows title, message, timestamp, r
 - `public/assets/` unchanged
 - Three.js class internals unchanged (only `App.js` gets `dispose()` added)
 - Build commands `build:manifest` and `build:pins` unchanged
+
+---
+
+## Phase 8 — Refinamentos v1 ✅
+
+> Implementado em abril de 2026. Dependeu das seguintes adições ao backend:
+> `GET /blockings/mine`, `unreadCount` em `GET /users/me`, renomeação `sentAt→createdAt`
+> nas notificações, e campo `purpose` em reservas.
+
+### 8.1 Tipos atualizados
+
+| Arquivo | Mudança |
+|---------|---------|
+| `src/types/space.ts` | Interface `Equipment`, `EQUIPMENT_STATUS_LABELS`, campo `equipment?: Equipment[]` em `Space` |
+| `src/types/reservation.ts` | Status `overridden` em `STATUS_LABELS` e no tipo `Reservation['status']`; campo `purpose?: string \| null` em `Reservation`; campo `space?` no tipo `Blocking` |
+
+### 8.2 Camada de serviços
+
+| Arquivo | Mudança |
+|---------|---------|
+| `src/services/api.ts` | `getMyBlockings(token)`, `removeBlocking(token, id)`, campo `purpose?` em `createReservation`, `unreadCount` no tipo de retorno de `getMe` |
+| `src/stores/auth.ts` | Campo `unreadCount: number` no estado, populado de `GET /users/me`, action `clearUnreadCount()` |
+
+### 8.3 Componentes atualizados
+
+**`AppHeader.vue`** — badge de notificações não lidas:
+- Exibe `unreadCount` do auth store como badge vermelho no link "Notificações"
+- Badge oculto quando `unreadCount === 0`
+- Exibe `99+` quando `unreadCount >= 100`
+
+**`RoomPopup.vue`** — seção de equipamentos:
+- Lê `space.equipment[]` (já embutido em `GET /spaces/:id`, sem chamada extra)
+- Exibe nome e badge de status de cada equipamento
+- Status com cor: verde (`working`), amarelo (`under_repair`, `replacement_scheduled`), vermelho (`broken`)
+- Seção omitida quando `space.equipment` está vazio ou ausente
+
+### 8.4 Views implementadas/refinadas
+
+**`MyBlockingsView.vue`** — substituiu placeholder:
+- Consome `GET /blockings/mine`
+- Lista cards com: nome do espaço, data, horário, tipo, motivo
+- Botão "Remover" com confirmação → `PATCH /blockings/:id/remove`
+- Guard de role: redireciona para campus-select se não tem `CAN_BLOCK`
+
+**`MyReservationsView.vue`** — correções:
+- Exibe `space.name` (era `space.number`)
+- CSS para badge `status-badge--overridden` (roxo)
+
+**`BlockingCreateView.vue`** — seletor horário completo:
+- Substituiu seletor de 3 turnos fixos por grid de 24 horas (mesmo padrão do `ReservationView`)
+- Opção "Dia inteiro" (00:00–23:00) como modo rápido
+- Lógica de clique em dois pontos para selecionar intervalo
+
+**`ConfirmReservationView.vue`** — envia `purpose`:
+- `api.createReservation` agora inclui `purpose` do store no payload
+
+**`NotificationsView.vue`** — integração com badge:
+- Chama `authStore.clearUnreadCount()` no `onMounted`
+- Chama `authStore.clearUnreadCount()` após `markAllRead` bem-sucedido
+
+### Acceptance Criteria
+- [x] Badge aparece no header com contagem correta de não lidas
+- [x] Badge desaparece após abrir `/notificacoes` ou marcar todas como lidas
+- [x] `RoomPopup` exibe seção "Equipamentos" com status badge colorido
+- [x] `/meus-bloqueios` lista bloqueios reais com botão remover funcional
+- [x] `/minhas-reservas` exibe nome completo do espaço e badge `overridden`
+- [x] `/espacos/:id/bloquear` permite selecionar intervalo horário livre ou dia inteiro
+- [x] `purpose` é enviado ao criar reserva
+- [x] `npm run type-check` passa sem erros
+
+---
+
+## Phase 9 — Backlog
+
+> Tarefas identificadas mas não implementadas. Ordenadas por prioridade estimada.
+
+### 9.1 UX / Polimento (continuação do Phase 7)
+
+| Tarefa | Prioridade | Notas |
+|--------|------------|-------|
+| Responsividade mobile do `AppHeader` | Alta | Menu hamburger para telas < 768px; nav links colapsam em drawer |
+| Fluxo de reservas recorrentes end-to-end | Alta | `ReservationView` tem UI para recorrência mas `ConfirmReservationView` só chama `createReservation` simples; precisar chamar `createRecurringReservation` quando `isRecurring === true` |
+| Loading skeletons nas views | Média | Substituir texto "Carregando..." por skeletons CSS para melhor UX percebida |
+| Altura do viewer não hardcoded | Baixa | `height: calc(100vh - 52px)` em `ViewerView` é frágil; substituir por CSS custom property ou layout grid |
+
+### 9.2 Funcionalidades novas
+
+| Tarefa | Prioridade | Notas |
+|--------|------------|-------|
+| Filtro por status em "Minhas Reservas" | Média | `GET /reservations/mine?status=confirmed` — ocultar canceladas por padrão |
+| Suporte a departamentos na seleção de campus | Baixa | `DepartmentSelectView` existe mas não tem fluxo claro de entrada/saída |
+| Visualização de disponibilidade semanal | Baixa | Calendário semanal no `ReservationView` em vez de picker de data único |
+
+### 9.3 Infraestrutura
+
+| Tarefa | Prioridade | Notas |
+|--------|------------|-------|
+| Integração real com Keycloak | Alta (produção) | Substituir `POST /dev/login` por fluxo OIDC; redirecionar para Keycloak no `LoginView` |
+| Suite de testes Vitest para o frontend | Média | Zero testes atualmente; priorizar composables e stores |
+| Deploy no Cloudflare Pages | Alta (produção) | Build estático via `npm run build`; configurar `_redirects` para hash mode |
+| PWA verificada | Baixa | `vite-plugin-pwa` configurado mas não validado em produção |

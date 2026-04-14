@@ -17,6 +17,10 @@
 9. [Rotas — Equipamentos](#9-equipamentos)
 10. [Rotas — Reservas](#10-reservas)
 11. [Rotas — Bloqueios](#11-bloqueios)
+    - `GET /blockings/mine`
+    - `GET /blockings/space/:spaceId`
+    - `POST /blockings`
+    - `PATCH /blockings/:id/remove`
 12. [Rotas — Notificações](#12-notificações)
 13. [Rotas — Stats](#13-stats)
 14. [Rotas — Logs de Auditoria](#14-logs-de-auditoria)
@@ -122,7 +126,9 @@ Códigos de máquina comuns: `VALIDATION_ERROR`, `NOT_FOUND`, `CONFLICT`, `FORBI
 `classroom` | `study_room` | `meeting_room` | `hall`
 
 ### Status de reserva
-`confirmed` | `canceled` | `modified`
+`confirmed` | `canceled` | `modified` | `overridden`
+
+> `overridden` — reserva sobreposta automaticamente por um bloqueio. O usuário recebe notificação.
 
 ### Status de bloqueio
 `active` | `removed`
@@ -171,9 +177,12 @@ Retorna o perfil do usuário atual extraído do JWT e sincronizado no banco.
   "department": "Ciência da Computação",
   "email": "joao.silva@alu.ufc.br",
   "createdAt": "2026-01-01T00:00:00.000Z",
-  "updatedAt": "2026-01-01T00:00:00.000Z"
+  "updatedAt": "2026-01-01T00:00:00.000Z",
+  "unreadCount": 2
 }
 ```
+
+> `unreadCount` — quantidade de notificações com `read: false` do usuário. Usar para exibir badge no header sem chamada extra à API.
 
 ---
 
@@ -441,14 +450,17 @@ Lista as reservas do usuário autenticado.
     "startTime": "14:00",
     "endTime": "15:00",
     "status": "confirmed",
+    "purpose": "class",
     "changeOrigin": null,
     "recurrenceId": null,
     "createdAt": "...",
     "updatedAt": "...",
-    "space": { "id": "...", "number": "A101", "..." : "..." }
+    "space": { "id": "...", "number": "A101", "name": "Sala A101", "..." : "..." }
   }
 ]
 ```
+
+> `purpose` pode ser `null` em reservas criadas antes da adição do campo.
 
 ---
 
@@ -475,11 +487,12 @@ Lista reservas confirmadas de um espaço. Pode filtrar por data.
   "spaceId": "uuid-do-espaco",
   "date": "2026-06-10",
   "startTime": "14:00",
-  "endTime": "15:00"
+  "endTime": "15:00",
+  "purpose": "class"
 }
 ```
 
-`date` não pode ser no passado. `startTime`/`endTime` devem ser horas cheias (`HH:00`).
+`date` não pode ser no passado. `startTime`/`endTime` devem ser horas cheias (`HH:00`). `purpose` é opcional (máx. 100 caracteres). Valores sugeridos: `class`, `group_study`, `meeting`, `event`, `other`.
 
 **Regras de negócio:**
 - Estudantes podem ter no máximo **1 reserva ativa** simultânea.
@@ -509,12 +522,13 @@ Cria uma série de reservas recorrentes semanais.
   "dayOfWeek": 2,
   "startTime": "14:00",
   "endTime": "15:00",
-  "description": "Aula de POO — turma 2026.1"
+  "description": "Aula de POO — turma 2026.1",
+  "purpose": "class"
 }
 ```
 
 `dayOfWeek`: 0 = domingo, 1 = segunda ... 6 = sábado.
-`startDate` deve ser anterior a `endDate`.
+`startDate` deve ser anterior a `endDate`. `purpose` é opcional.
 
 **Response 201:**
 ```json
@@ -546,6 +560,42 @@ Cria uma série de reservas recorrentes semanais.
 
 ## 11. Bloqueios
 
+### `GET /api/v1/blockings/mine`
+**Roles:** `professor`, `staff`, `maintenance`
+
+Lista os bloqueios **ativos criados pelo usuário autenticado**, com o objeto `space` embutido.
+
+**Response 200:**
+```json
+[
+  {
+    "id": "uuid",
+    "spaceId": "uuid",
+    "createdBy": "uuid",
+    "date": "2026-06-15",
+    "startTime": "10:00",
+    "endTime": "12:00",
+    "reason": "Reunião do Conselho",
+    "blockType": "administrative",
+    "status": "active",
+    "createdAt": "...",
+    "updatedAt": "...",
+    "space": {
+      "id": "uuid",
+      "number": "A101",
+      "name": "Sala A101",
+      "block": "A",
+      "campus": "Pici"
+    }
+  }
+]
+```
+
+> Retorna apenas bloqueios com `status = 'active'`. Bloqueios removidos não aparecem.
+> `student` recebe `403`.
+
+---
+
 ### `GET /api/v1/blockings/space/:spaceId`
 **Roles:** qualquer autenticado
 
@@ -562,7 +612,7 @@ Lista bloqueios **ativos** de um espaço. Pode filtrar por data.
   {
     "id": "uuid",
     "spaceId": "uuid",
-    "userId": "uuid",
+    "createdBy": "uuid",
     "date": "2026-06-15",
     "startTime": "10:00",
     "endTime": "12:00",
