@@ -12,7 +12,7 @@ export const PERIOD_COLORS: Record<PinStatus, string> = {
   available: '#00b050',
   partial: '#f2c200',
   reserved: '#d32f2f',
-  blocked: '#000000',
+  blocked: '#9e9e9e',      // grey — blocked for this period, reason shown in popup
   closed: '#d32f2f',       // visually same as reserved, but semantically distinct
   not_reservable: '#9e9e9e', // grey — space exists but cannot be reserved
 };
