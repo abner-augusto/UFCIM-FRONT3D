@@ -34,7 +34,7 @@ export interface Space {
   closedFrom: string | null;
   closedTo: string | null;
   description: string | null;
-  isActive: boolean;
+  reservable: boolean;
   equipment?: Equipment[];
 }
 

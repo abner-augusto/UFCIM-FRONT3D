@@ -58,14 +58,20 @@ async function updatePopupReservationState(space: Space) {
   popupBlockingReason.value = null;
   popupReservationStateLoading.value = false;
 
-  if (space.isActive === false) {
+  if (!space.reservable) {
     popupReserveDisabled.value = true;
-    popupReserveDisabledReason.value = 'Este espaço não está disponível para reserva.';
+    popupReserveDisabledReason.value = 'Este espaço não está disponível para reservas.';
     return;
   }
 
   const pinStatus = space.modelId ? cachedStatusMap.get(space.modelId) : undefined;
-  
+
+  if (pinStatus === 'not_reservable') {
+    popupReserveDisabled.value = true;
+    popupReserveDisabledReason.value = 'Este espaço não está disponível para reservas.';
+    return;
+  }
+
   if (pinStatus === 'closed') {
     popupReserveDisabled.value = true;
     popupReserveDisabledReason.value = 'Este espaço está fechado neste turno.';
@@ -141,6 +147,7 @@ async function applyPinColors() {
 
   for (const modelId of activeModelIds) {
     const status = statusMap.get(modelId);
+    // Only hide the pin sprite for 'blocked' — non-reservable rooms still show their grey pin
     const opacity = status === 'blocked' ? 0 : 1;
     viewerRef.value?.applyPinOpacity(modelId, opacity);
   }
@@ -238,6 +245,7 @@ function closePopup() {
       :reserve-disabled-reason="popupReserveDisabledReason"
       :blocking-reason="popupBlockingReason"
       :loading-reservation-state="popupReservationStateLoading"
+      :blocking-allowed="selectedSpace.reservable"
       @close="closePopup"
       @reserve="handleReserve"
       @block="handleBlock"

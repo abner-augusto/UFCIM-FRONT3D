@@ -10,6 +10,7 @@ const props = defineProps<{
   reserveDisabledReason?: string | null;
   blockingReason?: string | null;
   loadingReservationState?: boolean;
+  blockingAllowed?: boolean;
 }>();
 
 defineEmits<{
@@ -136,16 +137,21 @@ function groupStatusLabel(g: EquipmentGroup): string {
       <!-- Actions -->
       <div class="room-popup__actions">
         <button
-          v-if="canReserve && !reserveDisabled"
+          v-if="canReserve"
           class="btn-primary"
-          :disabled="loadingReservationState"
+          :disabled="reserveDisabled || loadingReservationState"
           @click="$emit('reserve')"
         >
           Fazer Reserva
         </button>
         <p v-if="loadingReservationState" class="action-hint">Verificando disponibilidade...</p>
         <p v-else-if="reserveDisabledReason" class="action-hint action-hint--warn">{{ reserveDisabledReason }}</p>
-        <button v-if="canBlock" class="btn-secondary" @click="$emit('block')">
+        <button
+          v-if="canBlock"
+          class="btn-secondary"
+          :disabled="blockingAllowed === false"
+          @click="$emit('block')"
+        >
           Bloquear Espaço
         </button>
       </div>
@@ -389,6 +395,12 @@ function groupStatusLabel(g: EquipmentGroup): string {
   transition: background 0.15s;
 }
 .btn-secondary:hover { background: #e8f5f0; }
+.btn-secondary:disabled {
+  border-color: #ccc;
+  color: #bbb;
+  cursor: not-allowed;
+}
+.btn-secondary:disabled:hover { background: none; }
 
 .action-hint {
   margin: 0;

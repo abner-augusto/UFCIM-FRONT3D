@@ -122,7 +122,7 @@ const selectedDateBlockings = computed(() => {
 });
 
 const reservationStatusMessage = computed(() => {
-  if (space.value?.isActive === false) {
+  if (space.value?.reservable === false) {
     return 'Este espaço não está disponível para reserva.';
   }
   return null;
@@ -229,7 +229,7 @@ const customRangeLabel = computed<string | null>(() => {
 
 // ── Can continue? ───────────────────────────────────────────────
 function canContinue(): boolean {
-  if (space.value?.isActive === false) return false;
+  if (space.value?.reservable === false) return false;
   if (!selectedDate.value || !selectedPurpose.value) return false;
   if (selectionMode.value === 'slots') return !!selectedSlot.value;
   return !!(pickedStart.value && pickedEnd.value);
@@ -257,7 +257,7 @@ const recurringMinEndDate = computed(() => {
 
 function canSubmitRecurring() {
   return (
-    space.value?.isActive !== false &&
+    space.value?.reservable !== false &&
     recurringStartDate.value &&
     recurringEndDate.value &&
     recurringEndDate.value > recurringStartDate.value &&

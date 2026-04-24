@@ -6,14 +6,15 @@ import type { PeriodKey } from '@/utils/period';
 
 export type { PeriodKey } from '@/utils/period';
 
-export type PinStatus = 'available' | 'partial' | 'reserved' | 'blocked' | 'closed';
+export type PinStatus = 'available' | 'partial' | 'reserved' | 'blocked' | 'closed' | 'not_reservable';
 
 export const PERIOD_COLORS: Record<PinStatus, string> = {
   available: '#00b050',
   partial: '#f2c200',
   reserved: '#d32f2f',
   blocked: '#000000',
-  closed: '#d32f2f', // visually same as reserved, but semantically distinct
+  closed: '#d32f2f',       // visually same as reserved, but semantically distinct
+  not_reservable: '#9e9e9e', // grey — space exists but cannot be reserved
 };
 
 export function derivePinStatus(
@@ -24,7 +25,13 @@ export function derivePinStatus(
   const periodSlots = slots.filter(
     (slot) => slot.startTime >= range.startTime && slot.startTime < range.endTime,
   );
-  const openSlots = periodSlots.filter((slot) => slot.status !== 'closed');
+
+  // All slots explicitly not reservable → space is not open for bookings
+  if (periodSlots.length > 0 && periodSlots.every((slot) => slot.status === 'not_reservable')) {
+    return 'not_reservable';
+  }
+
+  const openSlots = periodSlots.filter((slot) => slot.status !== 'closed' && slot.status !== 'not_reservable');
 
   if (openSlots.length === 0) return 'closed';
   if (openSlots.some((slot) => slot.status === 'blocked')) return 'blocked';
