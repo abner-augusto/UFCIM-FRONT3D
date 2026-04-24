@@ -1,13 +1,20 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
+import { useCampusStore } from '@/stores/campus';
 import { useRouter } from 'vue-router';
 import { hasRole, CAN_BLOCK } from '@/utils/roles';
 
 const authStore = useAuthStore();
+const campusStore = useCampusStore();
 const router = useRouter();
 
 const canBlock = computed(() => hasRole(authStore.userRole, CAN_BLOCK));
+const viewerRoute = computed(() =>
+  campusStore.selectedCampusId
+    ? { name: 'viewer', params: { campusId: campusStore.selectedCampusId } }
+    : null
+);
 
 function logout() {
   authStore.logout();
@@ -21,6 +28,7 @@ function logout() {
       <router-link to="/campus" class="header-logo">UFCIM</router-link>
     </div>
     <nav class="header-nav">
+      <router-link v-if="viewerRoute" :to="viewerRoute">Maquete 3D</router-link>
       <router-link to="/minhas-reservas">Minhas Reservas</router-link>
       <router-link v-if="canBlock" to="/meus-bloqueios">Meus Bloqueios</router-link>
       <router-link to="/notificacoes" class="notif-link">

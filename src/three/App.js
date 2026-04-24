@@ -3,11 +3,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import TWEEN from 'three/examples/jsm/libs/tween.module.js';
 import Stats from 'stats.js';
 
-// Imports for post-processing
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { CustomOutlinePass } from './postprocessing/CustomOutlinePass.js';
-
 import { World } from './World.js';
 import { ModelManager } from './ModelManager.js';
 import { UIManager } from './UIManager.js';
@@ -34,9 +29,6 @@ export class App {
         this.cameraManager = new CameraManager(this.camera, this.controls);
         this.enableStats = false;
 
-        // App Composer and Post-processing
-        this._setupPostProcessing();
-
         // App components
         this.world = new World(this.scene);
         this.modelManager = new ModelManager(this.scene);
@@ -49,7 +41,6 @@ export class App {
             this.cameraManager,
             this.interactionManager
             );
-        this._uiControlsEnabled = true;
         this.api = null;
         this.debugGui = null;
 
@@ -78,6 +69,7 @@ export class App {
         window.addEventListener('resize', this._onResize);
         this.animate();
     }
+
 
     _setupEventListeners() {
         this.interactionManager.addEventListener('pinClick', (e) => {
@@ -113,7 +105,6 @@ export class App {
             this.interactionManager,
             this.cameraManager
         );
-        this.uiManager?.setControlsEnabled?.(this._uiControlsEnabled);
         this.api = new UFCIMAPI({
             modelManager: this.modelManager,
             interactionManager: this.interactionManager,
@@ -121,22 +112,6 @@ export class App {
             uiManager: this.uiManager,
             popupManager: this.popupManager,
         });
-    }
-
-    _setupPostProcessing() {
-        this.usePostprocessing = false;
-        this.composer = new EffectComposer(this.renderer);
-        const renderPass = new RenderPass(this.scene, this.camera);
-        this.composer.addPass(renderPass);
-
-        this.outlinePass = new CustomOutlinePass(
-            new THREE.Vector2(window.innerWidth, window.innerHeight),
-            this.scene,
-            this.camera
-        );
-        // configure outline pass to only see meshes marked on layer 1
-        this.outlinePass.outlineLayer = 1;
-        this.composer.addPass(this.outlinePass);
     }
 
     _createCamera() {
@@ -173,10 +148,10 @@ export class App {
         if (this.debugGui) {
             this.debugGui.destroy();
         }
-        this.debugGui = new GUI({ title: 'Debug', closeFolders: true });
+        this.debugGui = new GUI({ title: 'Debug', closeFolders: true, width: 180 });
 
-        const togglesFolder = this.debugGui.addFolder('Toggles');
-        togglesFolder.add(this, 'enableStats').name('Stats').onChange((value) => {
+        // --- Stats toggle ---
+        this.debugGui.add(this, 'enableStats').name('Stats').onChange((value) => {
             if (value) {
                 this._createStatsPanels();
                 this._setStatsVisibility(true);
@@ -184,23 +159,15 @@ export class App {
                 this._setStatsVisibility(false);
             }
         });
-        togglesFolder.add(this, 'usePostprocessing').name('Post-processing');
-        togglesFolder.add(this, '_uiControlsEnabled').name('UI Controls').onChange((v) => {
-            this.uiManager?.setControlsEnabled?.(v);
-        });
-        togglesFolder.close();
 
-        const cameraFolder = this.debugGui.addFolder('Camera');
+        // --- Camera folder ---
+        const cameraFolder = this.debugGui.addFolder('Câmera');
         const cameraActions = {
             copy: () => {
                 const data = {
                     position: this.camera.position.toArray(),
-                    rotation: [this.camera.rotation.x, this.camera.rotation.y, this.camera.rotation.z],
-                    quaternion: this.camera.quaternion.toArray(),
                     target: this.controls.target.toArray(),
                     fov: this.camera.fov,
-                    near: this.camera.near,
-                    far: this.camera.far
                 };
                 const json = JSON.stringify(data, null, 2);
                 if (navigator.clipboard?.writeText) {
@@ -210,21 +177,29 @@ export class App {
                 }
             },
             log: () => {
-                console.log('CAMERA DEBUG:', {
+                console.log('[UFCIM Camera]', {
                     position: this.camera.position.clone(),
-                    rotation: this.camera.rotation.clone(),
-                    quaternion: this.camera.quaternion.clone(),
                     target: this.controls.target.clone(),
                     fov: this.camera.fov,
-                    near: this.camera.near,
-                    far: this.camera.far
                 });
-            }
+            },
         };
-        cameraFolder.add(cameraActions, 'copy').name('Copy camera');
-        cameraFolder.add(cameraActions, 'log').name('Log camera');
+        cameraFolder.add(cameraActions, 'copy').name('Copiar JSON');
+        cameraFolder.add(cameraActions, 'log').name('Log console');
         cameraFolder.close();
+
+        // Start collapsed and position bottom-right
         this.debugGui.close();
+        const el = this.debugGui.domElement;
+        el.style.position = 'fixed';
+        el.style.bottom = '12px';
+        el.style.right = '12px';
+        el.style.top = 'auto';
+        el.style.left = 'auto';
+        el.style.opacity = '0.55';
+        el.style.transition = 'opacity 0.2s ease';
+        el.addEventListener('mouseenter', () => { el.style.opacity = '1'; });
+        el.addEventListener('mouseleave', () => { el.style.opacity = '0.55'; });
     }
 
     _updateRendererSize() {
@@ -236,10 +211,7 @@ export class App {
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.composer.setSize(window.innerWidth, window.innerHeight);
-        this.outlinePass.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        
     }
 
     _createStatsPanels() {
@@ -272,11 +244,7 @@ export class App {
         this.controls.update();
         TWEEN.update();
 
-        if (this.usePostprocessing) {
-            this.composer.render();
-        } else {
-            this.renderer.render(this.scene, this.camera);
-        }
+        this.renderer.render(this.scene, this.camera);
         if (this.enableStats && this.statsPanels) {
             this.statsPanels.forEach(p => p.end());
         }
@@ -329,10 +297,6 @@ export class App {
                 });
             }
         });
-
-        // Dispose postprocessing
-        this.composer?.dispose?.();
-        this.outlinePass?.dispose?.();
 
         // Dispose controls
         this.controls?.dispose();
