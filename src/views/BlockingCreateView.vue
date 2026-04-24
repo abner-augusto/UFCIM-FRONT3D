@@ -118,7 +118,7 @@ async function handleSubmit() {
       startTime: resolvedStart.value,
       endTime: resolvedEnd.value,
       blockType: selectedBlockType.value,
-      reason: reason.value.trim() || undefined,
+      reason: reason.value.trim(),
     });
     successMsg.value = 'Espaço bloqueado com sucesso.';
     setTimeout(() => router.push({ name: 'my-blockings' }), 1500);
