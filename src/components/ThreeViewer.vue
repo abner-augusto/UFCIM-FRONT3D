@@ -52,6 +52,9 @@ defineExpose({
   setFloorUIVisible: (visible: boolean) => {
     threeApp?.uiManager?.toggleFloorUI(visible);
   },
+  setSearchData: (spaces: Array<{ modelId: string | null; name: string; number: string; block: string; type: string; reservable: boolean }>) => {
+    threeApp?.uiManager?.setSearchSpaces(spaces);
+  },
 });
 </script>
 

@@ -12,6 +12,16 @@ export class UIManager {
     this.modelManager = null;
     this.interactionManager = null;
     this.cameraManager = null;
+    /** @type {Array<{modelId: string|null, name: string, number: string, block: string, type: string, reservable: boolean}>} */
+    this._searchSpaces = [];
+  }
+
+  /**
+   * Set backend space data for search. Replaces manifest-based pin search.
+   * @param {Array<{modelId: string|null, name: string, number: string, block: string, type: string, reservable: boolean}>} spaces
+   */
+  setSearchSpaces(spaces) {
+    this._searchSpaces = spaces.slice().sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
   }
 
   async createFloorUI(modelManager, interactionManager, cameraManager) {
@@ -286,21 +296,19 @@ export class UIManager {
       return;
     }
 
-    const allPins = this.interactionManager?.getAllPins?.() ?? [];
-    const results = allPins.filter((pin) => {
-      const label = pin.userData.displayName ?? pin.userData.id ?? '';
-      return label.toLowerCase().includes(searchTerm);
-    });
+    const results = this._searchSpaces.filter((space) =>
+      space.name.toLowerCase().includes(searchTerm) ||
+      space.number.toLowerCase().includes(searchTerm),
+    );
 
     this._renderSearchResults(results);
   }
 
   _showAllPinsSearch() {
-    const allPins = this.interactionManager?.getAllPins?.() ?? [];
     if (this.searchInput) {
       this.searchInput.value = '';
     }
-    this._renderSearchResults(allPins);
+    this._renderSearchResults(this._searchSpaces);
   }
 
   _renderSearchResults(results) {
@@ -316,25 +324,45 @@ export class UIManager {
       return;
     }
 
-    results.forEach((pin) => {
+    results.forEach((space) => {
       const item = document.createElement('div');
       item.className = 'search-result-item';
-      item.textContent = pin.userData.displayName ?? pin.userData.id ?? 'Pin';
-      item.addEventListener('click', () => this._handleSearchResultClick(pin));
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'search-result-name';
+      nameEl.textContent = space.name;
+
+      const metaEl = document.createElement('span');
+      metaEl.className = 'search-result-meta';
+      metaEl.textContent = space.block;
+
+      if (!space.reservable) {
+        const tag = document.createElement('span');
+        tag.className = 'search-result-tag';
+        tag.textContent = '(indisponível)';
+        metaEl.appendChild(tag);
+      }
+
+      item.appendChild(nameEl);
+      item.appendChild(metaEl);
+      item.addEventListener('click', () => this._handleSearchResultClick(space));
       this.searchResultsContainer.appendChild(item);
     });
 
     this.searchResultsContainer.style.display = 'block';
   }
 
-  async _handleSearchResultClick(pin) {
+  async _handleSearchResultClick(space) {
+    if (!space?.modelId) return;
+
+    // Find the corresponding 3D pin
+    const allPins = this.interactionManager?.getAllPins?.() ?? [];
+    const pin = allPins.find((p) => p.userData?.id === space.modelId);
     if (!pin) return;
+
     const building = pin.userData.building;
     const floorLevel = pin.userData.floorLevel;
-    if (!building || typeof floorLevel !== 'number') {
-      console.warn('Search result missing building or floor info', pin);
-      return;
-    }
+    if (!building || typeof floorLevel !== 'number') return;
 
     for (const b of Object.keys(this.modelManager.manifest)) {
       this.modelManager.enableBuilding(b, false);

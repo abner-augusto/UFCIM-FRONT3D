@@ -15,6 +15,11 @@ const viewerRoute = computed(() =>
     ? { name: 'viewer', params: { campusId: campusStore.selectedCampusId } }
     : null
 );
+const spaceBrowserRoute = computed(() =>
+  campusStore.selectedCampusId
+    ? { name: 'space-browser', params: { campusId: campusStore.selectedCampusId } }
+    : null
+);
 
 function logout() {
   authStore.logout();
@@ -29,6 +34,7 @@ function logout() {
     </div>
     <nav class="header-nav">
       <router-link v-if="viewerRoute" :to="viewerRoute">Maquete 3D</router-link>
+      <router-link v-if="spaceBrowserRoute" :to="spaceBrowserRoute">Buscar Espaços</router-link>
       <router-link to="/minhas-reservas">Minhas Reservas</router-link>
       <router-link v-if="canBlock" to="/meus-bloqueios">Meus Bloqueios</router-link>
       <router-link to="/notificacoes" class="notif-link">

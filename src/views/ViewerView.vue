@@ -170,6 +170,17 @@ onMounted(async () => {
     for (const space of spaces) {
       if (space.modelId) spacesByModelId.set(space.modelId, space);
     }
+    // Feed backend space data into viewer search
+    viewerRef.value?.setSearchData(
+      spaces.map((s) => ({
+        modelId: s.modelId,
+        name: s.name,
+        number: s.number,
+        block: s.block,
+        type: s.type,
+        reservable: s.reservable,
+      })),
+    );
   } catch (e) {
     console.error('Falha ao carregar espaços:', e);
   } finally {

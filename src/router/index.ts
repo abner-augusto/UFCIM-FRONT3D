@@ -33,6 +33,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/campus/:campusId/espacos',
+      name: 'space-browser',
+      component: () => import('@/views/SpaceBrowserView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/reserva/:spaceId',
       name: 'reservation',
       component: () => import('@/views/ReservationView.vue'),

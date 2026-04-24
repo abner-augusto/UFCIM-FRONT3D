@@ -62,7 +62,7 @@ export const api = {
     ),
 
   // Spaces — GET /spaces returns array directly (no data wrapper)
-  listSpaces: (token: string | null, params?: { campus?: string; block?: string; department?: string; type?: string }) =>
+  listSpaces: (token: string | null, params?: { campus?: string; block?: string; department?: string; type?: string; limit?: string; page?: string }) =>
     request<Space[]>(`/spaces?${new URLSearchParams(params as any)}`, token),
 
   getSpace: (token: string | null, id: string) =>
