@@ -44,6 +44,7 @@ export class PopupManager {
 
     if (this.vueManaged) {
       const label = pin.userData?.displayName || pin.userData?.id || pin.name || 'Sala';
+      this.cameraManager.focusOnPin(pin);
       window.dispatchEvent(new CustomEvent('ufcim:pin-click', {
         detail: {
           pinId: pin.userData?.id,

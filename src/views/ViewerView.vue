@@ -186,6 +186,7 @@ async function handlePinClick(detail: { pinId: string; displayName: string; buil
   const seq = ++popupDetailSeq;
   selectedSpace.value = summarySpace;
   showPopup.value = true;
+  viewerRef.value?.setFloorUIVisible(false);
   try {
     const detailedSpace = await api.getSpace(auth.token, summarySpace.id);
     if (seq !== popupDetailSeq || !showPopup.value) return;
@@ -217,6 +218,7 @@ function closePopup() {
   popupReserveDisabledReason.value = null;
   popupBlockingReason.value = null;
   popupReservationStateLoading.value = false;
+  viewerRef.value?.setFloorUIVisible(true);
 }
 </script>
 

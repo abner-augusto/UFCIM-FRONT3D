@@ -272,8 +272,9 @@ export class UIManager {
 
   toggleFloorUI(show) {
     if (this.floorUIContainer) {
-      this.floorUIContainer.style.opacity = show ? '1' : '0.1';
+      this.floorUIContainer.style.opacity = show ? '1' : '0';
       this.floorUIContainer.style.pointerEvents = show ? 'auto' : 'none';
+      this.floorUIContainer.style.visibility = show ? 'visible' : 'hidden';
     }
   }
 

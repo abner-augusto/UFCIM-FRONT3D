@@ -49,6 +49,9 @@ defineExpose({
   applyPinOpacity: (pinId: string, opacity: number) => {
     threeApp?.interactionManager?.setPinOpacity(pinId, opacity);
   },
+  setFloorUIVisible: (visible: boolean) => {
+    threeApp?.uiManager?.toggleFloorUI(visible);
+  },
 });
 </script>
 
