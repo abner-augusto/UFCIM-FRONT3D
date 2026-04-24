@@ -138,17 +138,15 @@ async function applyPinColors() {
 
   const colorMap = new Map<string, string>();
   for (const [modelId, status] of statusMap.entries()) {
-    if (status !== 'blocked') {
-      colorMap.set(modelId, PERIOD_COLORS[status]);
-    }
+    colorMap.set(modelId, PERIOD_COLORS[status]);
   }
 
   viewerRef.value?.filterPinsToBackendSpaces(activeModelIds, colorMap);
 
   for (const modelId of activeModelIds) {
     const status = statusMap.get(modelId);
-    // Only hide the pin sprite for 'blocked' — non-reservable rooms still show their grey pin
-    const opacity = status === 'blocked' ? 0 : 1;
+    // Dimmed pins (blocked/not_reservable) stay visible but at 60% opacity
+    const opacity = (status === 'blocked' || status === 'not_reservable') ? 0.8 : 1;
     viewerRef.value?.applyPinOpacity(modelId, opacity);
   }
 }
