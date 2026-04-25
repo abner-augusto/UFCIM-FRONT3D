@@ -102,10 +102,9 @@ export class CameraManager {
       .easing(TWEEN.Easing.Quadratic.Out)
       .onComplete(() => {
         this.controls.enabled = true;
+        this.savedCameraState = null;
       })
       .start();
-
-    this.savedCameraState = null; // Clear state after use
   }
 
   /**

@@ -211,6 +211,7 @@ export class PopupManager {
   }
 
   dispose() {
+    this._clearPendingControlUnlock();
     this.close({ restoreCamera: false });
   }
 

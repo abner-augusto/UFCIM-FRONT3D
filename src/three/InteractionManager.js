@@ -261,7 +261,14 @@ export class InteractionManager extends THREE.EventDispatcher {
 
     dispose() {
         this.canvas.removeEventListener('pointerdown', this._onPointerDown);
-        // Add disposal for factory-created objects if necessary
+        [...this.labelSprites, ...this.clickTargets].forEach((sprite) => {
+            sprite.material?.map?.dispose();
+            sprite.material?.dispose();
+        });
+        this.interactiveObjects = [];
+        this.labelSprites = [];
+        this.clickTargets = [];
+        this.pinGroups.clear();
     }
 
     setInteractionsEnabled(enabled) {

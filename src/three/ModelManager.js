@@ -180,11 +180,7 @@ export class ModelManager {
 
       const yOffset = 0.5;
       entry.object.position.y += yOffset;
-      gltf.scene.traverse((child) => {
-        if (child.isMesh) {
-          this._prepMesh(child);
-        }
-      });
+
       this.scene.add(gltf.scene);
       this._emitPinsForEntry(entry);
     } catch (err) {
@@ -245,28 +241,6 @@ export class ModelManager {
       this.onPinsLoaded(payload);
     }
     entry.pinsLoaded = true;
-  }
-
-  _prepMesh(mesh) {
-    if (mesh.geometry.attributes.color) {
-        const colorAttr = mesh.geometry.getAttribute('color');
-        const sampleSize = Math.min(colorAttr.array.length, 12);
-        const sample = Array.from(colorAttr.array.slice(0, sampleSize));
-        //console.log('Vertex colors detected on mesh:', mesh.name || mesh.uuid, {
-        //  count: colorAttr.count,
-        //  sample,
-        //});
-        mesh.userData.outlineEligible = true;
-        mesh.layers.enable(1);
-
-        if (mesh.material) {
-            if (Array.isArray(mesh.material)) {
-                mesh.material.forEach(m => m.vertexColors = false);
-            } else {
-                mesh.material.vertexColors = false;
-            }
-        }
-    }
   }
 
   _applyVisibility(interactionManager = null) {
