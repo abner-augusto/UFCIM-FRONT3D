@@ -72,7 +72,7 @@ function groupStatusLabel(g: EquipmentGroup): string {
       <button class="room-popup__close" @click="$emit('close')" aria-label="Fechar">&times;</button>
 
       <!-- Header -->
-      <h2 class="room-popup__title">{{ space.name }}</h2>
+      <h2 class="room-popup__title">{{ space.number }}</h2>
       <p class="room-popup__meta">
         <span>{{ typeLabel }}</span>
         <span class="meta-sep">·</span>

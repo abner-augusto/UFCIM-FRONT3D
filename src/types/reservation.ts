@@ -45,7 +45,7 @@ export interface Reservation {
   purpose?: string | null;
   createdAt: string;
   updatedAt: string;
-  space?: { id: string; number: string; name?: string; block?: string; campus?: string; [key: string]: any };
+  space?: { id: string; number: string; name: string; block?: string; campus?: string; [key: string]: any };
 }
 
 export interface Notification {

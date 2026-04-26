@@ -183,6 +183,8 @@ function handleToggle() {
       <div class="space-card__info">
         <h3>{{ space.name }}</h3>
         <p>
+          {{ space.number }}
+          <span class="sep">·</span>
           {{ typeLabel }}
           <span class="sep">·</span>
           {{ space.block }}
