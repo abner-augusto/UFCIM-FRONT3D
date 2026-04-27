@@ -190,6 +190,12 @@ function periodLabel(startTime: string, endTime: string): string {
             </div>
           </section>
 
+          <!-- Cancellation reason -->
+          <div v-if="r.status === 'canceled' && r.cancelReason" class="detail-cancel-reason">
+            <p class="detail-cancel-reason__label">Motivo do cancelamento</p>
+            <p class="detail-cancel-reason__text">{{ r.cancelReason }}</p>
+          </div>
+
           <!-- Cancel action -->
           <div v-if="r.status === 'confirmed'" class="detail-actions">
             <button
@@ -358,6 +364,27 @@ h1 {
   font-family: monospace;
   font-size: 0.75rem;
   color: #666;
+}
+
+/* Cancellation reason */
+.detail-cancel-reason {
+  padding: 0.65rem 0.9rem;
+  border-radius: 10px;
+  background: #fff5f5;
+  border-left: 3px solid #c0392b;
+}
+.detail-cancel-reason__label {
+  margin: 0 0 0.2rem;
+  color: #991b1b;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.detail-cancel-reason__text {
+  margin: 0;
+  color: #7f1d1d;
+  font-size: 0.84rem;
 }
 
 /* Actions */

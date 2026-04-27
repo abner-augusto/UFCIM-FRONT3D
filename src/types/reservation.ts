@@ -40,6 +40,7 @@ export interface Reservation {
   startTime: string;
   endTime: string;
   status: ReservationStatus;
+  cancelReason?: string | null;
   changeOrigin: string | null;
   recurrenceId: string | null;
   purpose?: string | null;
