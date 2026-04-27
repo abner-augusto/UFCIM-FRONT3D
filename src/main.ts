@@ -14,12 +14,13 @@ app.use(router);
 const auth = useAuthStore();
 if (auth.token && !auth.user) {
   api.getMe(auth.token)
-    .then(me => auth.setAuth(auth.token!, {
+    .then(me => auth.setAuth(auth.token!, auth.refreshToken ?? 'dev', {
       id: me.id,
       name: me.name,
       email: me.email,
       registration: me.registration,
       role: me.role as any,
+      isMasterAdmin: me.isMasterAdmin ?? false,
     }, me.unreadCount ?? 0))
     .catch(() => auth.logout()) // token is invalid/expired — clear it
     .finally(() => app.mount('#app'));

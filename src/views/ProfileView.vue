@@ -11,7 +11,7 @@ interface UserProfile {
   id: string;
   name: string;
   email: string;
-  registration: string;
+  registration: string | null;
   role: string;
   department?: string;
 }
@@ -58,7 +58,7 @@ function handleLogout() {
         <span class="profile-label">Nome</span>
         <span class="profile-value">{{ profile.name }}</span>
       </div>
-      <div class="profile-row">
+      <div v-if="profile.registration" class="profile-row">
         <span class="profile-label">Matrícula</span>
         <span class="profile-value">{{ profile.registration }}</span>
       </div>

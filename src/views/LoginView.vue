@@ -2,45 +2,84 @@
 import { ref } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
-import { api } from '@/services/api';
+import { api, ApiError } from '@/services/api';
+import type { UserRole } from '@/stores/auth';
 
 const auth = useAuthStore();
 const router = useRouter();
 const loading = ref(false);
 const errorMsg = ref<string | null>(null);
+const showForgotInfo = ref(false);
 
 const IS_DEV_AUTH = import.meta.env.VITE_DEV_AUTH === 'true';
+const showDevPanel = ref(false);
 
-// Dev login — backend uses hardcoded staff user for all headerless requests
-async function loginAs(_role: string) {
+// --- Real login ---
+const email = ref('');
+const password = ref('');
+
+const ERROR_MAP: Record<string, string> = {
+  'Invalid credentials': 'Credenciais inválidas.',
+  'Account disabled': 'Conta desativada. Entre em contato com o administrador.',
+  'Account temporarily locked': 'Conta temporariamente bloqueada. Tente novamente mais tarde.',
+};
+
+async function handleLogin() {
+  if (!email.value || !password.value) return;
+  loading.value = true;
+  errorMsg.value = null;
+  try {
+    const { accessToken, refreshToken, user } = await api.login({ email: email.value, password: password.value });
+    auth.setAuth(accessToken, refreshToken, {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      registration: user.registration,
+      role: user.role as UserRole,
+      isMasterAdmin: user.isMasterAdmin,
+    }, user.unreadCount ?? 0);
+    router.push({ name: 'campus-select' });
+  } catch (e) {
+    if (e instanceof ApiError) {
+      errorMsg.value = ERROR_MAP[e.message] ?? 'Erro ao entrar. Tente novamente.';
+    } else {
+      errorMsg.value = 'Não foi possível conectar ao servidor.';
+    }
+  } finally {
+    loading.value = false;
+  }
+}
+
+// --- Dev login (preserved for local development) ---
+async function loginAs(role: string) {
   loading.value = true;
   errorMsg.value = null;
   try {
     if (IS_DEV_AUTH) {
-      // Dev auth: no login endpoint — fetch /users/me without Authorization header
       const userData = await api.getMe(null);
-      auth.setAuth('dev', {
+      auth.setAuth('dev', 'dev', {
         id: userData.id,
         name: userData.name,
         email: userData.email,
         registration: userData.registration,
-        role: userData.role as any,
+        role: userData.role as UserRole,
+        isMasterAdmin: userData.isMasterAdmin ?? false,
       }, userData.unreadCount ?? 0);
     } else {
-      const { token } = await api.devLogin(_role);
+      const { token } = await api.devLogin(role);
       const userData = await api.getMe(token);
-      auth.setAuth(token, {
+      auth.setAuth(token, 'dev', {
         id: userData.id,
         name: userData.name,
         email: userData.email,
         registration: userData.registration,
-        role: userData.role as any,
+        role: userData.role as UserRole,
+        isMasterAdmin: userData.isMasterAdmin ?? false,
       }, userData.unreadCount ?? 0);
     }
     router.push({ name: 'campus-select' });
-  } catch (e) {
+  } catch {
     errorMsg.value = 'Não foi possível conectar ao servidor. Verifique se o backend está rodando.';
-    console.error('Login failed:', e);
   } finally {
     loading.value = false;
   }
@@ -51,15 +90,59 @@ async function loginAs(_role: string) {
   <div class="login-view">
     <div class="login-card">
       <h1>UFCIM</h1>
-      <p>Reserva de Espaços — UFC</p>
-      <div class="login-roles">
-        <button @click="loginAs('student')" :disabled="loading">Entrar como Estudante</button>
-        <button @click="loginAs('professor')" :disabled="loading">Entrar como Professor</button>
-        <button @click="loginAs('staff')" :disabled="loading">Entrar como Funcionário</button>
-        <button @click="loginAs('maintenance')" :disabled="loading">Entrar como Manutenção</button>
-      </div>
-      <p v-if="loading" class="login-status">Entrando...</p>
-      <p v-if="errorMsg" class="login-error">{{ errorMsg }}</p>
+      <p class="login-subtitle">Reserva de Espaços — UFC</p>
+
+      <form class="login-form" @submit.prevent="handleLogin">
+        <label class="login-field">
+          <span>Email</span>
+          <input
+            v-model="email"
+            type="email"
+            placeholder="seu@email.com"
+            autocomplete="email"
+            required
+            :disabled="loading"
+          />
+        </label>
+
+        <label class="login-field">
+          <span>Senha</span>
+          <input
+            v-model="password"
+            type="password"
+            placeholder="••••••••••"
+            autocomplete="current-password"
+            required
+            :disabled="loading"
+          />
+        </label>
+
+        <p v-if="errorMsg" class="login-error">{{ errorMsg }}</p>
+
+        <button type="submit" class="login-btn" :disabled="loading">
+          {{ loading ? 'Entrando...' : 'Entrar' }}
+        </button>
+      </form>
+
+      <button class="forgot-link" @click="showForgotInfo = !showForgotInfo">
+        Esqueci minha senha
+      </button>
+      <p v-if="showForgotInfo" class="forgot-info">
+        Entre em contato com o administrador para redefinir sua senha.
+      </p>
+
+      <!-- Dev mode panel -->
+      <template v-if="IS_DEV_AUTH">
+        <button class="dev-toggle" @click="showDevPanel = !showDevPanel">
+          {{ showDevPanel ? 'Ocultar modo desenvolvedor' : 'Modo desenvolvedor' }}
+        </button>
+        <div v-if="showDevPanel" class="login-roles">
+          <button @click="loginAs('student')" :disabled="loading">Entrar como Estudante</button>
+          <button @click="loginAs('professor')" :disabled="loading">Entrar como Professor</button>
+          <button @click="loginAs('staff')" :disabled="loading">Entrar como Funcionário</button>
+          <button @click="loginAs('maintenance')" :disabled="loading">Entrar como Manutenção</button>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -70,24 +153,130 @@ async function loginAs(_role: string) {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
+  background: #f7f7f7;
 }
 .login-card {
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 380px;
   text-align: center;
-  padding: 2rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+.login-card h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.75rem;
+  color: #1D9E75;
+}
+.login-subtitle {
+  margin: 0 0 1.75rem;
+  color: #888;
+  font-size: 0.9rem;
+}
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  text-align: left;
+}
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.875rem;
+  color: #555;
+  font-weight: 500;
+}
+.login-field input {
+  padding: 0.65rem 0.875rem;
+  border: 1px solid #d5d5d5;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.login-field input:focus {
+  border-color: #1D9E75;
+}
+.login-field input:disabled {
+  background: #f5f5f5;
+  color: #aaa;
+}
+.login-btn {
+  margin-top: 0.25rem;
+  padding: 0.75rem;
+  background: #1D9E75;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.login-btn:hover:not(:disabled) {
+  background: #178a64;
+}
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.login-error {
+  color: #c0392b;
+  font-size: 0.875rem;
+  margin: 0;
+}
+.forgot-link {
+  display: block;
+  margin-top: 1rem;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+.forgot-link:hover {
+  color: #555;
+}
+.forgot-info {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #555;
+  background: #f0f0f0;
+  border-radius: 8px;
+  padding: 0.6rem 0.875rem;
+  text-align: left;
+}
+.dev-toggle {
+  display: block;
+  margin-top: 1.5rem;
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+}
+.dev-toggle:hover {
+  color: #888;
 }
 .login-roles {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  margin-top: 1rem;
+  margin-top: 0.75rem;
 }
 .login-roles button {
-  padding: 0.75rem 1.5rem;
+  padding: 0.65rem 1rem;
   border: 1px solid #ccc;
   border-radius: 8px;
   background: white;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 .login-roles button:hover:not(:disabled) {
   background: #f0f0f0;
@@ -95,15 +284,5 @@ async function loginAs(_role: string) {
 .login-roles button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-.login-status {
-  margin-top: 1rem;
-  color: #888;
-  font-size: 0.9rem;
-}
-.login-error {
-  margin-top: 1rem;
-  color: #c0392b;
-  font-size: 0.875rem;
 }
 </style>

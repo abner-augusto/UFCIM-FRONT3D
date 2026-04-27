@@ -4,32 +4,27 @@ import type { Availability, Reservation, Notification, Blocking } from '@/types/
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const IS_DEV_AUTH = import.meta.env.VITE_DEV_AUTH === 'true';
 
+export interface PublicUser {
+  id: string;
+  name: string;
+  email: string;
+  registration: string | null;
+  role: string;
+  isMasterAdmin: boolean;
+  unreadCount?: number;
+}
+
+export interface InvitationPreview {
+  valid: boolean;
+  inviterName?: string;
+  role?: string;
+}
+
 function getHeaders(token: string | null): HeadersInit {
   const headers: HeadersInit = { 'Content-Type': 'application/json' };
   // Dev auth middleware returns 401 if Authorization header is present — skip it in dev
   if (token && !IS_DEV_AUTH) headers['Authorization'] = `Bearer ${token}`;
   return headers;
-}
-
-async function request<T>(
-  path: string,
-  token: string | null,
-  options: RequestInit = {}
-): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers: { ...getHeaders(token), ...(options.headers || {}) },
-  });
-
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: res.statusText }));
-    throw new ApiError(res.status, error.error || res.statusText, error.code, error.details);
-  }
-
-  // The API never returns 204, but guard against empty bodies defensively
-  const text = await res.text();
-  if (!text) return undefined as unknown as T;
-  return JSON.parse(text) as T;
 }
 
 export class ApiError extends Error {
@@ -44,6 +39,45 @@ export class ApiError extends Error {
   }
 }
 
+async function request<T>(
+  path: string,
+  token: string | null,
+  options: RequestInit = {},
+  meta: { authPath?: boolean; _retried?: boolean } = {}
+): Promise<T> {
+  const root = BASE_URL.replace('/api/v1', '');
+  const url = meta.authPath ? `${root}${path}` : `${BASE_URL}${path}`;
+  const res = await fetch(url, {
+    ...options,
+    headers: { ...getHeaders(token), ...(options.headers || {}) },
+  });
+
+  if (res.status === 401 && !meta._retried && !meta.authPath) {
+    // Import inside function to avoid circular dep at module load time
+    const { useAuthStore } = await import('@/stores/auth');
+    const auth = useAuthStore();
+    if (auth.refreshToken) {
+      try {
+        const { accessToken, refreshToken } = await api.refresh(auth.refreshToken);
+        auth.setTokens(accessToken, refreshToken);
+        return request<T>(path, accessToken, options, { ...meta, _retried: true });
+      } catch {
+        auth.logout();
+        // Let the original 401 propagate so the route guard kicks in.
+      }
+    }
+  }
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: res.statusText }));
+    throw new ApiError(res.status, error.error || res.statusText, error.code, error.details);
+  }
+
+  const text = await res.text();
+  if (!text) return undefined as unknown as T;
+  return JSON.parse(text) as T;
+}
+
 // --- Endpoints ---
 
 export const api = {
@@ -55,9 +89,42 @@ export const api = {
       body: JSON.stringify({ role }),
     }).then((r) => r.json() as Promise<{ token: string }>),
 
+  // Auth (real)
+  login: (body: { email: string; password: string }) =>
+    request<{ accessToken: string; refreshToken: string; user: PublicUser }>(
+      '/auth/login', null, { method: 'POST', body: JSON.stringify(body) },
+      { authPath: true }
+    ),
+
+  refresh: (refreshToken: string) =>
+    request<{ accessToken: string; refreshToken: string }>(
+      '/auth/refresh', null, { method: 'POST', body: JSON.stringify({ refreshToken }) },
+      { authPath: true }
+    ),
+
+  logout: (refreshToken: string) =>
+    request<void>(
+      '/auth/logout', null, { method: 'POST', body: JSON.stringify({ refreshToken }) },
+      { authPath: true }
+    ),
+
+  previewInvitation: (token: string) =>
+    request<InvitationPreview>(
+      `/auth/invitations/${encodeURIComponent(token)}`, null, {},
+      { authPath: true }
+    ),
+
+  acceptInvitation: (token: string, password: string) =>
+    request<{ accessToken: string; refreshToken: string; user: PublicUser }>(
+      `/auth/invitations/${encodeURIComponent(token)}/accept`,
+      null,
+      { method: 'POST', body: JSON.stringify({ password }) },
+      { authPath: true }
+    ),
+
   // Users
   getMe: (token: string | null) =>
-    request<{ id: string; name: string; email: string; registration: string; role: string; department?: string; unreadCount: number }>(
+    request<{ id: string; name: string; email: string; registration: string | null; role: string; department?: string; unreadCount: number; isMasterAdmin: boolean }>(
       '/users/me', token
     ),
 

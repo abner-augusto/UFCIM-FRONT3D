@@ -15,6 +15,12 @@ const router = createRouter({
       meta: { guestOnly: true },
     },
     {
+      path: '/convite/:token',
+      name: 'accept-invite',
+      component: () => import('@/views/AcceptInviteView.vue'),
+      meta: { guestOnly: true },
+    },
+    {
       path: '/campus',
       name: 'campus-select',
       component: () => import('@/views/CampusSelectView.vue'),
