@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useReservationStore } from '@/stores/reservation';
-import { api } from '@/services/api';
+import { api, ApiError } from '@/services/api';
 import { TIME_SLOT_LABELS, PURPOSE_OPTIONS } from '@/types/reservation';
 
 const router = useRouter();
@@ -52,8 +52,12 @@ async function handleConfirm() {
     });
     reservationStore.reset();
     router.push({ name: 'my-reservations' });
-  } catch {
-    errorMsg.value = 'Não foi possível confirmar a reserva. Tente novamente.';
+  } catch (e) {
+    if (e instanceof ApiError && e.code === 'RESERVATION_LIMIT') {
+      errorMsg.value = e.message;
+    } else {
+      errorMsg.value = 'Não foi possível confirmar a reserva. Tente novamente.';
+    }
   } finally {
     loading.value = false;
   }
