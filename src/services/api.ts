@@ -2,7 +2,6 @@ import type { Space } from '@/types/space';
 import type { Availability, Reservation, Notification, Blocking } from '@/types/reservation';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const IS_DEV_AUTH = import.meta.env.VITE_DEV_AUTH === 'true';
 
 export interface PublicUser {
   id: string;
@@ -22,8 +21,7 @@ export interface InvitationPreview {
 
 function getHeaders(token: string | null): HeadersInit {
   const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  // Dev auth middleware returns 401 if Authorization header is present — skip it in dev
-  if (token && !IS_DEV_AUTH) headers['Authorization'] = `Bearer ${token}`;
+  if (token) headers['Authorization'] = `Bearer ${token}`;
   return headers;
 }
 
@@ -81,15 +79,6 @@ async function request<T>(
 // --- Endpoints ---
 
 export const api = {
-  // Auth (dev)
-  devLogin: (role: string) =>
-    fetch(`${BASE_URL.replace('/api/v1', '')}/dev/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role }),
-    }).then((r) => r.json() as Promise<{ token: string }>),
-
-  // Auth (real)
   login: (body: { email: string; password: string }) =>
     request<{ accessToken: string; refreshToken: string; user: PublicUser }>(
       '/auth/login', null, { method: 'POST', body: JSON.stringify(body) },
@@ -127,6 +116,10 @@ export const api = {
     request<{ id: string; name: string; email: string; registration: string | null; role: string; department?: string; unreadCount: number; isMasterAdmin: boolean }>(
       '/users/me', token
     ),
+
+  // Departments
+  listDepartments: (token: string | null) =>
+    request<Array<{ id: string; name: string; campus: string }>>('/departments', token),
 
   // Spaces — GET /spaces returns array directly (no data wrapper)
   listSpaces: (token: string | null, params?: { campus?: string; block?: string; department?: string; type?: string; limit?: string; page?: string }) =>

@@ -11,10 +11,6 @@ const loading = ref(false);
 const errorMsg = ref<string | null>(null);
 const showForgotInfo = ref(false);
 
-const IS_DEV_AUTH = import.meta.env.VITE_DEV_AUTH === 'true';
-const showDevPanel = ref(false);
-
-// --- Real login ---
 const email = ref('');
 const password = ref('');
 
@@ -50,40 +46,7 @@ async function handleLogin() {
   }
 }
 
-// --- Dev login (preserved for local development) ---
-async function loginAs(role: string) {
-  loading.value = true;
-  errorMsg.value = null;
-  try {
-    if (IS_DEV_AUTH) {
-      const userData = await api.getMe(null);
-      auth.setAuth('dev', 'dev', {
-        id: userData.id,
-        name: userData.name,
-        email: userData.email,
-        registration: userData.registration,
-        role: userData.role as UserRole,
-        isMasterAdmin: userData.isMasterAdmin ?? false,
-      }, userData.unreadCount ?? 0);
-    } else {
-      const { token } = await api.devLogin(role);
-      const userData = await api.getMe(token);
-      auth.setAuth(token, 'dev', {
-        id: userData.id,
-        name: userData.name,
-        email: userData.email,
-        registration: userData.registration,
-        role: userData.role as UserRole,
-        isMasterAdmin: userData.isMasterAdmin ?? false,
-      }, userData.unreadCount ?? 0);
-    }
-    router.push({ name: 'campus-select' });
-  } catch {
-    errorMsg.value = 'Não foi possível conectar ao servidor. Verifique se o backend está rodando.';
-  } finally {
-    loading.value = false;
-  }
-}
+
 </script>
 
 <template>
@@ -131,18 +94,6 @@ async function loginAs(role: string) {
         Entre em contato com o administrador para redefinir sua senha.
       </p>
 
-      <!-- Dev mode panel -->
-      <template v-if="IS_DEV_AUTH">
-        <button class="dev-toggle" @click="showDevPanel = !showDevPanel">
-          {{ showDevPanel ? 'Ocultar modo desenvolvedor' : 'Modo desenvolvedor' }}
-        </button>
-        <div v-if="showDevPanel" class="login-roles">
-          <button @click="loginAs('student')" :disabled="loading">Entrar como Estudante</button>
-          <button @click="loginAs('professor')" :disabled="loading">Entrar como Professor</button>
-          <button @click="loginAs('staff')" :disabled="loading">Entrar como Funcionário</button>
-          <button @click="loginAs('maintenance')" :disabled="loading">Entrar como Manutenção</button>
-        </div>
-      </template>
     </div>
   </div>
 </template>
@@ -250,39 +201,5 @@ async function loginAs(role: string) {
   border-radius: 8px;
   padding: 0.6rem 0.875rem;
   text-align: left;
-}
-.dev-toggle {
-  display: block;
-  margin-top: 1.5rem;
-  background: none;
-  border: none;
-  color: #aaa;
-  font-size: 0.8rem;
-  cursor: pointer;
-  padding: 0;
-}
-.dev-toggle:hover {
-  color: #888;
-}
-.login-roles {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-}
-.login-roles button {
-  padding: 0.65rem 1rem;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background: white;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-.login-roles button:hover:not(:disabled) {
-  background: #f0f0f0;
-}
-.login-roles button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 </style>

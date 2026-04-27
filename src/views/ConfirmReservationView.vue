@@ -53,7 +53,7 @@ async function handleConfirm() {
     reservationStore.reset();
     router.push({ name: 'my-reservations' });
   } catch (e) {
-    if (e instanceof ApiError && e.code === 'RESERVATION_LIMIT') {
+    if (e instanceof ApiError && e.message) {
       errorMsg.value = e.message;
     } else {
       errorMsg.value = 'Não foi possível confirmar a reserva. Tente novamente.';
