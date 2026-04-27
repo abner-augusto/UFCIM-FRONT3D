@@ -26,6 +26,7 @@ const {
   statusFilter,
   selectedPeriod,
   periodAutoDetected,
+  selectedDate,
   statusMap,
   availabilityLoaded,
   availabilityLoading,
@@ -56,7 +57,7 @@ function toggleExpand(id: string) {
 
 onMounted(async () => {
   await loadSpaces(auth.token, campusFilter);
-  fetchAvailability(auth.token, today);
+  fetchAvailability(auth.token, selectedDate.value);
 });
 
 // Period change triggers re-derivation (handled inside composable via watch)
@@ -68,20 +69,32 @@ watch(selectedPeriod, () => {
 
 <template>
   <div class="space-browser">
-    <!-- Header -->
-    <div class="view-header">
-      <button class="back-btn" @click="router.back()">← Voltar</button>
-      <h1>Buscar Espaços</h1>
-    </div>
+    <div class="sticky-header">
+      <!-- Header -->
+      <div class="view-header">
+        <button class="back-btn" @click="router.back()">← Voltar</button>
+        <h1>Buscar Espaços</h1>
+      </div>
 
-    <!-- Toolbar -->
-    <div class="toolbar">
-      <input
-        type="text"
-        class="toolbar__search"
-        placeholder="Buscar por nome ou número..."
-        v-model="searchQuery"
-      />
+      <!-- Toolbar -->
+      <div class="toolbar">
+      <div class="toolbar__top-row">
+        <input
+          type="text"
+          class="toolbar__search"
+          placeholder="Buscar por nome ou número..."
+          v-model="searchQuery"
+        />
+        <div class="date-picker-wrap">
+          <label class="date-label">Data</label>
+          <input
+            type="date"
+            class="toolbar__date"
+            v-model="selectedDate"
+            :min="today"
+          />
+        </div>
+      </div>
       <div class="toolbar__filters">
         <select v-model="blockFilter" class="toolbar__select">
           <option :value="null">Todos os blocos</option>
@@ -134,6 +147,7 @@ watch(selectedPeriod, () => {
         <span v-if="availabilityLoading" class="loading-hint">Carregando disponibilidade...</span>
       </div>
     </div>
+    </div>
 
     <!-- States -->
     <div v-if="loading" class="state-msg">Carregando espaços...</div>
@@ -173,7 +187,18 @@ watch(selectedPeriod, () => {
 .space-browser {
   max-width: 680px;
   margin: 0 auto;
-  padding: 1.25rem 1rem 3rem;
+  padding: 0 1rem 3rem;
+}
+
+/* Sticky header wrapper */
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #fff;
+  padding-top: 1.25rem;
+  padding-bottom: 0.25rem;
+  margin-bottom: 1rem;
 }
 
 /* Header */
@@ -201,13 +226,19 @@ watch(selectedPeriod, () => {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 0;
   background: #f9fafb;
   border-radius: 12px;
   padding: 0.85rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+.toolbar__top-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
 }
 .toolbar__search {
-  width: 100%;
+  flex: 1;
   padding: 0.6rem 0.75rem;
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -216,6 +247,31 @@ watch(selectedPeriod, () => {
   background: white;
 }
 .toolbar__search:focus {
+  outline: none;
+  border-color: #1D9E75;
+}
+.date-picker-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+.date-label {
+  font-size: 0.72rem;
+  color: #666;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.toolbar__date {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  background: white;
+  cursor: pointer;
+  color: #333;
+}
+.toolbar__date:focus {
   outline: none;
   border-color: #1D9E75;
 }

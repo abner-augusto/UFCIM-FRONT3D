@@ -16,6 +16,9 @@ export function useSpaceBrowser() {
   const statusFilter = ref<PinStatus | null>(null);
   const selectedPeriod = ref<PeriodKey>(getCurrentPeriod());
   const periodAutoDetected = ref(true);
+  const selectedDate = ref(new Date().toISOString().split('T')[0]);
+
+  let currentToken: string | null = null;
 
   const availabilityCache = new Map<string, AvailabilitySlot[]>();
   const statusMap = ref(new Map<string, PinStatus>());
@@ -27,6 +30,7 @@ export function useSpaceBrowser() {
   // --- Fetch all spaces for a campus ---
 
   async function loadSpaces(token: string | null, campus: string) {
+    currentToken = token;
     loading.value = true;
     error.value = null;
     allSpaces.value = [];
@@ -99,6 +103,14 @@ export function useSpaceBrowser() {
     statusMap.value = newMap;
   });
 
+  // --- Re-fetch availability when date changes ---
+
+  watch(selectedDate, (date) => {
+    if (allSpaces.value.length > 0) {
+      fetchAvailability(currentToken, date);
+    }
+  });
+
   // --- Filtering ---
 
   const availableBlocks = computed(() =>
@@ -160,6 +172,7 @@ export function useSpaceBrowser() {
     statusFilter,
     selectedPeriod,
     periodAutoDetected,
+    selectedDate,
     statusMap,
     availabilityLoaded,
     availabilityLoading,
