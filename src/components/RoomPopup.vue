@@ -72,7 +72,10 @@ function groupStatusLabel(g: EquipmentGroup): string {
       <button class="room-popup__close" @click="$emit('close')" aria-label="Fechar">&times;</button>
 
       <!-- Header -->
-      <h2 class="room-popup__title">{{ space.number }}</h2>
+      <h2 class="room-popup__title">
+        {{ space.name }}
+        <span class="room-popup__number">{{ space.number }}</span>
+      </h2>
       <p class="room-popup__meta">
         <span>{{ typeLabel }}</span>
         <span class="meta-sep">·</span>
@@ -227,6 +230,16 @@ function groupStatusLabel(g: EquipmentGroup): string {
   font-weight: 700;
   color: #111;
   margin: 0 2.5rem 0.25rem 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.room-popup__number {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #999;
 }
 
 .room-popup__meta {

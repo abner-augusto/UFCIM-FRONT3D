@@ -166,7 +166,7 @@ onMounted(async () => {
   // Backend stores campus as the shortName (e.g. "Benfica"), not the route id ("benfica")
   const campusFilter = campuses.find(c => c.id === campusId)?.shortName ?? campusId;
   try {
-    const spaces = await api.listSpaces(auth.token, { campus: campusFilter });
+    const spaces = await api.listSpaces(auth.token, { campus: campusFilter, limit: '100' });
     for (const space of spaces) {
       if (space.modelId) spacesByModelId.set(space.modelId, space);
     }
