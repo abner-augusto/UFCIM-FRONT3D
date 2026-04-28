@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "type-check": "vue-tsc --noEmit",
     "test": "vitest run",
-    "build:manifest": "node tools/modelManifest.js scan public/assets/models/IAUD",
+    "build:manifest": "node tools/modelManifest.js --root public/assets/models/IAUD",
     "build:pins": "node tools/xlsxToPopupDB.js --input data/qt.Ativos.xlsx --output public/assets/pins_db_popup.json"
   },
   "keywords": [],
