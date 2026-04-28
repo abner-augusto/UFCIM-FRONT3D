@@ -19,8 +19,11 @@ export interface InvitationPreview {
   role?: string;
 }
 
-function getHeaders(token: string | null): HeadersInit {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+function getHeaders(token: string | null, method: string = 'GET'): HeadersInit {
+  const headers: HeadersInit = {};
+  if (method !== 'GET' && method !== 'HEAD') {
+    headers['Content-Type'] = 'application/json';
+  }
   if (token) headers['Authorization'] = `Bearer ${token}`;
   return headers;
 }
@@ -43,11 +46,12 @@ async function request<T>(
   options: RequestInit = {},
   meta: { authPath?: boolean; _retried?: boolean } = {}
 ): Promise<T> {
+  const method = options.method || 'GET';
   const root = BASE_URL.replace('/api/v1', '');
   const url = meta.authPath ? `${root}${path}` : `${BASE_URL}${path}`;
   const res = await fetch(url, {
     ...options,
-    headers: { ...getHeaders(token), ...(options.headers || {}) },
+    headers: { ...getHeaders(token, method), ...(options.headers || {}) },
   });
 
   if (res.status === 401 && !meta._retried && !meta.authPath) {
