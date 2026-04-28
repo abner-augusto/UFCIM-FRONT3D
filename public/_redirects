@@ -1,2 +1,0 @@
-/auth/* https://ufcim-production.abner-hey.workers.dev/auth/:splat 200
-/api/v1/* https://ufcim-production.abner-hey.workers.dev/api/v1/:splat 200
