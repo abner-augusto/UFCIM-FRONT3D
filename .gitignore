@@ -138,3 +138,4 @@ dist
 repomix-output.txt
 repomix-output.xml
 .codex
+.markdownlint.json
