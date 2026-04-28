@@ -2,7 +2,8 @@
 import { ref } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
-import { api, ApiError } from '@/services/api';
+import { api } from '@/services/api';
+import { mapLoginError } from '@/utils/api-errors';
 import type { UserRole } from '@/stores/auth';
 
 const auth = useAuthStore();
@@ -13,12 +14,6 @@ const showForgotInfo = ref(false);
 
 const email = ref('');
 const password = ref('');
-
-const ERROR_MAP: Record<string, string> = {
-  'Invalid credentials': 'Credenciais inválidas.',
-  'Account disabled': 'Conta desativada. Entre em contato com o administrador.',
-  'Account temporarily locked': 'Conta temporariamente bloqueada. Tente novamente mais tarde.',
-};
 
 async function handleLogin() {
   if (!email.value || !password.value) return;
@@ -36,11 +31,7 @@ async function handleLogin() {
     }, user.unreadCount ?? 0);
     router.push({ name: 'campus-select' });
   } catch (e) {
-    if (e instanceof ApiError) {
-      errorMsg.value = ERROR_MAP[e.message] ?? 'Erro ao entrar. Tente novamente.';
-    } else {
-      errorMsg.value = 'Não foi possível conectar ao servidor.';
-    }
+    errorMsg.value = mapLoginError(e);
   } finally {
     loading.value = false;
   }

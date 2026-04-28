@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { api, ApiError } from '@/services/api';
+import { mapAcceptError } from '@/utils/api-errors';
 import type { UserRole } from '@/stores/auth';
 
 const route = useRoute();
@@ -82,16 +83,12 @@ async function handleAccept() {
     router.push({ name: 'campus-select' });
   } catch (e) {
     state.value = 'ready';
-    if (e instanceof ApiError) {
-      if (e.details?.length) {
-        for (const d of e.details) {
-          fieldErrors.value[d.field] = d.message;
-        }
-      } else {
-        submitError.value = e.message || 'Erro ao aceitar convite. Tente novamente.';
+    if (e instanceof ApiError && e.details?.length) {
+      for (const d of e.details) {
+        fieldErrors.value[d.field] = d.message;
       }
     } else {
-      submitError.value = 'Não foi possível conectar ao servidor.';
+      submitError.value = mapAcceptError(e);
     }
   }
 }
