@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
 import type { Reservation } from '@/types/reservation';
@@ -13,6 +13,7 @@ const reservations = ref<Reservation[]>([]);
 const loading = ref(true);
 const errorMsg = ref<string | null>(null);
 const cancelling = ref<string | null>(null);
+const cancellingSeries = ref<string | null>(null);
 const expandedId = ref<string | null>(null);
 
 const PURPOSE_LABELS = Object.fromEntries(PURPOSE_OPTIONS.map(o => [o.value, o.label]));
@@ -43,6 +44,19 @@ async function handleCancel(id: string) {
     errorMsg.value = 'Não foi possível cancelar a reserva.';
   } finally {
     cancelling.value = null;
+  }
+}
+
+async function handleCancelSeries(recurrenceId: string) {
+  if (!confirm('Tem certeza que deseja cancelar TODAS as reservas futuras desta série?')) return;
+  cancellingSeries.value = recurrenceId;
+  try {
+    await api.cancelReservationSeries(auth.token, recurrenceId);
+    await loadReservations();
+  } catch {
+    errorMsg.value = 'Não foi possível cancelar a série de reservas.';
+  } finally {
+    cancellingSeries.value = null;
   }
 }
 
@@ -85,6 +99,57 @@ function isCompleted(r: Reservation): boolean {
   const normalizedEnd = r.endTime === '24:00' ? '23:59' : r.endTime;
   return new Date(`${r.date}T${normalizedEnd}:00`) < new Date();
 }
+
+function hasFutureOccurrences(items: Reservation[]): boolean {
+  return items.some(r => r.status === 'confirmed' && !isCompleted(r));
+}
+
+interface GroupedReservation {
+  id: string; // recurrenceId if recurrent, else reservation id
+  isRecurrent: boolean;
+  recurrenceId: string | null;
+  items: Reservation[];
+  main: Reservation;
+}
+
+const groupedReservations = computed<GroupedReservation[]>(() => {
+  const groups: { [key: string]: { isRecurrent: boolean; items: Reservation[] } } = {};
+  
+  for (const r of reservations.value) {
+    const key = r.recurrenceId || r.id;
+    if (!groups[key]) {
+      groups[key] = { isRecurrent: !!r.recurrenceId, items: [] };
+    }
+    groups[key].items.push(r);
+  }
+  
+  const result: GroupedReservation[] = [];
+  const now = new Date();
+  
+  for (const [key, group] of Object.entries(groups)) {
+    group.items.sort((a, b) => a.date.localeCompare(b.date));
+    
+    // For main, pick the first active future reservation, or the last one if none are active
+    let main = group.items.find(r => {
+      const normalizedEnd = r.endTime === '24:00' ? '23:59' : r.endTime;
+      return new Date(`${r.date}T${normalizedEnd}:00`) >= now && r.status === 'confirmed';
+    });
+    if (!main) main = group.items[group.items.length - 1];
+
+    result.push({
+      id: key,
+      isRecurrent: group.isRecurrent,
+      recurrenceId: group.isRecurrent ? key : null,
+      items: group.items,
+      main
+    });
+  }
+  
+  // Sort overall by main date descending
+  result.sort((a, b) => b.main.date.localeCompare(a.main.date));
+  
+  return result;
+});
 </script>
 
 <template>
@@ -93,127 +158,163 @@ function isCompleted(r: Reservation): boolean {
 
     <div v-if="loading" class="state-msg">Carregando reservas...</div>
     <div v-else-if="errorMsg" class="state-error">{{ errorMsg }}</div>
-    <div v-else-if="reservations.length === 0" class="state-empty">
+    <div v-else-if="groupedReservations.length === 0" class="state-empty">
       <p>Você ainda não tem nenhuma reserva.</p>
     </div>
 
     <ul v-else class="reservation-list">
       <li
-        v-for="r in reservations"
-        :key="r.id"
+        v-for="group in groupedReservations"
+        :key="group.id"
         class="reservation-card"
-        :class="{ 'reservation-card--expanded': expandedId === r.id }"
+        :class="{ 'reservation-card--expanded': expandedId === group.id }"
       >
         <!-- Summary row — always visible -->
-        <button class="reservation-card__summary" @click="toggleExpand(r.id)">
+        <button class="reservation-card__summary" @click="toggleExpand(group.id)">
           <div class="reservation-card__info">
-            <h3>{{ r.space?.name ?? r.space?.number ?? r.spaceId }}</h3>
-            <p>{{ dateLabel(r.date) }}</p>
-            <p>{{ periodLabel(r.startTime, r.endTime) }}</p>
+            <h3>{{ group.main.space?.name ?? group.main.space?.number ?? group.main.spaceId }}</h3>
+            <p v-if="!group.isRecurrent">{{ dateLabel(group.main.date) }}</p>
+            <p v-else>Recorrente: {{ group.items.length }} ocorrências</p>
+            <p>{{ periodLabel(group.main.startTime, group.main.endTime) }}</p>
           </div>
           <div class="reservation-card__right">
-            <span v-if="isCompleted(r) && r.status === 'confirmed'" class="status-badge status-badge--completed">
-              Concluída
-            </span>
-            <span v-else class="status-badge" :class="`status-badge--${r.status}`">
-              {{ STATUS_LABELS[r.status] }}
-            </span>
-            <span class="expand-chevron" :class="{ rotated: expandedId === r.id }">›</span>
+            <template v-if="!group.isRecurrent">
+              <span v-if="isCompleted(group.main) && group.main.status === 'confirmed'" class="status-badge status-badge--completed">
+                Concluída
+              </span>
+              <span v-else class="status-badge" :class="`status-badge--${group.main.status}`">
+                {{ STATUS_LABELS[group.main.status] }}
+              </span>
+            </template>
+            <template v-else>
+               <span class="status-badge status-badge--recurrent">Série</span>
+            </template>
+            <span class="expand-chevron" :class="{ rotated: expandedId === group.id }">›</span>
           </div>
         </button>
 
         <!-- Detail panel — visible when expanded -->
-        <div v-if="expandedId === r.id" class="reservation-detail">
+        <div v-if="expandedId === group.id" class="reservation-detail">
           <!-- Space info -->
           <section class="detail-section">
             <p class="detail-section__title">Espaço</p>
             <div class="detail-grid">
-              <div v-if="r.space?.name" class="detail-item">
+              <div v-if="group.main.space?.name" class="detail-item">
                 <span class="detail-label">Nome</span>
-                <span class="detail-value">{{ r.space.name }}</span>
+                <span class="detail-value">{{ group.main.space.name }}</span>
               </div>
-              <div v-if="r.space?.number" class="detail-item">
+              <div v-if="group.main.space?.number" class="detail-item">
                 <span class="detail-label">Número</span>
-                <span class="detail-value">{{ r.space.number }}</span>
+                <span class="detail-value">{{ group.main.space.number }}</span>
               </div>
-              <div v-if="r.space?.block" class="detail-item">
+              <div v-if="group.main.space?.block" class="detail-item">
                 <span class="detail-label">Bloco</span>
-                <span class="detail-value">{{ r.space.block }}</span>
+                <span class="detail-value">{{ group.main.space.block }}</span>
               </div>
-              <div v-if="r.space?.campus" class="detail-item">
+              <div v-if="group.main.space?.campus" class="detail-item">
                 <span class="detail-label">Campus</span>
-                <span class="detail-value">{{ r.space.campus }}</span>
+                <span class="detail-value">{{ group.main.space.campus }}</span>
               </div>
-              <div v-if="r.space?.type" class="detail-item">
+              <div v-if="group.main.space?.type" class="detail-item">
                 <span class="detail-label">Tipo</span>
-                <span class="detail-value">{{ SPACE_TYPE_LABELS[r.space.type] ?? r.space.type }}</span>
+                <span class="detail-value">{{ SPACE_TYPE_LABELS[group.main.space.type] ?? group.main.space.type }}</span>
               </div>
-              <div v-if="r.space?.capacity != null" class="detail-item">
+              <div v-if="group.main.space?.capacity != null" class="detail-item">
                 <span class="detail-label">Capacidade</span>
-                <span class="detail-value">{{ r.space.capacity }} pessoas</span>
+                <span class="detail-value">{{ group.main.space.capacity }} pessoas</span>
               </div>
-              <div v-if="r.space?.department" class="detail-item">
+              <div v-if="group.main.space?.department" class="detail-item">
                 <span class="detail-label">Departamento</span>
-                <span class="detail-value">{{ r.space.department }}</span>
+                <span class="detail-value">{{ group.main.space.department }}</span>
               </div>
             </div>
           </section>
 
-          <!-- Reservation info -->
+          <!-- Reservation info for single or group -->
           <section class="detail-section">
-            <p class="detail-section__title">Reserva</p>
+            <p class="detail-section__title">{{ group.isRecurrent ? 'Série de Reservas' : 'Reserva' }}</p>
             <div class="detail-grid">
-              <div class="detail-item">
+              <div v-if="!group.isRecurrent" class="detail-item">
                 <span class="detail-label">Data</span>
-                <span class="detail-value">{{ dateShort(r.date) }}</span>
+                <span class="detail-value">{{ dateShort(group.main.date) }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">Horário</span>
-                <span class="detail-value">{{ r.startTime }}–{{ r.endTime }}</span>
+                <span class="detail-value">{{ group.main.startTime }}–{{ group.main.endTime }}</span>
               </div>
-              <div v-if="r.purpose" class="detail-item">
+              <div v-if="group.main.purpose" class="detail-item">
                 <span class="detail-label">Finalidade</span>
-                <span class="detail-value">{{ PURPOSE_LABELS[r.purpose] ?? r.purpose }}</span>
+                <span class="detail-value">{{ PURPOSE_LABELS[group.main.purpose] ?? group.main.purpose }}</span>
               </div>
-              <div v-if="r.recurrenceId" class="detail-item">
-                <span class="detail-label">Recorrência</span>
-                <span class="detail-value detail-value--mono">{{ r.recurrenceId }}</span>
+              <div v-if="group.isRecurrent" class="detail-item">
+                <span class="detail-label">Recorrência ID</span>
+                <span class="detail-value detail-value--mono">{{ group.id }}</span>
               </div>
-              <div v-if="r.changeOrigin" class="detail-item">
+              <div v-if="group.main.changeOrigin" class="detail-item">
                 <span class="detail-label">Origem da alteração</span>
-                <span class="detail-value">{{ r.changeOrigin }}</span>
+                <span class="detail-value">{{ group.main.changeOrigin }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">Criada em</span>
-                <span class="detail-value">{{ datetimeLabel(r.createdAt) }}</span>
+                <span class="detail-value">{{ datetimeLabel(group.main.createdAt) }}</span>
               </div>
-              <div v-if="r.updatedAt !== r.createdAt" class="detail-item">
+              <div v-if="group.main.updatedAt !== group.main.createdAt" class="detail-item">
                 <span class="detail-label">Atualizada em</span>
-                <span class="detail-value">{{ datetimeLabel(r.updatedAt) }}</span>
+                <span class="detail-value">{{ datetimeLabel(group.main.updatedAt) }}</span>
               </div>
-              <div class="detail-item">
+              <div v-if="!group.isRecurrent" class="detail-item">
                 <span class="detail-label">ID</span>
-                <span class="detail-value detail-value--mono">{{ r.id }}</span>
+                <span class="detail-value detail-value--mono">{{ group.main.id }}</span>
               </div>
             </div>
           </section>
 
-          <!-- Cancellation reason -->
-          <div v-if="r.status === 'canceled' && r.cancelReason" class="detail-cancel-reason">
-            <p class="detail-cancel-reason__label">Motivo do cancelamento</p>
-            <p class="detail-cancel-reason__text">{{ r.cancelReason }}</p>
+          <!-- Occurrences for recurrent -->
+          <div v-if="group.isRecurrent" class="recurrence-list">
+            <p class="detail-section__title" style="margin-top: 1rem">Ocorrências</p>
+            <div v-for="r in group.items" :key="r.id" class="recurrence-item">
+              <span class="recurrence-date">{{ dateShort(r.date) }}</span>
+              <div class="recurrence-actions">
+                <span v-if="isCompleted(r) && r.status === 'confirmed'" class="status-badge status-badge--completed">
+                  Concluída
+                </span>
+                <span v-else class="status-badge" :class="`status-badge--${r.status}`">
+                  {{ STATUS_LABELS[r.status] }}
+                </span>
+                <button v-if="r.status === 'confirmed' && !isCompleted(r)" class="text-cancel-btn" @click="handleCancel(r.id)" :disabled="cancelling === r.id || cancellingSeries === group.id">
+                  {{ cancelling === r.id ? '...' : 'Cancelar' }}
+                </button>
+              </div>
+            </div>
           </div>
 
-          <!-- Cancel action -->
-          <div v-if="r.status === 'confirmed' && !isCompleted(r)" class="detail-actions">
+          <!-- Cancellation reason for single -->
+          <div v-if="!group.isRecurrent && group.main.status === 'canceled' && group.main.cancelReason" class="detail-cancel-reason">
+            <p class="detail-cancel-reason__label">Motivo do cancelamento</p>
+            <p class="detail-cancel-reason__text">{{ group.main.cancelReason }}</p>
+          </div>
+
+          <!-- Actions -->
+          <div class="detail-actions" style="margin-top: 1rem">
             <button
+              v-if="!group.isRecurrent && group.main.status === 'confirmed' && !isCompleted(group.main)"
               class="cancel-btn"
-              :disabled="cancelling === r.id"
-              @click="handleCancel(r.id)"
+              :disabled="cancelling === group.main.id"
+              @click="handleCancel(group.main.id)"
             >
-              {{ cancelling === r.id ? 'Cancelando...' : 'Cancelar reserva' }}
+              {{ cancelling === group.main.id ? 'Cancelando...' : 'Cancelar reserva' }}
+            </button>
+
+            <button
+              v-if="group.isRecurrent && hasFutureOccurrences(group.items)"
+              class="cancel-btn cancel-btn--bulk"
+              :disabled="cancellingSeries === group.id"
+              @click="handleCancelSeries(group.id)"
+            >
+              {{ cancellingSeries === group.id ? 'Cancelando...' : 'Cancelar todas as datas futuras' }}
             </button>
           </div>
+
         </div>
       </li>
     </ul>
@@ -314,6 +415,7 @@ h1 {
 .status-badge--modified   { background: #fef3c7; color: #92400e; }
 .status-badge--overridden { background: #ede9fe; color: #5b21b6; }
 .status-badge--completed  { background: #f3f4f6; color: #6b7280; }
+.status-badge--recurrent  { background: #e0f2fe; color: #0369a1; }
 
 /* Detail panel */
 .reservation-detail {
@@ -396,6 +498,46 @@ h1 {
   font-size: 0.84rem;
 }
 
+/* Recurrence List */
+.recurrence-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.recurrence-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+.recurrence-item:last-child {
+  border-bottom: none;
+}
+.recurrence-date {
+  color: #333;
+}
+.recurrence-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.text-cancel-btn {
+  background: none;
+  border: none;
+  color: #c0392b;
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+.text-cancel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
 /* Actions */
 .detail-actions {
   padding-top: 0.25rem;
@@ -415,6 +557,9 @@ h1 {
 .cancel-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+.cancel-btn--bulk {
+  width: 100%;
 }
 
 /* States */

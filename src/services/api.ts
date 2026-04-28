@@ -158,6 +158,9 @@ export const api = {
   cancelReservation: (token: string | null, id: string) =>
     request<Reservation>(`/reservations/${id}/cancel`, token, { method: 'PATCH' }),
 
+  cancelReservationSeries: (token: string | null, recurrenceId: string) =>
+    request<Reservation[]>(`/reservations/series/${recurrenceId}/cancel`, token, { method: 'PATCH' }),
+
   // Blockings — GET /blockings/mine returns array directly
   getMyBlockings: (token: string | null) =>
     request<Blocking[]>('/blockings/mine', token),
