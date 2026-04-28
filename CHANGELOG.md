@@ -1,5 +1,67 @@
 # Changelog
 
+## [2.0.0](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v1.0.0...v2.0.0) (2026-04-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ui:** Reservation status type now includes 'overridden' state; Space interface now includes optional equipment array; Blocking interface now includes optional space object with full details.
+
+### Features
+
+* Add dynamic camera zoom for block focus ([9b42f90](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/9b42f90bf0dbbc06194726b047ff95ae5c1f9fa9))
+* **auth:** add role permission constants and hasRole helper ([10b5944](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/10b59444ade76bb3fa9970252924d97a2f6c0a55))
+* **auth:** implement token refresh, invitation system, and master admin support ([f36bce2](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/f36bce28ba1f705d07105686047e4cbac1737e53))
+* **blocking:** add blocking creation view and my-blockings placeholder ([dd3822e](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/dd3822eef7256dba85572d1e9d3a7b4e65235315))
+* **campus:** add department selection step for Benfica campus ([07251e4](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/07251e476e09a93597dd9647d0345346f91151b5))
+* **infra:** use _worker.js for API proxying and remove non-functional _redirects ([2726c9c](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/2726c9c549f1dca17967977cd615a9a365f6f003))
+* **my-reservations:** add cancellation reason display for canceled reservations ([a0a1347](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/a0a134766c979ddcb06e7d7de210d6461f3d6633))
+* **nav:** register blocking and profile routes; update AppHeader links ([fac51da](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/fac51da9f2bfe420965b3bd54a5af1a7c80b9d02))
+* Phase 0 and 1 for app refactor ([f7c046a](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/f7c046ae673e7a522e4e6744c6210ebe7df02de5))
+* Phase 3 — Vue app shell with routing, stores, and API layer ([8666306](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/86663068a073a49e1b9f1dec8126f70b4506de13))
+* Phase 4 — campus selection screen + fix dev auth flow ([f2b0cfb](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/f2b0cfb88dbc5b5acd309f9b9c1eb72220bb8738))
+* Phase 5 — Three.js viewer integration + space-driven pin system ([ff8a1a7](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/ff8a1a7b905af26cd070651b3526ad1e98d5e8da))
+* Phase 6 — reservation flow, my reservations, and notifications ([060a711](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/060a711ff70a61e422f1462394411200d5d1a8b8))
+* **pin-status:** update pin status logic to include 'closed' state and adjust reservation conditions ([4790293](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/4790293c5dae80ee27c06d12ed7737b3dd359766))
+* **profile:** add user profile view with role display and logout ([b47fd45](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/b47fd45328b7f5cd5924d3424a9fc33f9107e20d))
+* Rename resetCamera to resetView ([50fcba5](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/50fcba5c907fa7670109ae50054b22488cff58f9))
+* **reservation:** add recurring flow, role guard, and fix availability check ([3de36bc](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/3de36bc33d1d8097ec023802b19f529d40541c5a))
+* **reservation:** enhance reservation functionality with custom scheduling and availability checks ([10028a2](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/10028a2d1e09b3ebab1670e6c04b87b9754a6475))
+* **reservations:** implement series cancellation and group reservations by recurrence ([9b49952](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/9b4995244c47fe79a46a9a1ac4889e1df5b97420))
+* **space-browser:** implement space browsing functionality with filters and search ([74fe486](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/74fe48694eafa8822e8805bc581e49ca3dbbdc2d))
+* **space:** add Equipment type, equipment list in popup, and role-gated actions ([0c9d44d](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/0c9d44db01f45e389f634013268398c50f7bb5b2))
+* **space:** enhance Space interface with additional properties and update RoomPopup and ReservationView components for improved space information display ([3b2e646](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/3b2e646da451e61b8a1fb74a7f7173c8e6d09d89))
+* **ui:** add date picker for space availability filtering ([54e997e](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/54e997e48a77996ae5f2b09a1d487eaf6a5da7c8))
+* **ui:** add notification badge, equipment display, blocking management, and reservation enhancements ([15d0fc4](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/15d0fc421eff92ba60482675b7b41da4b0d793cd))
+* **ui:** add viewer route to AppHeader and update campus store for session management ([0a46008](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/0a460080592ea859bf5a03cbf64a2c235cac9f64))
+* **ui:** display completed status for past confirmed reservations ([5bba6c8](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/5bba6c8ca4d5658fc5e4366802cbb510e00ab100))
+* **ui:** enhance MyReservationsView with expandable reservation details and improved styling ([0d72aed](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/0d72aed48726273f7849f95779e592e8947467bf))
+* **ui:** enhance RoomPopup and ThreeViewer components with equipment grouping and floor UI visibility toggle ([6bdcf9d](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/6bdcf9db3db0580b4bb1c36466bafbbb59069049))
+* **ui:** update reservation logic to use 'reservable' property and handle non-reservable spaces ([6e9860a](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/6e9860aeab8244019bace4e303b9e2c87cdab29b))
+* **viewer:** add pin availability and reservation status feedback ([d03369c](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/d03369c3d1636fe557b14487b03c50736c588849))
+* **viewer:** update pin opacity for blocked and non-reservable rooms ([3877aea](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/3877aeabb4c28b1bdd75309a8bf58245b5428026))
+
+
+### Bug Fixes
+
+* **api:** align frontend client with documented contracts ([63affcc](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/63affcce80049064a865819998751428a7089708))
+* **api:** bypass CORS using relative paths and Cloudflare Pages proxying ([634c852](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/634c85205c8c83600ce10d5cd11e2e4390427b35))
+* **auth:** restore user from token on page refresh ([610141c](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/610141c0f9eec2a70bc39391f2cccd6c3797f5c5))
+* backend-driven pin visibility, dedup pin events, and UI cleanup ([63658d6](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/63658d6c10640fa9c9d25cab9122a2ec0eceb01c))
+* **blocking:** ensure reason is always trimmed before submission ([70c29ed](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/70c29edd19254ee593259f8b4004ff4aaae3249e))
+* **blocking:** update full day blocking end time from 23:00 to 24:00 ([877a396](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/877a396492111fb0cf28cc180e6300e568fe5a79))
+* **build:** correct build:manifest script to use supported CLI options ([bcdd9a6](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/bcdd9a6abbe55342587a58b107040689acc67138))
+* handle potential null data in reservations and notifications loading ([2c15022](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/2c15022332856b5e910845948143982ef47ed96b))
+* **reservation:** replace timeSlot with startTime/endTime to match backend schema ([50632e0](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/50632e099cc2af79262cb114974791673dff1c99))
+* **ui:** display space number instead of name in room popup and card ([b9b3e28](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/b9b3e283a7970f4f5825f9b4986d71b8efabcb93))
+* **ui:** show exact times on reservations and fix invalid date on notifications ([b9cdea4](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/b9cdea4a17171e80fa727b4ce16a210a79ec549c))
+* **ui:** update blocked pin color to grey for better visibility ([d531a2a](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/d531a2a32977fb8cbf1eb333e964bbcdc28d37a2))
+
+
+### Performance Improvements
+
+* Increase camera near clipping plane to 1 ([4e4a43b](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/4e4a43b93bc9e24f69b3c9a57871c2bdf219343c))
+
 ## 1.0.0 (2025-11-28)
 
 
