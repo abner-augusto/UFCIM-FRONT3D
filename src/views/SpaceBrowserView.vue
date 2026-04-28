@@ -175,6 +175,7 @@ watch(selectedPeriod, () => {
             :status-loaded="availabilityLoaded.has(space.id)"
             :expanded="expandedId === space.id"
             :selected-period="selectedPeriod"
+            :selected-date="selectedDate"
             @toggle="toggleExpand(space.id)"
           />
         </div>

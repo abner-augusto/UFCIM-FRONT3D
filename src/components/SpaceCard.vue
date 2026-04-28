@@ -16,6 +16,7 @@ const props = defineProps<{
   statusLoaded: boolean;
   expanded: boolean;
   selectedPeriod: PeriodKey;
+  selectedDate: string;
 }>();
 
 const emit = defineEmits<{
@@ -116,19 +117,20 @@ const reserveDisabledReason = computed((): string | null => {
 
 // Fetch details on expand
 async function onExpand() {
-  if (detailedSpace.value) return; // already loaded
-  detailLoading.value = true;
-  try {
-    detailedSpace.value = await api.getSpace(auth.token, props.space.id);
-  } catch {
-    // keep summary data
+  const alreadyLoaded = !!detailedSpace.value;
+  if (!alreadyLoaded) {
+    detailLoading.value = true;
+    try {
+      detailedSpace.value = await api.getSpace(auth.token, props.space.id);
+    } catch {
+      // keep summary data
+    }
   }
 
   // Fetch blocking reason if blocked
   if (props.status === 'blocked') {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const blockings = await api.getBlockings(auth.token, props.space.id, today);
+      const blockings = await api.getBlockings(auth.token, props.space.id, props.selectedDate);
       const range = TIME_SLOT_RANGES[props.selectedPeriod];
       const active = blockings.find(
         (b: Blocking) =>
@@ -147,7 +149,7 @@ async function onExpand() {
     }
   }
 
-  detailLoading.value = false;
+  if (!alreadyLoaded) detailLoading.value = false;
 }
 
 function handleReserve() {
