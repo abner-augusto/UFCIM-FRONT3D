@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useReservationStore } from '@/stores/reservation';
@@ -115,19 +115,7 @@ const reserveDisabledReason = computed((): string | null => {
   }
 });
 
-// Fetch details on expand
-async function onExpand() {
-  const alreadyLoaded = !!detailedSpace.value;
-  if (!alreadyLoaded) {
-    detailLoading.value = true;
-    try {
-      detailedSpace.value = await api.getSpace(auth.token, props.space.id);
-    } catch {
-      // keep summary data
-    }
-  }
-
-  // Fetch blocking reason if blocked
+async function fetchBlockingReason() {
   if (props.status === 'blocked') {
     try {
       const blockings = await api.getBlockings(auth.token, props.space.id, props.selectedDate);
@@ -143,11 +131,36 @@ async function onExpand() {
         blockingReason.value = active.reason?.trim()
           ? `${typeLabel}: ${active.reason}`
           : typeLabel;
+      } else {
+        blockingReason.value = null;
       }
     } catch {
-      // no reason available
+      blockingReason.value = null;
+    }
+  } else {
+    blockingReason.value = null;
+  }
+}
+
+watch([() => props.selectedDate, () => props.selectedPeriod, () => props.status], () => {
+  if (props.expanded) {
+    fetchBlockingReason();
+  }
+});
+
+// Fetch details on expand
+async function onExpand() {
+  const alreadyLoaded = !!detailedSpace.value;
+  if (!alreadyLoaded) {
+    detailLoading.value = true;
+    try {
+      detailedSpace.value = await api.getSpace(auth.token, props.space.id);
+    } catch {
+      // keep summary data
     }
   }
+
+  await fetchBlockingReason();
 
   if (!alreadyLoaded) detailLoading.value = false;
 }

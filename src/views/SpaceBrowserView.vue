@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { campuses } from '@/data/campuses';
@@ -60,11 +60,6 @@ onMounted(async () => {
   fetchAvailability(auth.token, selectedDate.value);
 });
 
-// Period change triggers re-derivation (handled inside composable via watch)
-// but we also close any expanded card since status may have changed
-watch(selectedPeriod, () => {
-  expandedId.value = null;
-});
 </script>
 
 <template>
