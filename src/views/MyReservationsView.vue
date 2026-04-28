@@ -80,6 +80,11 @@ function periodLabel(startTime: string, endTime: string): string {
   const range = `${startTime}–${endTime}`;
   return namedSlot ? `${range} (${TIME_SLOT_LABELS[namedSlot[0]]})` : range;
 }
+
+function isCompleted(r: Reservation): boolean {
+  const normalizedEnd = r.endTime === '24:00' ? '23:59' : r.endTime;
+  return new Date(`${r.date}T${normalizedEnd}:00`) < new Date();
+}
 </script>
 
 <template>
@@ -107,7 +112,10 @@ function periodLabel(startTime: string, endTime: string): string {
             <p>{{ periodLabel(r.startTime, r.endTime) }}</p>
           </div>
           <div class="reservation-card__right">
-            <span class="status-badge" :class="`status-badge--${r.status}`">
+            <span v-if="isCompleted(r) && r.status === 'confirmed'" class="status-badge status-badge--completed">
+              Concluída
+            </span>
+            <span v-else class="status-badge" :class="`status-badge--${r.status}`">
               {{ STATUS_LABELS[r.status] }}
             </span>
             <span class="expand-chevron" :class="{ rotated: expandedId === r.id }">›</span>
@@ -197,7 +205,7 @@ function periodLabel(startTime: string, endTime: string): string {
           </div>
 
           <!-- Cancel action -->
-          <div v-if="r.status === 'confirmed'" class="detail-actions">
+          <div v-if="r.status === 'confirmed' && !isCompleted(r)" class="detail-actions">
             <button
               class="cancel-btn"
               :disabled="cancelling === r.id"
@@ -305,6 +313,7 @@ h1 {
 .status-badge--canceled   { background: #fee2e2; color: #991b1b; }
 .status-badge--modified   { background: #fef3c7; color: #92400e; }
 .status-badge--overridden { background: #ede9fe; color: #5b21b6; }
+.status-badge--completed  { background: #f3f4f6; color: #6b7280; }
 
 /* Detail panel */
 .reservation-detail {
