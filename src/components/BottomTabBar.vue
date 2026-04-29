@@ -70,7 +70,7 @@ const isActive = (name: string) => route.name === name;
   justify-content: space-around;
   align-items: center;
   padding-bottom: var(--safe-bottom);
-  z-index: 1000;
+  z-index: 300;
 }
 
 @media (min-width: 1024px) {

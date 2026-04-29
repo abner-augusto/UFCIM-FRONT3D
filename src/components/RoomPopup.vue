@@ -174,6 +174,14 @@ function groupStatusLabel(g: EquipmentGroup): string {
   animation: overlay-in 0.25s ease both;
 }
 
+/* Override to fixed on mobile so it overlays the bottom tab bar */
+@media (max-width: 1023px) {
+  .room-popup-overlay {
+    position: fixed;
+    z-index: 400;
+  }
+}
+
 @keyframes overlay-in {
   from { opacity: 0; }
   to   { opacity: 1; }
@@ -190,6 +198,17 @@ function groupStatusLabel(g: EquipmentGroup): string {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
   position: relative;
   animation: popup-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  padding-bottom: calc(1.5rem + var(--safe-bottom, 0px));
+}
+
+.room-popup::before {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 4px;
+  background: #ddd;
+  border-radius: 2px;
+  margin: 0 auto 1rem;
 }
 
 @keyframes popup-in {
@@ -205,8 +224,8 @@ function groupStatusLabel(g: EquipmentGroup): string {
 
 .room-popup__close {
   position: absolute;
-  top: 0.9rem;
-  right: 0.9rem;
+  top: 1.5rem;
+  right: 1.5rem;
   border: none;
   background: #f5f5f5;
   border-radius: 50%;
@@ -259,6 +278,15 @@ function groupStatusLabel(g: EquipmentGroup): string {
   gap: 0.6rem;
   margin-bottom: 1rem;
 }
+
+@media (max-width: 480px) {
+  .room-popup__stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: 0.5rem;
+  }
+}
+
 .stat-card {
   flex: 1;
   background: #f7f9f8;
@@ -391,6 +419,7 @@ function groupStatusLabel(g: EquipmentGroup): string {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
+  min-height: var(--tap-min, 44px);
 }
 .btn-primary:hover { background: #178a65; }
 .btn-primary:disabled { background: #b8c8c2; cursor: not-allowed; }
@@ -406,6 +435,7 @@ function groupStatusLabel(g: EquipmentGroup): string {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
+  min-height: var(--tap-min, 44px);
 }
 .btn-secondary:hover { background: #e8f5f0; }
 .btn-secondary:disabled {
