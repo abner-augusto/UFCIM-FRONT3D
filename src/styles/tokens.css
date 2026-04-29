@@ -24,6 +24,10 @@
 
   /* Tap target minimum (iOS HIG / WCAG 2.5.5) */
   --tap-min: 44px;
+
+  /* Rail */
+  --rail-w: 44px;
+  --rail-gap: 8px;
 }
 
 /* Phones and tablets get a bottom tab bar */

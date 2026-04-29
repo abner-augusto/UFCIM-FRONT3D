@@ -54,6 +54,15 @@ defineExpose({
   setSearchData: (spaces: Array<{ modelId: string | null; name: string; number: string; block: string; type: string; reservable: boolean }>) => {
     threeApp?.uiManager?.setSearchSpaces(spaces);
   },
+  selectBuilding: (id: string | null) => threeApp?.uiManager?.selectBuilding(id),
+  selectFloor: (level: number) => threeApp?.uiManager?.selectFloor(level),
+  getBuildingsList: () => threeApp?.uiManager?.getBuildingsList() ?? [],
+  getFloorsForBuilding: (id: string) => threeApp?.uiManager?.getFloorsForBuilding(id) ?? [],
+  getActiveBuildingId: () => threeApp?.uiManager?.getActiveBuildingId() ?? null,
+  getActiveFloorLevel: () => threeApp?.uiManager?.getActiveFloorLevel() ?? null,
+  setFullscreen: (on: boolean) => {
+    document.body.classList.toggle('viewer-fullscreen', on);
+  },
 });
 </script>
 

@@ -43,15 +43,7 @@ export class UIManager {
     showAllBtn.textContent = 'Todos';
     showAllBtn.className = 'ui-btn'; // <-- Set class
     showAllBtn.dataset.building = 'all';
-    showAllBtn.addEventListener('click', async () => {
-      await modelManager.showAllBlocks();
-      this.interactionManager.clearFloorSelections(true);
-      this._updateBuildingFocus(null);
-      this._renderFloorButtons(null);
-      this.interactionManager.blockingMeshes = this.modelManager.getAllMeshes();
-      this.cameraManager?.applyDefaultZoomLimits?.();
-      this.cameraManager.resetToDefaultState();
-    });
+    showAllBtn.addEventListener('click', () => this.selectAll());
     buildingBar.appendChild(showAllBtn);
 
     // --- INDIVIDUAL BUILDING BUTTONS ---------------------------------
@@ -69,39 +61,7 @@ export class UIManager {
       // The data attribute still uses the unique ID
       btn.dataset.building = buildingID;
 
-      btn.addEventListener('click', async () => {
-        for (const b of Object.keys(this.modelManager.manifest)) {
-          this.modelManager.enableBuilding(b, false);
-        }
-        // All logic continues to use the buildingID
-        this.modelManager.enableBuilding(buildingID, true);
-
-        modelManager.focusBuilding(buildingID);
-        this.interactionManager.resetPinsForBuilding(buildingID);
-        this._updateBuildingFocus(buildingID);
-
-        if ((modelManager.maxFloorVisibleByBuilding.get(buildingID) ?? -1) < 0) {
-          await modelManager.setFloorLevel(buildingID, 0);
-        }
-
-        const floorsMap = this.modelManager.entries.get(buildingID);
-        let newActiveFloor = 0;
-        if (floorsMap && floorsMap.size > 0) {
-          newActiveFloor = Math.min(...floorsMap.keys());
-        }
-
-        await this.modelManager.setFloorLevel(buildingID, newActiveFloor);
-        this.interactionManager.activateFloorPins(buildingID, newActiveFloor);
-        this.interactionManager.blockingMeshes = this.modelManager.getAllMeshes();
-        this.cameraManager?.applyBlockFocusZoomLimits?.();
-        
-        const blockBox = this.modelManager.getBlockBoundingBox(buildingID);
-        if (!blockBox.isEmpty()) {
-          this.cameraManager.fitCameraToBox(blockBox);
-        }
-
-        this._renderFloorButtons(buildingID);
-      });
+      btn.addEventListener('click', () => this.selectBuilding(buildingID));
 
       buildingBar.appendChild(btn);
     }
@@ -175,31 +135,33 @@ export class UIManager {
     const isMobile = () => window.matchMedia('(max-width: 480px)').matches;
     this._userExpanded = false;
 
-    this._toggleBtn = document.createElement('button');
-    this._toggleBtn.className = 'floor-ui-toggle';
-    this._toggleBtn.setAttribute('aria-label', 'Expandir/colapsar controles');
-    this._toggleBtn.textContent = '▲ Controles';
-
-    this._toggleBtn.addEventListener('click', () => {
-      const collapsed = this.floorUIContainer.classList.toggle('collapsed');
-      this._userExpanded = !collapsed;
-      this._toggleBtn.textContent = collapsed ? '▲ Controles' : '▼ Fechar';
-    });
-
-    // Insert as the FIRST child of the container
-    this.floorUIContainer.insertBefore(this._toggleBtn, this.floorUIContainer.firstChild);
-
-    // Default: collapsed on mobile
+    // Only create the toggle button if on mobile (legacy behavior)
     if (isMobile()) {
+      this._toggleBtn = document.createElement('button');
+      this._toggleBtn.className = 'floor-ui-toggle';
+      this._toggleBtn.setAttribute('aria-label', 'Expandir/colapsar controles');
+      this._toggleBtn.textContent = '▲ Controles';
+
+      this._toggleBtn.addEventListener('click', () => {
+        const collapsed = this.floorUIContainer.classList.toggle('collapsed');
+        this._userExpanded = !collapsed;
+        this._toggleBtn.textContent = collapsed ? '▲ Controles' : '▼ Fechar';
+      });
+
+      // Insert as the FIRST child of the container
+      this.floorUIContainer.insertBefore(this._toggleBtn, this.floorUIContainer.firstChild);
+
+      // Default: collapsed on mobile
       this.floorUIContainer.classList.add('collapsed');
       this._toggleBtn.textContent = '▲ Controles';
     }
 
     // Re-evaluate on resize (e.g., landscape rotation)
     window.addEventListener('resize', () => {
+      if (!this.floorUIContainer) return;
       if (!isMobile()) {
         this.floorUIContainer.classList.remove('collapsed');
-      } else if (!this._userExpanded) {
+      } else if (this._toggleBtn && !this._userExpanded) {
         this.floorUIContainer.classList.add('collapsed');
         this._toggleBtn.textContent = '▲ Controles';
       }
@@ -216,6 +178,107 @@ export class UIManager {
     if (!enabled) {
       this._clearSearchResults();
     }
+  }
+
+  /**
+   * Programmatically select a building. Used by ViewerControlsRail.
+   * Pass null to deselect (equivalent to "Todos").
+   */
+  async selectBuilding(buildingID) {
+    if (buildingID === null) {
+      return this.selectAll();
+    }
+
+    for (const b of Object.keys(this.modelManager.manifest)) {
+      this.modelManager.enableBuilding(b, false);
+    }
+    this.modelManager.enableBuilding(buildingID, true);
+    this.modelManager.focusBuilding(buildingID);
+    this.interactionManager.resetPinsForBuilding(buildingID);
+    this._updateBuildingFocus(buildingID);
+
+    if ((this.modelManager.maxFloorVisibleByBuilding.get(buildingID) ?? -1) < 0) {
+      await this.modelManager.setFloorLevel(buildingID, 0);
+    }
+
+    const floorsMap = this.modelManager.entries.get(buildingID);
+    let newActiveFloor = 0;
+    if (floorsMap && floorsMap.size > 0) {
+      newActiveFloor = Math.min(...floorsMap.keys());
+    }
+
+    await this.modelManager.setFloorLevel(buildingID, newActiveFloor);
+    this.interactionManager.activateFloorPins(buildingID, newActiveFloor);
+    this.interactionManager.blockingMeshes = this.modelManager.getAllMeshes();
+    this.cameraManager?.applyBlockFocusZoomLimits?.();
+
+    const blockBox = this.modelManager.getBlockBoundingBox(buildingID);
+    if (!blockBox.isEmpty()) {
+      this.cameraManager.fitCameraToBox(blockBox);
+    }
+
+    this._renderFloorButtons(buildingID);
+
+    // Notify listeners (Vue layer) so the rail can update its state.
+    window.dispatchEvent(new CustomEvent('ufcim:building-changed', {
+      detail: { buildingID, activeFloor: newActiveFloor }
+    }));
+  }
+
+  /** Programmatically select "Todos" (no building focus). */
+  async selectAll() {
+    await this.modelManager.showAllBlocks();
+    this.interactionManager.clearFloorSelections(true);
+    this._updateBuildingFocus(null);
+    this._renderFloorButtons(null);
+    this.interactionManager.blockingMeshes = this.modelManager.getAllMeshes();
+    this.cameraManager?.applyDefaultZoomLimits?.();
+    this.cameraManager.resetToDefaultState();
+
+    window.dispatchEvent(new CustomEvent('ufcim:building-changed', {
+      detail: { buildingID: null, activeFloor: null }
+    }));
+  }
+
+  /** Programmatically select a floor on the active building. */
+  async selectFloor(level) {
+    await this._handleFloorClick(level);
+    window.dispatchEvent(new CustomEvent('ufcim:floor-changed', {
+      detail: { level }
+    }));
+  }
+
+  getBuildingsList() {
+    const list = [];
+    if (!this.modelManager?.manifest) return list;
+    for (const [id, data] of Object.entries(this.modelManager.manifest)) {
+      if (data.hidden) continue;
+      list.push({ id, name: data.name || id });
+    }
+    return list;
+  }
+
+  getFloorsForBuilding(buildingID) {
+    if (!this.modelManager?.manifest) return [];
+    const data = this.modelManager.manifest[buildingID];
+    if (!data?.floors) return [];
+    return data.floors
+      .map(f => ({ level: f.level, name: f.name }))
+      .sort((a, b) => a.level - b.level);
+  }
+
+  getActiveBuildingId() {
+    const active = this.buildingBar?.querySelector('button.active[data-building]');
+    if (!active) return null;
+    const id = active.dataset.building;
+    return id === 'all' ? null : id;
+  }
+
+  getActiveFloorLevel() {
+    const activeId = this.getActiveBuildingId();
+    if (!activeId || !this.interactionManager) return null;
+    const f = this.interactionManager.getActiveFloor(activeId);
+    return typeof f === 'number' ? f : null;
   }
 
   // ------------------------------------------------------------------
@@ -267,7 +330,7 @@ export class UIManager {
 
       btn.addEventListener('click', async () => {
         // Pass the numeric level
-        await this._handleFloorClick(level);
+        await this.selectFloor(level);
       });
 
       this.floorBar.appendChild(btn);
@@ -276,6 +339,7 @@ export class UIManager {
     const activeFloor = this.interactionManager.getActiveFloor(buildingID);
     this._highlightActiveFloors(typeof activeFloor === 'number' ? activeFloor : null);
   }
+
 
   _highlightActiveFloors(level) {
     const buttons = this.floorBar.querySelectorAll('button');

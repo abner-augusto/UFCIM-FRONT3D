@@ -239,37 +239,25 @@ body {
   color: #264d55;
 }
 
-/* ── Mobile: collapsed floor-ui overlay ──────────────────── */
+/* ── Mobile (≤480): the new rail replaces the bottom panel ──────── */
 @media (max-width: 480px) {
   .floor-ui-container {
-    padding: 8px;
-    gap: 4px;
-  }
-
-  .floor-ui-container.collapsed > #buildings-bar,
-  .floor-ui-container.collapsed > #floor-bar,
-  .floor-ui-container.collapsed > #datetime-bar {
-    display: none;
-  }
-
-  /* The toggle button added by UIManager */
-  .floor-ui-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    min-height: 36px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1rem;
-    color: #555;
-    padding: 4px 0;
+    display: none !important;
   }
 }
 
-@media (min-width: 481px) {
-  .floor-ui-toggle {
-    display: none; /* toggle only exists on mobile */
-  }
+/* ── Fullscreen mode: hide app shell, viewer takes 100dvh ──────── */
+body.viewer-fullscreen .app-header,
+body.viewer-fullscreen .bottom-tab-bar {
+  display: none !important;
+}
+
+body.viewer-fullscreen .app-main {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+body.viewer-fullscreen .viewer-view {
+  height: 100vh;
+  height: 100dvh;
 }

@@ -145,7 +145,7 @@ export class App {
         if (this.debugGui) {
             this.debugGui.destroy();
         }
-        this.debugGui = new GUI({ title: 'Debug', closeFolders: true, width: 180 });
+        this.debugGui = new GUI({ title: 'Debug', closeFolders: true, width: 140 });
 
         // --- Stats toggle ---
         this.debugGui.add(this, 'enableStats').name('Stats').onChange((value) => {
@@ -185,11 +185,14 @@ export class App {
         cameraFolder.add(cameraActions, 'log').name('Log console');
         cameraFolder.close();
 
-        // Start collapsed and position bottom-right
+        // --- Hide button ---
+        this.debugGui.add({ hide: () => { this.debugGui.domElement.style.display = 'none'; } }, 'hide').name('Ocultar');
+
+        // Start collapsed and position bottom-right, clear of the mobile bottom bar
         this.debugGui.close();
         const el = this.debugGui.domElement;
         el.style.position = 'fixed';
-        el.style.bottom = '12px';
+        el.style.bottom = 'calc(var(--bottom-bar-h, 0px) + var(--safe-bottom, 0px) + 12px)';
         el.style.right = '12px';
         el.style.top = 'auto';
         el.style.left = 'auto';

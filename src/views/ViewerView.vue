@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useReservationStore } from '@/stores/reservation';
 import { useAuthStore } from '@/stores/auth';
@@ -9,6 +9,8 @@ import { campuses } from '@/data/campuses';
 import ThreeViewer from '@/components/ThreeViewer.vue';
 import RoomPopup from '@/components/RoomPopup.vue';
 import PeriodSelector from '@/components/PeriodSelector.vue';
+import ViewerControlsRail from '@/components/ViewerControlsRail.vue';
+import ViewerSearchSheet from '@/components/ViewerSearchSheet.vue';
 import { getCurrentPeriod } from '@/utils/period';
 import { usePinAvailability, PERIOD_COLORS } from '@/composables/usePinAvailability';
 import type { PeriodKey, PinStatus } from '@/composables/usePinAvailability';
@@ -31,11 +33,20 @@ const popupReserveDisabledReason = ref<string | null>(null);
 const popupBlockingReason = ref<string | null>(null);
 const popupReservationStateLoading = ref(false);
 
+const fullscreen = ref(false);
+const searchSheetOpen = ref(false);
+const isMobile = ref(window.matchMedia('(max-width: 480px)').matches);
+
+const mql = window.matchMedia('(max-width: 480px)');
+const onResize = (e: MediaQueryListEvent | MediaQueryList) => {
+  isMobile.value = e.matches;
+};
+
 // Map<modelId, Space> — built on mount, used for O(1) pin lookup
 const spacesByModelId = new Map<string, Space>();
 let cachedStatusMap = new Map<string, PinStatus>();
-let viewerReady = false;
-let spacesLoaded = false;
+const viewerReady = ref(false);
+const spacesLoaded = ref(false);
 let colorUpdateSeq = 0;
 let popupStateSeq = 0;
 let popupDetailSeq = 0;
@@ -122,7 +133,7 @@ async function updatePopupReservationState(space: Space) {
 }
 
 async function applyPinColors() {
-  if (!viewerReady || !spacesLoaded) return;
+  if (!viewerReady.value || !spacesLoaded.value) return;
   const seq = ++colorUpdateSeq;
   const activeModelIds = new Set(spacesByModelId.keys());
   const statusMap = await fetchStatuses(
@@ -152,7 +163,7 @@ async function applyPinColors() {
 }
 
 function handleViewerReady() {
-  viewerReady = true;
+  viewerReady.value = true;
   applyPinColors();
 }
 
@@ -161,7 +172,14 @@ function handlePeriodChange(period: PeriodKey) {
   selectedPeriod.value = period;
 }
 
+function onFullscreenToggle(on: boolean) {
+  fullscreen.value = on;
+  viewerRef.value?.setFullscreen(on);
+}
+
 onMounted(async () => {
+  mql.addEventListener('change', onResize);
+
   const campusId = route.params.campusId as string;
   // Backend stores campus as the shortName (e.g. "Benfica"), not the route id ("benfica")
   const campusFilter = campuses.find(c => c.id === campusId)?.shortName ?? campusId;
@@ -184,9 +202,13 @@ onMounted(async () => {
   } catch (e) {
     console.error('Falha ao carregar espaços:', e);
   } finally {
-    spacesLoaded = true;
+    spacesLoaded.value = true;
     applyPinColors();
   }
+});
+
+onUnmounted(() => {
+  mql.removeEventListener('change', onResize);
 });
 
 watch(selectedPeriod, () => {
@@ -239,14 +261,33 @@ function closePopup() {
 </script>
 
 <template>
-  <div class="viewer-view">
+  <div class="viewer-view" :class="{ 'viewer-view--fullscreen': fullscreen }">
     <ThreeViewer ref="viewerRef" @ready="handleViewerReady" @pin-click="handlePinClick" />
+    
     <PeriodSelector
+      v-if="!isMobile"
       :modelValue="selectedPeriod"
       :loading="availabilityLoading"
       :autoDetected="periodAutoDetected"
       @update:modelValue="handlePeriodChange"
     />
+
+    <ViewerControlsRail
+      v-if="isMobile"
+      :viewer-ref="viewerRef"
+      :ready="viewerReady"
+      :modelValue="selectedPeriod"
+      @update:modelValue="handlePeriodChange"
+      :fullscreen="fullscreen"
+      @update:fullscreen="onFullscreenToggle"
+      @open-search="searchSheetOpen = true"
+    />
+
+    <ViewerSearchSheet
+      :open="searchSheetOpen"
+      @close="searchSheetOpen = false"
+    />
+
     <RoomPopup
       v-if="showPopup && selectedSpace"
       :space="selectedSpace"
@@ -271,10 +312,20 @@ function closePopup() {
   width: 100vw;
 }
 
+.viewer-view--fullscreen {
+  height: 100vh;
+  height: 100dvh;
+}
+
 @media (max-width: 1023px) {
   .viewer-view {
     height: calc(100vh  - var(--header-offset) - var(--bottom-bar-h) - var(--safe-bottom)); /* fallback */
     height: calc(100dvh - var(--header-offset) - var(--bottom-bar-h) - var(--safe-bottom));
+  }
+  
+  .viewer-view--fullscreen {
+    height: 100vh;
+    height: 100dvh;
   }
 }
 </style>
