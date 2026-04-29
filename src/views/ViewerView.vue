@@ -264,9 +264,17 @@ function closePopup() {
 
 <style scoped>
 .viewer-view {
+  height: calc(100dvh - var(--top-bar-h));
+  height: calc(100vh - var(--top-bar-h)); /* fallback */
+  overflow: hidden;
   position: relative;
   width: 100vw;
-  height: calc(100vh - 52px); /* subtract header height */
-  overflow: hidden;
+}
+
+@media (max-width: 1023px) {
+  .viewer-view {
+    height: calc(100dvh - var(--top-bar-h) - var(--bottom-bar-h) - var(--safe-bottom));
+    height: calc(100vh  - var(--top-bar-h) - var(--bottom-bar-h) - var(--safe-bottom)); /* fallback */
+  }
 }
 </style>
