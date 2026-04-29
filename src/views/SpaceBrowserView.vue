@@ -184,6 +184,7 @@ onMounted(async () => {
   max-width: 680px;
   margin: 0 auto;
   padding: 0 1rem 3rem;
+  overflow-x: hidden;
 }
 
 /* Sticky header wrapper */
@@ -233,6 +234,14 @@ onMounted(async () => {
   gap: 0.5rem;
   align-items: flex-end;
 }
+
+@media (max-width: 480px) {
+  .toolbar__top-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 .toolbar__search {
   flex: 1;
   padding: 0.6rem 0.75rem;
@@ -276,6 +285,14 @@ onMounted(async () => {
   gap: 0.4rem;
   flex-wrap: wrap;
 }
+
+@media (max-width: 480px) {
+  .toolbar__filters > * {
+    flex: 1 1 calc(50% - 0.25rem);
+    min-width: 0;
+  }
+}
+
 .toolbar__select {
   flex: 1;
   min-width: 0;
@@ -294,6 +311,14 @@ onMounted(async () => {
   gap: 0.75rem;
   flex-wrap: wrap;
 }
+
+@media (max-width: 480px) {
+  .toolbar__period-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 .period-control {
   display: flex;
   align-items: center;

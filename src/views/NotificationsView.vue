@@ -157,6 +157,7 @@ const hasUnread = () => notifications.value.some((n) => !n.read);
   border-radius: 10px;
   background: white;
   border: 1px solid #e5e5e5;
+  gap: 1rem;
 }
 .notification-item--unread {
   border-left: 3px solid #1D9E75;
@@ -164,6 +165,7 @@ const hasUnread = () => notifications.value.some((n) => !n.read);
 }
 .notification-item__content {
   flex: 1;
+  min-width: 0;
 }
 .notification-item__title {
   margin: 0 0 0.25rem;
@@ -174,6 +176,7 @@ const hasUnread = () => notifications.value.some((n) => !n.read);
   margin: 0 0 0.35rem;
   color: #555;
   font-size: 0.85rem;
+  word-break: break-word;
 }
 .notification-item__date {
   margin: 0;
@@ -187,9 +190,21 @@ const hasUnread = () => notifications.value.some((n) => !n.read);
   border: none;
   cursor: pointer;
   white-space: nowrap;
-  margin-left: 1rem;
   padding: 0;
+  flex-shrink: 0;
 }
+
+@media (max-width: 480px) {
+  .notification-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .mark-read-btn {
+    align-self: flex-end;
+    margin-top: 0.5rem;
+  }
+}
+
 .state-msg { color: #888; font-size: 0.9rem; }
 .state-error { color: #c0392b; font-size: 0.9rem; }
 .state-empty { color: #888; font-size: 0.9rem; text-align: center; padding: 3rem 0; }

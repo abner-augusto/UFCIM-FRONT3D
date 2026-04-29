@@ -248,11 +248,17 @@ const datetimeLabel = (iso: string) =>
   background: #f9fafb;
 }
 
+.blocking-card__info {
+  min-width: 0;
+}
 .blocking-card__info h3 {
   margin: 0 0 0.25rem;
   font-size: 1rem;
   font-weight: 600;
   color: #111;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .blocking-card__info p {
   margin: 0;
@@ -337,6 +343,14 @@ const datetimeLabel = (iso: string) =>
   padding-bottom: 0;
 }
 
+@media (max-width: 480px) {
+  .detail-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+  }
+}
+
 .detail-label {
   color: #999;
   flex-shrink: 0;
@@ -347,6 +361,14 @@ const datetimeLabel = (iso: string) =>
   text-align: right;
   word-break: break-all;
 }
+
+@media (max-width: 480px) {
+  .detail-value {
+    text-align: left;
+    word-break: break-word;
+  }
+}
+
 .detail-value--mono {
   font-family: monospace;
   font-size: 0.75rem;
