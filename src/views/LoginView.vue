@@ -97,6 +97,18 @@ async function handleLogin() {
   min-height: 100vh;
   background: #f7f7f7;
 }
+
+@supports (min-height: 100dvh) {
+  .login-view {
+    min-height: 100dvh;
+  }
+}
+
+.login-view input,
+.login-view .login-btn {
+  min-height: var(--tap-min, 44px);
+}
+
 .login-card {
   background: white;
   border: 1px solid #e5e5e5;
@@ -180,6 +192,7 @@ async function handleLogin() {
   cursor: pointer;
   text-decoration: underline;
   padding: 0;
+  min-height: var(--tap-min, 44px);
 }
 .forgot-link:hover {
   color: #555;

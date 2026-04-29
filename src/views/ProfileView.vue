@@ -88,6 +88,13 @@ function handleLogout() {
   margin: 0 auto;
   padding: 1.5rem 1rem;
 }
+
+@supports (min-height: 100dvh) {
+  .profile-view {
+    min-height: 100dvh;
+  }
+}
+
 .view-header {
   display: flex;
   align-items: center;
@@ -142,10 +149,18 @@ function handleLogout() {
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
+  min-height: var(--tap-min, 44px);
 }
 .logout-btn:hover {
   background: #fdf0ee;
 }
+
+@media (max-width: 1023px) {
+  .logout-btn {
+    display: none; /* Already in NavDrawer */
+  }
+}
+
 .state-msg {
   color: #888;
   font-size: 0.9rem;

@@ -163,6 +163,18 @@ async function handleAccept() {
   min-height: 100vh;
   background: #f7f7f7;
 }
+
+@supports (min-height: 100dvh) {
+  .invite-view {
+    min-height: 100dvh;
+  }
+}
+
+.invite-view input,
+.invite-view button {
+  min-height: var(--tap-min, 44px);
+}
+
 .invite-card {
   background: white;
   border: 1px solid #e5e5e5;
