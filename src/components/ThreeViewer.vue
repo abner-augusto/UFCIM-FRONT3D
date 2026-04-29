@@ -42,7 +42,6 @@ onUnmounted(() => {
 });
 
 defineExpose({
-  getAPI: () => threeApp?.api ?? null,
   filterPinsToBackendSpaces: (activeModelIds: Set<string>, colorMap?: Map<string, string>) => {
     threeApp?.interactionManager?.applyBackendFilter(activeModelIds, colorMap ?? new Map());
   },

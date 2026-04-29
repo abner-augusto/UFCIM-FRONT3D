@@ -10,7 +10,6 @@ import { InteractionManager } from './InteractionManager.js';
 import { PopupManager } from './PopUpManager.js';
 import { CameraManager } from './CameraManager.js';
 import { CAMERA_CONFIG, CONTROLS_CONFIG } from './config.js';
-import { UFCIMAPI } from './UFCIMAPI.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
 export class App {
@@ -41,7 +40,6 @@ export class App {
             this.cameraManager,
             this.interactionManager
             );
-        this.api = null;
         this.debugGui = null;
 
         // Bind 'this' to methods
@@ -105,13 +103,6 @@ export class App {
             this.interactionManager,
             this.cameraManager
         );
-        this.api = new UFCIMAPI({
-            modelManager: this.modelManager,
-            interactionManager: this.interactionManager,
-            cameraManager: this.cameraManager,
-            uiManager: this.uiManager,
-            popupManager: this.popupManager,
-        });
     }
 
     _createCamera() {
@@ -248,10 +239,6 @@ export class App {
         if (this.enableStats && this.statsPanels) {
             this.statsPanels.forEach(p => p.end());
         }
-    }
-
-    getAPI() {
-        return this.api?.getAPI?.();
     }
 
     dispose() {

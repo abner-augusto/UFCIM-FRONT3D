@@ -17,8 +17,9 @@
     "tsconfig.json",
     "package.json",
     "CLAUDE.md",
-    "public/assets/models/IAUD/manifest.json",
-    "public/assets/pins_db_popup.json"
+    "public/**/*.json",
+    "public/**/*.css",
+    "public/**/*.js"
   ],
   "ignore": {
     "useGitignore": true,
@@ -29,6 +30,7 @@
       "public/assets/fonts/**",
       "public/assets/pin.png",
       "public/assets/pin.bak",
+      "public/favicon.ico",
       "node_modules/**",
       "dist/**",
       "*.lock",
