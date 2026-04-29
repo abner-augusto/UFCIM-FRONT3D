@@ -17,9 +17,9 @@ const auth = useAuthStore();
 
 <style scoped>
 .app-main {
-  min-height: 100dvh;
   min-height: 100vh; /* fallback */
-  padding-top: var(--top-bar-h);
+  min-height: 100dvh;
+  padding-top: var(--header-offset);
   padding-bottom: 0;
 }
 

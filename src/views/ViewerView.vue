@@ -264,8 +264,8 @@ function closePopup() {
 
 <style scoped>
 .viewer-view {
-  height: calc(100dvh - var(--top-bar-h));
-  height: calc(100vh - var(--top-bar-h)); /* fallback */
+  height: calc(100vh - var(--header-offset)); /* fallback */
+  height: calc(100dvh - var(--header-offset));
   overflow: hidden;
   position: relative;
   width: 100vw;
@@ -273,8 +273,8 @@ function closePopup() {
 
 @media (max-width: 1023px) {
   .viewer-view {
-    height: calc(100dvh - var(--top-bar-h) - var(--bottom-bar-h) - var(--safe-bottom));
-    height: calc(100vh  - var(--top-bar-h) - var(--bottom-bar-h) - var(--safe-bottom)); /* fallback */
+    height: calc(100vh  - var(--header-offset) - var(--bottom-bar-h) - var(--safe-bottom)); /* fallback */
+    height: calc(100dvh - var(--header-offset) - var(--bottom-bar-h) - var(--safe-bottom));
   }
 }
 </style>

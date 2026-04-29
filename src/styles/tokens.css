@@ -14,6 +14,7 @@
   /* Layout */
   --top-bar-h:    56px;
   --bottom-bar-h: 0px;   /* desktop default — overridden below for phones/tablets */
+  --header-offset: calc(var(--top-bar-h) + var(--safe-top));
 
   /* Safe areas (iOS notch / home indicator) */
   --safe-top:    env(safe-area-inset-top,    0px);

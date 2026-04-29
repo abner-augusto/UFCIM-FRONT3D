@@ -140,7 +140,7 @@ defineEmits<{
 @media (max-width: 480px) {
   .period-selector {
     /* Move from overlapping the model to top-center strip */
-    top: calc(var(--top-bar-h) + 0.5rem + var(--safe-top, 0px));
+    top: calc(var(--header-offset) + 0.5rem);
     left: 0.5rem;
     right: 0.5rem;
     min-width: 0;

@@ -82,7 +82,7 @@ function logout() {
 
 <style scoped>
 .app-header {
-  height: var(--top-bar-h);
+  height: var(--header-offset);
   background: white;
   border-bottom: 1px solid #e5e5e5;
   position: fixed;
