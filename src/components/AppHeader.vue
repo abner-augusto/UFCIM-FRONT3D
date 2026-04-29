@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
 import { useRouter } from 'vue-router';
-import { hasRole, CAN_BLOCK } from '@/utils/roles';
+import { hasRole, CAN_BLOCK, CAN_ADMIN } from '@/utils/roles';
 import NavDrawer from './NavDrawer.vue';
 import NotificationsPanel from './NotificationsPanel.vue';
 
@@ -15,6 +15,8 @@ const drawerOpen = ref(false);
 const notifOpen = ref(false);
 
 const canBlock = computed(() => hasRole(authStore.userRole, CAN_BLOCK));
+const canAdmin = computed(() => hasRole(authStore.userRole, CAN_ADMIN));
+const adminUrl = `${import.meta.env.VITE_API_BASE_URL}/admin`;
 const viewerRoute = computed(() =>
   campusStore.selectedCampusId
     ? { name: 'viewer', params: { campusId: campusStore.selectedCampusId } }
@@ -48,17 +50,18 @@ function logout() {
         <router-link :to="spaceBrowserRoute">Buscar Espaços</router-link>
         <router-link to="/minhas-reservas">Minhas Reservas</router-link>
         <router-link v-if="canBlock" to="/meus-bloqueios">Meus Bloqueios</router-link>
-        <button class="notif-link" @click="notifOpen = !notifOpen">
-          Notificações
-          <span v-if="authStore.unreadCount > 0" class="notif-badge">
-            {{ authStore.unreadCount >= 100 ? '99+' : authStore.unreadCount }}
-          </span>
-        </button>
+        <a v-if="canAdmin" :href="adminUrl" target="_blank" rel="noopener" class="admin-link">Admin</a>
       </nav>
 
       <div class="header-right">
         <!-- Tablet/Desktop User Info -->
         <div class="user-info-desktop">
+          <button class="desktop-notif" @click="notifOpen = !notifOpen">
+            🔔
+            <span v-if="authStore.unreadCount > 0" class="notif-badge">
+              {{ authStore.unreadCount >= 100 ? '99+' : authStore.unreadCount }}
+            </span>
+          </button>
           <router-link to="/perfil" class="header-user">{{ authStore.user?.name }}</router-link>
           <button @click="logout" class="header-logout">Sair</button>
         </div>
@@ -209,20 +212,21 @@ function logout() {
   text-decoration: none;
 }
 
-.notif-link {
+.admin-link {
+  color: var(--color-brand) !important;
+  font-weight: 600 !important;
+}
+
+.desktop-notif {
   position: relative;
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #555;
+  font-size: 1.25rem;
   padding: 0;
-  font-family: inherit;
-}
-
-.notif-link:hover {
-  color: var(--color-brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .notif-badge {
