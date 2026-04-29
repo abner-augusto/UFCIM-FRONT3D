@@ -171,6 +171,40 @@ export class UIManager {
     document.body.appendChild(uiContainer);
     this.floorUIContainer = uiContainer;
 
+    // --- MOBILE COLLAPSE TOGGLE -------------------------------------
+    const isMobile = () => window.matchMedia('(max-width: 480px)').matches;
+    this._userExpanded = false;
+
+    this._toggleBtn = document.createElement('button');
+    this._toggleBtn.className = 'floor-ui-toggle';
+    this._toggleBtn.setAttribute('aria-label', 'Expandir/colapsar controles');
+    this._toggleBtn.textContent = '▲ Controles';
+
+    this._toggleBtn.addEventListener('click', () => {
+      const collapsed = this.floorUIContainer.classList.toggle('collapsed');
+      this._userExpanded = !collapsed;
+      this._toggleBtn.textContent = collapsed ? '▲ Controles' : '▼ Fechar';
+    });
+
+    // Insert as the FIRST child of the container
+    this.floorUIContainer.insertBefore(this._toggleBtn, this.floorUIContainer.firstChild);
+
+    // Default: collapsed on mobile
+    if (isMobile()) {
+      this.floorUIContainer.classList.add('collapsed');
+      this._toggleBtn.textContent = '▲ Controles';
+    }
+
+    // Re-evaluate on resize (e.g., landscape rotation)
+    window.addEventListener('resize', () => {
+      if (!isMobile()) {
+        this.floorUIContainer.classList.remove('collapsed');
+      } else if (!this._userExpanded) {
+        this.floorUIContainer.classList.add('collapsed');
+        this._toggleBtn.textContent = '▲ Controles';
+      }
+    });
+
     this._updateBuildingFocus(null);
     this._renderFloorButtons(null);
   }
@@ -379,6 +413,13 @@ export class UIManager {
     this._highlightActiveFloors(floorLevel);
 
     this.cameraManager.focusOnPin(pin);
+
+    // Expand the panel so the user sees which floor/building activated
+    if (window.matchMedia('(max-width: 480px)').matches) {
+      this.floorUIContainer.classList.remove('collapsed');
+      this._userExpanded = true;
+      if (this._toggleBtn) this._toggleBtn.textContent = '▼ Fechar';
+    }
 
     if (this.searchInput) {
       this.searchInput.value = '';

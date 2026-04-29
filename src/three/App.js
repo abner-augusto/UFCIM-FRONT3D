@@ -131,6 +131,12 @@ export class App {
         controls.maxDistance = CONTROLS_CONFIG.distance.max;
         controls.minDistance = CONTROLS_CONFIG.distance.min;
         controls.target.set(CONTROLS_CONFIG.target.x, CONTROLS_CONFIG.target.y, CONTROLS_CONFIG.target.z);
+        
+        controls.touches = {
+            ONE: THREE.TOUCH.PAN,
+            TWO: THREE.TOUCH.DOLLY_ROTATE,
+        };
+
         controls.update();
         return controls;
     }

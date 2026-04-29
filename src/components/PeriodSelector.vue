@@ -136,4 +136,26 @@ defineEmits<{
 .period-selector__dot--reserved {
   background: #d32f2f;
 }
+
+@media (max-width: 480px) {
+  .period-selector {
+    /* Move from overlapping the model to top-center strip */
+    top: calc(var(--top-bar-h) + 0.5rem + var(--safe-top, 0px));
+    left: 0.5rem;
+    right: 0.5rem;
+    min-width: 0;
+    /* Compact it */
+    padding: 0.4rem 0.6rem;
+  }
+
+  /* The legend (Disponível / Parcial / Ocupado dots) is redundant on mobile
+     because the pins themselves carry the color. Hide to save vertical space. */
+  .period-selector__legend {
+    display: none;
+  }
+
+  .period-selector__auto-tag {
+    display: none;
+  }
+}
 </style>
