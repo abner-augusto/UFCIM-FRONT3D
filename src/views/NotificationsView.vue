@@ -52,8 +52,6 @@ async function markAllRead() {
 }
 
 const dateLabel = (iso: string) => {
-  // SQLite may return "YYYY-MM-DD HH:MM:SS" (space instead of T) which some
-  // environments reject. Normalize to a valid ISO 8601 string before parsing.
   const normalized = iso ? iso.replace(' ', 'T') : '';
   const d = new Date(normalized);
   if (!normalized || isNaN(d.getTime())) return '—';

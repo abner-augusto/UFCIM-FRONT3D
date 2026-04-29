@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
+import { hasRole, CAN_BLOCK } from '@/utils/roles';
 
 const auth = useAuthStore();
 const campus = useCampusStore();
-const router = useRouter();
 const route = useRoute();
 
 const viewerTarget = computed(() =>
@@ -20,37 +20,33 @@ const browserTarget = computed(() =>
     : '/campus'
 );
 
+const canBlock = computed(() => hasRole(auth.userRole, CAN_BLOCK));
 const isActive = (name: string) => route.name === name;
 </script>
 
 <template>
   <nav class="bottom-tab-bar">
-    <router-link :to="viewerTarget" class="tab-item" :class="{ 'active': isActive('viewer') }">
+    <router-link :to="viewerTarget" class="tab-item" :class="{ active: isActive('viewer') }">
       <span class="tab-icon">🏛</span>
       <span class="tab-label">Maquete 3D</span>
     </router-link>
 
-    <router-link :to="browserTarget" class="tab-item" :class="{ 'active': isActive('space-browser') }">
+    <router-link :to="browserTarget" class="tab-item" :class="{ active: isActive('space-browser') }">
       <span class="tab-icon">🔍</span>
       <span class="tab-label">Buscar</span>
     </router-link>
 
-    <router-link to="/minhas-reservas" class="tab-item" :class="{ 'active': isActive('my-reservations') }">
+    <router-link to="/minhas-reservas" class="tab-item" :class="{ active: isActive('my-reservations') }">
       <span class="tab-icon">📅</span>
       <span class="tab-label">Reservas</span>
     </router-link>
 
-    <router-link to="/notificacoes" class="tab-item" :class="{ 'active': isActive('notifications') }">
-      <div class="icon-wrapper">
-        <span class="tab-icon">🔔</span>
-        <span v-if="auth.unreadCount > 0" class="notif-badge">
-          {{ auth.unreadCount >= 100 ? '99+' : auth.unreadCount }}
-        </span>
-      </div>
-      <span class="tab-label">Notificações</span>
+    <router-link v-if="canBlock" to="/meus-bloqueios" class="tab-item" :class="{ active: isActive('my-blockings') }">
+      <span class="tab-icon">🚫</span>
+      <span class="tab-label">Bloqueios</span>
     </router-link>
 
-    <router-link to="/perfil" class="tab-item" :class="{ 'active': isActive('profile') }">
+    <router-link to="/perfil" class="tab-item" :class="{ active: isActive('profile') }">
       <span class="tab-icon">👤</span>
       <span class="tab-label">Perfil</span>
     </router-link>
@@ -104,30 +100,5 @@ const isActive = (name: string) => route.name === name;
 .tab-label {
   font-size: 0.7rem;
   font-weight: 500;
-}
-
-.icon-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.notif-badge {
-  position: absolute;
-  top: -4px;
-  right: -8px;
-  background: #c0392b;
-  color: white;
-  font-size: 0.6rem;
-  font-weight: 700;
-  min-width: 14px;
-  height: 14px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 3px;
-  line-height: 1;
 }
 </style>

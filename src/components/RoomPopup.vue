@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { SPACE_TYPE_LABELS, EQUIPMENT_STATUS_LABELS, type Space, type Equipment } from '@/types/space';
 import { useAuthStore } from '@/stores/auth';
 import { hasRole, CAN_RESERVE, CAN_BLOCK } from '@/utils/roles';
@@ -13,11 +13,21 @@ const props = defineProps<{
   blockingAllowed?: boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   close: [];
   reserve: [];
   block: [];
 }>();
+
+// The pointerup/click that ends the tap which selected the pin lands on the
+// newly-rendered overlay, so we ignore overlay-close events for a short window
+// after mount to prevent the popup from opening and immediately closing.
+const overlayReady = ref(false);
+onMounted(() => setTimeout(() => { overlayReady.value = true; }, 300));
+
+function onOverlayClick() {
+  if (overlayReady.value) emit('close');
+}
 
 const auth = useAuthStore();
 const canReserve = computed(() => hasRole(auth.userRole, CAN_RESERVE));
@@ -67,7 +77,7 @@ function groupStatusLabel(g: EquipmentGroup): string {
 </script>
 
 <template>
-  <div class="room-popup-overlay" @click.self="$emit('close')">
+  <div class="room-popup-overlay" @click.self="onOverlayClick">
     <div class="room-popup">
       <button class="room-popup__close" @click="$emit('close')" aria-label="Fechar">&times;</button>
 

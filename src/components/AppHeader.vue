@@ -5,12 +5,14 @@ import { useCampusStore } from '@/stores/campus';
 import { useRouter } from 'vue-router';
 import { hasRole, CAN_BLOCK } from '@/utils/roles';
 import NavDrawer from './NavDrawer.vue';
+import NotificationsPanel from './NotificationsPanel.vue';
 
 const authStore = useAuthStore();
 const campusStore = useCampusStore();
 const router = useRouter();
 
 const drawerOpen = ref(false);
+const notifOpen = ref(false);
 
 const canBlock = computed(() => hasRole(authStore.userRole, CAN_BLOCK));
 const viewerRoute = computed(() =>
@@ -46,12 +48,12 @@ function logout() {
         <router-link :to="spaceBrowserRoute">Buscar Espaços</router-link>
         <router-link to="/minhas-reservas">Minhas Reservas</router-link>
         <router-link v-if="canBlock" to="/meus-bloqueios">Meus Bloqueios</router-link>
-        <router-link to="/notificacoes" class="notif-link">
+        <button class="notif-link" @click="notifOpen = !notifOpen">
           Notificações
           <span v-if="authStore.unreadCount > 0" class="notif-badge">
             {{ authStore.unreadCount >= 100 ? '99+' : authStore.unreadCount }}
           </span>
-        </router-link>
+        </button>
       </nav>
 
       <div class="header-right">
@@ -63,12 +65,12 @@ function logout() {
 
         <!-- Mobile Actions (<= 480px) -->
         <div class="mobile-actions">
-          <router-link to="/notificacoes" class="mobile-notif">
+          <button class="mobile-notif" @click="notifOpen = !notifOpen">
             🔔
             <span v-if="authStore.unreadCount > 0" class="notif-badge">
               {{ authStore.unreadCount >= 100 ? '99+' : authStore.unreadCount }}
             </span>
-          </router-link>
+          </button>
           <router-link to="/perfil" class="mobile-avatar">
             {{ authStore.user?.name?.[0] || 'U' }}
           </router-link>
@@ -77,6 +79,7 @@ function logout() {
     </div>
 
     <NavDrawer :open="drawerOpen" @close="drawerOpen = false" />
+    <NotificationsPanel :open="notifOpen" anchor="bottom" @close="notifOpen = false" />
   </header>
 </template>
 
@@ -180,8 +183,16 @@ function logout() {
 
 .mobile-notif {
   position: relative;
-  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
   font-size: 1.25rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
 }
 
 .mobile-avatar {
@@ -200,6 +211,18 @@ function logout() {
 
 .notif-link {
   position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #555;
+  padding: 0;
+  font-family: inherit;
+}
+
+.notif-link:hover {
+  color: var(--color-brand);
 }
 
 .notif-badge {
