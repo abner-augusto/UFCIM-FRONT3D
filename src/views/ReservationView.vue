@@ -404,9 +404,11 @@ async function handleRecurring() {
 
         <p v-if="errorMsg" class="state-error">{{ errorMsg }}</p>
 
-        <button class="continue-btn" :disabled="!canContinue()" @click="handleContinue">
-          Continuar
-        </button>
+        <div class="form-actions">
+          <button class="continue-btn" :disabled="!canContinue()" @click="handleContinue">
+            Continuar
+          </button>
+        </div>
       </template>
 
       <!-- ── Recurring form ── -->
@@ -463,13 +465,15 @@ async function handleRecurring() {
         <p v-if="recurringSuccessMsg" class="state-success">{{ recurringSuccessMsg }}</p>
         <p v-if="errorMsg" class="state-error">{{ errorMsg }}</p>
 
-        <button
-          class="continue-btn"
-          :disabled="!canSubmitRecurring() || recurringLoading"
-          @click="handleRecurring"
-        >
-          {{ recurringLoading ? 'Agendando...' : 'Agendar Reservas Recorrentes' }}
-        </button>
+        <div class="form-actions">
+          <button
+            class="continue-btn"
+            :disabled="!canSubmitRecurring() || recurringLoading"
+            @click="handleRecurring"
+          >
+            {{ recurringLoading ? 'Agendando...' : 'Agendar Reservas Recorrentes' }}
+          </button>
+        </div>
       </template>
     </div>
   </div>
@@ -538,6 +542,7 @@ async function handleRecurring() {
   border-radius: 8px;
   font-size: 0.95rem;
   box-sizing: border-box;
+  min-height: var(--tap-min, 44px);
 }
 .form-hint {
   margin: 0.5rem 0 0;
@@ -579,6 +584,7 @@ async function handleRecurring() {
   cursor: pointer;
   color: #555;
   transition: background 0.15s, color 0.15s;
+  min-height: var(--tap-min, 44px);
 }
 .mode-btn + .mode-btn { border-left: 1px solid #ddd; }
 .mode-btn--active {
@@ -598,6 +604,7 @@ async function handleRecurring() {
   text-align: left;
   font-size: 0.9rem;
   transition: border-color 0.15s, background 0.15s;
+  min-height: var(--tap-min, 44px);
 }
 .slot-btn--selected {
   border-color: #1D9E75;
@@ -623,6 +630,12 @@ async function handleRecurring() {
   grid-template-columns: repeat(4, 1fr);
   gap: 0.4rem;
 }
+@media (min-width: 481px) {
+  .hour-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
 .hour-btn {
   padding: 0.55rem 0;
   border: 1px solid #ddd;
@@ -632,6 +645,7 @@ async function handleRecurring() {
   cursor: pointer;
   text-align: center;
   transition: background 0.12s, border-color 0.12s, color 0.12s;
+  min-height: var(--tap-min, 44px);
 }
 .hour-btn--available:hover { border-color: #1D9E75; }
 .hour-btn--selected {
@@ -651,7 +665,26 @@ async function handleRecurring() {
   background: #f5f5f5;
 }
 
-/* Continue */
+/* Actions */
+.form-actions {
+  margin-top: 1rem;
+}
+
+@media (max-width: 767px) {
+  .form-actions {
+    position: sticky;
+    bottom: calc(var(--bottom-bar-h, 0px) + var(--safe-bottom, 0px));
+    background: white;
+    padding: 0.75rem 0 calc(0.5rem + var(--safe-bottom, 0px));
+    z-index: 5;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
 .continue-btn {
   width: 100%;
   padding: 0.85rem;
@@ -662,10 +695,11 @@ async function handleRecurring() {
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  margin-top: 0.5rem;
+  min-height: var(--tap-min, 44px);
 }
 .continue-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .continue-btn:hover:not(:disabled) { background: #178a65; }
+
 .state-msg   { color: #888; font-size: 0.9rem; padding: 0.5rem 0; }
 .state-error { color: #c0392b; font-size: 0.9rem; margin-bottom: 0.75rem; }
 .state-success { color: #1D9E75; font-size: 0.9rem; font-weight: 500; margin-bottom: 0.75rem; }

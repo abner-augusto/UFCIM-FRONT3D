@@ -219,13 +219,15 @@ async function handleSubmit() {
       <p v-if="successMsg" class="state-success">{{ successMsg }}</p>
       <p v-if="errorMsg" class="state-error">{{ errorMsg }}</p>
 
-      <button
-        class="submit-btn"
-        :disabled="!canSubmit || loading"
-        @click="handleSubmit"
-      >
-        {{ loading ? 'Bloqueando...' : 'Bloquear Espaço' }}
-      </button>
+      <div class="form-actions">
+        <button
+          class="submit-btn"
+          :disabled="!canSubmit || loading"
+          @click="handleSubmit"
+        >
+          {{ loading ? 'Bloqueando...' : 'Bloquear Espaço' }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -285,10 +287,12 @@ async function handleSubmit() {
   border-radius: 8px;
   font-size: 0.95rem;
   box-sizing: border-box;
+  min-height: var(--tap-min, 44px);
 }
 .form-textarea {
   resize: vertical;
   font-family: inherit;
+  min-height: var(--tap-min, 44px);
 }
 .hour-mode-toggle {
   display: flex;
@@ -302,6 +306,7 @@ async function handleSubmit() {
   background: white;
   font-size: 0.875rem;
   cursor: pointer;
+  min-height: var(--tap-min, 44px);
 }
 .mode-btn--active {
   border-color: #1D9E75;
@@ -311,10 +316,17 @@ async function handleSubmit() {
 }
 .hour-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 0.35rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
   margin-bottom: 0.75rem;
 }
+
+@media (min-width: 481px) {
+  .hour-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
 .hour-btn {
   padding: 0.4rem 0;
   border: 1px solid #e0e0e0;
@@ -324,6 +336,7 @@ async function handleSubmit() {
   cursor: pointer;
   text-align: center;
   transition: background 0.1s, border-color 0.1s;
+  min-height: var(--tap-min, 44px);
 }
 .hour-btn:hover { border-color: #1D9E75; }
 .hour-btn--endpoint {
@@ -341,6 +354,26 @@ async function handleSubmit() {
   color: #555;
   margin: 0.25rem 0 0;
 }
+
+.form-actions {
+  margin-top: 1rem;
+}
+
+@media (max-width: 767px) {
+  .form-actions {
+    position: sticky;
+    bottom: calc(var(--bottom-bar-h, 0px) + var(--safe-bottom, 0px));
+    background: white;
+    padding: 0.75rem 0 calc(0.5rem + var(--safe-bottom, 0px));
+    z-index: 5;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
 .submit-btn {
   width: 100%;
   padding: 0.85rem;
@@ -351,7 +384,7 @@ async function handleSubmit() {
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  margin-top: 0.5rem;
+  min-height: var(--tap-min, 44px);
 }
 .submit-btn:disabled {
   opacity: 0.4;
@@ -371,8 +404,5 @@ async function handleSubmit() {
 }
 .state-success {
   color: #1D9E75;
-  font-size: 0.9rem;
-  font-weight: 500;
-  margin-bottom: 0.75rem;
-}
+  font-size: 0.9rem; font-weight: 500; margin-bottom: 0.75rem; }
 </style>
