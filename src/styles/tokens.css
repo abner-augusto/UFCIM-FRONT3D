@@ -1,0 +1,33 @@
+/* ============================================================
+   UFCIM design tokens
+   Import in src/main.ts BEFORE any component styles.
+   ============================================================ */
+:root {
+  /* Brand */
+  --color-brand:      #1D9E75;
+  --color-brand-dark: #178a65;
+  --color-brand-soft: #e8f5f0;
+
+  /* Typography */
+  --font-body: 'Roboto', 'Segoe UI', sans-serif;
+
+  /* Layout */
+  --top-bar-h:    56px;
+  --bottom-bar-h: 0px;   /* desktop default — overridden below for phones/tablets */
+
+  /* Safe areas (iOS notch / home indicator) */
+  --safe-top:    env(safe-area-inset-top,    0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left,   0px);
+  --safe-right:  env(safe-area-inset-right,  0px);
+
+  /* Tap target minimum (iOS HIG / WCAG 2.5.5) */
+  --tap-min: 44px;
+}
+
+/* Phones and tablets get a bottom tab bar */
+@media (max-width: 1023px) {
+  :root {
+    --bottom-bar-h: 64px;
+  }
+}

@@ -1,0 +1,39 @@
+/* ============================================================
+   UFCIM global resets & mobile-safe defaults
+   Import in src/main.ts AFTER tokens.css.
+   ============================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-body);
+}
+
+/* Remove iOS tap flash on all buttons */
+button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* ≥16px on mobile prevents iOS Safari auto-zoom on focus.
+   Desktop restores the original smaller size. */
+input, select, textarea {
+  font-size: 16px;
+}
+
+@media (min-width: 768px) {
+  input, select, textarea {
+    font-size: 0.95rem;
+  }
+}
+
+/* Consistent date/time input appearance across platforms */
+input[type="date"],
+input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
