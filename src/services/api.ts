@@ -1,7 +1,7 @@
 import type { Space } from '@/types/space';
 import type { Availability, Reservation, Notification, Blocking } from '@/types/reservation';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const BASE_URL = '/api/v1';
 
 export interface PublicUser {
   id: string;

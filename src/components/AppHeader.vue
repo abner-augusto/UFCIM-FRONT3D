@@ -16,7 +16,7 @@ const notifOpen = ref(false);
 
 const canBlock = computed(() => hasRole(authStore.userRole, CAN_BLOCK));
 const canAdmin = computed(() => hasRole(authStore.userRole, CAN_ADMIN));
-const adminUrl = `${import.meta.env.VITE_API_BASE_URL}/admin`;
+const adminUrl = '/admin';
 const viewerRoute = computed(() =>
   campusStore.selectedCampusId
     ? { name: 'viewer', params: { campusId: campusStore.selectedCampusId } }
