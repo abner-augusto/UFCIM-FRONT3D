@@ -11,6 +11,7 @@ import { PopupManager } from './PopUpManager.js';
 import { CameraManager } from './CameraManager.js';
 import { CAMERA_CONFIG, CONTROLS_CONFIG } from './config.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+import { logger } from '../utils/logger.ts';
 
 export class App {
     constructor(canvas) {
@@ -92,7 +93,7 @@ export class App {
             this.interactionManager.clearFloorSelections(true);
             return true;
         } catch (error) {
-            console.error('failed to init models from manifest:', error);
+            logger.error('failed to init models from manifest:', error);
             return false;
         }
     }
@@ -174,7 +175,7 @@ export class App {
                 }
             },
             log: () => {
-                console.log('[UFCIM Camera]', {
+                logger.log('[UFCIM Camera]', {
                     position: this.camera.position.clone(),
                     target: this.controls.target.clone(),
                     fov: this.camera.fov,

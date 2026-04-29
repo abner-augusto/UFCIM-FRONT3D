@@ -15,6 +15,7 @@ import { getCurrentPeriod } from '@/utils/period';
 import { usePinAvailability, PERIOD_COLORS } from '@/composables/usePinAvailability';
 import type { PeriodKey, PinStatus } from '@/composables/usePinAvailability';
 import { BLOCK_TYPE_LABELS, TIME_SLOT_RANGES, type Blocking } from '@/types/reservation';
+import { logger } from '@/utils/logger';
 
 const route = useRoute();
 const router = useRouter();
@@ -200,7 +201,7 @@ onMounted(async () => {
       })),
     );
   } catch (e) {
-    console.error('Falha ao carregar espaços:', e);
+    logger.error('Falha ao carregar espaços:', e);
   } finally {
     spacesLoaded.value = true;
     applyPinColors();

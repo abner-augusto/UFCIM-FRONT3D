@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { PinFactory } from './PinFactory.js'; // Import the new factory
+import { logger } from '../utils/logger.ts';
 
 export class InteractionManager extends THREE.EventDispatcher {
     constructor(camera, scene, canvas) {
@@ -226,14 +227,17 @@ export class InteractionManager extends THREE.EventDispatcher {
         const allPinIds = this.interactiveObjects
             .map(s => s.userData?.id)
             .filter(Boolean);
-        console.log('[PinFilter] 3D pin ids:', allPinIds);
-        console.log('[PinFilter] backend ids:', [...activeModelIds]);
+        
+        logger.log('[PinFilter] 3D pin ids:', allPinIds);
+        logger.log('[PinFilter] backend ids:', [...activeModelIds]);
 
         this.interactiveObjects.forEach((sprite) => {
             const id = sprite.userData?.id;
             if (!id) return;
             const isActive = activeModelIds.has(id);
-            console.log(`[PinFilter] pin "${id}" → ${isActive ? 'VISIBLE' : 'hidden'}`);
+            
+            logger.log(`[PinFilter] pin "${id}" → ${isActive ? 'VISIBLE' : 'hidden'}`);
+
             sprite.userData.opensPopup = isActive;
             if (isActive) {
                 const color = colorMap.get(id) ?? '#1D9E75';

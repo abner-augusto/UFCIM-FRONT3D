@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import TWEEN from 'three/examples/jsm/libs/tween.module.js';
+import { logger } from '../utils/logger.ts';
 import { 
   ANIMATION_DURATION, 
   CAMERA_CONFIG, 
@@ -145,14 +146,14 @@ export class CameraManager {
    */
   focusOnObjectAtCurrentDistance(targetObject) {
     if (!targetObject) {
-      console.warn('CameraManager: focusOnObject was called with null target.');
+      logger.warn('CameraManager: focusOnObject was called with null target.');
       return;
     }
 
     const box = new THREE.Box3().setFromObject(targetObject);
 
     if (box.isEmpty()) {
-      console.warn('CameraManager: Target object has no geometry to focus on.');
+      logger.warn('CameraManager: Target object has no geometry to focus on.');
       return;
     }
 
@@ -188,7 +189,7 @@ export class CameraManager {
    */
   fitCameraToBox(box) {
     if (!box || box.isEmpty()) {
-      console.warn('CameraManager: fitCameraToBox called with invalid box.');
+      logger.warn('CameraManager: fitCameraToBox called with invalid box.');
       return;
     }
 

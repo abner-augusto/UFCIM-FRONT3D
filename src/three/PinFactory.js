@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { PIN_ASSET_PATH } from './config.js';
+import { logger } from '../utils/logger.ts';
 
 const LABEL_STYLE = {
     pixelToWorldScale: 0.05, // world units per canvas pixel
@@ -37,7 +38,7 @@ export class PinFactory {
             try {
                 await document.fonts.load(LABEL_STYLE.font);
             } catch (err) {
-                console.warn('Pin label font failed to preload; falling back to default', err);
+                logger.warn('Pin label font failed to preload; falling back to default', err);
             }
         }
     }

@@ -1,4 +1,5 @@
 import { UI_IDS, UI_CLASSES } from './config.js';
+import { logger } from '../utils/logger.ts';
 
 const POPUP_DB_URL = '/assets/pins_db_popup.json';
 
@@ -80,7 +81,7 @@ export class PopupManager {
         roomRecord = db[pin.userData.id] || null;
       }
     } catch (error) {
-      console.error('Failed to load popup DB', error);
+      logger.error('Failed to load popup DB', error);
     }
 
     const pointerX = event?.clientX ?? window.innerWidth / 2;

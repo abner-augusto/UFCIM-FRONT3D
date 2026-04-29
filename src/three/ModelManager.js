@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { logger } from '../utils/logger.ts';
 
 const MODEL_ROOT = '/assets/models/IAUD';
 const MANIFEST_URL = `${MODEL_ROOT}/manifest.json`;
@@ -136,7 +137,7 @@ export class ModelManager {
             this.maxFloorVisibleByBuilding.set(building, maxLevel);
           })
           .catch((err) => {
-            console.error(`showAllBlocks: failed loading floors for ${building}`, err);
+            logger.error(`showAllBlocks: failed loading floors for ${building}`, err);
           })
       );
     }
@@ -184,7 +185,7 @@ export class ModelManager {
       this.scene.add(gltf.scene);
       this._emitPinsForEntry(entry);
     } catch (err) {
-      console.error(`Failed loading ${building}/floor${floor}:`, err);
+      logger.error(`Failed loading ${building}/floor${floor}:`, err);
     }
   }
 
