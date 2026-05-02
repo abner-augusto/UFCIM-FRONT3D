@@ -1,105 +1,84 @@
 # UFCIM Front 3D
 
-Interactive 3D viewer for the IAUD campus built with Vite and Three.js. The app loads modular GLB files per building/floor and overlays clickable pins that open rich popups backed by data converted from Excel spreadsheets.
+UFCIM Front 3D is a comprehensive 3D Space Management System for campus environments, built with **Vue 3**, **Vite**, and **Three.js**. It provides an interactive 3D viewer for the IAUD campus, allowing users to browse spaces, check availability, and manage reservations.
 
-## Highlights
-- **Three.js scene orchestration** (`src/three/App.js`, `World.js`, `CameraManager.js`) with OrbitControls, tweened camera motions, stats overlays, and a gradient ground plane.
-- **Building/floor management** via a manifest-driven `ModelManager` that streams GLB assets from `public/assets/models/IAUD`, tracks bounding boxes, and controls visibility per floor.
-- **Interactive pins & popups** created by `PinFactory` / `InteractionManager`; metadata is loaded from `public/assets/pins_db_popup.json` and rendered through `PopupManager` with camera focus + UI dimming.
-- **UI toolkit** (`UIManager.js`) that provides building filters, floor selectors, and placeholder controls for search/date blocks, all styled by `public/styles.css`.
+## 🚀 Features
 
-## Getting Started
-| Command | Purpose |
-| --- | --- |
-| `npm install` | Install dependencies (Node.js 18+ recommended). |
-| `npm run dev` | Start the Vite dev server on all interfaces (`vite --host`). |
-| `npm run build:manifest` | Scan GLB folders and regenerate `public/assets/models/IAUD/manifest.json`. |
-| `npm run build:pins` | Convert `data/qt.Ativos.xlsx` into `public/assets/pins_db_popup.json`. |
-| `npm run build` | Run the manifest task and produce a production bundle in `dist/`. |
+- **Interactive 3D Viewer**: Explore the campus in 3D with modular GLB files loaded per building/floor.
+- **Space Management**: Browse spaces, view details, and check real-time availability.
+- **Reservations & Blockings**: Secure reservation system for rooms and spaces, including administrative blocking features.
+- **Role-based Access**: Authentication system with different access levels (Student, Professor, Admin).
+- **PWA Support**: Installable as a Progressive Web App for a native-like experience on mobile and desktop.
+- **Responsive Design**: Optimized for both desktop and mobile devices.
 
-The default entry point is `index.html`, which mounts a `<div id="app">` and loads `src/main.ts`.
+## 🛠️ Tech Stack
 
-## Data & Asset Workflow
-### 3D models
-- Place GLB files under `public/assets/models/IAUD/<BuildingID>/floor<N>.glb`.
-- Run `npm run build:manifest` (wrapper around `tools/modelManifest.js`).
-  - Parses every building directory, computes bounding boxes, extracts pin placeholders (`Pin_*` nodes), and writes a structured `manifest.json`.
-  - The manifest stores pretty building/floor names, bounding boxes, and optional pin metadata that `ModelManager` rehydrates into `THREE.Vector3` instances.
+- **Frontend**: Vue 3 (Composition API), TypeScript, Pinia (State Management), Vue Router.
+- **3D Engine**: Three.js for scene orchestration, asset management, and interaction.
+- **Build Tool**: Vite for fast development and optimized production builds.
+- **Data Handling**: Excel-to-JSON conversion for room metadata and asset manifest generation.
 
-### Pin popup database
-- Source Excel: `data/qt.Ativos.xlsx`.
-- `npm run build:pins` calls `tools/xlsxToPopupDB.js`, which:
-  - Looks up header columns (`Nome da Zona Relacionada`, `Nome de Item de Biblioteca`, `Quantidade`).
-  - Aggregates furniture/AC/projector counts per room.
-  - Emits `{ rooms: [...] }` as `public/assets/pins_db_popup.json`.
-- `PopupManager` fetches the JSON at runtime and merges it into the popup template whenever a pin is clicked.
+## 📦 Project Structure
 
-Ensure both the manifest and popup DB are regenerated after adding/changing models or source data; `npm run build` runs the manifest step automatically, but you must call `npm run build:pins` manually whenever the spreadsheet changes.
-
-## Pins by building and floor (manifest.json)
-Table derived from `public/assets/models/IAUD/manifest.json`; floors without entries are marked as "Nenhum pin listado".
-
-| Bloco | Andar | Pins |
-| --- | --- | --- |
-| Bloco 01 | Terreo (0) | Sala de Leitura (Biblioteca); LEAU; Administração; LABCAD; Atelier Digital; Acervo (Bibilioteca); Administrativo (Biblioteca) |
-| Bloco 01 | 1º Pavimento (1) | Nenhum pin listado |
-| Bloco 02 | Terreo (0) | Sala 01; Auditório; Sala 03; Lehab; Loja 01 |
-| Bloco 02 | 1º Pavimento (1) | Nenhum pin listado |
-| Bloco 03 | Terreo (0) | Sala 05; Sala 06; Sala 07; Sala 08; Centro Acadêmico |
-| Bloco 03 | 1º Pavimento (1) | Sala 12 (manutenção); Sala 11; Sala 10; Sala 09 |
-| Bloco 03 | 2º Pavimento (2) | Nenhum pin listado |
-| Bloco 04 | Terreo (0) | Cantina; BHO Masculino; BHO Feminino; Sala Professores |
-| Bloco 04 | 1º Pavimento (1) | Nenhum pin listado |
-| Pavilhão | Terreo (0) | LED; Sala 13; Oficina Digital |
-| Pavilhão | 1º Pavimento (1) | Atelier digital 1 |
-| Pavilhão | 2º Pavimento (2) | Nenhum pin listado |
-| Entorno | Terreo (0) | Nenhum pin listado |
-
-## Project Structure
 ```
 .
-|-- index.html                    # App shell served by Vite
-|-- public/
-|   |-- styles.css                # UI + popup styling
-|   `-- assets/
-|       |-- pin.png               # Sprite used by PinFactory
-|       |-- pins_db_popup.json    # Generated metadata for popups
-|       `-- models/IAUD/          # GLB hierarchy + manifest.json
-|-- src/
-|   |-- main.ts                   # Vue app entry point
-|   |-- App.vue                   # Main Vue component
-|   |-- three/                    # 3D Viewer core
-|   |   |-- App.js                # Wires scene, managers, and loop
-|   |   |-- config.js             # Camera/UI constants
-|   |   |-- CameraManager.js      # Camera tweens, fit-to-box, focus-on-pin
-|   |   |-- InteractionManager.js # Raycasting, pin filtering, events
-|   |   |-- ModelManager.js       # Manifest loader, GLB lifecycle, pins
-|   |   |-- UIManager.js          # Building/floor controls & placeholders
-|   |   |-- PopUpManager.js       # Popup lifecycle + data binding
-|   |   |-- PinFactory.js         # Creates pin + label sprites
-|   |   `-- World.js              # Lighting and ground plane setup
-|   |-- components/               # Vue components
-|   |-- views/                    # Router views
-|   `-- stores/                   # Pinia stores
-|-- tools/
-|   |-- modelManifest.js          # GLB manifest generator (Commander CLI)
-|   `-- xlsxToPopupDB.js          # Excel -> popup DB converter
-`-- data/qt.Ativos.xlsx           # Source spreadsheet for room metadata
+├── public/                 # Static assets
+│   ├── assets/
+│   │   ├── models/IAUD/    # GLB models and manifest.json
+│   │   └── pins_db_popup.json # Generated room metadata
+│   └── styles.css          # Global 3D-related styles
+├── src/
+│   ├── components/         # Reusable Vue components
+│   ├── composables/        # Shared logic (API, availability, etc.)
+│   ├── router/             # Vue Router configuration
+│   ├── services/           # API communication layer
+│   ├── stores/             # Pinia state stores (Auth, Campus, Reservation)
+│   ├── three/              # Core 3D Viewer logic (Three.js)
+│   │   ├── App.js          # Main 3D entry point
+│   │   ├── ModelManager.js # Asset and floor management
+│   │   └── InteractionManager.js # Raycasting and events
+│   ├── views/              # Page components (Login, Viewer, Reservations)
+│   └── main.ts             # App entry point
+├── tools/                  # Automation scripts (manifest & pin generation)
+└── data/                   # Source data files (Excel)
 ```
 
-## Architecture Notes
-- `App` (JS) composes all managers, owns the Three.js renderer, and toggles Stats panels + debug UI.
-- `ModelManager` exposes hooks (`onPinsLoaded`, `onPinsVisibilityChange`) that feed `InteractionManager` so raycasting only targets visible pins.
-- `InteractionManager` keeps a per-building map of sprites to gate visibility when floors are toggled; it dispatches a `pinClick` event consumed by `PopupManager`.
-- `CameraManager` centralizes every camera tween (focus pin/object, reset, fit bounding box) to keep navigation behavior consistent with UI events.
+## 🚀 Getting Started
 
-## Customization Tips
-- Update camera behavior or controls in `src/three/config.js`; `App` and `CameraManager` consume those values everywhere.
-- Modify UI colors/spacing inside `public/styles.css`.
-- To disable performance panels, toggle `this.enableStats` inside `src/three/App.js`.
-- Add new popup fields by extending the template in `PopUpManager.js` and ensuring the Excel-to-JSON converter emits those properties.
+### Prerequisites
+- Node.js 18+ recommended.
 
-## Troubleshooting
-- **Blank scene**: check that the canvas exists and that GLB assets + manifest are present under `public/assets/models/IAUD`.
-- **Pins don't show**: confirm manifest entries include `pins`, or ensure pin meshes inside GLBs follow the `Pin_<ID>` naming convention so `ModelManager` can infer them.
-- **Popup data missing**: rebuild `pins_db_popup.json` and verify the pin `id` matches the room `id` in the JSON payload.
+### Installation
+```bash
+npm install
+```
+
+### Development
+```bash
+npm run dev
+```
+
+### Data & Asset Preparation
+Ensure the 3D models and metadata are up to date:
+
+| Command | Purpose |
+| --- | --- |
+| `npm run build:manifest` | Regenerate `public/assets/models/IAUD/manifest.json` from GLB files. |
+| `npm run build:pins` | Convert `data/qt.Ativos.xlsx` into `public/assets/pins_db_popup.json`. |
+
+### Production Build
+```bash
+npm run build
+```
+
+## 🏗️ 3D Viewer Architecture
+
+The 3D viewer is decoupled from the Vue components to ensure performance and maintainability.
+
+- **Scene Orchestration**: Managed by `src/three/App.js`, handling the renderer, scene, and animation loop.
+- **Model Management**: `ModelManager` streams GLB assets, controls floor visibility, and extracts pin locations from model nodes.
+- **Interaction**: `InteractionManager` handles raycasting for pin clicks and hovering, while `CameraManager` manages smooth transitions and focus.
+- **Popups**: `PopupManager` bridges the 3D scene and metadata, rendering rich information when a space is selected.
+
+## 📄 License
+This project is licensed under the ISC License.
