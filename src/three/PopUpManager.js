@@ -8,7 +8,7 @@ let POPUP_DB = null;
 
 async function getPopupDB() {
   if (POPUP_DB) return POPUP_DB;
-  const response = await fetch(POPUP_DB_URL, { cache: 'no-cache' });
+  const response = await fetch(POPUP_DB_URL, { cache: 'default' });
   if (!response.ok) {
     throw new Error(`Failed to fetch popup DB: ${response.status}`);
   }

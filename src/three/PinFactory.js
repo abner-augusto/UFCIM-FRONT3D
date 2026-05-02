@@ -162,70 +162,70 @@ export class PinFactory {
         tempLabel.style.visibility = 'hidden';
         tempLabel.textContent = text;
         document.body.appendChild(tempLabel);
+        try {
+            const style = getComputedStyle(tempLabel);
+            const font = LABEL_STYLE.font || `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+            ctx.font = font;
 
-        const style = getComputedStyle(tempLabel);
-        const font = LABEL_STYLE.font || `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-        ctx.font = font;
+            const paddingConfig = LABEL_STYLE.padding || {};
+            const parsedPaddingLeft = parseInt(style.paddingLeft, 10);
+            const parsedPaddingRight = parseInt(style.paddingRight, 10);
+            const parsedPaddingTop = parseInt(style.paddingTop, 10);
+            const parsedPaddingBottom = parseInt(style.paddingBottom, 10);
+            const paddingLeft = paddingConfig.left ?? paddingConfig.x ?? (Number.isNaN(parsedPaddingLeft) ? 10 : parsedPaddingLeft);
+            const paddingRight = paddingConfig.right ?? paddingConfig.x ?? (Number.isNaN(parsedPaddingRight) ? paddingLeft : parsedPaddingRight);
+            const paddingTop = paddingConfig.top ?? paddingConfig.y ?? (Number.isNaN(parsedPaddingTop) ? 8 : parsedPaddingTop);
+            const paddingBottom = paddingConfig.bottom ?? paddingConfig.y ?? (Number.isNaN(parsedPaddingBottom) ? paddingTop : parsedPaddingBottom);
 
-        const paddingConfig = LABEL_STYLE.padding || {};
-        const parsedPaddingLeft = parseInt(style.paddingLeft, 10);
-        const parsedPaddingRight = parseInt(style.paddingRight, 10);
-        const parsedPaddingTop = parseInt(style.paddingTop, 10);
-        const parsedPaddingBottom = parseInt(style.paddingBottom, 10);
-        const paddingLeft = paddingConfig.left ?? paddingConfig.x ?? (Number.isNaN(parsedPaddingLeft) ? 10 : parsedPaddingLeft);
-        const paddingRight = paddingConfig.right ?? paddingConfig.x ?? (Number.isNaN(parsedPaddingRight) ? paddingLeft : parsedPaddingRight);
-        const paddingTop = paddingConfig.top ?? paddingConfig.y ?? (Number.isNaN(parsedPaddingTop) ? 8 : parsedPaddingTop);
-        const paddingBottom = paddingConfig.bottom ?? paddingConfig.y ?? (Number.isNaN(parsedPaddingBottom) ? paddingTop : parsedPaddingBottom);
+            const borderConfig = LABEL_STYLE.border || {};
+            const borderRadius = (borderConfig.radius ?? parseInt(style.borderRadius, 10)) || 8;
+            const borderWidth = (borderConfig.width ?? parseInt(style.borderWidth, 10)) || 2;
 
-        const borderConfig = LABEL_STYLE.border || {};
-        const borderRadius = (borderConfig.radius ?? parseInt(style.borderRadius, 10)) || 8;
-        const borderWidth = (borderConfig.width ?? parseInt(style.borderWidth, 10)) || 2;
+            const lines = text.split('\n');
+            const lineHeight = this._resolveLineHeight(style);
+            const lineWidths = lines.map(line => Math.ceil(ctx.measureText(line).width));
+            const textWidth = Math.max(...lineWidths, 0);
+            const textBlockHeight = lineHeight * lines.length;
 
-        const lines = text.split('\n');
-        const lineHeight = this._resolveLineHeight(style);
-        const lineWidths = lines.map(line => Math.ceil(ctx.measureText(line).width));
-        const textWidth = Math.max(...lineWidths, 0);
-        const textBlockHeight = lineHeight * lines.length;
+            const rectWidth = textWidth + paddingLeft + paddingRight;
+            const rectHeight = textBlockHeight + paddingTop + paddingBottom;
 
-        const rectWidth = textWidth + paddingLeft + paddingRight;
-        const rectHeight = textBlockHeight + paddingTop + paddingBottom;
+            canvas.width = rectWidth + borderWidth * 2;
+            canvas.height = rectHeight + borderWidth * 2;
 
-        canvas.width = rectWidth + borderWidth * 2;
-        canvas.height = rectHeight + borderWidth * 2;
+            ctx.font = font;
 
-        ctx.font = font;
+            // Colors: prefer locked palette to avoid dark-mode overrides
+            const bgColor = LABEL_STYLE.colors?.background || style.backgroundColor || 'white';
+            const borderColor = LABEL_STYLE.colors?.border || style.borderColor || 'black';
+            const textColor = LABEL_STYLE.colors?.text || style.color || 'black';
 
-        // Colors: prefer locked palette to avoid dark-mode overrides
-        const bgColor = LABEL_STYLE.colors?.background || style.backgroundColor || 'white';
-        const borderColor = LABEL_STYLE.colors?.border || style.borderColor || 'black';
-        const textColor = LABEL_STYLE.colors?.text || style.color || 'black';
+            // Draw background with border
+            const rectX = borderWidth;
+            const rectY = borderWidth;
+            ctx.fillStyle = bgColor;
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth = borderWidth;
+            ctx.beginPath();
+            ctx.roundRect(rectX, rectY, rectWidth, rectHeight, borderRadius);
+            ctx.fill();
+            ctx.stroke();
 
-        // Draw background with border
-        const rectX = borderWidth;
-        const rectY = borderWidth;
-        ctx.fillStyle = bgColor;
-        ctx.strokeStyle = borderColor;
-        ctx.lineWidth = borderWidth;
-        ctx.beginPath();
-        ctx.roundRect(rectX, rectY, rectWidth, rectHeight, borderRadius);
-        ctx.fill();
-        ctx.stroke();
+            // Draw text
+            ctx.fillStyle = textColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const labelCenterX = rectX + rectWidth / 2;
+            const firstLineY = rectY + paddingTop + lineHeight / 2;
+            lines.forEach((line, index) => {
+                const lineY = firstLineY + index * lineHeight;
+                ctx.fillText(line, labelCenterX, lineY);
+            });
 
-        // Draw text
-        ctx.fillStyle = textColor;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        const labelCenterX = rectX + rectWidth / 2;
-        const firstLineY = rectY + paddingTop + lineHeight / 2;
-        lines.forEach((line, index) => {
-            const lineY = firstLineY + index * lineHeight;
-            ctx.fillText(line, labelCenterX, lineY);
-        });
-
-        // Clean up temp element
-        document.body.removeChild(tempLabel);
-
-        return canvas;
+            return canvas;
+        } finally {
+            tempLabel.remove();
+        }
     }
 
     _resolveLineHeight(style) {

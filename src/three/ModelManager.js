@@ -13,7 +13,7 @@ export class ModelManager {
 
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
-    dracoLoader.setDecoderConfig({ type: 'js' });
+    dracoLoader.setDecoderConfig({ type: 'wasm' });
 
     this.loader = new GLTFLoader();
     this.loader.setDRACOLoader(dracoLoader);
@@ -21,6 +21,7 @@ export class ModelManager {
     this.manifest = {};
     this.entries = new Map();
     this.blockBBoxCache = new Map();
+    this.visibleMeshes = [];
 
     this.enabledBuildings = new Set();
     this.focusedBuilding = null;
@@ -31,7 +32,7 @@ export class ModelManager {
   }
 
   async initFromManifest() {
-    const res = await fetch(MANIFEST_URL, { cache: 'no-cache' });
+    const res = await fetch(MANIFEST_URL, { cache: 'default' });
     if (!res.ok) throw new Error(`Failed to fetch manifest: ${res.status}`);
     this.manifest = await res.json();
 
@@ -151,19 +152,7 @@ export class ModelManager {
   }
 
   getAllMeshes() {
-    const meshes = [];
-    for (const [building, floors] of this.entries.entries()) {
-      for (const [floor, entry] of floors.entries()) {
-        if (entry.object && entry.object.visible) {
-          entry.object.traverse((obj) => {
-            if (obj.isMesh) {
-              meshes.push(obj);
-            }
-          });
-        }
-      }
-    }
-    return meshes;
+    return this.visibleMeshes.slice();
   }
 
   getBlockBoundingBox(building) {
@@ -264,6 +253,7 @@ export class ModelManager {
       }
     }
 
+    this.visibleMeshes = blockingMeshes;
     if (interactionManager) {
       interactionManager.blockingMeshes = blockingMeshes;
     }

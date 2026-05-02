@@ -112,9 +112,25 @@ export class App {
     }
 
     _createRenderer() {
-        const renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
+        const renderer = new THREE.WebGLRenderer({
+            canvas: this.canvas,
+            antialias: !this._isLowPoweredDevice(),
+            powerPreference: 'high-performance',
+        });
         renderer.setClearColor(0xeeeeee);
         return renderer;
+    }
+
+    _isLowPoweredDevice() {
+        const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const memory = navigator.deviceMemory || 0;
+        const cores = navigator.hardwareConcurrency || 0;
+        return (isMobile && window.devicePixelRatio >= 2) || (memory > 0 && memory <= 4) || (cores > 0 && cores <= 4);
+    }
+
+    _getTargetPixelRatio() {
+        const maxPixelRatio = this._isLowPoweredDevice() ? 1 : 2;
+        return Math.min(window.devicePixelRatio || 1, maxPixelRatio);
     }
 
     _createControls() {
@@ -137,14 +153,14 @@ export class App {
 
     _updateRendererSize() {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.setPixelRatio(this._getTargetPixelRatio());
     }
 
     _onResize() {
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.setPixelRatio(this._getTargetPixelRatio());
     }
 
     animate() {
