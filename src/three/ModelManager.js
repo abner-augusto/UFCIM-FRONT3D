@@ -83,6 +83,7 @@ export class ModelManager {
           bbox: floorBBox,
           pins,
           pinsLoaded: false,
+          loadingPromise: null,
         });
       });
 
@@ -93,8 +94,6 @@ export class ModelManager {
     const firstBuilding = Object.keys(this.manifest)[0] ?? null;
     if (firstBuilding) {
       this.focusBuilding(firstBuilding);
-      this.enableBuilding(firstBuilding, true);
-      await this.setFloorLevel(firstBuilding, 0);
     }
   }
 
@@ -146,6 +145,43 @@ export class ModelManager {
     this._applyVisibility();
   }
 
+  async showInitialBlocks() {
+    const buildingPromises = [];
+    for (const [building, floorsMap] of this.entries.entries()) {
+      this.enabledBuildings.add(building);
+      const floorIndices = [...floorsMap.keys()];
+      if (floorIndices.length === 0) continue;
+      const initialLevel = Math.min(...floorIndices);
+
+      buildingPromises.push(
+        this._ensureLoaded(building, initialLevel)
+          .then(() => {
+            this.maxFloorVisibleByBuilding.set(building, initialLevel);
+          })
+          .catch((err) => {
+            logger.error(`showInitialBlocks: failed loading initial floor for ${building}`, err);
+          })
+      );
+    }
+    await Promise.all(buildingPromises);
+    this._applyVisibility();
+  }
+
+  async preloadRemainingFloors() {
+    for (const [building, floorsMap] of this.entries.entries()) {
+      const floorIndices = [...floorsMap.keys()];
+      if (floorIndices.length === 0) continue;
+      const initialLevel = Math.min(...floorIndices);
+      const remainingFloors = floorIndices.filter((floor) => floor !== initialLevel);
+
+      for (const floor of remainingFloors) {
+        await this._waitForPreloadSlot();
+        await this._ensureLoaded(building, floor);
+        this._applyVisibility();
+      }
+    }
+  }
+
   getFloorObject(building, floor) {
     const entry = this.entries.get(building)?.get(floor);
     return entry ? entry.object : null;
@@ -163,19 +199,37 @@ export class ModelManager {
     const floors = this.entries.get(building);
     const entry = floors?.get(floor);
     if (!entry || entry.object) return;
+    if (entry.loadingPromise) return entry.loadingPromise;
 
-    try {
+    entry.loadingPromise = (async () => {
       const gltf = await this.loader.loadAsync(entry.path);
       entry.object = gltf.scene;
 
       const yOffset = 0.5;
       entry.object.position.y += yOffset;
+      entry.object.visible = entry.visible;
 
       this.scene.add(gltf.scene);
       this._emitPinsForEntry(entry);
+    })();
+
+    try {
+      await entry.loadingPromise;
     } catch (err) {
       logger.error(`Failed loading ${building}/floor${floor}:`, err);
+    } finally {
+      entry.loadingPromise = null;
     }
+  }
+
+  _waitForPreloadSlot() {
+    return new Promise((resolve) => {
+      if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(resolve, { timeout: 600 });
+        return;
+      }
+      setTimeout(resolve, 0);
+    });
   }
 
   _maybePopulatePinsFromScene(entry) {
@@ -241,6 +295,7 @@ export class ModelManager {
 
       for (const [floor, entry] of floors.entries()) {
         const shouldShow = buildingEnabled && floor <= maxLevel;
+        entry.visible = shouldShow;
         if (entry.object) {
           entry.object.visible = shouldShow;
           if (shouldShow) {

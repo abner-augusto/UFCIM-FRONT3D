@@ -82,8 +82,11 @@ export class App {
         try {
             await this.modelManager.initFromManifest();
 
-            await this.modelManager.showAllBlocks();
+            await this.modelManager.showInitialBlocks();
             this.interactionManager.clearFloorSelections(true);
+            this.modelManager.preloadRemainingFloors().catch((error) => {
+                logger.error('failed to preload remaining model floors:', error);
+            });
             return true;
         } catch (error) {
             logger.error('failed to init models from manifest:', error);
