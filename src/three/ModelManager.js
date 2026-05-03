@@ -12,7 +12,7 @@ export class ModelManager {
     this.scene = scene;
 
     const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+    dracoLoader.setDecoderPath('/libs/draco/');
     dracoLoader.setDecoderConfig({ type: 'wasm' });
 
     this.loader = new GLTFLoader();
