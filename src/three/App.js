@@ -201,6 +201,12 @@ export class App {
 
         this._animationFrameId = requestAnimationFrame(this.animate);
         this.controls.update();
+
+        // Enforce minimum camera height
+        if (this.camera.position.y < CONTROLS_CONFIG.minCameraHeight) {
+            this.camera.position.y = CONTROLS_CONFIG.minCameraHeight;
+        }
+
         TWEEN.update();
 
         this.renderer.render(this.scene, this.camera);
