@@ -14,6 +14,7 @@ import { logger } from '../utils/logger.ts';
 export class App {
     constructor(canvas) {
         this.canvas = canvas;
+        this.renderConfig = this._getPerformanceConfiguration();
 
         // Core Three.js components
         this.scene = new THREE.Scene();
@@ -70,7 +71,11 @@ export class App {
     }
 
     async _loadModels() {
-        await this.interactionManager.init();
+        // Parallelize initial asset/manifest loading
+        await Promise.all([
+            this.interactionManager.init(),
+            this.modelManager.initFromManifest()
+        ]);
 
         this.modelManager.onPinsLoaded = (pins) => {
             this.interactionManager.addPins(pins);
@@ -82,11 +87,8 @@ export class App {
         try {
             await this.modelManager.initFromManifest();
 
-            await this.modelManager.showInitialBlocks();
+            await this.modelManager.showAllBlocks();
             this.interactionManager.clearFloorSelections(true);
-            this.modelManager.preloadRemainingFloors().catch((error) => {
-                logger.error('failed to preload remaining model floors:', error);
-            });
             return true;
         } catch (error) {
             logger.error('failed to init models from manifest:', error);
@@ -117,23 +119,51 @@ export class App {
     _createRenderer() {
         const renderer = new THREE.WebGLRenderer({
             canvas: this.canvas,
-            antialias: !this._isLowPoweredDevice(),
+            antialias: this.renderConfig.antialias,
             powerPreference: 'high-performance',
         });
         renderer.setClearColor(0xeeeeee);
         return renderer;
     }
 
-    _isLowPoweredDevice() {
+    _getPerformanceConfiguration() {
+        const dpr = window.devicePixelRatio || 1;
+        const cores = navigator.hardwareConcurrency || 4;
+        const memory = navigator.deviceMemory || 8;
         const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        const memory = navigator.deviceMemory || 0;
-        const cores = navigator.hardwareConcurrency || 0;
-        return (isMobile && window.devicePixelRatio >= 2) || (memory > 0 && memory <= 4) || (cores > 0 && cores <= 4);
-    }
+        const screenArea = window.innerWidth * window.innerHeight;
 
-    _getTargetPixelRatio() {
-        const maxPixelRatio = this._isLowPoweredDevice() ? 1 : 2;
-        return Math.min(window.devicePixelRatio || 1, maxPixelRatio);
+        // Heuristics for performance tiering
+        const isLowPowerHardware = cores <= 4 || (navigator.deviceMemory && memory <= 4);
+        const isHighResMobile = isMobile && dpr >= 2;
+        const isLowResScreen = screenArea < 1024 * 768;
+
+        // 1. Determine Anti-Aliasing
+        // Disable AA if low power, or if it's a low-res mobile device
+        const antialias = !isLowPowerHardware && !(isMobile && isLowResScreen);
+
+        // 2. Determine Smart Pixel Ratio
+        let targetDPR = dpr;
+        
+        if (isLowPowerHardware) {
+            targetDPR = 1.0;
+        } else if (isHighResMobile) {
+            // High-res mobile: 1.5 is usually the sweet spot for performance vs quality
+            targetDPR = Math.min(dpr, 1.5);
+        } else if (isMobile) {
+            targetDPR = Math.min(dpr, 1.5);
+        } else {
+            // Desktop scaling based on screen size
+            if (screenArea > 2560 * 1440) { // 1440p+
+                targetDPR = Math.min(dpr, 1.25);
+            } else if (screenArea > 1920 * 1080) { // 1080p+
+                targetDPR = Math.min(dpr, 1.5);
+            } else {
+                targetDPR = Math.min(dpr, 2.0);
+            }
+        }
+
+        return { targetDPR, antialias };
     }
 
     _createControls() {
@@ -156,14 +186,14 @@ export class App {
 
     _updateRendererSize() {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(this._getTargetPixelRatio());
+        this.renderer.setPixelRatio(this.renderConfig.targetDPR);
     }
 
     _onResize() {
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(this._getTargetPixelRatio());
+        this.renderer.setPixelRatio(this.renderConfig.targetDPR);
     }
 
     animate() {

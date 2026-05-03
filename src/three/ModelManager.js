@@ -124,62 +124,37 @@ export class ModelManager {
   }
 
   async showAllBlocks() {
-    const buildingPromises = [];
+    // 1. Prepare visibility state first so floors appear immediately upon loading
     for (const [building, floorsMap] of this.entries.entries()) {
       this.enabledBuildings.add(building);
       const floorIndices = [...floorsMap.keys()];
-      if (floorIndices.length === 0) continue;
-      const maxLevel = Math.max(...floorIndices);
-
-      buildingPromises.push(
-        Promise.all(floorIndices.map((f) => this._ensureLoaded(building, f)))
-          .then(() => {
-            this.maxFloorVisibleByBuilding.set(building, maxLevel);
-          })
-          .catch((err) => {
-            logger.error(`showAllBlocks: failed loading floors for ${building}`, err);
-          })
-      );
-    }
-    await Promise.all(buildingPromises);
-    this._applyVisibility();
-  }
-
-  async showInitialBlocks() {
-    const buildingPromises = [];
-    for (const [building, floorsMap] of this.entries.entries()) {
-      this.enabledBuildings.add(building);
-      const floorIndices = [...floorsMap.keys()];
-      if (floorIndices.length === 0) continue;
-      const initialLevel = Math.min(...floorIndices);
-
-      buildingPromises.push(
-        this._ensureLoaded(building, initialLevel)
-          .then(() => {
-            this.maxFloorVisibleByBuilding.set(building, initialLevel);
-          })
-          .catch((err) => {
-            logger.error(`showInitialBlocks: failed loading initial floor for ${building}`, err);
-          })
-      );
-    }
-    await Promise.all(buildingPromises);
-    this._applyVisibility();
-  }
-
-  async preloadRemainingFloors() {
-    for (const [building, floorsMap] of this.entries.entries()) {
-      const floorIndices = [...floorsMap.keys()];
-      if (floorIndices.length === 0) continue;
-      const initialLevel = Math.min(...floorIndices);
-      const remainingFloors = floorIndices.filter((floor) => floor !== initialLevel);
-
-      for (const floor of remainingFloors) {
-        await this._waitForPreloadSlot();
-        await this._ensureLoaded(building, floor);
-        this._applyVisibility();
+      if (floorIndices.length > 0) {
+        const maxLevel = Math.max(...floorIndices);
+        this.maxFloorVisibleByBuilding.set(building, maxLevel);
       }
     }
+
+    // Initial visibility apply to set the 'visible' flag on entries
+    this._applyVisibility();
+
+    // 2. Load in two waves to prioritize the ground view
+    const allEntries = [];
+    for (const floorsMap of this.entries.values()) {
+      for (const entry of floorsMap.values()) {
+        allEntries.push(entry);
+      }
+    }
+
+    const groundFloors = allEntries.filter(e => e.floor === 0);
+    const upperFloors = allEntries.filter(e => e.floor !== 0);
+
+    // Start loading ground floors first
+    await Promise.all(groundFloors.map(e => this._ensureLoaded(e.building, e.floor)));
+    
+    // Then load everything else in the background
+    // We don't await this so the UI is interactive sooner
+    Promise.all(upperFloors.map(e => this._ensureLoaded(e.building, e.floor)))
+      .catch(err => logger.error('failed loading upper floors in background', err));
   }
 
   getFloorObject(building, floor) {
@@ -209,8 +184,44 @@ export class ModelManager {
       entry.object.position.y += yOffset;
       entry.object.visible = entry.visible;
 
+      // Optimize for static, non-textured models
+      entry.object.traverse((child) => {
+        if (child.isObject3D) {
+          child.matrixAutoUpdate = false;
+          child.updateMatrix();
+        }
+
+        if (child.isMesh) {
+          child.castShadow = false;
+          child.receiveShadow = false;
+          
+          if (child.material) {
+            const oldMat = child.material;
+            const newMat = new THREE.MeshLambertMaterial({
+              color: oldMat.color,
+              opacity: oldMat.opacity,
+              transparent: oldMat.transparent,
+              side: oldMat.side,
+              depthWrite: !oldMat.transparent,
+              vertexColors: oldMat.vertexColors // Preserve vertex colors if present
+            });
+            
+            child.material.dispose();
+            child.material = newMat;
+          }
+
+          // Since we are using Lambert with solid colors/vertex colors, 
+          // we can strip UVs to save GPU memory if the material doesn't use textures.
+          if (child.geometry) {
+            child.geometry.deleteAttribute('uv');
+            child.geometry.deleteAttribute('uv2');
+          }
+        }
+      });
+
       this.scene.add(gltf.scene);
       this._emitPinsForEntry(entry);
+      this._applyVisibility();
     })();
 
     try {
@@ -220,16 +231,6 @@ export class ModelManager {
     } finally {
       entry.loadingPromise = null;
     }
-  }
-
-  _waitForPreloadSlot() {
-    return new Promise((resolve) => {
-      if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
-        window.requestIdleCallback(resolve, { timeout: 600 });
-        return;
-      }
-      setTimeout(resolve, 0);
-    });
   }
 
   _maybePopulatePinsFromScene(entry) {
