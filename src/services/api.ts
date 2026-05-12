@@ -1,5 +1,6 @@
 import type { Space } from '@/types/space';
 import type { Availability, Reservation, Notification, Blocking } from '@/types/reservation';
+import type { OccupancyReport } from '@/types/report';
 
 const BASE_URL = '/api/v1';
 
@@ -193,4 +194,8 @@ export const api = {
 
   markAllRead: (token: string | null) =>
     request<{ updated: number }>('/notifications/read-all', token, { method: 'PATCH' }),
+
+  // Reports
+  getOccupancyReport: (token: string | null, params?: { startDate?: string; endDate?: string; campus?: string; department?: string }) =>
+    request<OccupancyReport>(`/reports/occupancy?${new URLSearchParams(params as any)}`, token),
 };

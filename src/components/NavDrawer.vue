@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
-import { hasRole, CAN_BLOCK } from '@/utils/roles';
+import { hasRole, CAN_BLOCK, CAN_VIEW_REPORTS } from '@/utils/roles';
 
 defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: [] }>();
@@ -13,6 +13,7 @@ const campus = useCampusStore();
 const router = useRouter();
 
 const canBlock = computed(() => hasRole(auth.userRole, CAN_BLOCK));
+const canViewReports = computed(() => hasRole(auth.userRole, CAN_VIEW_REPORTS));
 
 const viewerTarget = computed(() =>
   campus.selectedCampusId
@@ -65,6 +66,10 @@ function handleLinkClick() {
 
           <router-link v-if="canBlock" to="/meus-bloqueios" class="nav-item" @click="handleLinkClick">
             <span class="nav-icon">🚫</span> Meus Bloqueios
+          </router-link>
+
+          <router-link v-if="canViewReports" to="/relatorios" class="nav-item" @click="handleLinkClick">
+            <span class="nav-icon">📊</span> Relatórios
           </router-link>
 
           <router-link to="/notificacoes" class="nav-item" @click="handleLinkClick">

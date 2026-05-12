@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
 import { useRouter } from 'vue-router';
-import { hasRole, CAN_BLOCK, CAN_ADMIN } from '@/utils/roles';
+import { hasRole, CAN_BLOCK, CAN_ADMIN, CAN_VIEW_REPORTS } from '@/utils/roles';
 import NavDrawer from './NavDrawer.vue';
 import NotificationsPanel from './NotificationsPanel.vue';
 
@@ -16,6 +16,7 @@ const notifOpen = ref(false);
 
 const canBlock = computed(() => hasRole(authStore.userRole, CAN_BLOCK));
 const canAdmin = computed(() => hasRole(authStore.userRole, CAN_ADMIN));
+const canViewReports = computed(() => hasRole(authStore.userRole, CAN_VIEW_REPORTS));
 const adminUrl = '/admin';
 const viewerRoute = computed(() =>
   campusStore.selectedCampusId
@@ -50,6 +51,7 @@ function logout() {
         <router-link :to="spaceBrowserRoute">Buscar Espaços</router-link>
         <router-link to="/minhas-reservas">Minhas Reservas</router-link>
         <router-link v-if="canBlock" to="/meus-bloqueios">Meus Bloqueios</router-link>
+        <router-link v-if="canViewReports" to="/relatorios">Relatórios</router-link>
         <a v-if="canAdmin" :href="adminUrl" target="_blank" rel="noopener" class="admin-link">Admin</a>
       </nav>
 

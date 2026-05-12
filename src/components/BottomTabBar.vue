@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
-import { hasRole, CAN_BLOCK } from '@/utils/roles';
+import { hasRole, CAN_BLOCK, CAN_VIEW_REPORTS } from '@/utils/roles';
 
 const auth = useAuthStore();
 const campus = useCampusStore();
@@ -21,6 +21,7 @@ const browserTarget = computed(() =>
 );
 
 const canBlock = computed(() => hasRole(auth.userRole, CAN_BLOCK));
+const canViewReports = computed(() => hasRole(auth.userRole, CAN_VIEW_REPORTS));
 const isActive = (name: string) => route.name === name;
 </script>
 
@@ -44,6 +45,11 @@ const isActive = (name: string) => route.name === name;
     <router-link v-if="canBlock" to="/meus-bloqueios" class="tab-item" :class="{ active: isActive('my-blockings') }">
       <span class="tab-icon">🚫</span>
       <span class="tab-label">Bloqueios</span>
+    </router-link>
+
+    <router-link v-if="canViewReports" to="/relatorios" class="tab-item" :class="{ active: isActive('reports') }">
+      <span class="tab-icon">📊</span>
+      <span class="tab-label">Relatórios</span>
     </router-link>
 
     <router-link to="/perfil" class="tab-item" :class="{ active: isActive('profile') }">

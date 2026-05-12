@@ -7,6 +7,7 @@ export const CAN_CREATE_RECURRING: UserRole[] = ['professor', 'staff'];
 export const CAN_BLOCK: UserRole[] = ['professor', 'staff', 'maintenance'];
 export const CAN_MANAGE_EQUIPMENT: UserRole[] = ['staff', 'maintenance'];
 export const CAN_ADMIN: UserRole[] = ['staff'];
+export const CAN_VIEW_REPORTS: UserRole[] = ['professor', 'staff', 'maintenance'];
 
 export function hasRole(userRole: UserRole | null, allowed: UserRole[]): boolean {
   if (!userRole) return false;

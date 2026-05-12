@@ -1,5 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { hasRole, CAN_VIEW_REPORTS } from '@/utils/roles';
+import type { UserRole } from '@/stores/auth';
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -86,6 +88,12 @@ const router = createRouter({
       component: () => import('@/views/ProfileView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/relatorios',
+      name: 'reports',
+      component: () => import('@/views/ReportsView.vue'),
+      meta: { requiresAuth: true, roles: CAN_VIEW_REPORTS },
+    },
   ],
 });
 
@@ -97,6 +105,10 @@ router.beforeEach((to) => {
   }
 
   if (to.meta.guestOnly && auth.isAuthenticated) {
+    return { name: 'campus-select' };
+  }
+
+  if (to.meta.roles && auth.userRole && !hasRole(auth.userRole, to.meta.roles as UserRole[])) {
     return { name: 'campus-select' };
   }
 });
