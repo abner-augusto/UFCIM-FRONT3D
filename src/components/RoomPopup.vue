@@ -89,7 +89,7 @@ function groupStatusLabel(g: EquipmentGroup): string {
       <p class="room-popup__meta">
         <span>{{ typeLabel }}</span>
         <span class="meta-sep">·</span>
-        <span>Bloco {{ space.block }}</span>
+        <span>{{ space.block.startsWith('Bloco') ? space.block : `Bloco ${space.block}` }}</span>
         <span v-if="space.department" class="meta-sep">·</span>
         <span v-if="space.department">{{ space.department }}</span>
       </p>
