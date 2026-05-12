@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.0.1](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v3.0.0...v3.0.1) (2026-05-12)
+
+
+### Bug Fixes
+
+* **deps:** downgrade vite from 8.x to 7.3.3 due to compatibility issues ([ed0db98](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/ed0db98b932064a07d3da566f429bd55293d1028))
+
 ## [3.0.0](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v2.0.0...v3.0.0) (2026-05-12)
 
 
