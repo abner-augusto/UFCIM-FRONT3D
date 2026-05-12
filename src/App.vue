@@ -3,8 +3,40 @@ import { RouterView } from 'vue-router';
 import AppHeader from './components/AppHeader.vue';
 import BottomTabBar from './components/BottomTabBar.vue';
 import { useAuthStore } from './stores/auth';
+import { api } from './services/api';
+import { onMounted, onUnmounted } from 'vue';
 
 const auth = useAuthStore();
+
+let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+async function refreshUnreadCount() {
+  if (!auth.token) return;
+  try {
+    const me = await api.getMe(auth.token);
+    auth.setUnreadCount(me.unreadCount);
+  } catch {
+    // Silently fail — the refresh token flow handles 401s
+  }
+}
+
+function onVisibilityChange() {
+  if (document.visibilityState === 'visible') {
+    refreshUnreadCount();
+  }
+}
+
+onMounted(() => {
+  // Poll every 60s
+  refreshUnreadCount();
+  pollTimer = setInterval(refreshUnreadCount, 60_000);
+  document.addEventListener('visibilitychange', onVisibilityChange);
+});
+
+onUnmounted(() => {
+  if (pollTimer) clearInterval(pollTimer);
+  document.removeEventListener('visibilitychange', onVisibilityChange);
+});
 </script>
 
 <template>
