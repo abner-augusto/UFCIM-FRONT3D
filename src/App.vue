@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router';
+import { RouterView, useRoute } from 'vue-router';
 import AppHeader from './components/AppHeader.vue';
 import BottomTabBar from './components/BottomTabBar.vue';
 import { useAuthStore } from './stores/auth';
 import { api } from './services/api';
-import { onMounted, onUnmounted } from 'vue';
+import { onMounted, onUnmounted, watch } from 'vue';
 
 const auth = useAuthStore();
+const route = useRoute();
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+watch(() => route.path, () => {
+  refreshUnreadCount();
+});
 
 async function refreshUnreadCount() {
   if (!auth.token) return;
