@@ -1,5 +1,51 @@
 # Changelog
 
+## [3.0.0](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v2.0.0...v3.0.0) (2026-05-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* **config:** VITE_API_BASE_URL environment variable has been removed. API requests now route through configured proxy endpoints instead of direct environment-based URLs.
+
+### Features
+
+* add foundational mobile primitives (tokens, resets, PWA meta, and icons) ([68501a5](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/68501a5c7c8d6823927a1f99d6561e2a4752b0f6))
+* implement notifications panel and enhance notification handling in UI ([2327660](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/2327660715dad0b44bdec2c0e3321b4e4ac19291))
+* implement responsive shell with top bar, bottom tab bar, and nav drawer ([4a01d71](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/4a01d719bfb38234af4e7cc1a15d801b60b53704))
+* improve 3D viewer overlay UX on mobile ([733308a](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/733308aeb6d5c55f9a063bfc9576ad62bd4eb9e6))
+* **notifications:** add preview limit and view all navigation to notification panel ([3bae7aa](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/3bae7aaa5c41df49c20ae243039843a1361bd0ba))
+* polish auth and profile views for mobile with dvh and tap targets ([a6de0e5](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/a6de0e58eb90d457016c0418f920c8fca60a06ea))
+* polish booking forms for mobile with sticky CTAs and responsive grids ([1d282e2](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/1d282e27fa596a6e3a8ed1874ad4877f37934315))
+* polish list views and selection screens for mobile responsiveness ([cb0851d](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/cb0851df5775f0a318ab6f3bd00f5c7d0835323c))
+* polish RoomPopup for mobile with fixed positioning and responsive layout ([8169795](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/8169795fe39730918d5520edfba463a0ad6daed3))
+* **reports:** add occupancy report dashboard with charts and filters ([af42c36](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/af42c36995665c65f7f0f86473749e499884c79c))
+* **reports:** update occupancy report structure and remove unused summary fields ([506767b](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/506767b395eb4c7e49fd5dd33d1053871f172869))
+* **security:** add admin role and portal access with notification indicator ([89f0bea](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/89f0bea10334a7dcce039c3a3115864ed7c7b3a0))
+* **three:** enhance camera behavior with height constraint and config updates ([d2af90e](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/d2af90eabbe3d5b3ca54ef45ab78fa5f0a8e0444))
+* **ui:** replace bottom floor panel with fixed controls rail for mobile viewer ([00dec7a](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/00dec7ab0226c2ec4e2784dec58360883c2b9180))
+
+
+### Bug Fixes
+
+* **3d:** remove duplicate 'Bloco' prefix in room popup ([42ef75b](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/42ef75b169e8bba8be71b7dd4e55cf95027e8df6))
+* **three:** correct touch gesture mappings for intuitive camera controls ([6b02bf8](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/6b02bf8fd710179650542d65797e9f08f6d6d36f))
+* **ui:** add periodic unread badge poll for notification bell ([c2bc27d](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/c2bc27d4880fcdf3898f593c4161ed5ec5532535))
+* **ui:** add spacing between room name and block in search results ([2493555](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/24935556b16c904e92d2231da1ffadc47435985e))
+* **ui:** close search sheet and open popup when selecting search result ([5a80cc5](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/5a80cc55aff6acedc60c0681a01336093cb48d8b))
+* **ui:** refresh unread count on route change ([8e2d7aa](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/8e2d7aa96ec42ae94f6284c0dce4ea44193301d0))
+
+
+### Performance Improvements
+
+* **three:** apply low-risk 3D performance fixes ([952fae4](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/952fae4ebe223f9fed35c2018012c5b8518d0544))
+* **three:** lazy-load initial 3D floors ([1f42a52](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/1f42a524a2f61bc450ccb3704c1c01211f6feae4))
+* **three:** optimize 3D rendering performance with adaptive configuration and prioritized loading ([c58acc3](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/c58acc3fc6678f18723be640d364a151d4b53db5))
+
+
+### Build System
+
+* **config:** replace environment-based API configuration with proxy-based routing ([1d034ec](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/1d034ecdaec753e91c2cfc639bc2233c0eb1c50a))
+
 ## [2.0.0](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v1.0.0...v2.0.0) (2026-04-28)
 
 
