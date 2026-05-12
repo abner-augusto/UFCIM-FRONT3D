@@ -489,6 +489,16 @@ export class UIManager {
       this.searchInput.value = '';
     }
     this._clearSearchResults();
+
+    // Notify Vue layer: close search sheet + open popup for this pin
+    window.dispatchEvent(new CustomEvent('ufcim:pin-click', {
+      detail: {
+        pinId: space.modelId,
+        displayName: space.name,
+        building: building,
+        floorLevel: floorLevel,
+      },
+    }));
   }
 
   _clearSearchResults() {

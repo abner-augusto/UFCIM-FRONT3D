@@ -225,6 +225,7 @@ async function handlePinClick(detail: { pinId: string; displayName: string; buil
   const seq = ++popupDetailSeq;
   selectedSpace.value = summarySpace;
   showPopup.value = true;
+  searchSheetOpen.value = false; // close search sheet when pin is selected
   viewerRef.value?.setFloorUIVisible(false);
   try {
     const detailedSpace = await api.getSpace(auth.token, summarySpace.id);
