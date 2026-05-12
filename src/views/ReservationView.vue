@@ -18,7 +18,9 @@ const spaceId = route.params.spaceId as string;
 
 const space = ref<Space | null>(null);
 const availability = ref<Availability | null>(null);
-const selectedDate = ref('');
+const today = new Date().toISOString().split('T')[0];
+
+const selectedDate = ref(today);
 const selectedPurpose = ref('');
 const loadingSpace = ref(true);
 const loadingAvailability = ref(false);
@@ -45,8 +47,6 @@ const recurringDayOfWeek = ref<number | null>(null);
 const recurringDescription = ref('');
 const recurringLoading = ref(false);
 const recurringSuccessMsg = ref<string | null>(null);
-
-const today = new Date().toISOString().split('T')[0];
 
 const canReserve = computed(() => hasRole(auth.userRole, CAN_RESERVE));
 const canRecurring = computed(() => hasRole(auth.userRole, CAN_CREATE_RECURRING));
@@ -93,7 +93,7 @@ watch(selectedDate, async (date) => {
   } finally {
     loadingAvailability.value = false;
   }
-});
+}, { immediate: true });
 
 watch(selectionMode, () => {
   selectedSlot.value = null;

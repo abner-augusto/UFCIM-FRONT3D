@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
 import type { Notification } from '@/types/reservation';
@@ -13,7 +14,10 @@ const emit = defineEmits<{
   close: [];
 }>();
 
+const router = useRouter();
 const auth = useAuthStore();
+
+const PREVIEW_LIMIT = 5;
 
 const notifications = ref<Notification[]>([]);
 const loading = ref(false);
@@ -74,6 +78,14 @@ const dateLabel = (iso: string) => {
 
 const hasUnread = () => notifications.value.some((n) => !n.read);
 
+const previewNotifications = computed(() => notifications.value.slice(0, PREVIEW_LIMIT));
+const hasMore = computed(() => notifications.value.length > PREVIEW_LIMIT);
+
+function viewAll() {
+  emit('close');
+  router.push({ name: 'notifications' });
+}
+
 function onBackdropClick(e: MouseEvent) {
   if ((e.target as HTMLElement).classList.contains('notif-backdrop')) {
     emit('close');
@@ -88,8 +100,9 @@ onMounted(() => document.addEventListener('keydown', onKeydown));
 onUnmounted(() => document.removeEventListener('keydown', onKeydown));
 
 // Load when panel first opens
-import { watch } from 'vue';
-watch(() => props.open, (val) => { if (val) load(); });
+watch(() => props.open, (val) => {
+  if (val) load();
+});
 </script>
 
 <template>
@@ -123,7 +136,7 @@ watch(() => props.open, (val) => { if (val) load(); });
         </div>
 
         <!-- Body -->
-        <div class="notif-panel__body">
+        <div class="notif-panel__body" :class="{ 'notif-panel__body--scroll': !loading && notifications.length > 0 }">
           <div v-if="loading" class="notif-panel__state">Carregando notificações...</div>
           <div v-else-if="errorMsg" class="notif-panel__state notif-panel__state--error">{{ errorMsg }}</div>
           <div v-else-if="notifications.length === 0" class="notif-panel__state notif-panel__state--empty">
@@ -131,7 +144,7 @@ watch(() => props.open, (val) => { if (val) load(); });
           </div>
           <ul v-else class="notif-panel__list">
             <li
-              v-for="n in notifications"
+              v-for="n in previewNotifications"
               :key="n.id"
               class="notif-panel__item"
               :class="{ 'notif-panel__item--unread': !n.read }"
@@ -150,6 +163,13 @@ watch(() => props.open, (val) => { if (val) load(); });
               </button>
             </li>
           </ul>
+        </div>
+
+        <!-- Footer -->
+        <div v-if="!loading && notifications.length > 0" class="notif-panel__footer">
+          <button class="notif-panel__view-all" @click="viewAll">
+            {{ hasMore ? `Ver todas as notificações (${notifications.length})` : 'Ver todas as notificações' }}
+          </button>
         </div>
       </div>
     </div>
@@ -251,10 +271,31 @@ watch(() => props.open, (val) => { if (val) load(); });
 .notif-panel__close:hover { color: #333; }
 
 .notif-panel__body {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
+
+.notif-panel__footer {
+  border-top: 1px solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+.notif-panel__view-all {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.825rem;
+  color: var(--color-brand);
+  font-weight: 600;
+  text-align: center;
+}
+.notif-panel__view-all:hover { background: #f8fffe; }
 
 .notif-panel__state {
   padding: 2rem 1rem;
