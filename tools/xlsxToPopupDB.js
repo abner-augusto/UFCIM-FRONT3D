@@ -2,11 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Command } from 'commander';
-import * as XLSX from 'xlsx/xlsx.mjs';
-
-if (typeof XLSX.set_fs === 'function') {
-  XLSX.set_fs(fs);
-}
+import ExcelJS from 'exceljs';
 
 const HEADERS = {
   zone: 'Nome da Zona Relacionada',
@@ -128,23 +124,36 @@ function buildRooms(rows, headerRowIndex, headerRow) {
     .sort((a, b) => a.id.localeCompare(b.id, 'pt-BR', { numeric: true, sensitivity: 'accent' }));
 }
 
-function ensureSheet(workbook) {
-  if (!workbook.SheetNames.length) throw new Error('Workbook does not contain any sheets.');
-  return workbook.Sheets[workbook.SheetNames[0]];
+function getCellValue(cell) {
+  const val = cell.value;
+  if (val === null || val === undefined) return null;
+  if (val && typeof val === 'object') {
+    if (val.richText) return val.richText.map((r) => r.text).join('');
+    if (val.formula !== undefined) return val.result ?? null;
+    if (val instanceof Date) return val.toISOString();
+  }
+  return val;
 }
 
-function loadRows(sheet) {
-  return XLSX.utils.sheet_to_json(sheet, {
-    header: 1,
-    defval: null,
-    blankrows: false,
-    raw: false,
-    range: sheet['!ref'],
+async function loadWorksheetRows(inputPath) {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(inputPath);
+
+  if (!workbook.worksheets.length) throw new Error('Workbook does not contain any sheets.');
+
+  const worksheet = workbook.worksheets[0];
+  const colCount = worksheet.columnCount;
+  const rows = [];
+
+  worksheet.eachRow({ includeEmpty: false }, (row) => {
+    const rowValues = [];
+    for (let col = 1; col <= colCount; col++) {
+      rowValues.push(getCellValue(row.getCell(col)));
+    }
+    rows.push(rowValues);
   });
-}
 
-function normalizeHeaderRow(row = []) {
-  return row.map((cell) => (cell ?? '').toString().trim());
+  return rows;
 }
 
 function writeOutput(outputPath, data, pretty) {
@@ -154,7 +163,7 @@ function writeOutput(outputPath, data, pretty) {
   fs.writeFileSync(outputPath, `${JSON.stringify(payload, null, spacing)}\n`, 'utf8');
 }
 
-function main() {
+async function main() {
   const program = new Command();
   program
     .name('xlsx-to-popup-db')
@@ -174,9 +183,13 @@ function main() {
     process.exit(1);
   }
 
-  const workbook = XLSX.readFile(inputPath, { cellDates: false });
-  const sheet = ensureSheet(workbook);
-  const rows = loadRows(sheet);
+  let rows;
+  try {
+    rows = await loadWorksheetRows(inputPath);
+  } catch (err) {
+    console.error(`Failed to read workbook: ${err.message}`);
+    process.exit(1);
+  }
 
   const headerRowIndex = findHeaderRow(rows);
   if (headerRowIndex === -1) {
@@ -184,11 +197,14 @@ function main() {
     process.exit(1);
   }
 
-  const headerRow = normalizeHeaderRow(rows[headerRowIndex]);
+  const headerRow = rows[headerRowIndex].map((cell) => (cell ?? '').toString().trim());
   const rooms = buildRooms(rows, headerRowIndex, headerRow);
 
   writeOutput(outputPath, rooms, options.pretty);
   console.log(`Wrote ${rooms.length} rooms to ${outputPath}`);
 }
 
-main();
+main().catch((err) => {
+  console.error(err.message);
+  process.exit(1);
+});
