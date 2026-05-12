@@ -32,13 +32,6 @@ defineProps<{
       </div>
     </div>
 
-    <div class="card">
-      <span class="card-icon">📈</span>
-      <div class="card-body">
-        <span class="card-value">{{ summary.picoConcorrencia }}</span>
-        <span class="card-label">Pico às {{ summary.picoHorario }}</span>
-      </div>
-    </div>
   </div>
 </template>
 

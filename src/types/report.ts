@@ -2,8 +2,6 @@ export interface Summary {
   ocupacaoMedia: number; // percentage (0–100)
   totalReservas: number;
   salasUsadas: number;
-  picoConcorrencia: number;
-  picoHorario: string; // e.g. "10:00"
 }
 
 export interface DailyPoint {

@@ -196,6 +196,36 @@ export const api = {
     request<{ updated: number }>('/notifications/read-all', token, { method: 'PATCH' }),
 
   // Reports
-  getOccupancyReport: (token: string | null, params?: { startDate?: string; endDate?: string; campus?: string; department?: string }) =>
-    request<OccupancyReport>(`/reports/occupancy?${new URLSearchParams(params as any)}`, token),
+  getOccupancyReport: async (token: string | null, params?: { startDate?: string; endDate?: string; campus?: string; department?: string }): Promise<OccupancyReport> => {
+    const raw = await request<any>(`/reports/occupancy?${new URLSearchParams(params as any)}`, token);
+
+    const turnoLabel: Record<string, string> = { morning: 'Manhã', afternoon: 'Tarde', evening: 'Noite' };
+
+    return {
+      summary: {
+        ocupacaoMedia: raw.summary.occupancyRate ?? 0,
+        totalReservas: raw.summary.totalReservations ?? 0,
+        salasUsadas: raw.summary.uniqueSpacesUsed ?? 0,
+      },
+      daily: (raw.dailySeries ?? []).map((d: any) => ({
+        date: d.date,
+        ocupacao: d.occupancyRate ?? 0,
+        reservas: d.reservations ?? 0,
+      })),
+      turnos: (raw.byTurno ?? []).map((t: any) => ({
+        turno: turnoLabel[t.turno] ?? t.turno,
+        reservas: t.count ?? 0,
+      })),
+      spaces: (raw.tabela ?? []).map((s: any) => ({
+        id: s.spaceId ?? s.id,
+        nome: s.name ?? '',
+        numero: s.number ?? '',
+        bloco: s.block ?? '',
+        tipo: s.type ?? '',
+        capacidade: s.capacity ?? 0,
+        reservas: s.reservations ?? 0,
+        taxaOcupacao: s.occupancyRate ?? 0,
+      })),
+    };
+  },
 };
