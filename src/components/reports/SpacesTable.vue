@@ -1,9 +1,16 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router';
 import type { SpaceReport } from '@/types/report';
 
 defineProps<{
   spaces: SpaceReport[];
 }>();
+
+const router = useRouter();
+
+function goToReport(spaceId: string) {
+  router.push({ name: 'space-report', params: { spaceId } });
+}
 
 function taxaClass(taxa: number): string {
   if (taxa >= 75) return 'taxa--alta';
@@ -29,7 +36,7 @@ function taxaClass(taxa: number): string {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="s in spaces" :key="s.id">
+          <tr v-for="s in spaces" :key="s.id" class="space-row" @click="goToReport(s.id)">
             <td class="cell-name">{{ s.nome }}</td>
             <td>{{ s.numero }}</td>
             <td>{{ s.bloco }}</td>
@@ -96,6 +103,15 @@ function taxaClass(taxa: number): string {
 .cell-name {
   font-weight: 500;
   color: #111;
+}
+
+.space-row {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.space-row:hover {
+  background: #f0f7f3;
 }
 
 .taxa-badge {

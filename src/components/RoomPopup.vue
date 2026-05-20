@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
 import { hasRole, CAN_RESERVE, CAN_BLOCK } from '@/utils/roles';
 import { PURPOSE_LABELS, BLOCK_TYPE_LABELS, type AvailabilitySlot } from '@/types/reservation';
+import EquipmentReportDialog from './EquipmentReportDialog.vue';
 
 const props = defineProps<{
   space: Space;
@@ -96,6 +97,10 @@ function goToReservation(reservationId: string) {
   router.push({ name: 'my-reservations', query: { highlight: reservationId } });
 }
 
+function goToReport() {
+  router.push({ name: 'space-report', params: { spaceId: props.space.id } });
+}
+
 const formattedDate = computed(() => {
   const d = new Date(props.selectedDate + 'T00:00:00');
   return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', weekday: 'short' });
@@ -140,6 +145,20 @@ function groupStatusLabel(g: EquipmentGroup): string {
   if (g.underRepair > 0) return 'Em manutenção';
   if (g.replacementScheduled > 0) return 'Substituição agendada';
   return 'Funcionando';
+}
+
+// Equipment reporting
+const reportingEquipment = ref<Equipment | null>(null);
+const canReport = computed(() => !!auth.token);
+
+function openReportFor(group: EquipmentGroup) {
+  if (!props.space.equipment) return;
+  const item = props.space.equipment.find(e => e.name === group.name);
+  if (item) reportingEquipment.value = item;
+}
+
+function onReportSent() {
+  reportingEquipment.value = null;
 }
 </script>
 
@@ -265,6 +284,15 @@ function groupStatusLabel(g: EquipmentGroup): string {
             <span class="equipment-status" :class="groupStatusClass(g)">
               {{ groupStatusLabel(g) }}
             </span>
+            <button
+              v-if="canReport"
+              class="equipment-report-btn"
+              :aria-label="`Reportar problema em ${g.name}`"
+              @click="openReportFor(g)"
+            >
+              <span aria-hidden="true">🚩</span>
+              <span>Reportar</span>
+            </button>
           </li>
         </ul>
       </div>
@@ -295,8 +323,19 @@ function groupStatusLabel(g: EquipmentGroup): string {
         >
           Bloquear Espaço
         </button>
+        <button class="btn-tertiary" @click="goToReport">
+          📊 Ver relatório
+        </button>
       </div>
     </div>
+
+    <EquipmentReportDialog
+      v-if="reportingEquipment"
+      :equipment="reportingEquipment"
+      :space-name="space.name"
+      @close="reportingEquipment = null"
+      @reported="onReportSent"
+    />
   </div>
 </template>
 
@@ -443,6 +482,27 @@ function groupStatusLabel(g: EquipmentGroup): string {
 .status--broken   { background: #fee2e2; color: #991b1b; }
 .status--warning  { background: #fef3c7; color: #92400e; }
 
+/* Equipment report button */
+.equipment-report-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  background: transparent;
+  border: 0.5px solid #ddd;
+  border-radius: 6px;
+  color: #888;
+  cursor: pointer;
+  min-height: 32px;
+  flex-shrink: 0;
+}
+.equipment-report-btn:hover {
+  background: #fafafa;
+  color: #c0392b;
+  border-color: #e0a89f;
+}
+
 /* Blocking notice */
 .room-popup__notice { margin-bottom: 0.75rem; padding: 0.7rem 0.9rem; border-radius: 10px; background: #fff8f0; border-left: 3px solid #f59e0b; }
 .room-popup__notice-label { margin: 0 0 0.2rem; color: #92400e; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
@@ -467,4 +527,10 @@ function groupStatusLabel(g: EquipmentGroup): string {
 .btn-secondary:disabled:hover { background: none; }
 .action-hint { margin: 0; color: #888; font-size: 0.78rem; text-align: center; }
 .action-hint--warn { color: #c05a1f; }
+.btn-tertiary {
+  width: 100%; padding: 0.65rem; border: 1px solid #ddd; border-radius: 10px;
+  background: none; color: #666; font-size: 0.88rem; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; min-height: var(--tap-min, 44px);
+}
+.btn-tertiary:hover { background: #f5f5f5; border-color: #bbb; color: #333; }
 </style>

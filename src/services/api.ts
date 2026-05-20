@@ -1,6 +1,7 @@
 import type { Space } from '@/types/space';
 import type { Availability, Reservation, Notification, Blocking } from '@/types/reservation';
-import type { OccupancyReport } from '@/types/report';
+import type { OccupancyReport, SpaceReportData } from '@/types/report';
+import type { EquipmentReport } from '@/types/equipment-report';
 
 const BASE_URL = '/api/v1';
 
@@ -228,4 +229,34 @@ export const api = {
       })),
     };
   },
+
+  // MEL-005: Individual space report
+  getSpaceReport: (token: string | null, spaceId: string, params: { startDate: string; endDate: string }) =>
+    request<SpaceReportData>(`/spaces/${spaceId}/report?${new URLSearchParams(params)}`, token),
+
+  // Equipment Reports
+  createEquipmentReport: (token: string | null, equipmentId: string, body: { description: string; severity: 'minor' | 'major' | 'blocking' }) =>
+    request<EquipmentReport>(`/equipment/${equipmentId}/reports`, token, {
+      method: 'POST', body: JSON.stringify(body),
+    }),
+
+  listEquipmentReports: (token: string | null, equipmentId: string) =>
+    request<EquipmentReport[]>(`/equipment/${equipmentId}/reports`, token),
+
+  listMyEquipmentReports: (token: string | null) =>
+    request<EquipmentReport[]>('/equipment/reports/mine', token),
+
+  listPendingEquipmentReports: (token: string | null, filters?: { spaceId?: string; status?: string }) =>
+    request<EquipmentReport[]>(`/equipment/reports/pending?${new URLSearchParams(filters as any)}`, token),
+
+  acknowledgeEquipmentReport: (token: string | null, id: string) =>
+    request<EquipmentReport>(`/equipment/reports/${id}/acknowledge`, token, { method: 'PATCH' }),
+
+  resolveEquipmentReport: (token: string | null, id: string) =>
+    request<EquipmentReport>(`/equipment/reports/${id}/resolve`, token, { method: 'PATCH' }),
+
+  dismissEquipmentReport: (token: string | null, id: string, reason: string) =>
+    request<EquipmentReport>(`/equipment/reports/${id}/dismiss`, token, {
+      method: 'PATCH', body: JSON.stringify({ reason }),
+    }),
 };
