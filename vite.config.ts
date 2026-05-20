@@ -13,6 +13,15 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 50 * 1024 * 1024,
         runtimeCaching: [
           {
+            urlPattern: /\/api\/v1\/spaces\/[^/]+\/availability/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'availability',
+              networkTimeoutSeconds: 3,
+              expiration: { maxAgeSeconds: 60 },
+            },
+          },
+          {
             urlPattern: /\/api\/v1\/.*/,
             handler: 'NetworkFirst',
             options: {

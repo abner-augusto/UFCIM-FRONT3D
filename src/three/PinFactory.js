@@ -45,7 +45,11 @@ export class PinFactory {
 
     createPinAndLabel(pinData) {
         const displayName = this._formatLabelText(pinData.displayName ?? pinData.id);
-        const labelSprite = this._createLabelSprite(pinData, displayName);
+        const labelSprite = this._createLabelSprite(pinData, {
+            displayName,
+            statusText: pinData.statusText ?? null,
+            statusColor: pinData.statusColor ?? null,
+        });
 
         const labelWorldHeight = labelSprite.scale.y;
         const pinWorldHeight = PIN_SPRITE_SCALE;
@@ -123,8 +127,8 @@ export class PinFactory {
         return sprite;
     }
 
-    _createLabelSprite(pinData, labelText) {
-        const canvas = this._createLabelCanvas(labelText);
+    _createLabelSprite(pinData, labelParams) {
+        const canvas = this._createLabelCanvas(labelParams);
         const texture = new THREE.CanvasTexture(canvas);
         texture.needsUpdate = true;
 
@@ -146,12 +150,13 @@ export class PinFactory {
         sprite.position.copy(pinData.position).add(new THREE.Vector3(0, labelOffsetY, 0));
         sprite.renderOrder = 2;
         sprite.name = `${pinData.id}_label`;
-        sprite.userData.displayName = labelText;
+        sprite.userData.displayName = labelParams.displayName;
+        sprite.userData.baseDisplayName = labelParams.displayName;
 
         return sprite;
     }
 
-    _createLabelCanvas(text) {
+    _createLabelCanvas({ displayName, statusText, statusColor }) {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
 
@@ -160,11 +165,17 @@ export class PinFactory {
         tempLabel.className = 'pin-label'; // match your CSS class
         tempLabel.style.position = 'absolute'; // off-screen
         tempLabel.style.visibility = 'hidden';
-        tempLabel.textContent = text;
+
+        // Build text: displayName always, statusText on second line if present
+        const hasStatus = statusText != null && statusText !== '';
+        const labelText = hasStatus ? `${displayName}\n${statusText}` : displayName;
+        tempLabel.textContent = labelText;
         document.body.appendChild(tempLabel);
         try {
             const style = getComputedStyle(tempLabel);
             const font = LABEL_STYLE.font || `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+            // Status line font: smaller (10px vs 12px)
+            const statusFont = hasStatus ? '400 10px Roboto, sans-serif' : font;
             ctx.font = font;
 
             const paddingConfig = LABEL_STYLE.padding || {};
@@ -181,19 +192,27 @@ export class PinFactory {
             const borderRadius = (borderConfig.radius ?? parseInt(style.borderRadius, 10)) || 8;
             const borderWidth = (borderConfig.width ?? parseInt(style.borderWidth, 10)) || 2;
 
-            const lines = text.split('\n');
+            const lines = labelText.split('\n');
             const lineHeight = this._resolveLineHeight(style);
-            const lineWidths = lines.map(line => Math.ceil(ctx.measureText(line).width));
+            // Status line gets a smaller line height
+            const statusLineHeight = hasStatus ? Math.round(10 * 1.2) : lineHeight;
+
+            // Measure each line with appropriate font
+            const lineWidths = lines.map((line, i) => {
+                const useFont = hasStatus && i === 1 ? statusFont : font;
+                ctx.font = useFont;
+                return Math.ceil(ctx.measureText(line).width);
+            });
             const textWidth = Math.max(...lineWidths, 0);
-            const textBlockHeight = lineHeight * lines.length;
+            const textBlockHeight = (lines.length === 2)
+                ? lineHeight + statusLineHeight + 2  // 2px gap between lines
+                : lineHeight * lines.length;
 
             const rectWidth = textWidth + paddingLeft + paddingRight;
             const rectHeight = textBlockHeight + paddingTop + paddingBottom;
 
             canvas.width = rectWidth + borderWidth * 2;
             canvas.height = rectHeight + borderWidth * 2;
-
-            ctx.font = font;
 
             // Colors: prefer locked palette to avoid dark-mode overrides
             const bgColor = LABEL_STYLE.colors?.background || style.backgroundColor || 'white';
@@ -212,14 +231,21 @@ export class PinFactory {
             ctx.stroke();
 
             // Draw text
-            ctx.fillStyle = textColor;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             const labelCenterX = rectX + rectWidth / 2;
-            const firstLineY = rectY + paddingTop + lineHeight / 2;
+            let currentY = rectY + paddingTop;
+
             lines.forEach((line, index) => {
-                const lineY = firstLineY + index * lineHeight;
-                ctx.fillText(line, labelCenterX, lineY);
+                const useFont = hasStatus && index === 1 ? statusFont : font;
+                const useColor = hasStatus && index === 1 && statusColor ? statusColor : textColor;
+                const lh = (hasStatus && index === 0) ? lineHeight : (hasStatus && index === 1 ? statusLineHeight : lineHeight);
+                ctx.font = useFont;
+                ctx.fillStyle = useColor;
+                currentY += lh / 2;
+                ctx.fillText(line, labelCenterX, currentY);
+                currentY += lh / 2;
+                if (hasStatus && index === 0) currentY += 2; // 2px gap
             });
 
             return canvas;

@@ -139,7 +139,7 @@ export const api = {
   // Reservations — GET /reservations/mine returns array directly
   createReservation: (
     token: string | null,
-    body: { spaceId: string; date: string; startTime: string; endTime: string; purpose?: string }
+    body: { spaceId: string; date: string; startTime: string; endTime: string; purpose?: string; description?: string }
   ) => request<Reservation>('/reservations', token, { method: 'POST', body: JSON.stringify(body) }),
 
   createRecurringReservation: (

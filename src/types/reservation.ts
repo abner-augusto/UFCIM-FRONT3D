@@ -10,7 +10,23 @@ export const TIME_SLOT_RANGES: Record<TimeSlot, { startTime: string; endTime: st
 export interface AvailabilitySlot {
   startTime: string; // "HH:00"
   endTime: string;   // "HH:00" (last slot of day uses "24:00")
-  status: 'available' | 'reserved' | 'blocked' | 'closed';
+  status: 'available' | 'reserved' | 'blocked' | 'closed' | 'not_reservable';
+  reservation?: {
+    id: string;
+    purpose: string;
+    description: string | null;
+    isRecurring: boolean;
+    isSelf: boolean;
+    author: { displayName: string; role: string };
+  };
+  blocking?: {
+    id: string;
+    blockType: string;
+    reason: string | null;
+    rangeStartDate: string;
+    rangeEndDate: string;
+    author: { displayName: string; role: string };
+  };
 }
 
 // The availability endpoint returns AvailabilitySlot[] directly (no wrapper object).
@@ -98,6 +114,14 @@ export const PURPOSE_OPTIONS = [
   { value: 'event', label: 'Evento' },
   { value: 'other', label: 'Outro' },
 ] as const;
+
+export const PURPOSE_LABELS: Record<string, string> = {
+  class: 'Aula',
+  group_study: 'Estudo',
+  meeting: 'Reunião',
+  event: 'Evento',
+  other: 'Outro',
+};
 
 export const STATUS_LABELS: Record<ReservationStatus, string> = {
   confirmed: 'Confirmada',
