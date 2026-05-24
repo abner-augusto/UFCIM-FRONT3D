@@ -21,6 +21,20 @@ export interface InvitationPreview {
   role?: string;
 }
 
+/**
+ * Set by the caller (e.g. auth store) via setUnauthorizedHandler to handle 401 retry.
+ * Returns a new access token, or null if refresh failed.
+ */
+let unauthorizedHandler: (() => Promise<string | null>) | null = null;
+
+/**
+ * Register a handler for 401 responses that performs token refresh.
+ * Breaks the circular dep between api and auth stores.
+ */
+export function setUnauthorizedHandler(handler: (() => Promise<string | null>) | null) {
+  unauthorizedHandler = handler;
+}
+
 function getHeaders(token: string | null, method: string = 'GET'): HeadersInit {
   const headers: HeadersInit = {};
   if (method !== 'GET' && method !== 'HEAD') {
@@ -57,17 +71,10 @@ async function request<T>(
   });
 
   if (res.status === 401 && !meta._retried && !meta.authPath) {
-    // Import inside function to avoid circular dep at module load time
-    const { useAuthStore } = await import('@/stores/auth');
-    const auth = useAuthStore();
-    if (auth.refreshToken) {
-      try {
-        const { accessToken, refreshToken } = await api.refresh(auth.refreshToken);
-        auth.setTokens(accessToken, refreshToken);
-        return request<T>(path, accessToken, options, { ...meta, _retried: true });
-      } catch {
-        auth.logout();
-        // Let the original 401 propagate so the route guard kicks in.
+    if (unauthorizedHandler) {
+      const newToken = await unauthorizedHandler();
+      if (newToken) {
+        return request<T>(path, newToken, options, { ...meta, _retried: true });
       }
     }
   }
