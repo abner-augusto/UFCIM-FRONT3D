@@ -159,7 +159,7 @@ export const api = {
       dayOfWeek: number; // 0 = Sunday, 6 = Saturday
       startTime: string;
       endTime: string;
-      description: string;
+      description?: string;
     }
   ) => request<{ recurrenceId: string; created: Reservation[]; skipped: string[] }>(
     '/reservations/recurring', token, { method: 'POST', body: JSON.stringify(body) }

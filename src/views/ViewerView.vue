@@ -12,7 +12,7 @@ import PeriodSelector from '@/components/PeriodSelector.vue';
 import ViewerControlsRail from '@/components/ViewerControlsRail.vue';
 import ViewerSearchSheet from '@/components/ViewerSearchSheet.vue';
 import BlockHeatmapCard from '@/components/BlockHeatmapCard.vue';
-import { useDateTimeFilter } from '@/composables/useDateTimeFilter';
+import { useDateTimeFilter, formatShortDate } from '@/composables/useDateTimeFilter';
 import { usePinAvailability, PERIOD_COLORS } from '@/composables/usePinAvailability';
 import { buildPinStatusLabel } from '@/composables/usePinStatusLabel';
 import type { PeriodKey, PinStatus } from '@/composables/usePinAvailability';
@@ -75,11 +75,6 @@ function updateBlockHeatmap() {
 function overlapsSelectedPeriod(blocking: Blocking): boolean {
   const range = TIME_SLOT_RANGES[selectedPeriod.value];
   return blocking.startTime < range.endTime && blocking.endTime > range.startTime;
-}
-
-function formatShortDate(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
 }
 
 function onFullscreenToggle(on: boolean) {

@@ -40,6 +40,10 @@ export const useReservationStore = defineStore('reservation', () => {
     purpose.value = p;
   }
 
+  function setDescription(d: string) {
+    description.value = d.trim() || null;
+  }
+
   function reset() {
     spaceId.value = null;
     spaceName.value = null;
@@ -55,6 +59,6 @@ export const useReservationStore = defineStore('reservation', () => {
     spaceId, spaceName, date,
     selectedSlot, startTime, endTime,
     purpose, description, isReady,
-    setSpace, setSchedule, setCustomSchedule, setPurpose, reset,
+    setSpace, setSchedule, setCustomSchedule, setPurpose, setDescription, reset,
   };
 });

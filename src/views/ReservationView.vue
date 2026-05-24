@@ -39,6 +39,9 @@ const selectedSlot = ref<TimeSlot | null>(null);
 const pickedStart = ref<string | null>(null);
 const pickedEnd = ref<string | null>(null);
 
+// Description for single reservation
+const descriptionInput = ref('');
+
 // Recurring reservation state
 const isRecurring = ref(false);
 const recurringStartDate = ref('');
@@ -244,6 +247,7 @@ function handleContinue() {
     reservationStore.setCustomSchedule(selectedDate.value, pickedStart.value!, customRangeEnd.value!);
   }
   reservationStore.setPurpose(selectedPurpose.value);
+  reservationStore.setDescription(descriptionInput.value);
   router.push({ name: 'reservation-confirm' });
 }
 
@@ -281,7 +285,7 @@ async function handleRecurring() {
       dayOfWeek: recurringDayOfWeek.value!,
       startTime,
       endTime,
-      description: recurringDescription.value.trim(),
+      description: recurringDescription.value.trim() || undefined,
     });
     recurringSuccessMsg.value = `${result.created.length} reservas criadas, ${result.skipped.length} conflitos ignorados.`;
     setTimeout(() => router.push({ name: 'my-reservations' }), 2000);
@@ -400,6 +404,20 @@ async function handleRecurring() {
               {{ opt.label }}
             </option>
           </select>
+        </div>
+
+        <div v-if="selectedSlot || (selectionMode === 'hours' && pickedStart && pickedEnd)" class="form-section">
+          <label class="form-label" for="description-input">Descrição</label>
+          <input
+            id="description-input"
+            type="text"
+            class="form-input"
+            maxlength="100"
+            v-model="descriptionInput"
+            placeholder="Ex: Modelagem Tridimensional"
+            aria-describedby="description-hint"
+          />
+          <p id="description-hint" class="form-hint">opcional · visível a professores · ex: Modelagem Tridimensional</p>
         </div>
 
         <p v-if="errorMsg" class="state-error">{{ errorMsg }}</p>

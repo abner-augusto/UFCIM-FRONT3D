@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { PERIOD_LABELS, type PeriodKey } from '@/utils/period';
-import { formatShortDate } from '@/composables/useDateTimeFilter';
+import { formatShortDate, createDateChips } from '@/composables/useDateTimeFilter';
 
 interface Building {
   id: string;
@@ -83,21 +83,7 @@ const dateTimeBtnLabel = computed(() => {
   return `${dayLabel} · ${periodAbbr}`;
 });
 
-const dateChips = computed(() => {
-  const todayDate = new Date();
-  const chips: Array<{ value: string; label: string }> = [];
-  for (let i = 0; i < 3; i++) {
-    const d = new Date(todayDate);
-    d.setDate(todayDate.getDate() + i);
-    const iso = d.toISOString().split('T')[0];
-    let label: string;
-    if (i === 0) label = 'Hoje';
-    else if (i === 1) label = 'Amanhã';
-    else label = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
-    chips.push({ value: iso, label });
-  }
-  return chips;
-});
+const dateChips = computed(() => createDateChips());
 
 const ariaLabel = computed(() => {
   let label = `${dateTimeBtnLabel.value}, Edifício: ${buildingName.value}`;
@@ -123,6 +109,7 @@ function toggleBuilding() {
   dateTimePopoverOpen.value = false;
 }
 
+// Controlled-component version of openDatePicker — composable's version is for the owning view.
 function openDatePicker() {
   const input = document.createElement('input');
   input.type = 'date';

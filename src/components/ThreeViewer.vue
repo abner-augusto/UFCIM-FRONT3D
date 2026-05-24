@@ -23,11 +23,6 @@ onMounted(async () => {
   threeApp = new App(canvasRef.value);
   await threeApp.init();
 
-  // Hand off popup rendering to Vue
-  if (threeApp.popupManager) {
-    threeApp.popupManager.vueManaged = true;
-  }
-
   window.addEventListener('ufcim:pin-click', onPinClick);
   emit('ready');
 });

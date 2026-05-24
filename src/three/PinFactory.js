@@ -156,13 +156,7 @@ export class PinFactory {
         // Canvas cache: avoid re-running DOM measurement for identical labels
         let sourceCanvas;
         if (this._canvasCache.has(cacheKey)) {
-            const cachedCanvas = this._canvasCache.get(cacheKey);
-            sourceCanvas = document.createElement('canvas');
-            sourceCanvas.width = cachedCanvas.width;
-            sourceCanvas.height = cachedCanvas.height;
-            const srcCtx = cachedCanvas.getContext('2d');
-            const dstCtx = sourceCanvas.getContext('2d');
-            dstCtx.drawImage(cachedCanvas, 0, 0);
+            sourceCanvas = this._canvasCache.get(cacheKey);
         } else {
             sourceCanvas = this._createLabelCanvas(labelParams);
             this._canvasCache.set(cacheKey, sourceCanvas);
@@ -174,10 +168,10 @@ export class PinFactory {
             texture = this._textureCache.get(cacheKey).clone();
         } else {
             texture = new THREE.CanvasTexture(sourceCanvas);
+            texture.needsUpdate = true;
             this._textureCache.set(cacheKey, texture);
             this._evictCache();
         }
-        texture.needsUpdate = true;
 
         const material = new THREE.SpriteMaterial({
             map: texture,
