@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { SPACE_TYPE_LABELS, EQUIPMENT_STATUS_LABELS, type Space, type Equipment } from '@/types/space';
+import { SPACE_TYPE_LABELS, type Space, type Equipment } from '@/types/space';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
 import { hasRole, CAN_RESERVE, CAN_BLOCK } from '@/utils/roles';
@@ -91,6 +91,17 @@ function purposeLabel(p: string) {
 
 function blockTypeLabel(bt: string) {
   return BLOCK_TYPE_LABELS[bt as keyof typeof BLOCK_TYPE_LABELS] ?? bt;
+}
+
+function statusLabel(slot: AvailabilitySlot): string {
+  const labels: Record<string, string> = {
+    available: 'Disponível',
+    reserved: 'Reservado',
+    blocked: 'Bloqueado',
+    closed: 'Fechado',
+    not_reservable: 'Não reservável',
+  };
+  return labels[slot.status] ?? slot.status;
 }
 
 function goToReservation(reservationId: string) {
@@ -193,7 +204,7 @@ function onReportSent() {
               v-for="(slot, idx) in availability" :key="slot.startTime"
               class="hour-cell"
               :class="getCellClass(slot, idx)"
-              :aria-label="`${slot.startTime} a ${slot.endTime}`"
+              :aria-label="`${slot.startTime} a ${slot.endTime}: ${statusLabel(slot)}`"
               @click="toggleSlotDetail(idx)"
             >
               <span v-if="slot.status === 'reserved' || slot.status === 'blocked'" class="dot">●</span>
@@ -428,7 +439,7 @@ function onReportSent() {
 .schedule-hint { font-weight: 400; text-transform: none; color: #ccc; font-size: 0.62rem; }
 .schedule-loading { font-size: 0.72rem; color: #999; }
 
-.hour-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(22px, 1fr)); gap: 2px; margin-bottom: 3px; }
+.hour-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; margin-bottom: 3px; }
 .hour-cell { height: 22px; border: none; border-radius: 3px; cursor: pointer; position: relative; padding: 0; background: transparent; }
 .hour-cell--green { background: rgba(99,153,34,0.25); }
 .hour-cell--red { background: rgba(226,75,74,0.25); }

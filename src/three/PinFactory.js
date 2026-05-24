@@ -24,10 +24,14 @@ const LABEL_STYLE = {
 const PIN_LABEL_LINE_LIMIT = 7;
 const PIN_SPRITE_SCALE = 1.8;
 
+const MAX_TEXTURE_CACHE = 100;
+
 export class PinFactory {
     constructor() {
         this.pinTexture = null;
         this.textureLoader = new THREE.TextureLoader();
+        this._textureCache = new Map();
+        this._canvasCache = new Map();
     }
 
     async loadAssets() {
@@ -127,9 +131,52 @@ export class PinFactory {
         return sprite;
     }
 
+    _getLabelCacheKey(labelParams) {
+        const displayName = labelParams.displayName ?? '';
+        const statusText = labelParams.statusText ?? '';
+        const statusColor = labelParams.statusColor ?? '';
+        return `${displayName}|${statusText}|${statusColor}`;
+    }
+
+    _evictCache() {
+        if (this._textureCache.size <= MAX_TEXTURE_CACHE) return;
+        const keys = [...this._textureCache.keys()];
+        const toDelete = keys.slice(0, keys.length - MAX_TEXTURE_CACHE);
+        for (const key of toDelete) {
+            const tex = this._textureCache.get(key);
+            if (tex) tex.dispose();
+            this._textureCache.delete(key);
+            this._canvasCache.delete(key);
+        }
+    }
+
     _createLabelSprite(pinData, labelParams) {
-        const canvas = this._createLabelCanvas(labelParams);
-        const texture = new THREE.CanvasTexture(canvas);
+        const cacheKey = this._getLabelCacheKey(labelParams);
+
+        // Canvas cache: avoid re-running DOM measurement for identical labels
+        let sourceCanvas;
+        if (this._canvasCache.has(cacheKey)) {
+            const cachedCanvas = this._canvasCache.get(cacheKey);
+            sourceCanvas = document.createElement('canvas');
+            sourceCanvas.width = cachedCanvas.width;
+            sourceCanvas.height = cachedCanvas.height;
+            const srcCtx = cachedCanvas.getContext('2d');
+            const dstCtx = sourceCanvas.getContext('2d');
+            dstCtx.drawImage(cachedCanvas, 0, 0);
+        } else {
+            sourceCanvas = this._createLabelCanvas(labelParams);
+            this._canvasCache.set(cacheKey, sourceCanvas);
+        }
+
+        // Texture cache: clone to avoid sharing across materials
+        let texture;
+        if (this._textureCache.has(cacheKey)) {
+            texture = this._textureCache.get(cacheKey).clone();
+        } else {
+            texture = new THREE.CanvasTexture(sourceCanvas);
+            this._textureCache.set(cacheKey, texture);
+            this._evictCache();
+        }
         texture.needsUpdate = true;
 
         const material = new THREE.SpriteMaterial({
@@ -141,8 +188,8 @@ export class PinFactory {
 
         const sprite = new THREE.Sprite(material);
         const pixelToWorldScale = LABEL_STYLE.pixelToWorldScale;
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
+        const canvasWidth = sourceCanvas.width;
+        const canvasHeight = sourceCanvas.height;
         const scaleX = canvasWidth * pixelToWorldScale;
         const scaleY = canvasHeight * pixelToWorldScale;
         sprite.scale.set(scaleX, scaleY, 1);
