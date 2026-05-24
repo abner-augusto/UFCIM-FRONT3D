@@ -34,7 +34,7 @@ export class PopupManager {
     this._interactionLocked = false;
     this._controlsLocked = false;
     this._pendingControlUnlock = null;
-    this.vueManaged = false;
+    this.vueManaged = true; // Vue-managed popup is always active; legacy DOM popup deprecated
   }
 
   async show(pin, event) {

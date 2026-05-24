@@ -53,7 +53,7 @@ export function usePinAvailability() {
     token: string | null,
     date: string,
     period: PeriodKey,
-  ): Promise<Map<string, PinStatus>> {
+  ): Promise<Map<string, { status: PinStatus; slots: Array<{ startTime: string; endTime: string; status: string }> }>> {
     loading.value = true;
     error.value = null;
 
@@ -63,12 +63,15 @@ export function usePinAvailability() {
         entries.map(([, space]) => api.getAvailability(token, space.id, date)),
       );
 
-      const statusMap = new Map<string, PinStatus>();
+      const statusMap = new Map<string, { status: PinStatus; slots: Array<{ startTime: string; endTime: string; status: string }> }>();
 
       results.forEach((result, index) => {
         if (result.status !== 'fulfilled') return;
         const [modelId] = entries[index];
-        statusMap.set(modelId, derivePinStatus(result.value, period));
+        statusMap.set(modelId, {
+          status: derivePinStatus(result.value, period),
+          slots: result.value,
+        });
       });
 
       return statusMap;

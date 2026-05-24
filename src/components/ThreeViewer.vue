@@ -42,8 +42,14 @@ onUnmounted(() => {
 });
 
 defineExpose({
+  applyBackendFilter: (activeModelIds: Set<string>, colorMap?: Map<string, string>) => {
+    threeApp?.interactionManager?.applyBackendFilter(activeModelIds, colorMap ?? new Map());
+  },
   filterPinsToBackendSpaces: (activeModelIds: Set<string>, colorMap?: Map<string, string>) => {
     threeApp?.interactionManager?.applyBackendFilter(activeModelIds, colorMap ?? new Map());
+  },
+  updatePinLabelStatus: (pinId: string, statusText: string | null, statusColor: string | null) => {
+    threeApp?.interactionManager?.updatePinLabelStatus(pinId, statusText, statusColor);
   },
   applyPinOpacity: (pinId: string, opacity: number) => {
     threeApp?.interactionManager?.setPinOpacity(pinId, opacity);
