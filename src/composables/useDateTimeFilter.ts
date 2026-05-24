@@ -2,6 +2,29 @@ import { ref, computed } from 'vue';
 import { getCurrentPeriod, type PeriodKey } from '@/utils/period';
 import { TIME_SLOT_RANGES } from '@/types/reservation';
 
+/** Pure function: format ISO date string to short pt-BR locale (e.g. "21 de mai.") */
+export function formatShortDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+}
+
+/** Pure function: generate 3 date chips (Hoje, Amanhã, weekday) with ISO values */
+export function createDateChips(): Array<{ value: string; label: string }> {
+  const todayDate = new Date();
+  const chips: Array<{ value: string; label: string }> = [];
+  for (let i = 0; i < 3; i++) {
+    const d = new Date(todayDate);
+    d.setDate(todayDate.getDate() + i);
+    const iso = d.toISOString().split('T')[0];
+    let label: string;
+    if (i === 0) label = 'Hoje';
+    else if (i === 1) label = 'Amanhã';
+    else label = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+    chips.push({ value: iso, label });
+  }
+  return chips;
+}
+
 export function useDateTimeFilter() {
   const today = new Date().toISOString().split('T')[0];
   const selectedDate = ref<string>(today);
@@ -9,6 +32,8 @@ export function useDateTimeFilter() {
   const periodAutoDetected = ref(true);
 
   const isToday = computed(() => selectedDate.value === today);
+
+  const dateChips = computed(() => createDateChips());
 
   const periodRange = computed(() => TIME_SLOT_RANGES[selectedPeriod.value]);
 
@@ -27,10 +52,21 @@ export function useDateTimeFilter() {
     periodAutoDetected.value = false;
   }
 
+  function openDatePicker() {
+    const input = document.createElement('input');
+    input.type = 'date';
+    input.min = '2024-01-01';
+    input.value = selectedDate.value;
+    input.addEventListener('change', () => {
+      if (input.value) setDate(input.value);
+    });
+    input.click();
+  }
+
   return {
     selectedDate, selectedPeriod, periodAutoDetected,
-    isToday, periodRange, defaultStartTime, defaultEndTime,
+    isToday, dateChips, periodRange, defaultStartTime, defaultEndTime,
     today,
-    setDate, setPeriod,
+    setDate, setPeriod, openDatePicker,
   };
 }

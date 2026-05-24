@@ -27,6 +27,7 @@
     "vue-router": "^5.0.6"
   },
   "devDependencies": {
+    "@anthropic-ai/claude-code": "^2.1.147",
     "@vitejs/plugin-vue": "^6.0.5",
     "commander": "^14.0.1",
     "exceljs": "^4.4.0",

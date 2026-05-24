@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { PERIOD_LABELS, type PeriodKey } from '@/utils/period';
+import { formatShortDate } from '@/composables/useDateTimeFilter';
 
 interface Building {
   id: string;
@@ -39,8 +40,7 @@ const emit = defineEmits<{
   'open-search': [];
 }>();
 
-const today = new Date().toISOString().split('T')[0];
-const isToday = computed(() => props.selectedDate === today);
+const isToday = computed(() => props.selectedDate === new Date().toISOString().split('T')[0]);
 
 const activeBuildingId = ref<string | null>(null);
 const activeFloorLevel = ref<number | null>(null);
@@ -83,14 +83,9 @@ const dateTimeBtnLabel = computed(() => {
   return `${dayLabel} · ${periodAbbr}`;
 });
 
-function formatShortDate(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
-}
-
 const dateChips = computed(() => {
   const todayDate = new Date();
-  const chips = [];
+  const chips: Array<{ value: string; label: string }> = [];
   for (let i = 0; i < 3; i++) {
     const d = new Date(todayDate);
     d.setDate(todayDate.getDate() + i);
@@ -128,6 +123,17 @@ function toggleBuilding() {
   dateTimePopoverOpen.value = false;
 }
 
+function openDatePicker() {
+  const input = document.createElement('input');
+  input.type = 'date';
+  input.min = '2024-01-01';
+  input.value = props.selectedDate;
+  input.addEventListener('change', () => {
+    if (input.value) emit('update:selectedDate', input.value);
+  });
+  input.click();
+}
+
 function onDatePick(date: string) {
   emit('update:selectedDate', date);
 }
@@ -144,17 +150,6 @@ function onBuildingPick(id: string | null) {
 
 function onFloorPick(level: number) {
   props.viewerRef?.selectFloor(level);
-}
-
-function openDatePicker() {
-  const input = document.createElement('input');
-  input.type = 'date';
-  input.min = '2024-01-01';
-  input.value = props.selectedDate;
-  input.addEventListener('change', () => {
-    if (input.value) onDatePick(input.value);
-  });
-  input.click();
 }
 
 function closeDateTime() {
