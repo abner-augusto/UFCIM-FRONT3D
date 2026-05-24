@@ -176,7 +176,7 @@ function onReportSent() {
 <template>
   <div class="room-popup-overlay" @click.self="onOverlayClick">
     <div class="room-popup">
-      <button class="room-popup__close" @click="$emit('close')" aria-label="Fechar">&times;</button>
+      <button class="room-popup__close" @click="$emit('close')" aria-label="Fechar popup">&times;</button>
 
       <!-- Header -->
       <h2 class="room-popup__title">
@@ -320,6 +320,7 @@ function onReportSent() {
           v-if="canReserve"
           class="btn-primary"
           :disabled="reserveDisabled || loadingReservationState"
+          :aria-label="`Reservar das ${selectedStartTime} às ${selectedEndTime}`"
           @click="$emit('reserve')"
         >
           Reservar {{ selectedStartTime }}–{{ selectedEndTime }}
@@ -330,11 +331,12 @@ function onReportSent() {
           v-if="canBlock"
           class="btn-secondary"
           :disabled="blockingAllowed === false"
+          aria-label="Bloquear espaço"
           @click="$emit('block')"
         >
           Bloquear Espaço
         </button>
-        <button class="btn-tertiary" @click="goToReport">
+        <button class="btn-tertiary" aria-label="Ver relatório de ocupação" @click="goToReport">
           📊 Ver relatório
         </button>
       </div>
