@@ -146,3 +146,9 @@ repomix-output.txt
 repomix-output.xml
 .codex
 .markdownlint.json
+
+# Playwright E2E
+tests/e2e/.auth/
+tests/e2e/results/
+tests/e2e/report/
+playwright-report/
