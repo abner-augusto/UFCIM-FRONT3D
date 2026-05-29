@@ -104,6 +104,18 @@ watch(() => props.viewerRef, (newRef) => {
 <template>
   <Transition name="controls-fade">
     <div v-if="visible" class="desktop-controls">
+      <!-- Floor buttons (above buildings, only when a building is selected) -->
+      <Transition name="floor-slide">
+        <div v-if="activeBuildingId && floors.length > 0" class="controls-row controls-row--floors">
+          <button
+            v-for="f in floors" :key="f.level"
+            class="ctrl-btn ctrl-btn--sm"
+            :class="{ active: f.level === activeFloorLevel }"
+            @click="selectFloor(f.level)"
+          >{{ shortFloorLabel(f.name) }}</button>
+        </div>
+      </Transition>
+
       <!-- Building buttons -->
       <div class="controls-row">
         <button
@@ -122,18 +134,6 @@ watch(() => props.viewerRef, (newRef) => {
           <Search :size="18" />
         </button>
       </div>
-
-      <!-- Floor buttons (only when a building is selected) -->
-      <Transition name="floor-slide">
-        <div v-if="activeBuildingId && floors.length > 0" class="controls-row controls-row--floors">
-          <button
-            v-for="f in floors" :key="f.level"
-            class="ctrl-btn ctrl-btn--sm"
-            :class="{ active: f.level === activeFloorLevel }"
-            @click="selectFloor(f.level)"
-          >{{ shortFloorLabel(f.name) }}</button>
-        </div>
-      </Transition>
     </div>
   </Transition>
 </template>

@@ -142,6 +142,19 @@ function clear() {
   pointer-events: auto;
 }
 
+/* On desktop, center and limit width to match controls */
+@media (min-width: 481px) {
+  .search-widget {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: auto;
+    min-width: 320px;
+    max-width: 480px;
+    bottom: 76px; /* sit above the controls bar */
+  }
+}
+
 /* ── Search bar ───────────────────────────────────────────── */
 .search-bar {
   display: flex;
@@ -318,12 +331,11 @@ function clear() {
 /* ── Transitions ──────────────────────────────────────────── */
 .widget-enter-active,
 .widget-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 .widget-enter-from,
 .widget-leave-to {
   opacity: 0;
-  transform: translateY(12px);
 }
 
 .panel-enter-active,
