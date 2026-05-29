@@ -482,40 +482,7 @@ function handleToggle() {
   flex-direction: column;
   gap: 0.4rem;
 }
-.btn-primary {
-  width: 100%;
-  padding: 0.7rem;
-  border: none;
-  border-radius: 10px;
-  background: #1D9E75;
-  color: white;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.btn-primary:hover { background: #178a65; }
-.btn-primary:disabled { background: #b8c8c2; cursor: not-allowed; }
-
-.btn-secondary {
-  width: 100%;
-  padding: 0.65rem;
-  border: 1.5px solid #1D9E75;
-  border-radius: 10px;
-  background: none;
-  color: #1D9E75;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.btn-secondary:hover { background: #e8f5f0; }
-.btn-secondary:disabled {
-  border-color: #ccc;
-  color: #bbb;
-  cursor: not-allowed;
-}
-.btn-secondary:disabled:hover { background: none; }
+/* .btn-primary / .btn-secondary are defined globally in src/styles/base.css */
 
 .action-hint {
   margin: 0;

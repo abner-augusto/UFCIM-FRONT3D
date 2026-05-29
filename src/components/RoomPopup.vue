@@ -487,27 +487,7 @@ function onReportSent() {
 
 /* Actions */
 .room-popup__actions { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
-.btn-primary {
-  width: 100%; padding: 0.8rem; border: none; border-radius: 10px;
-  background: #1D9E75; color: white; font-size: 0.95rem; font-weight: 600;
-  cursor: pointer; transition: background 0.15s; min-height: var(--tap-min, 44px);
-}
-.btn-primary:hover { background: #178a65; }
-.btn-primary:disabled { background: #b8c8c2; cursor: not-allowed; }
-.btn-secondary {
-  width: 100%; padding: 0.75rem; border: 1.5px solid #1D9E75; border-radius: 10px;
-  background: none; color: #1D9E75; font-size: 0.95rem; font-weight: 600;
-  cursor: pointer; transition: background 0.15s; min-height: var(--tap-min, 44px);
-}
-.btn-secondary:hover { background: #e8f5f0; }
-.btn-secondary:disabled { border-color: #ccc; color: #bbb; cursor: not-allowed; }
-.btn-secondary:disabled:hover { background: none; }
+/* .btn-primary / .btn-secondary / .btn-tertiary are defined globally in src/styles/base.css */
 .action-hint { margin: 0; color: #888; font-size: 0.78rem; text-align: center; }
 .action-hint--warn { color: #c05a1f; }
-.btn-tertiary {
-  width: 100%; padding: 0.65rem; border: 1px solid #ddd; border-radius: 10px;
-  background: none; color: #666; font-size: 0.88rem; font-weight: 500;
-  cursor: pointer; transition: all 0.15s; min-height: var(--tap-min, 44px);
-}
-.btn-tertiary:hover { background: #f5f5f5; border-color: #bbb; color: #333; }
 </style>
