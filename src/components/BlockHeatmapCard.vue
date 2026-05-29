@@ -132,7 +132,7 @@ watch(() => [props.visible, props.date, props.spaces], loadHeatmap, { immediate:
   position: absolute;
   top: 8px;
   left: 8px;
-  width: 155px;
+  width: 185px;
   background: rgba(255, 255, 255, 0.96);
   border-radius: 8px;
   padding: 8px 10px;
@@ -199,6 +199,7 @@ watch(() => [props.visible, props.date, props.spaces], loadHeatmap, { immediate:
   font-size: 0.6rem;
   color: #666;
   margin-top: 4px;
+  white-space: nowrap;
 }
 
 .heatmap-enter-active,

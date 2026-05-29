@@ -68,12 +68,27 @@ const spaces = ref<Space[]>([]);
 
 const spacesInActiveBlock = ref<Space[]>([]);
 
+// The 3D layer reports the manifest building id ("bloco1", "pavilhao"), while
+// the backend stores a display block name ("Bloco 1", "Pavilhão"). Normalize
+// both to a canonical key so they can be matched.
+function normalizeBlockKey(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // strip accents
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');      // strip spaces & punctuation
+}
+
 function updateBlockHeatmap() {
   if (!activeBuildingId.value) {
     spacesInActiveBlock.value = [];
+    activeBuildingName.value = '';
     return;
   }
-  spacesInActiveBlock.value = spaces.value.filter(s => s.block === activeBuildingId.value);
+  const key = normalizeBlockKey(activeBuildingId.value);
+  spacesInActiveBlock.value = spaces.value.filter(s => normalizeBlockKey(s.block) === key);
+  // Prefer the backend block name ("Bloco 1") for the card title; fall back to the raw id.
+  activeBuildingName.value = spacesInActiveBlock.value[0]?.block ?? activeBuildingId.value;
 }
 
 function overlapsSelectedPeriod(blocking: Blocking): boolean {
@@ -211,7 +226,6 @@ onMounted(async () => {
   // Listen for building changes
   window.addEventListener('ufcim:building-changed', ((e: CustomEvent) => {
     activeBuildingId.value = e.detail?.buildingID ?? null;
-    activeBuildingName.value = e.detail?.name ?? '';
     updateBlockHeatmap();
   }) as EventListener);
 });
