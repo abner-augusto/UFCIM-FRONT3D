@@ -4,7 +4,7 @@ import { logger } from '../utils/logger.ts';
 
 const LABEL_STYLE = {
     pixelToWorldScale: 0.05, // world units per canvas pixel
-    pinMargin: 0.1, // gap between label top and pin bottom
+    pinMargin: 0.3, // gap between label top and pin bottom
     padding: {
         x: 4,
         y: 2
