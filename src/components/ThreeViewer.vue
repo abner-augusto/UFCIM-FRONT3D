@@ -45,12 +45,6 @@ defineExpose({
   updatePinLabelStatus: (pinId: string, statusText: string | null, statusColor: string | null) => {
     threeApp?.interactionManager?.updatePinLabelStatus(pinId, statusText, statusColor);
   },
-  setFloorUIVisible: (visible: boolean) => {
-    threeApp?.uiManager?.toggleFloorUI(visible);
-  },
-  setSearchData: (spaces: Array<{ modelId: string | null; name: string; number: string; block: string; type: string; reservable: boolean }>) => {
-    threeApp?.uiManager?.setSearchSpaces(spaces);
-  },
   navigateToPin: (modelId: string) => threeApp?.uiManager?.navigateToSpaceByModelId(modelId),
   selectBuilding: (id: string | null) => threeApp?.uiManager?.selectBuilding(id),
   selectFloor: (level: number) => threeApp?.uiManager?.selectFloor(level),

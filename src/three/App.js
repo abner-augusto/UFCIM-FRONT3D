@@ -97,7 +97,7 @@ export class App {
     }
 
     async _initializeUI() {
-        this.uiManager.createFloorUI(
+        this.uiManager.init(
             this.modelManager,
             this.interactionManager,
             this.cameraManager

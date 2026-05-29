@@ -10,6 +10,7 @@ import ThreeViewer from '@/components/ThreeViewer.vue';
 import RoomPopup from '@/components/RoomPopup.vue';
 import PeriodSelector from '@/components/PeriodSelector.vue';
 import ViewerControlsRail from '@/components/ViewerControlsRail.vue';
+import ViewerDesktopControls from '@/components/ViewerDesktopControls.vue';
 import ViewerSearchSheet from '@/components/ViewerSearchSheet.vue';
 import BlockHeatmapCard from '@/components/BlockHeatmapCard.vue';
 import { useDateTimeFilter, formatShortDate } from '@/composables/useDateTimeFilter';
@@ -194,19 +195,10 @@ function handleDateChange(date: string) {
   setDate(date);
 }
 
-// Feed the legacy 3D floor-UI search box (desktop) with backend spaces.
-// No-ops until both the viewer and the spaces list are ready, so it's called
-// from both the ready and the spaces-loaded paths to cover either ordering.
-function pushSearchData() {
-  if (!spacesLoaded.value) return;
-  viewerRef.value?.setSearchData(spaces.value);
-}
-
 const handleViewerReady = () => {
   viewerReady.value = true;
   if (spacesLoaded.value) {
     applyPinColors();
-    pushSearchData();
   }
 };
 
@@ -235,7 +227,6 @@ onMounted(async () => {
   } finally {
     spacesLoaded.value = true;
     applyPinColors();
-    pushSearchData();
   }
 
   // Listen for building changes
@@ -259,7 +250,6 @@ async function handlePinClick(detail: { pinId: string; displayName: string; buil
   selectedSpace.value = summarySpace;
   showPopup.value = true;
   searchSheetOpen.value = false;
-  viewerRef.value?.setFloorUIVisible(false);
   try {
     const detailedSpace = await api.getSpace(auth.token, summarySpace.id);
     if (seq !== popupDetailSeq || !showPopup.value) return;
@@ -293,7 +283,6 @@ function closePopup() {
   popupReserveDisabledReason.value = null;
   popupBlockingReason.value = null;
   popupReservationStateLoading.value = false;
-  viewerRef.value?.setFloorUIVisible(true);
 }
 </script>
 
@@ -333,6 +322,14 @@ function closePopup() {
       @update:selectedPeriod="handlePeriodChange"
       :fullscreen="fullscreen"
       @update:fullscreen="onFullscreenToggle"
+      @open-search="searchSheetOpen = true"
+    />
+
+    <ViewerDesktopControls
+      v-if="!isMobile"
+      :viewer-ref="viewerRef"
+      :ready="viewerReady"
+      :visible="!showPopup"
       @open-search="searchSheetOpen = true"
     />
 
