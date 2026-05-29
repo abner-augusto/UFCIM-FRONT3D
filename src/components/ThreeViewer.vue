@@ -42,14 +42,8 @@ defineExpose({
   applyBackendFilter: (activeModelIds: Set<string>, colorMap?: Map<string, string>) => {
     threeApp?.interactionManager?.applyBackendFilter(activeModelIds, colorMap ?? new Map());
   },
-  filterPinsToBackendSpaces: (activeModelIds: Set<string>, colorMap?: Map<string, string>) => {
-    threeApp?.interactionManager?.applyBackendFilter(activeModelIds, colorMap ?? new Map());
-  },
   updatePinLabelStatus: (pinId: string, statusText: string | null, statusColor: string | null) => {
     threeApp?.interactionManager?.updatePinLabelStatus(pinId, statusText, statusColor);
-  },
-  applyPinOpacity: (pinId: string, opacity: number) => {
-    threeApp?.interactionManager?.setPinOpacity(pinId, opacity);
   },
   setFloorUIVisible: (visible: boolean) => {
     threeApp?.uiManager?.toggleFloorUI(visible);
@@ -57,6 +51,7 @@ defineExpose({
   setSearchData: (spaces: Array<{ modelId: string | null; name: string; number: string; block: string; type: string; reservable: boolean }>) => {
     threeApp?.uiManager?.setSearchSpaces(spaces);
   },
+  navigateToPin: (modelId: string) => threeApp?.uiManager?.navigateToSpaceByModelId(modelId),
   selectBuilding: (id: string | null) => threeApp?.uiManager?.selectBuilding(id),
   selectFloor: (level: number) => threeApp?.uiManager?.selectFloor(level),
   getBuildingsList: () => threeApp?.uiManager?.getBuildingsList() ?? [],

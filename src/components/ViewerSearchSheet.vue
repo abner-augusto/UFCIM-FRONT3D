@@ -1,162 +1,354 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
+import type { Space } from '@/types/space';
+import { SPACE_TYPE_LABELS } from '@/types/space';
 
 const props = defineProps<{
   open: boolean;
+  spaces: Space[];
 }>();
 
 const emit = defineEmits<{
   close: [];
+  select: [modelId: string];
 }>();
 
-const sheetBodyRef = ref<HTMLElement | null>(null);
-const originalParent = ref<HTMLElement | null>(null);
+const query = ref('');
+const collapsed = ref(false);
+const inputRef = ref<HTMLInputElement | null>(null);
 
-function moveSearchBar() {
-  const searchBar = document.getElementById('search-bar');
-  if (searchBar && sheetBodyRef.value) {
-    originalParent.value = searchBar.parentElement;
-    sheetBodyRef.value.appendChild(searchBar);
-  }
-}
+const navigableSpaces = computed(() =>
+  props.spaces
+    .filter((s) => s.modelId)
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
+);
 
-function returnSearchBar() {
-  const searchBar = document.getElementById('search-bar');
-  if (searchBar && originalParent.value) {
-    originalParent.value.appendChild(searchBar);
-  }
-}
-
-watch(() => props.open, (isOpen) => {
-  if (isOpen) {
-    setTimeout(moveSearchBar, 0);
-  } else {
-    returnSearchBar();
-  }
+const results = computed(() => {
+  const q = query.value.trim().toLowerCase();
+  if (q.length < 1) return [];
+  return navigableSpaces.value.filter(
+    (s) =>
+      s.name.toLowerCase().includes(q) ||
+      s.number.toLowerCase().includes(q) ||
+      s.block.toLowerCase().includes(q),
+  );
 });
 
-onMounted(() => {
-  if (props.open) {
-    moveSearchBar();
-  }
+// Auto-expand whenever a new result set comes in
+watch(results, (r) => {
+  if (r.length > 0) collapsed.value = false;
 });
 
-onUnmounted(() => {
-  returnSearchBar();
-});
+watch(
+  () => props.open,
+  async (open) => {
+    if (open) {
+      await nextTick();
+      inputRef.value?.focus();
+    } else {
+      query.value = '';
+      collapsed.value = false;
+    }
+  },
+);
 
-const overlayReady = ref(false);
-onMounted(() => setTimeout(() => { overlayReady.value = true; }, 300));
-
-function onOverlayClick() {
-  if (overlayReady.value) emit('close');
+function select(space: Space) {
+  if (!space.modelId) return;
+  emit('select', space.modelId);
 }
 
+function clear() {
+  query.value = '';
+  collapsed.value = false;
+  inputRef.value?.focus();
+}
 </script>
 
 <template>
-  <Transition name="sheet">
-    <div v-if="open" class="search-sheet-overlay" @click.self="onOverlayClick">
-      <div class="search-sheet">
-        <div class="search-sheet__handle"></div>
-        <button class="search-sheet__close" @click="$emit('close')" aria-label="Fechar">&times;</button>
-        <div ref="sheetBodyRef" class="search-sheet__body">
-          <!-- The #search-bar will be moved here via DOM manipulation -->
+  <Transition name="widget">
+    <div v-if="open" class="search-widget">
+
+      <!-- Results panel — sits above the bar, expands upward -->
+      <Transition name="panel">
+        <div v-if="results.length > 0" class="results-panel">
+
+          <!-- Sticky header: count + collapse toggle -->
+          <button class="results-header" @click="collapsed = !collapsed">
+            <span class="results-count">{{ results.length }} espaço{{ results.length !== 1 ? 's' : '' }}</span>
+            <span class="results-chevron" :class="{ 'results-chevron--collapsed': collapsed }"></span>
+          </button>
+
+          <!-- Collapsible list -->
+          <Transition name="list">
+            <div v-if="!collapsed" class="results-list">
+              <button
+                v-for="s in results"
+                :key="s.id"
+                class="result-item"
+                @click="select(s)"
+              >
+                <span class="result-name">{{ s.name }}</span>
+                <span class="result-meta">
+                  {{ s.block }}
+                  <span class="result-type">· {{ SPACE_TYPE_LABELS[s.type] ?? s.type }}</span>
+                  <span v-if="!s.reservable" class="result-badge">indisponível</span>
+                </span>
+              </button>
+            </div>
+          </Transition>
         </div>
+      </Transition>
+
+      <!-- Search input row -->
+      <div class="search-bar">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input
+          ref="inputRef"
+          v-model="query"
+          class="search-input"
+          type="text"
+          placeholder="Pesquisar espaço..."
+          autocomplete="off"
+        />
+        <button v-if="query" class="search-clear" @click="clear" aria-label="Limpar pesquisa">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </button>
+        <div class="search-divider"></div>
+        <button class="search-close" @click="$emit('close')" aria-label="Fechar pesquisa">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </button>
       </div>
+
     </div>
   </Transition>
 </template>
 
 <style scoped>
-.search-sheet-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  z-index: 400;
-  padding: 0;
-}
-
-.search-sheet {
-  background: white;
-  border-radius: 20px 20px 0 0;
-  width: 100%;
-  max-width: 480px;
-  padding: 1.25rem;
-  padding-bottom: calc(1.25rem + var(--safe-bottom));
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
-  position: relative;
+.search-widget {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 300;
   display: flex;
   flex-direction: column;
+  gap: 6px;
+  pointer-events: auto;
 }
 
-.search-sheet__handle {
-  width: 36px;
-  height: 4px;
-  background: #ddd;
-  border-radius: 2px;
-  margin: 0 auto 1.25rem;
+/* ── Search bar ───────────────────────────────────────────── */
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.18);
+  padding: 0 10px;
+  height: 48px;
+  gap: 6px;
 }
 
-.search-sheet__close {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
+.search-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: #aaa;
+}
+
+.search-input {
+  flex: 1;
   border: none;
-  background: #f5f5f5;
+  outline: none;
+  font-size: 0.92rem;
+  color: #111;
+  background: transparent;
+  min-width: 0;
+}
+
+.search-input::placeholder {
+  color: #bbb;
+}
+
+.search-clear,
+.search-close {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: none;
+  background: none;
   border-radius: 50%;
-  width: 2rem;
-  height: 2rem;
-  font-size: 1.1rem;
-  line-height: 1;
-  cursor: pointer;
-  color: #666;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  color: #999;
+  padding: 0;
+  transition: background 0.15s;
 }
 
-.search-sheet__body {
-  margin-top: 0.5rem;
+.search-clear:hover,
+.search-close:hover {
+  background: #f0f0f0;
+  color: #555;
 }
 
-/* Transitions */
-.sheet-enter-active,
-.sheet-leave-active {
-  transition: opacity 0.3s ease;
+.search-clear svg,
+.search-close svg {
+  width: 14px;
+  height: 14px;
 }
 
-.sheet-enter-from,
-.sheet-leave-to {
-  opacity: 0;
+.search-divider {
+  width: 1px;
+  height: 20px;
+  background: #eee;
+  flex-shrink: 0;
 }
 
-.sheet-enter-active .search-sheet,
-.sheet-leave-active .search-sheet {
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+/* ── Results panel ────────────────────────────────────────── */
+.results-panel {
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
 }
 
-.sheet-enter-from .search-sheet,
-.sheet-leave-to .search-sheet {
-  transform: translateY(100%);
-}
-
-/* Ensure the search bar inside looks right */
-:deep(#search-bar) {
-  display: grid !important; /* Force display when moved */
-  grid-template-columns: 1fr auto;
-  gap: 8px;
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
 }
 
-:deep(#search-results) {
-  /* When in the sheet, let it expand upwards or downwards differently? 
-     Actually, UIManager sets position: absolute; bottom: calc(100% + 6px).
-     That works fine in the sheet too.
-  */
-  max-height: 50vh;
+.results-header:hover {
+  background: #fafafa;
+}
+
+.results-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Chevron: a small triangle rendered via border trick */
+.results-chevron {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 6px solid #aaa;
+  transition: transform 0.2s ease;
+}
+
+.results-chevron--collapsed {
+  transform: rotate(180deg);
+}
+
+.results-list {
+  overflow-y: auto;
+  max-height: 38vh;
+  border-top: 1px solid #f0f0f0;
+}
+
+.result-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 11px 14px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  border-bottom: 1px solid #f5f5f5;
+  transition: background 0.12s;
+}
+
+.result-item:last-child {
+  border-bottom: none;
+}
+
+.result-item:hover,
+.result-item:active {
+  background: #f5faf8;
+}
+
+.result-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #111;
+  line-height: 1.3;
+}
+
+.result-meta {
+  font-size: 0.75rem;
+  color: #999;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.result-type {
+  color: #bbb;
+}
+
+.result-badge {
+  font-size: 0.65rem;
+  background: #f5f5f5;
+  color: #bbb;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* ── Transitions ──────────────────────────────────────────── */
+.widget-enter-active,
+.widget-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.widget-enter-from,
+.widget-leave-to {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.panel-enter-active,
+.panel-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.panel-enter-from,
+.panel-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.list-enter-active,
+.list-leave-active {
+  transition: opacity 0.15s ease, max-height 0.25s ease;
+  overflow: hidden;
+}
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  max-height: 0 !important;
+}
+.list-enter-to,
+.list-leave-from {
+  opacity: 1;
+  max-height: 38vh;
 }
 </style>

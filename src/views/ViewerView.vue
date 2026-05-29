@@ -194,9 +194,20 @@ function handleDateChange(date: string) {
   setDate(date);
 }
 
+// Feed the legacy 3D floor-UI search box (desktop) with backend spaces.
+// No-ops until both the viewer and the spaces list are ready, so it's called
+// from both the ready and the spaces-loaded paths to cover either ordering.
+function pushSearchData() {
+  if (!spacesLoaded.value) return;
+  viewerRef.value?.setSearchData(spaces.value);
+}
+
 const handleViewerReady = () => {
   viewerReady.value = true;
-  if (spacesLoaded.value) applyPinColors();
+  if (spacesLoaded.value) {
+    applyPinColors();
+    pushSearchData();
+  }
 };
 
 watch([selectedDate, selectedPeriod], () => {
@@ -224,6 +235,7 @@ onMounted(async () => {
   } finally {
     spacesLoaded.value = true;
     applyPinColors();
+    pushSearchData();
   }
 
   // Listen for building changes
@@ -326,7 +338,9 @@ function closePopup() {
 
     <ViewerSearchSheet
       :open="searchSheetOpen"
+      :spaces="spaces"
       @close="searchSheetOpen = false"
+      @select="(modelId) => { viewerRef?.navigateToPin(modelId); searchSheetOpen = false; }"
     />
 
     <RoomPopup

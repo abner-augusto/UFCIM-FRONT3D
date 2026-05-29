@@ -450,12 +450,9 @@ export class UIManager {
     this.searchResultsContainer.style.display = 'block';
   }
 
-  async _handleSearchResultClick(space) {
-    if (!space?.modelId) return;
-
-    // Find the corresponding 3D pin
+  async navigateToSpaceByModelId(modelId) {
     const allPins = this.interactionManager?.getAllPins?.() ?? [];
-    const pin = allPins.find((p) => p.userData?.id === space.modelId);
+    const pin = allPins.find((p) => p.userData?.id === modelId);
     if (!pin) return;
 
     const building = pin.userData.building;
@@ -478,27 +475,25 @@ export class UIManager {
 
     this.cameraManager.focusOnPin(pin);
 
-    // Expand the panel so the user sees which floor/building activated
-    if (window.matchMedia('(max-width: 480px)').matches) {
-      this.floorUIContainer.classList.remove('collapsed');
-      this._userExpanded = true;
-      if (this._toggleBtn) this._toggleBtn.textContent = '▼ Fechar';
-    }
+    window.dispatchEvent(new CustomEvent('ufcim:building-changed', {
+      detail: { buildingID: building, activeFloor: floorLevel },
+    }));
 
-    if (this.searchInput) {
-      this.searchInput.value = '';
-    }
-    this._clearSearchResults();
-
-    // Notify Vue layer: close search sheet + open popup for this pin
     window.dispatchEvent(new CustomEvent('ufcim:pin-click', {
       detail: {
-        pinId: space.modelId,
-        displayName: space.name,
-        building: building,
-        floorLevel: floorLevel,
+        pinId: modelId,
+        displayName: pin.userData?.displayName || pin.userData?.id || modelId,
+        building,
+        floorLevel,
       },
     }));
+  }
+
+  async _handleSearchResultClick(space) {
+    if (!space?.modelId) return;
+    if (this.searchInput) this.searchInput.value = '';
+    this._clearSearchResults();
+    await this.navigateToSpaceByModelId(space.modelId);
   }
 
   _clearSearchResults() {
