@@ -513,7 +513,7 @@ function onReportSent() {
 .hour-cell--past.hour-cell--green { cursor: default; }
 .hour-cell--default-selected { background: rgba(99,153,34,0.45); border: 1px dashed #639922; }
 .hour-cell--selected { background: var(--color-brand); border: 1.5px solid var(--color-brand-dark); }
-.hour-cell--clicked { outline: 2px solid #185FA5; outline-offset: 1px; }
+.hour-cell--clicked { outline: 2px solid var(--color-link); outline-offset: 1px; }
 .hour-cell .dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 8px; color: #501313; }
 
 .hour-axis { display: flex; gap: 2px; font-size: 0.6rem; color: #aaa; }
@@ -521,7 +521,7 @@ function onReportSent() {
 
 .schedule-selection { margin: 6px 0 0; font-size: 0.78rem; color: #444; display: flex; align-items: center; gap: 8px; }
 .schedule-selection strong { color: #111; }
-.schedule-selection__clear { border: none; background: none; color: #185FA5; font-size: 0.74rem; cursor: pointer; padding: 0; text-decoration: underline; }
+.schedule-selection__clear { border: none; background: none; color: var(--color-link); font-size: 0.74rem; cursor: pointer; padding: 0; text-decoration: underline; }
 
 /* Slot detail */
 .slot-detail { padding: 8px 10px; border-radius: 8px; margin-top: 6px; margin-bottom: 6px; font-size: 0.78rem; }
@@ -534,7 +534,7 @@ function onReportSent() {
 .slot-badge--own { background: #d1fae5; color: #065f46; }
 .slot-purpose { margin-bottom: 2px; color: #333; }
 .slot-author { color: #666; }
-.slot-link { color: #185FA5; cursor: pointer; }
+.slot-link { color: var(--color-link); cursor: pointer; }
 
 /* Stats grid */
 .room-popup__stats-grid { display: flex; gap: 0.6rem; margin-bottom: 1rem; }
@@ -581,7 +581,7 @@ function onReportSent() {
 }
 .equipment-report-btn:hover {
   background: #fafafa;
-  color: #c0392b;
+  color: var(--color-danger);
   border-color: #e0a89f;
 }
 

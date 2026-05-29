@@ -268,7 +268,7 @@ function handleToggle() {
   transition: border-color 0.15s;
 }
 .space-card--expanded {
-  border-color: #1D9E75;
+  border-color: var(--color-brand);
 }
 .space-card--dimmed {
   opacity: 0.6;

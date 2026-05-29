@@ -8,6 +8,11 @@
   --color-brand-dark: #178a65;
   --color-brand-soft: #e8f5f0;
 
+  /* Semantic */
+  --color-link:    #185FA5;
+  --color-danger:  #c0392b;
+  --color-muted:   #999;
+
   /* Typography */
   --font-body: 'Roboto', 'Segoe UI', sans-serif;
 
