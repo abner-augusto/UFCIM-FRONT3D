@@ -85,8 +85,8 @@ export class App {
         };
       
         try {
-            await this.modelManager.initFromManifest();
-
+            // Manifest already loaded in the Promise.all above; callbacks are now
+            // registered, so go straight to loading the floors.
             await this.modelManager.showAllBlocks();
             this.interactionManager.clearFloorSelections(true);
             return true;
