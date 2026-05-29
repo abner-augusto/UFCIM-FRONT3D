@@ -37,7 +37,20 @@ export function useDateTimeFilter() {
 
   const periodRange = computed(() => TIME_SLOT_RANGES[selectedPeriod.value]);
 
-  const defaultStartTime = computed(() => periodRange.value.startTime);
+  const defaultStartTime = computed(() => {
+    const rangeStart = periodRange.value.startTime;
+    // When viewing today, advance the default start to the next full hour
+    // so the "Reservar" button doesn't suggest past hours.
+    if (isToday.value) {
+      const now = new Date();
+      const nextHour = String(now.getHours() + (now.getMinutes() > 0 ? 1 : 0)).padStart(2, '0') + ':00';
+      // Clamp to period bounds: never before range start, never at/after range end
+      if (nextHour > rangeStart && nextHour < periodRange.value.endTime) {
+        return nextHour;
+      }
+    }
+    return rangeStart;
+  });
   const defaultEndTime = computed(() => periodRange.value.endTime);
 
   function setDate(date: string) {
