@@ -215,8 +215,15 @@ export const api = {
         totalReservas,
         salasUsadas: raw.spaces?.length ?? 0,
       },
-      daily: [],
-      turnos: [],
+      daily: (raw.daily ?? []).map((d: any) => ({
+        date: d.date,
+        ocupacao: d.occupancyRate ?? 0,
+        reservas: d.reservations ?? 0,
+      })),
+      turnos: (raw.byTurno ?? []).map((t: any) => ({
+        turno: t.turno,
+        reservas: t.reservations ?? 0,
+      })),
       spaces: (raw.spaces ?? []).map((s: any) => ({
         id: s.id ?? '',
         nome: s.name ?? '',
@@ -225,7 +232,7 @@ export const api = {
         tipo: s.type ?? '',
         capacidade: s.capacity ?? 0,
         reservas: s.totalReservations ?? 0,
-        taxaOcupacao: 0,
+        taxaOcupacao: s.occupancyRate ?? 0,
       })),
     };
   },
