@@ -24,6 +24,10 @@ const router = useRouter();
 const reservationStore = useReservationStore();
 const auth = useAuthStore();
 
+const campusId = route.params.campusId as string;
+const campus = campuses.find((c) => c.id === campusId);
+const campusFilter = campus?.shortName ?? campusId;
+
 const {
   selectedDate, selectedPeriod, periodAutoDetected,
   isToday, periodRange, defaultStartTime, defaultEndTime, today,
@@ -129,7 +133,8 @@ async function updatePopupReservationState(space: Space) {
       if (seq !== popupStateSeq) return;
       const periodBlocking = blockings.find(b => overlapsSelectedPeriod(b));
       popupBlockingReason.value = periodBlocking ? getBlockingReason(periodBlocking) : 'Este espaço está bloqueado neste turno.';
-    } catch {
+    } catch (e) {
+      logger.warn('[PopupState] Failed to fetch blockings for space', space.id, e);
       if (seq !== popupStateSeq) return;
       popupBlockingReason.value = 'Este espaço está bloqueado neste turno.';
     } finally {
@@ -173,6 +178,7 @@ function handleDateChange(date: string) {
 
 const handleViewerReady = () => {
   viewerReady.value = true;
+  if (spacesLoaded.value) applyPinColors();
 };
 
 watch([selectedDate, selectedPeriod], () => {
@@ -187,7 +193,8 @@ onMounted(async () => {
   mql.addEventListener('change', onResize);
   try {
     spaces.value = await api.listSpaces(auth.token, {
-      campus: route.params.campus as string,
+      campus: campusFilter,
+      limit: '100',
       ...(route.query.block ? { block: route.query.block as string } : {}),
     });
 
@@ -215,7 +222,10 @@ onUnmounted(() => {
 
 async function handlePinClick(detail: { pinId: string; displayName: string; building: string; floorLevel: number }) {
   const summarySpace = spacesByModelId.get(detail.pinId);
-  if (!summarySpace) return;
+  if (!summarySpace) {
+    logger.warn(`[PinClick] No space matched pinId "${detail.pinId}". spacesByModelId has ${spacesByModelId.size} entries:`, [...spacesByModelId.keys()]);
+    return;
+  }
   const seq = ++popupDetailSeq;
   selectedSpace.value = summarySpace;
   showPopup.value = true;
@@ -226,7 +236,8 @@ async function handlePinClick(detail: { pinId: string; displayName: string; buil
     if (seq !== popupDetailSeq || !showPopup.value) return;
     selectedSpace.value = detailedSpace;
     await updatePopupReservationState(detailedSpace);
-  } catch {
+  } catch (e) {
+    logger.warn('[PinClick] Failed to fetch detailed space, falling back to summary:', e);
     if (seq !== popupDetailSeq || !showPopup.value) return;
     await updatePopupReservationState(summarySpace);
   }
