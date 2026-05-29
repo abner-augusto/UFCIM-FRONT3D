@@ -272,10 +272,10 @@ async function handlePinClick(detail: { pinId: string; displayName: string; buil
   }
 }
 
-function handleReserve() {
+function handleReserve(range: { startTime: string; endTime: string }) {
   if (!selectedSpace.value) return;
   reservationStore.setSpace(selectedSpace.value.id, selectedSpace.value.name);
-  reservationStore.setCustomSchedule(selectedDate.value, defaultStartTime.value, defaultEndTime.value);
+  reservationStore.setCustomSchedule(selectedDate.value, range.startTime, range.endTime);
   router.push({ name: 'reservation', params: { spaceId: selectedSpace.value.id } });
 }
 

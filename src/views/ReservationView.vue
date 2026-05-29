@@ -83,6 +83,29 @@ onMounted(async () => {
   }
 });
 
+// Prefill the custom hour range from a popup selection (RoomPopup → ViewerView
+// stored a custom schedule for this space). Applied once, after availability loads.
+let pendingPrefill =
+  reservationStore.spaceId === spaceId && reservationStore.date && reservationStore.startTime && reservationStore.endTime
+    ? { date: reservationStore.date, startTime: reservationStore.startTime, endTime: reservationStore.endTime }
+    : null;
+
+if (pendingPrefill) {
+  selectionMode.value = 'hours';
+  selectedDate.value = pendingPrefill.date;
+}
+
+function applyPendingPrefill() {
+  if (!pendingPrefill || pendingPrefill.date !== selectedDate.value || !availability.value) return;
+  const { startTime, endTime } = pendingPrefill;
+  pendingPrefill = null; // one-shot
+  const startSlot = availability.value.find(s => s.startTime === startTime && s.status === 'available');
+  const endSlot = availability.value.find(s => s.endTime === endTime && s.status === 'available');
+  if (!startSlot || !endSlot) return; // range no longer fully available — leave picker empty
+  pickedStart.value = startTime;
+  pickedEnd.value = endSlot.startTime; // picker tracks the start time of the last selected hour
+}
+
 watch(selectedDate, async (date) => {
   if (!date) return;
   selectedSlot.value = null;
@@ -91,6 +114,7 @@ watch(selectedDate, async (date) => {
   loadingAvailability.value = true;
   try {
     availability.value = await api.getAvailability(auth.token, spaceId, date);
+    applyPendingPrefill();
   } catch {
     errorMsg.value = 'Não foi possível verificar disponibilidade.';
   } finally {

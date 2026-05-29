@@ -23,7 +23,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
-  reserve: [];
+  reserve: [range: { startTime: string; endTime: string }];
   block: [];
 }>();
 
@@ -43,10 +43,26 @@ const typeLabel = computed(() => SPACE_TYPE_LABELS[props.space.type] ?? props.sp
 // Availability data for schedule grid
 const availability = ref<AvailabilitySlot[] | null>(null);
 const loadingAvailability = ref(false);
-const selectedSlotIndex = ref<number | null>(null);
+const selectedSlotIndex = ref<number | null>(null); // detail panel (reserved/blocked cell)
+
+// Hour range selection (available cells): inclusive indices into `availability`
+const rangeStartIdx = ref<number | null>(null);
+const rangeEndIdx = ref<number | null>(null);
+
+// Reference timestamp for "has this hour passed" — refreshed whenever the grid loads.
+const nowTs = ref(Date.now());
+
+// A slot is in the past once its start time (in local/campus time) is at or before now.
+// Works for any date: future days are never past, earlier days are always past.
+function isPastSlot(slot: AvailabilitySlot) {
+  return new Date(`${props.selectedDate}T${slot.startTime}:00`).getTime() <= nowTs.value;
+}
 
 async function loadAvailability() {
-  selectedSlotIndex.value = null; // reset on date/space change
+  selectedSlotIndex.value = null;
+  rangeStartIdx.value = null;
+  rangeEndIdx.value = null;
+  nowTs.value = Date.now();
   loadingAvailability.value = true;
   try {
     availability.value = await api.getAvailability(auth.token, props.space.id, props.selectedDate);
@@ -58,32 +74,108 @@ async function loadAvailability() {
 onMounted(loadAvailability);
 watch(() => [props.selectedDate, props.space.id], loadAvailability);
 
+// The backend returns all 24 hours (closed hours flagged `closed`). Show only
+// the room's operational hours so the strip stays a single row instead of
+// wrapping 24 cells into two rows of 12. All index-based selection below
+// operates on this filtered list.
+const visibleSlots = computed<AvailabilitySlot[]>(() =>
+  availability.value?.filter((s) => s.status !== 'closed') ?? [],
+);
+
 const selectedSlot = computed(() => {
-  if (selectedSlotIndex.value === null || !availability.value) return null;
-  return availability.value[selectedSlotIndex.value];
+  if (selectedSlotIndex.value === null) return null;
+  return visibleSlots.value[selectedSlotIndex.value] ?? null;
 });
 
+const hasUserSelection = computed(() => rangeStartIdx.value !== null && rangeEndIdx.value !== null);
+
+// Selectable = available AND not already in the past.
+function isSelectableAt(idx: number) {
+  const s = visibleSlots.value[idx];
+  return !!s && s.status === 'available' && !isPastSlot(s);
+}
+
+function rangeAllAvailable(a: number, b: number) {
+  const lo = Math.min(a, b), hi = Math.max(a, b);
+  for (let i = lo; i <= hi; i++) if (!isSelectableAt(i)) return false;
+  return true;
+}
+
+function isInSelectedRange(idx: number) {
+  if (rangeStartIdx.value === null || rangeEndIdx.value === null) return false;
+  return idx >= rangeStartIdx.value && idx <= rangeEndIdx.value;
+}
+
+// Pick a contiguous run of available hours: 1st tap sets the start, a 2nd tap on
+// a later still-available hour extends the range; tapping the lone start again
+// clears it, and any other tap restarts at the new hour.
+function selectHour(idx: number) {
+  if (rangeStartIdx.value === null) {
+    rangeStartIdx.value = idx;
+    rangeEndIdx.value = idx;
+    return;
+  }
+  const single = rangeStartIdx.value === rangeEndIdx.value;
+  if (single && idx === rangeStartIdx.value) {
+    rangeStartIdx.value = null;
+    rangeEndIdx.value = null;
+    return;
+  }
+  if (single && idx !== rangeStartIdx.value && rangeAllAvailable(rangeStartIdx.value, idx)) {
+    const lo = Math.min(rangeStartIdx.value, idx);
+    const hi = Math.max(rangeStartIdx.value, idx);
+    rangeStartIdx.value = lo;
+    rangeEndIdx.value = hi;
+    return;
+  }
+  // restart selection at the tapped hour
+  rangeStartIdx.value = idx;
+  rangeEndIdx.value = idx;
+}
+
+function onCellClick(slot: AvailabilitySlot, idx: number) {
+  if (slot.status === 'reserved' || slot.status === 'blocked') {
+    selectedSlotIndex.value = selectedSlotIndex.value === idx ? null : idx;
+    return;
+  }
+  if (slot.status === 'available') {
+    if (isPastSlot(slot)) return; // hour already passed — not bookable
+    selectedSlotIndex.value = null; // close any open detail
+    selectHour(idx);
+  }
+  // closed / not_reservable: ignore
+}
+
 function getCellClass(slot: AvailabilitySlot, idx: number) {
-  const isSelected = selectedSlotIndex.value === idx;
-  const isInDefault = slot.startTime >= props.selectedStartTime && slot.startTime < props.selectedEndTime;
+  const past = isPastSlot(slot);
+  const inUserRange = hasUserSelection.value && isInSelectedRange(idx);
+  const isInDefault = !hasUserSelection.value && !past
+    && slot.startTime >= props.selectedStartTime && slot.startTime < props.selectedEndTime;
   return {
     'hour-cell--green': slot.status === 'available',
     'hour-cell--red': slot.status === 'reserved',
     'hour-cell--amber': slot.status === 'blocked',
-    'hour-cell--closed': slot.status === 'closed' || slot.status === 'not_reservable',
-    'hour-cell--default-selected': isInDefault && slot.status === 'available' && !isSelected,
-    'hour-cell--clicked': isSelected,
+    'hour-cell--past': past,
+    'hour-cell--selected': inUserRange && slot.status === 'available' && !past,
+    'hour-cell--default-selected': isInDefault && slot.status === 'available',
+    'hour-cell--clicked': selectedSlotIndex.value === idx,
   };
 }
 
-function toggleSlotDetail(idx: number) {
-  const slot = availability.value?.[idx];
-  if (!slot) return;
-  if (slot.status === 'reserved' || slot.status === 'blocked') {
-    selectedSlotIndex.value = selectedSlotIndex.value === idx ? null : idx;
-  } else {
-    selectedSlotIndex.value = null;
-  }
+// The range the reserve button will use: the user's pick, else the default period.
+const reserveStartTime = computed(() =>
+  hasUserSelection.value && visibleSlots.value[rangeStartIdx.value!]
+    ? visibleSlots.value[rangeStartIdx.value!].startTime
+    : props.selectedStartTime,
+);
+const reserveEndTime = computed(() =>
+  hasUserSelection.value && visibleSlots.value[rangeEndIdx.value!]
+    ? visibleSlots.value[rangeEndIdx.value!].endTime
+    : props.selectedEndTime,
+);
+
+function emitReserve() {
+  emit('reserve', { startTime: reserveStartTime.value, endTime: reserveEndTime.value });
 }
 
 function purposeLabel(p: string) {
@@ -159,26 +251,32 @@ function onReportSent() {
       <section class="room-popup__schedule">
         <div class="schedule-head">
           <span>Disponibilidade · {{ formattedDate }}</span>
-          <span class="schedule-hint">toque para detalhes</span>
+          <span class="schedule-hint">toque nas horas livres</span>
         </div>
         <div v-if="loadingAvailability" class="schedule-loading">Carregando...</div>
-        <template v-else-if="availability">
+        <template v-else-if="visibleSlots.length">
           <div class="hour-grid">
             <button
-              v-for="(slot, idx) in availability" :key="slot.startTime"
+              v-for="(slot, idx) in visibleSlots" :key="slot.startTime"
               class="hour-cell"
               :class="getCellClass(slot, idx)"
-              :aria-label="`${slot.startTime} a ${slot.endTime}: ${statusLabel(slot)}`"
-              @click="toggleSlotDetail(idx)"
+              :disabled="slot.status === 'available' && isPastSlot(slot)"
+              :aria-pressed="isInSelectedRange(idx)"
+              :aria-label="`${slot.startTime} a ${slot.endTime}: ${statusLabel(slot)}${isPastSlot(slot) ? ' (horário já passou)' : ''}`"
+              @click="onCellClick(slot, idx)"
             >
               <span v-if="slot.status === 'reserved' || slot.status === 'blocked'" class="dot">●</span>
             </button>
           </div>
           <div class="hour-axis">
-            <span v-for="slot in availability" :key="slot.startTime">
+            <span v-for="slot in visibleSlots" :key="slot.startTime">
               {{ parseInt(slot.startTime.split(':')[0]) }}
             </span>
           </div>
+          <p v-if="hasUserSelection" class="schedule-selection">
+            Horário selecionado: <strong>{{ reserveStartTime }}–{{ reserveEndTime }}</strong>
+            <button class="schedule-selection__clear" @click="rangeStartIdx = null; rangeEndIdx = null">limpar</button>
+          </p>
         </template>
       </section>
 
@@ -284,10 +382,10 @@ function onReportSent() {
           v-if="canReserve"
           class="btn-primary"
           :disabled="reserveDisabled || loadingReservationState"
-          :aria-label="`Reservar das ${selectedStartTime} às ${selectedEndTime}`"
-          @click="$emit('reserve')"
+          :aria-label="`Reservar das ${reserveStartTime} às ${reserveEndTime}`"
+          @click="emitReserve"
         >
-          Reservar {{ selectedStartTime }}–{{ selectedEndTime }}
+          Reservar {{ reserveStartTime }}–{{ reserveEndTime }}
         </button>
         <p v-if="loadingReservationState" class="action-hint">Verificando disponibilidade...</p>
         <p v-else-if="reserveDisabledReason" class="action-hint action-hint--warn">{{ reserveDisabledReason }}</p>
@@ -405,18 +503,25 @@ function onReportSent() {
 .schedule-hint { font-weight: 400; text-transform: none; color: #ccc; font-size: 0.62rem; }
 .schedule-loading { font-size: 0.72rem; color: #999; }
 
-.hour-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; margin-bottom: 3px; }
-.hour-cell { height: 22px; border: none; border-radius: 3px; cursor: pointer; position: relative; padding: 0; background: transparent; }
+.hour-grid { display: flex; gap: 2px; margin-bottom: 3px; }
+.hour-cell { flex: 1; min-width: 0; height: 24px; border: none; border-radius: 3px; cursor: pointer; position: relative; padding: 0; background: transparent; }
 .hour-cell--green { background: rgba(99,153,34,0.25); }
 .hour-cell--red { background: rgba(226,75,74,0.25); }
 .hour-cell--red:hover { background: rgba(226,75,74,0.4); }
 .hour-cell--amber { background: rgba(186,117,23,0.3); }
-.hour-cell--closed { background: rgba(0,0,0,0.05); cursor: default; }
-.hour-cell--default-selected { background: rgba(99,153,34,0.7); border: 1.5px solid #639922; }
+.hour-cell--past { opacity: 0.4; }
+.hour-cell--past.hour-cell--green { cursor: default; }
+.hour-cell--default-selected { background: rgba(99,153,34,0.45); border: 1px dashed #639922; }
+.hour-cell--selected { background: var(--color-brand); border: 1.5px solid var(--color-brand-dark); }
 .hour-cell--clicked { outline: 2px solid #185FA5; outline-offset: 1px; }
 .hour-cell .dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 8px; color: #501313; }
 
-.hour-axis { display: flex; justify-content: space-between; font-size: 0.5rem; color: #ccc; padding: 0 2px; }
+.hour-axis { display: flex; gap: 2px; font-size: 0.6rem; color: #aaa; }
+.hour-axis span { flex: 1; min-width: 0; text-align: center; }
+
+.schedule-selection { margin: 6px 0 0; font-size: 0.78rem; color: #444; display: flex; align-items: center; gap: 8px; }
+.schedule-selection strong { color: #111; }
+.schedule-selection__clear { border: none; background: none; color: #185FA5; font-size: 0.74rem; cursor: pointer; padding: 0; text-decoration: underline; }
 
 /* Slot detail */
 .slot-detail { padding: 8px 10px; border-radius: 8px; margin-top: 6px; margin-bottom: 6px; font-size: 0.78rem; }
