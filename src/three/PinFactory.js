@@ -239,14 +239,15 @@ export class PinFactory {
             const statusLineHeight = hasStatus ? Math.round(10 * 1.2) : lineHeight;
 
             // Measure each line with appropriate font
+            const statusIndex = lines.length - 1;
             const lineWidths = lines.map((line, i) => {
-                const useFont = hasStatus && i === 1 ? statusFont : font;
+                const useFont = hasStatus && i === statusIndex ? statusFont : font;
                 ctx.font = useFont;
                 return Math.ceil(ctx.measureText(line).width);
             });
             const textWidth = Math.max(...lineWidths, 0);
-            const textBlockHeight = (lines.length === 2)
-                ? lineHeight + statusLineHeight + 2  // 2px gap between lines
+            const textBlockHeight = hasStatus
+                ? lineHeight * (lines.length - 1) + statusLineHeight + 2  // 2px gap before status line
                 : lineHeight * lines.length;
 
             const rectWidth = textWidth + paddingLeft + paddingRight;
@@ -277,16 +278,17 @@ export class PinFactory {
             const labelCenterX = rectX + rectWidth / 2;
             let currentY = rectY + paddingTop;
 
+            const statusLineIdx = lines.length - 1;
             lines.forEach((line, index) => {
-                const useFont = hasStatus && index === 1 ? statusFont : font;
-                const useColor = hasStatus && index === 1 && statusColor ? statusColor : textColor;
-                const lh = (hasStatus && index === 0) ? lineHeight : (hasStatus && index === 1 ? statusLineHeight : lineHeight);
+                const useFont = hasStatus && index === statusLineIdx ? statusFont : font;
+                const useColor = hasStatus && index === statusLineIdx && statusColor ? statusColor : textColor;
+                const lh = (hasStatus && index === statusLineIdx) ? statusLineHeight : lineHeight;
                 ctx.font = useFont;
                 ctx.fillStyle = useColor;
                 currentY += lh / 2;
                 ctx.fillText(line, labelCenterX, currentY);
                 currentY += lh / 2;
-                if (hasStatus && index === 0) currentY += 2; // 2px gap
+                if (hasStatus && index === statusLineIdx - 1) currentY += 2; // 2px gap before status
             });
 
             return canvas;
