@@ -109,16 +109,33 @@ function toggleBuilding() {
   dateTimePopoverOpen.value = false;
 }
 
-// Controlled-component version of openDatePicker — composable's version is for the owning view.
+// Hidden native date input, kept in the DOM so showPicker() works.
+const hiddenDateRef = ref<HTMLInputElement | null>(null);
+
 function openDatePicker() {
-  const input = document.createElement('input');
-  input.type = 'date';
-  input.min = '2024-01-01';
+  const input = hiddenDateRef.value;
+  if (!input) return;
   input.value = props.selectedDate;
-  input.addEventListener('change', () => {
-    if (input.value) emit('update:selectedDate', input.value);
-  });
+  // showPicker() is the reliable way to open the native calendar from a
+  // user gesture; fall back to focus()/click() where it's unsupported.
+  if (typeof input.showPicker === 'function') {
+    try {
+      input.showPicker();
+      return;
+    } catch {
+      // showPicker can throw (e.g. not triggered by a user gesture) — fall through
+    }
+  }
+  input.focus();
   input.click();
+}
+
+function onHiddenDateChange(e: Event) {
+  const value = (e.target as HTMLInputElement).value;
+  if (value) {
+    emit('update:selectedDate', value);
+    dateTimePopoverOpen.value = false;
+  }
 }
 
 function onDatePick(date: string) {
@@ -267,6 +284,13 @@ watch(() => props.viewerRef, (newRef) => {
           <button class="popover-item popover-item--full" @click="openDatePicker">
             📅 Escolher outra data
           </button>
+          <input
+            ref="hiddenDateRef"
+            type="date"
+            class="hidden-date-input"
+            min="2024-01-01"
+            @change="onHiddenDateChange"
+          />
         </div>
 
         <div class="popover-divider"></div>
@@ -319,6 +343,7 @@ watch(() => props.viewerRef, (newRef) => {
   right: 8px;
   display: flex;
   flex-direction: column;
+  align-items: flex-end;
   gap: var(--rail-gap);
   pointer-events: auto;
 }
@@ -368,7 +393,7 @@ watch(() => props.viewerRef, (newRef) => {
 .floor-stack {
   position: absolute;
   right: calc(8px + var(--rail-w) + var(--rail-gap));
-  top: 8px;
+  top: calc(8px + var(--rail-w) + var(--rail-gap));
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -516,6 +541,19 @@ watch(() => props.viewerRef, (newRef) => {
   text-align: left;
   font-size: 0.78rem;
   color: #666;
+}
+
+/* Kept in the DOM (not display:none) so showPicker() can anchor and open. */
+.hidden-date-input {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .popover-item.active {
