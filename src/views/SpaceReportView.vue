@@ -23,7 +23,7 @@ const errorMsg = ref<string | null>(null);
 // Date range: default = last 30 days
 const today = new Date();
 const thirtyDaysAgo = new Date(today);
-thirtyDaysAgo.setDate(today.getDate() - 30);
+thirtyDaysAgo.setDate(today.getDate() - 29);
 
 const startDate = ref(thirtyDaysAgo.toISOString().split('T')[0]);
 const endDate = ref(today.toISOString().split('T')[0]);
@@ -38,7 +38,7 @@ const presets = [
 function applyPreset(days: number) {
   const end = new Date();
   const start = new Date(end);
-  start.setDate(end.getDate() - days);
+  start.setDate(end.getDate() - (days - 1));
   startDate.value = start.toISOString().split('T')[0];
   endDate.value = end.toISOString().split('T')[0];
 }
