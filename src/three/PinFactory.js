@@ -158,7 +158,7 @@ export class PinFactory {
         if (this._canvasCache.has(cacheKey)) {
             sourceCanvas = this._canvasCache.get(cacheKey);
         } else {
-            sourceCanvas = this._createLabelCanvas(labelParams);
+            sourceCanvas = this.createLabelCanvas(labelParams);
             this._canvasCache.set(cacheKey, sourceCanvas);
         }
 
@@ -197,7 +197,7 @@ export class PinFactory {
         return sprite;
     }
 
-    _createLabelCanvas({ displayName, statusText, statusColor }) {
+    createLabelCanvas({ displayName, statusText, statusColor }) {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
 

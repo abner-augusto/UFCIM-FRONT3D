@@ -274,7 +274,7 @@ export class InteractionManager extends THREE.EventDispatcher {
         if (!labelSprite || !labelSprite.material?.map) return;
 
         const displayName = labelSprite.userData.baseDisplayName ?? labelSprite.userData.displayName;
-        const canvas = this.pinFactory._createLabelCanvas({
+        const canvas = this.pinFactory.createLabelCanvas({
             displayName,
             statusText: statusText ?? null,
             statusColor: statusColor ?? null,
