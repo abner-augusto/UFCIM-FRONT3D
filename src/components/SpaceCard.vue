@@ -7,6 +7,7 @@ import { api } from '@/services/api';
 import { SPACE_TYPE_LABELS, EQUIPMENT_STATUS_LABELS, type Space, type Equipment } from '@/types/space';
 import { BLOCK_TYPE_LABELS, TIME_SLOT_RANGES, type Blocking } from '@/types/reservation';
 import { PERIOD_COLORS, type PinStatus } from '@/composables/usePinAvailability';
+import { useEquipmentGroups, type EquipmentGroup } from '@/composables/useEquipmentGroups';
 import { hasRole, CAN_RESERVE, CAN_BLOCK } from '@/utils/roles';
 import type { PeriodKey } from '@/utils/period';
 
@@ -38,46 +39,9 @@ const blockingReason = ref<string | null>(null);
 
 const displaySpace = computed(() => detailedSpace.value ?? props.space);
 
-// Equipment grouping (same logic as RoomPopup)
-interface EquipmentGroup {
-  name: string;
-  total: number;
-  working: number;
-  broken: number;
-  underRepair: number;
-  replacementScheduled: number;
-}
-
-const equipmentGroups = computed((): EquipmentGroup[] => {
-  const equip = displaySpace.value.equipment;
-  if (!equip?.length) return [];
-  const map = new Map<string, EquipmentGroup>();
-  for (const item of equip) {
-    if (!map.has(item.name)) {
-      map.set(item.name, { name: item.name, total: 0, working: 0, broken: 0, underRepair: 0, replacementScheduled: 0 });
-    }
-    const g = map.get(item.name)!;
-    g.total++;
-    if (item.status === 'working') g.working++;
-    else if (item.status === 'broken') g.broken++;
-    else if (item.status === 'under_repair') g.underRepair++;
-    else if (item.status === 'replacement_scheduled') g.replacementScheduled++;
-  }
-  return Array.from(map.values());
-});
-
-function groupStatusClass(g: EquipmentGroup): string {
-  if (g.broken > 0) return 'eq-status--broken';
-  if (g.underRepair > 0 || g.replacementScheduled > 0) return 'eq-status--warning';
-  return 'eq-status--working';
-}
-
-function groupStatusLabel(g: EquipmentGroup): string {
-  if (g.broken > 0) return `${g.broken} com defeito`;
-  if (g.underRepair > 0) return 'Em manutenção';
-  if (g.replacementScheduled > 0) return 'Substituição agendada';
-  return 'Funcionando';
-}
+// Equipment grouping (shared with RoomPopup)
+const { equipmentGroups, groupSeverity, groupStatusLabel } = useEquipmentGroups(() => displaySpace.value);
+const groupStatusClass = (g: EquipmentGroup) => `eq-status--${groupSeverity(g)}`;
 
 // Status display
 const statusLabel = computed((): string => {

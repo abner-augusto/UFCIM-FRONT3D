@@ -7,6 +7,7 @@ import { api } from '@/services/api';
 import { hasRole, CAN_RESERVE, CAN_BLOCK } from '@/utils/roles';
 import { PURPOSE_LABELS, BLOCK_TYPE_LABELS, type AvailabilitySlot } from '@/types/reservation';
 import EquipmentReportDialog from './EquipmentReportDialog.vue';
+import { useEquipmentGroups, type EquipmentGroup } from '@/composables/useEquipmentGroups';
 
 const props = defineProps<{
   space: Space;
@@ -117,46 +118,9 @@ const formattedDate = computed(() => {
   return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', weekday: 'short' });
 });
 
-// Equipment groups
-interface EquipmentGroup {
-  name: string;
-  total: number;
-  working: number;
-  broken: number;
-  underRepair: number;
-  replacementScheduled: number;
-}
-
-const equipmentGroups = computed((): EquipmentGroup[] => {
-  if (!props.space.equipment?.length) return [];
-  const map = new Map<string, EquipmentGroup>();
-  for (const item of props.space.equipment) {
-    const key = item.name;
-    if (!map.has(key)) {
-      map.set(key, { name: key, total: 0, working: 0, broken: 0, underRepair: 0, replacementScheduled: 0 });
-    }
-    const g = map.get(key)!;
-    g.total++;
-    if (item.status === 'working') g.working++;
-    else if (item.status === 'broken') g.broken++;
-    else if (item.status === 'under_repair') g.underRepair++;
-    else if (item.status === 'replacement_scheduled') g.replacementScheduled++;
-  }
-  return Array.from(map.values());
-});
-
-function groupStatusClass(g: EquipmentGroup): string {
-  if (g.broken > 0) return 'status--broken';
-  if (g.underRepair > 0 || g.replacementScheduled > 0) return 'status--warning';
-  return 'status--working';
-}
-
-function groupStatusLabel(g: EquipmentGroup): string {
-  if (g.broken > 0) return `${g.broken} com defeito`;
-  if (g.underRepair > 0) return 'Em manutenção';
-  if (g.replacementScheduled > 0) return 'Substituição agendada';
-  return 'Funcionando';
-}
+// Equipment groups (shared with SpaceCard)
+const { equipmentGroups, groupSeverity, groupStatusLabel } = useEquipmentGroups(() => props.space);
+const groupStatusClass = (g: EquipmentGroup) => `status--${groupSeverity(g)}`;
 
 // Equipment reporting
 const reportingEquipment = ref<Equipment | null>(null);
