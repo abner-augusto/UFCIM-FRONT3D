@@ -29,6 +29,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('ufcim:pin-click', onPinClick);
+  // Ensure fullscreen mode doesn't leak to other views if we unmount while active.
+  document.body.classList.remove('viewer-fullscreen');
 
   if (threeApp) {
     threeApp.dispose();

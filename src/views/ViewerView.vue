@@ -98,6 +98,9 @@ function overlapsSelectedPeriod(blocking: Blocking): boolean {
 
 function onFullscreenToggle(on: boolean) {
   fullscreen.value = on;
+  // The actual fullscreen effect (hiding the app shell, 100dvh viewer) is
+  // driven by the body.viewer-fullscreen class toggled here.
+  viewerRef.value?.setFullscreen(on);
 }
 
 function getBlockingReason(blocking: Blocking): string {
