@@ -481,7 +481,7 @@ function onReportSent() {
 }
 
 /* Blocking notice */
-.room-popup__notice { margin-bottom: 0.75rem; padding: 0.7rem 0.9rem; border-radius: 10px; background: #fff8f0; border-left: 3px solid #f59e0b; }
+.room-popup__notice { margin-bottom: 0.75rem; padding: 0.7rem 0.9rem; border-radius: 10px; background: #fff8f0; border: 1px solid #fce4c2; }
 .room-popup__notice-label { margin: 0 0 0.2rem; color: #92400e; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
 .room-popup__notice-text { margin: 0; color: #78350f; font-size: 0.82rem; }
 

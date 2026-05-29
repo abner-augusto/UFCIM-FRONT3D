@@ -504,7 +504,7 @@ h1 {
   padding: 0.65rem 0.9rem;
   border-radius: 10px;
   background: #fff5f5;
-  border-left: 3px solid #c0392b;
+  border: 1px solid #f5c6cb;
 }
 .detail-cancel-reason__label {
   margin: 0 0 0.2rem;

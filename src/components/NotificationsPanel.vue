@@ -325,7 +325,7 @@ watch(() => props.open, (val) => {
 }
 
 .notif-panel__item--unread {
-  border-left: 3px solid var(--color-brand);
+  border-color: var(--color-brand);
   background: #f8fffe;
 }
 

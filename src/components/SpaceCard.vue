@@ -461,7 +461,7 @@ function handleToggle() {
   padding: 0.6rem 0.8rem;
   border-radius: 8px;
   background: #fff8f0;
-  border-left: 3px solid #f59e0b;
+  border: 1px solid #fce4c2;
 }
 .blocking-notice__label {
   margin: 0 0 0.15rem;
