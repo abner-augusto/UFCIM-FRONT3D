@@ -212,7 +212,7 @@ const formattedDate = computed(() => {
 
 // Equipment groups (shared with SpaceCard)
 const { equipmentGroups, groupSeverity, groupStatusLabel } = useEquipmentGroups(() => props.space);
-const groupStatusClass = (g: EquipmentGroup) => `status--${groupSeverity(g)}`;
+const groupStatusClass = (g: EquipmentGroup) => `eq-status--${groupSeverity(g)}`;
 
 // Equipment reporting
 const reportingEquipment = ref<Equipment | null>(null);
@@ -347,14 +347,14 @@ function onReportSent() {
 
       <!-- Equipment -->
       <div v-if="equipmentGroups.length" class="room-popup__section">
-        <p class="room-popup__section-title">Equipamentos</p>
+        <p class="detail-section-title">Equipamentos</p>
         <ul class="equipment-list">
           <li v-for="g in equipmentGroups" :key="g.name" class="equipment-item">
             <span class="equipment-name">
               {{ g.name }}
               <span v-if="g.total > 1" class="equipment-count">({{ g.total }})</span>
             </span>
-            <span class="equipment-status" :class="groupStatusClass(g)">
+            <span class="equipment-badge" :class="groupStatusClass(g)">
               {{ groupStatusLabel(g) }}
             </span>
             <button
@@ -536,33 +536,16 @@ function onReportSent() {
 .slot-author { color: #666; }
 .slot-link { color: var(--color-link); cursor: pointer; }
 
-/* Stats grid */
+/* Stats grid — .stat-card styles in detail-panel.css */
 .room-popup__stats-grid { display: flex; gap: 0.6rem; margin-bottom: 1rem; }
 @media (max-width: 480px) { .room-popup__stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 0.5rem; } }
-.stat-card { flex: 1; background: #f7f9f8; border-radius: 12px; padding: 0.6rem 0.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.1rem; min-width: 0; }
-.stat-card__icon { font-size: 1.1rem; }
-.stat-card__value { font-size: 1.1rem; font-weight: 700; color: #111; text-align: center; line-height: 1.2; }
-.stat-card__value--sm { font-size: 0.78rem; font-weight: 600; }
-.stat-card__label { font-size: 0.68rem; color: #999; text-align: center; }
 
-/* Info list */
+/* Info list — .info-label/.info-value in detail-panel.css */
 .room-popup__info-list { list-style: none; margin: 0 0 0.9rem; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
 .room-popup__info-list li { display: flex; justify-content: space-between; font-size: 0.82rem; border-bottom: 1px solid #f2f2f2; padding-bottom: 0.3rem; }
-.info-label { color: #999; }
-.info-value { font-weight: 500; color: #222; text-align: right; max-width: 60%; }
 
-/* Equipment section */
+/* Equipment — styles in detail-panel.css */
 .room-popup__section { margin-bottom: 0.75rem; }
-.room-popup__section-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #bbb; letter-spacing: 0.06em; margin: 0 0 0.5rem; }
-.equipment-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
-.equipment-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; padding: 0.3rem 0; border-bottom: 1px solid #f5f5f5; }
-.equipment-item:last-child { border-bottom: none; }
-.equipment-name { color: #333; font-weight: 500; }
-.equipment-count { color: #aaa; font-weight: 400; margin-left: 0.2rem; }
-.equipment-status { font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.55rem; border-radius: 999px; white-space: nowrap; }
-.status--working  { background: #d1fae5; color: #065f46; }
-.status--broken   { background: #fee2e2; color: #991b1b; }
-.status--warning  { background: #fef3c7; color: #92400e; }
 
 /* Equipment report button */
 .equipment-report-btn {
