@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
 import { hasRole, CAN_BLOCK, CAN_VIEW_REPORTS } from '@/utils/roles';
+import { Building2, Search, Calendar, Ban, BarChart3, User } from 'lucide-vue-next';
 
 const auth = useAuthStore();
 const campus = useCampusStore();
@@ -28,32 +29,32 @@ const isActive = (name: string) => route.name === name;
 <template>
   <nav class="bottom-tab-bar">
     <router-link :to="viewerTarget" class="tab-item" :class="{ active: isActive('viewer') }">
-      <span class="tab-icon">🏛</span>
+      <span class="tab-icon"><Building2 :size="20" /></span>
       <span class="tab-label">Maquete 3D</span>
     </router-link>
 
     <router-link :to="browserTarget" class="tab-item" :class="{ active: isActive('space-browser') }">
-      <span class="tab-icon">🔍</span>
+      <span class="tab-icon"><Search :size="20" /></span>
       <span class="tab-label">Buscar</span>
     </router-link>
 
     <router-link to="/minhas-reservas" class="tab-item" :class="{ active: isActive('my-reservations') }">
-      <span class="tab-icon">📅</span>
+      <span class="tab-icon"><Calendar :size="20" /></span>
       <span class="tab-label">Reservas</span>
     </router-link>
 
     <router-link v-if="canBlock" to="/meus-bloqueios" class="tab-item" :class="{ active: isActive('my-blockings') }">
-      <span class="tab-icon">🚫</span>
+      <span class="tab-icon"><Ban :size="20" /></span>
       <span class="tab-label">Bloqueios</span>
     </router-link>
 
     <router-link v-if="canViewReports" to="/relatorios" class="tab-item" :class="{ active: isActive('reports') }">
-      <span class="tab-icon">📊</span>
+      <span class="tab-icon"><BarChart3 :size="20" /></span>
       <span class="tab-label">Relatórios</span>
     </router-link>
 
     <router-link to="/perfil" class="tab-item" :class="{ active: isActive('profile') }">
-      <span class="tab-icon">👤</span>
+      <span class="tab-icon"><User :size="20" /></span>
       <span class="tab-label">Perfil</span>
     </router-link>
   </nav>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import { ChevronDown, ChevronUp } from 'lucide-vue-next';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
 import type { Space } from '@/types/space';
@@ -97,7 +98,7 @@ watch(() => [props.visible, props.date, props.spaces], loadHeatmap, { immediate:
     <div v-if="visible" class="heatmap-card" :class="{ 'heatmap-card--collapsed': collapsed }">
       <div class="heatmap-head" @click="collapsed = !collapsed">
         <span class="heatmap-title">{{ blockName }} · {{ dateLabel }}</span>
-        <span class="heatmap-chevron">{{ collapsed ? '▼' : '▲' }}</span>
+        <span class="heatmap-chevron"><component :is="collapsed ? ChevronDown : ChevronUp" :size="10" /></span>
       </div>
 
       <div v-if="!collapsed" class="heatmap-body">

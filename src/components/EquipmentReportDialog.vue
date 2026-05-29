@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import { SEVERITY_LABELS } from '@/types/equipment-report';
 import { api, ApiError } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
+import { Check } from 'lucide-vue-next';
 import type { Equipment } from '@/types/space';
 
 const props = defineProps<{
@@ -79,7 +80,7 @@ function onOverlayClick() {
       <!-- Success state -->
       <template v-if="success">
         <div class="dialog-success">
-          <span class="dialog-success__icon">✓</span>
+          <span class="dialog-success__icon"><Check :size="24" /></span>
           <p class="dialog-success__text">Reporte enviado. A equipe foi notificada.</p>
         </div>
       </template>

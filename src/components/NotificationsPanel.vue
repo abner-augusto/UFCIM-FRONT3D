@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
+import { X } from 'lucide-vue-next';
 import type { Notification } from '@/types/reservation';
 
 const props = defineProps<{
@@ -131,7 +132,7 @@ watch(() => props.open, (val) => {
             >
               {{ markingAll ? 'Marcando...' : 'Marcar todas como lidas' }}
             </button>
-            <button class="notif-panel__close" @click="emit('close')" aria-label="Fechar">✕</button>
+            <button class="notif-panel__close" @click="emit('close')" aria-label="Fechar"><X :size="18" /></button>
           </div>
         </div>
 

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { PERIOD_LABELS, type PeriodKey } from '@/utils/period';
 import { formatShortDate, createDateChips } from '@/composables/useDateTimeFilter';
+import { Building2, Search, Maximize, Calendar } from 'lucide-vue-next';
 
 interface Building {
   id: string;
@@ -229,8 +230,8 @@ watch(() => props.viewerRef, (newRef) => {
       <button class="rail-btn rail-btn--wide" :class="{ active: dateTimePopoverOpen }" @click="toggleDateTime" :title="dateTimeBtnLabel">
         <span class="rail-btn-label">{{ dateTimeBtnLabel }}</span>
       </button>
-      <button class="rail-btn" :class="{ active: buildingPopoverOpen }" @click="toggleBuilding" title="Edifício">🏛</button>
-      <button class="rail-btn" @click="$emit('open-search')" title="Pesquisar">🔍</button>
+      <button class="rail-btn" :class="{ active: buildingPopoverOpen }" @click="toggleBuilding" title="Edifício"><Building2 :size="20" /></button>
+      <button class="rail-btn" @click="$emit('open-search')" title="Pesquisar"><Search :size="20" /></button>
     </div>
 
     <!-- floor stack: only when a building is selected -->
@@ -248,7 +249,7 @@ watch(() => props.viewerRef, (newRef) => {
     <!-- bottom: fullscreen toggle -->
     <div class="rail-stack rail-stack--bottom">
       <button class="rail-btn" :class="{ active: fullscreen }"
-              @click="$emit('update:fullscreen', !fullscreen)" title="Tela cheia">⛶</button>
+              @click="$emit('update:fullscreen', !fullscreen)" title="Tela cheia"><Maximize :size="20" /></button>
     </div>
 
     <!-- breadcrumb pill -->
@@ -282,7 +283,7 @@ watch(() => props.viewerRef, (newRef) => {
             >{{ d.label }}</button>
           </div>
           <button class="popover-item popover-item--full" @click="openDatePicker">
-            📅 Escolher outra data
+            <Calendar :size="14" style="vertical-align: -2px" /> Escolher outra data
           </button>
           <input
             ref="hiddenDateRef"

@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { PURPOSE_LABELS } from '@/types/reservation';
 import { STATUS_LABELS } from '@/types/reservation';
+import { Repeat, Ban } from 'lucide-vue-next';
 
 interface ReservationItem {
   id: string;
@@ -147,8 +148,8 @@ function statusLabel(s: string): string {
                 <span class="entry-datetime">
                   {{ formatDate(e.date) }} · {{ e.startTime }}–{{ e.endTime }}
                 </span>
-                <span v-if="e.isRecurring" class="entry-badge entry-badge--recurring">🔁 Recorrente</span>
-                <span v-if="e.type === 'blocking'" class="entry-badge entry-badge--blocking">🚫 Bloqueio</span>
+                <span v-if="e.isRecurring" class="entry-badge entry-badge--recurring"><Repeat :size="10" style="vertical-align: -1px" /> Recorrente</span>
+                <span v-if="e.type === 'blocking'" class="entry-badge entry-badge--blocking"><Ban :size="10" style="vertical-align: -1px" /> Bloqueio</span>
               </div>
               <div class="entry-title">{{ e.title }}</div>
               <div v-if="e.subtitle" class="entry-desc">{{ e.subtitle }}</div>

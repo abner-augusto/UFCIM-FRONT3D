@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
+import { Thermometer } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 import { useReservationStore } from '@/stores/reservation';
 import { api } from '@/services/api';
@@ -337,7 +338,7 @@ async function handleRecurring() {
         <p>Bloco {{ space.block }} · {{ space.campus }}</p>
         <p v-if="space.capacity" class="space-capacity">Capacidade: {{ space.capacity }} pessoas</p>
         <p v-if="space.department" class="space-meta">{{ space.department }}</p>
-        <p v-if="space.hvac" class="space-meta">🌡 {{ space.hvac }}</p>
+        <p v-if="space.hvac" class="space-meta"><Thermometer :size="14" style="vertical-align: -2px" /> {{ space.hvac }}</p>
         <p v-if="reservationStatusMessage" class="space-warning">{{ reservationStatusMessage }}</p>
       </div>
 

@@ -8,6 +8,7 @@ import { hasRole, CAN_RESERVE, CAN_BLOCK } from '@/utils/roles';
 import { PURPOSE_LABELS, BLOCK_TYPE_LABELS, type AvailabilitySlot } from '@/types/reservation';
 import EquipmentReportDialog from './EquipmentReportDialog.vue';
 import { useEquipmentGroups, type EquipmentGroup } from '@/composables/useEquipmentGroups';
+import { Users, Lightbulb, Snowflake, Flag, Repeat, BarChart3 } from 'lucide-vue-next';
 
 const props = defineProps<{
   space: Space;
@@ -285,7 +286,7 @@ function onReportSent() {
       <section v-if="selectedSlot && (selectedSlot.reservation || selectedSlot.blocking)" class="slot-detail" :class="selectedSlot.status === 'blocked' ? 'slot-detail--blocked' : 'slot-detail--reserved'">
         <div class="slot-detail-head">
           <span class="slot-time">{{ selectedSlot.startTime }} – {{ selectedSlot.endTime }}</span>
-          <span v-if="selectedSlot.reservation?.isRecurring" class="slot-badge slot-badge--recurring">🔁 Recorrente</span>
+          <span v-if="selectedSlot.reservation?.isRecurring" class="slot-badge slot-badge--recurring"><Repeat :size="10" style="vertical-align: -1px" /> Recorrente</span>
           <span v-if="selectedSlot.reservation?.isSelf" class="slot-badge slot-badge--own">Sua reserva</span>
         </div>
 
@@ -326,17 +327,17 @@ function onReportSent() {
           <!-- Key stats row -->
           <div class="room-popup__stats-grid">
             <div v-if="space.capacity != null" class="stat-card">
-              <span class="stat-card__icon">👥</span>
+              <span class="stat-card__icon"><Users :size="18" /></span>
               <span class="stat-card__value">{{ space.capacity }}</span>
               <span class="stat-card__label">pessoas</span>
             </div>
             <div v-if="space.lighting" class="stat-card">
-              <span class="stat-card__icon">💡</span>
+              <span class="stat-card__icon"><Lightbulb :size="18" /></span>
               <span class="stat-card__value stat-card__value--sm">{{ space.lighting }}</span>
               <span class="stat-card__label">iluminação</span>
             </div>
             <div v-if="space.hvac" class="stat-card">
-              <span class="stat-card__icon">❄️</span>
+              <span class="stat-card__icon"><Snowflake :size="18" /></span>
               <span class="stat-card__value stat-card__value--sm">{{ space.hvac }}</span>
               <span class="stat-card__label">climatização</span>
             </div>
@@ -372,7 +373,7 @@ function onReportSent() {
                   :aria-label="`Reportar problema em ${g.name}`"
                   @click="openReportFor(g)"
                 >
-                  <span aria-hidden="true">🚩</span>
+                  <span aria-hidden="true"><Flag :size="12" /></span>
                   <span>Reportar</span>
                 </button>
               </li>
@@ -410,7 +411,7 @@ function onReportSent() {
           Bloquear Espaço
         </button>
         <button class="btn-tertiary" aria-label="Ver relatório de ocupação" @click="goToReport">
-          📊 Ver relatório
+          <BarChart3 :size="14" style="vertical-align: -2px" /> Ver relatório
         </button>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
 import { hasRole, CAN_BLOCK, CAN_VIEW_REPORTS } from '@/utils/roles';
+import { Building2, Search, Calendar, Ban, BarChart3, Bell, User, X } from 'lucide-vue-next';
 
 defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: [] }>();
@@ -48,39 +49,39 @@ function handleLinkClick() {
       <div v-if="open" class="drawer-content">
         <div class="drawer-header">
           <span class="drawer-logo">UFCIM</span>
-          <button class="close-btn" @click="emit('close')">✕</button>
+          <button class="close-btn" @click="emit('close')"><X :size="20" /></button>
         </div>
 
         <nav class="drawer-nav">
           <router-link :to="viewerTarget" class="nav-item" @click="handleLinkClick">
-            <span class="nav-icon">🏛</span> Maquete 3D
+            <span class="nav-icon"><Building2 :size="20" /></span> Maquete 3D
           </router-link>
           
           <router-link :to="browserTarget" class="nav-item" @click="handleLinkClick">
-            <span class="nav-icon">🔍</span> Buscar Espaços
+            <span class="nav-icon"><Search :size="20" /></span> Buscar Espaços
           </router-link>
 
           <router-link to="/minhas-reservas" class="nav-item" @click="handleLinkClick">
-            <span class="nav-icon">📅</span> Minhas Reservas
+            <span class="nav-icon"><Calendar :size="20" /></span> Minhas Reservas
           </router-link>
 
           <router-link v-if="canBlock" to="/meus-bloqueios" class="nav-item" @click="handleLinkClick">
-            <span class="nav-icon">🚫</span> Meus Bloqueios
+            <span class="nav-icon"><Ban :size="20" /></span> Meus Bloqueios
           </router-link>
 
           <router-link v-if="canViewReports" to="/relatorios" class="nav-item" @click="handleLinkClick">
-            <span class="nav-icon">📊</span> Relatórios
+            <span class="nav-icon"><BarChart3 :size="20" /></span> Relatórios
           </router-link>
 
           <router-link to="/notificacoes" class="nav-item" @click="handleLinkClick">
-            <span class="nav-icon">🔔</span> Notificações
+            <span class="nav-icon"><Bell :size="20" /></span> Notificações
             <span v-if="auth.unreadCount > 0" class="notif-badge">
               {{ auth.unreadCount >= 100 ? '99+' : auth.unreadCount }}
             </span>
           </router-link>
 
           <router-link to="/perfil" class="nav-item" @click="handleLinkClick">
-            <span class="nav-icon">👤</span> Perfil
+            <span class="nav-icon"><User :size="20" /></span> Perfil
           </router-link>
         </nav>
 
