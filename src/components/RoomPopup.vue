@@ -29,6 +29,7 @@ const emit = defineEmits<{
 
 const router = useRouter();
 const overlayReady = ref(false);
+const detailsExpanded = ref(false);
 onMounted(() => setTimeout(() => { overlayReady.value = true; }, 300));
 
 function onOverlayClick() {
@@ -314,61 +315,71 @@ function onReportSent() {
         </template>
       </section>
 
-      <!-- Key stats row -->
-      <div class="room-popup__stats-grid">
-        <div v-if="space.capacity != null" class="stat-card">
-          <span class="stat-card__icon">👥</span>
-          <span class="stat-card__value">{{ space.capacity }}</span>
-          <span class="stat-card__label">pessoas</span>
-        </div>
-        <div v-if="space.lighting" class="stat-card">
-          <span class="stat-card__icon">💡</span>
-          <span class="stat-card__value stat-card__value--sm">{{ space.lighting }}</span>
-          <span class="stat-card__label">iluminação</span>
-        </div>
-        <div v-if="space.hvac" class="stat-card">
-          <span class="stat-card__icon">❄️</span>
-          <span class="stat-card__value stat-card__value--sm">{{ space.hvac }}</span>
-          <span class="stat-card__label">climatização</span>
-        </div>
-      </div>
+      <!-- Details toggle -->
+      <button class="details-toggle" @click="detailsExpanded = !detailsExpanded" :aria-expanded="detailsExpanded">
+        <span>{{ detailsExpanded ? 'Menos detalhes' : 'Mais detalhes' }}</span>
+        <span class="details-toggle__chevron" :class="{ rotated: detailsExpanded }">›</span>
+      </button>
 
-      <!-- Additional info -->
-      <ul v-if="space.furniture || space.multimedia" class="room-popup__info-list">
-        <li v-if="space.furniture">
-          <span class="info-label">Mobiliário</span>
-          <span class="info-value">{{ space.furniture }}</span>
-        </li>
-        <li v-if="space.multimedia">
-          <span class="info-label">Multimídia</span>
-          <span class="info-value">{{ space.multimedia }}</span>
-        </li>
-      </ul>
+      <Transition name="details-collapse">
+        <div v-if="detailsExpanded" class="room-popup__details">
+          <!-- Key stats row -->
+          <div class="room-popup__stats-grid">
+            <div v-if="space.capacity != null" class="stat-card">
+              <span class="stat-card__icon">👥</span>
+              <span class="stat-card__value">{{ space.capacity }}</span>
+              <span class="stat-card__label">pessoas</span>
+            </div>
+            <div v-if="space.lighting" class="stat-card">
+              <span class="stat-card__icon">💡</span>
+              <span class="stat-card__value stat-card__value--sm">{{ space.lighting }}</span>
+              <span class="stat-card__label">iluminação</span>
+            </div>
+            <div v-if="space.hvac" class="stat-card">
+              <span class="stat-card__icon">❄️</span>
+              <span class="stat-card__value stat-card__value--sm">{{ space.hvac }}</span>
+              <span class="stat-card__label">climatização</span>
+            </div>
+          </div>
 
-      <!-- Equipment -->
-      <div v-if="equipmentGroups.length" class="room-popup__section">
-        <p class="detail-section-title">Equipamentos</p>
-        <ul class="equipment-list">
-          <li v-for="g in equipmentGroups" :key="g.name" class="equipment-item">
-            <span class="equipment-name">
-              {{ g.name }}
-              <span v-if="g.total > 1" class="equipment-count">({{ g.total }})</span>
-            </span>
-            <span class="equipment-badge" :class="groupStatusClass(g)">
-              {{ groupStatusLabel(g) }}
-            </span>
-            <button
-              v-if="canReport"
-              class="equipment-report-btn"
-              :aria-label="`Reportar problema em ${g.name}`"
-              @click="openReportFor(g)"
-            >
-              <span aria-hidden="true">🚩</span>
-              <span>Reportar</span>
-            </button>
-          </li>
-        </ul>
-      </div>
+          <!-- Additional info -->
+          <ul v-if="space.furniture || space.multimedia" class="room-popup__info-list">
+            <li v-if="space.furniture">
+              <span class="info-label">Mobiliário</span>
+              <span class="info-value">{{ space.furniture }}</span>
+            </li>
+            <li v-if="space.multimedia">
+              <span class="info-label">Multimídia</span>
+              <span class="info-value">{{ space.multimedia }}</span>
+            </li>
+          </ul>
+
+          <!-- Equipment -->
+          <div v-if="equipmentGroups.length" class="room-popup__section">
+            <p class="detail-section-title">Equipamentos</p>
+            <ul class="equipment-list">
+              <li v-for="g in equipmentGroups" :key="g.name" class="equipment-item">
+                <span class="equipment-name">
+                  {{ g.name }}
+                  <span v-if="g.total > 1" class="equipment-count">({{ g.total }})</span>
+                </span>
+                <span class="equipment-badge" :class="groupStatusClass(g)">
+                  {{ groupStatusLabel(g) }}
+                </span>
+                <button
+                  v-if="canReport"
+                  class="equipment-report-btn"
+                  :aria-label="`Reportar problema em ${g.name}`"
+                  @click="openReportFor(g)"
+                >
+                  <span aria-hidden="true">🚩</span>
+                  <span>Reportar</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </Transition>
 
       <!-- Blocking reason -->
       <div v-if="blockingReason" class="room-popup__notice">
@@ -498,6 +509,48 @@ function onReportSent() {
 .meta-sep { color: #ccc; }
 
 /* Schedule */
+/* Details toggle */
+.details-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.5rem 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-link, #185FA5);
+}
+.details-toggle__chevron {
+  font-size: 1rem;
+  transition: transform 0.2s ease;
+  transform: rotate(90deg);
+}
+.details-toggle__chevron.rotated {
+  transform: rotate(-90deg);
+}
+.room-popup__details {
+  display: flex;
+  flex-direction: column;
+}
+.details-collapse-enter-active,
+.details-collapse-leave-active {
+  transition: opacity 0.2s ease, max-height 0.25s ease;
+  overflow: hidden;
+}
+.details-collapse-enter-from,
+.details-collapse-leave-to {
+  opacity: 0;
+  max-height: 0;
+}
+.details-collapse-enter-to,
+.details-collapse-leave-from {
+  opacity: 1;
+  max-height: 500px;
+}
+
 .room-popup__schedule { margin-bottom: 1rem; }
 .schedule-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #bbb; letter-spacing: 0.06em; }
 .schedule-hint { font-weight: 400; text-transform: none; color: #ccc; font-size: 0.62rem; }
