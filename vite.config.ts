@@ -56,6 +56,13 @@ export default defineConfig({
   base: '/',
   build: {
     outDir: 'dist',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-three': ['three'],
+        },
+      },
+    },
   },
   server: {
     host: '0.0.0.0',
