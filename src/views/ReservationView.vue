@@ -30,6 +30,17 @@ const loadingBlockings = ref(false);
 const errorMsg = ref<string | null>(null);
 const blockings = ref<Blocking[]>([]);
 
+// Reference timestamp for "has this hour passed" — refreshed whenever
+// availability (re)loads. Lets us block booking slots already past for today.
+const nowTs = ref(Date.now());
+
+// A start time is past once it's at or before now (in local/campus time).
+// Future days are never past; earlier days are always past.
+function isPastTime(time: string): boolean {
+  if (!selectedDate.value) return false;
+  return new Date(`${selectedDate.value}T${time}:00`).getTime() <= nowTs.value;
+}
+
 // ── Selection mode ──────────────────────────────────────────────
 type SelectionMode = 'slots' | 'hours';
 const selectionMode = ref<SelectionMode>('slots');
@@ -113,6 +124,7 @@ watch(selectedDate, async (date) => {
   selectedSlot.value = null;
   pickedStart.value = null;
   pickedEnd.value = null;
+  nowTs.value = Date.now();
   loadingAvailability.value = true;
   try {
     availability.value = await api.getAvailability(auth.token, spaceId, date);
@@ -133,6 +145,8 @@ watch(selectionMode, () => {
 // ── Named-slot helpers ──────────────────────────────────────────
 function checkSlotAvailable(slot: TimeSlot): boolean {
   if (!availability.value) return false;
+  // A named period is bookable until it fully ends.
+  if (isPastTime(TIME_SLOT_RANGES[slot].endTime)) return false;
   return isSlotAvailable(availability.value, slot);
 }
 
@@ -171,6 +185,12 @@ function isHourAvailable(slot: AvailabilitySlot): boolean {
   return slot.status === 'available';
 }
 
+// Selectable = available AND not already fully past (for today). An hour is
+// bookable until it *ends*, so the in-progress hour stays selectable.
+function isHourSelectable(slot: AvailabilitySlot): boolean {
+  return isHourAvailable(slot) && !isPastTime(slot.endTime);
+}
+
 function hoursInRange(start: string, end: string): string[] {
   const result: string[] = [];
   for (const s of sortedHours.value) {
@@ -183,12 +203,12 @@ function rangeFullyAvailable(start: string, end: string): boolean {
   const hours = hoursInRange(start, end);
   return hours.every(h => {
     const s = sortedHours.value.find(x => x.startTime === h);
-    return s?.status === 'available';
+    return !!s && isHourSelectable(s);
   });
 }
 
 function getHourState(slot: AvailabilitySlot): 'available' | 'selected' | 'endpoint' | 'unavailable' {
-  if (!isHourAvailable(slot)) return 'unavailable';
+  if (!isHourSelectable(slot)) return 'unavailable';
   const h = slot.startTime;
   if (!pickedStart.value) return 'available';
   if (pickedEnd.value) {
@@ -201,7 +221,7 @@ function getHourState(slot: AvailabilitySlot): 'available' | 'selected' | 'endpo
 }
 
 function handleHourClick(slot: AvailabilitySlot) {
-  if (!isHourAvailable(slot)) return;
+  if (!isHourSelectable(slot)) return;
   const h = slot.startTime;
 
   // Nothing picked yet → set start
@@ -413,7 +433,8 @@ async function handleRecurring() {
                 :key="s.startTime"
                 class="hour-btn"
                 :class="`hour-btn--${getHourState(s)}`"
-                :disabled="!isHourAvailable(s)"
+                :disabled="!isHourSelectable(s)"
+                :aria-label="`${hourLabel(s.startTime)}${isPastTime(s.endTime) ? ' (horário já passou)' : ''}`"
                 @click="handleHourClick(s)"
               >
                 {{ hourLabel(s.startTime) }}

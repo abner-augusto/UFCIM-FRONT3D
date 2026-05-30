@@ -40,14 +40,14 @@ export function useDateTimeFilter() {
 
   const defaultStartTime = computed(() => {
     const rangeStart = periodRange.value.startTime;
-    // When viewing today, advance the default start to the next full hour
-    // so the "Reservar" button doesn't suggest past hours.
+    // When viewing today, start the default range at the *current* hour so the
+    // "Reservar" button follows what's still bookable in the grid instead of the
+    // fixed period start. The in-progress hour stays reservable (it ends later).
     if (isToday.value) {
-      const now = new Date();
-      const nextHour = String(now.getHours() + (now.getMinutes() > 0 ? 1 : 0)).padStart(2, '0') + ':00';
-      // Clamp to period bounds: never before range start, never at/after range end
-      if (nextHour > rangeStart && nextHour < periodRange.value.endTime) {
-        return nextHour;
+      const currentHour = String(new Date().getHours()).padStart(2, '0') + ':00';
+      // Clamp to period bounds: never before range start, never at/after range end.
+      if (currentHour > rangeStart && currentHour < periodRange.value.endTime) {
+        return currentHour;
       }
     }
     return rangeStart;

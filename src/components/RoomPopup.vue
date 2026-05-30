@@ -54,10 +54,11 @@ const rangeEndIdx = ref<number | null>(null);
 // Reference timestamp for "has this hour passed" — refreshed whenever the grid loads.
 const nowTs = ref(Date.now());
 
-// A slot is in the past once its start time (in local/campus time) is at or before now.
+// A slot is in the past once it has fully *ended* (its end time is at or before
+// now, in local/campus time). The currently in-progress hour stays bookable.
 // Works for any date: future days are never past, earlier days are always past.
 function isPastSlot(slot: AvailabilitySlot) {
-  return new Date(`${props.selectedDate}T${slot.startTime}:00`).getTime() <= nowTs.value;
+  return new Date(`${props.selectedDate}T${slot.endTime}:00`).getTime() <= nowTs.value;
 }
 
 async function loadAvailability() {
