@@ -256,9 +256,8 @@ function onReportSent() {
           <span class="schedule-hint">toque nas horas livres</span>
         </div>
         <div v-if="loadingAvailability" class="schedule-loading">Carregando...</div>
-        <Transition v-else-if="visibleSlots.length" name="grid-slide" mode="out-in">
-          <div class="grid-wrapper" :key="selectedDate">
-          <div class="hour-grid">
+        <Transition v-else-if="visibleSlots.length" name="grid-slide">
+          <div class="hour-grid" :key="selectedDate">
             <button
               v-for="(slot, idx) in visibleSlots" :key="slot.startTime"
               class="hour-cell"
@@ -270,7 +269,9 @@ function onReportSent() {
             >
               <span v-if="slot.status === 'reserved' || slot.status === 'blocked'" class="dot">●</span>
             </button>
-          </div>
+          </div><!-- /hour-grid -->
+          </Transition>
+          <template v-if="visibleSlots.length">
           <div class="hour-axis">
             <span v-for="slot in visibleSlots" :key="slot.startTime">
               {{ parseInt(slot.startTime.split(':')[0]) }}
@@ -280,8 +281,7 @@ function onReportSent() {
             Horário selecionado: <strong>{{ reserveStartTime }}–{{ reserveEndTime }}</strong>
             <button class="schedule-selection__clear" @click="rangeStartIdx = null; rangeEndIdx = null">limpar</button>
           </p>
-          </div><!-- /grid-wrapper -->
-        </Transition>
+          </template>
       </section>
 
       <!-- Slot detail -->
@@ -572,15 +572,11 @@ function onReportSent() {
 /* Vue transition: grid-slide */
 .grid-slide-enter-active,
 .grid-slide-leave-active {
-  transition: opacity 0.2s var(--ease-out-quart, ease), transform 0.2s var(--ease-out-quart, ease);
+  transition: opacity 0.2s var(--ease-out-quart, ease);
 }
-.grid-slide-enter-from {
-  opacity: 0;
-  transform: translateY(8px);
-}
+.grid-slide-enter-from,
 .grid-slide-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
 }
 .hour-cell { flex: 1; min-width: 0; height: 24px; border: none; border-radius: 3px; cursor: pointer; position: relative; padding: 0; background: transparent; transition: background var(--duration-fast) ease, transform var(--duration-fast) ease; }
 .hour-cell:active:not(:disabled) { transform: scaleY(0.85); }
