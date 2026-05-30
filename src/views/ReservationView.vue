@@ -9,6 +9,7 @@ import type { Space } from '@/types/space';
 import type { Availability, AvailabilitySlot, Blocking, TimeSlot } from '@/types/reservation';
 import { BLOCK_TYPE_LABELS, TIME_SLOT_LABELS, TIME_SLOT_RANGES, PURPOSE_OPTIONS, isSlotAvailable } from '@/types/reservation';
 import { hasRole, CAN_RESERVE, CAN_CREATE_RECURRING } from '@/utils/roles';
+import { toLocalISODate } from '@/utils/date';
 
 const route = useRoute();
 const router = useRouter();
@@ -19,7 +20,7 @@ const spaceId = route.params.spaceId as string;
 
 const space = ref<Space | null>(null);
 const availability = ref<Availability | null>(null);
-const today = new Date().toISOString().split('T')[0];
+const today = toLocalISODate();
 
 const selectedDate = ref(today);
 const selectedPurpose = ref('');
@@ -281,7 +282,7 @@ const recurringMinEndDate = computed(() => {
   if (!recurringStartDate.value) return today;
   const d = new Date(recurringStartDate.value + 'T12:00:00');
   d.setDate(d.getDate() + 1);
-  return d.toISOString().split('T')[0];
+  return toLocalISODate(d);
 });
 
 function canSubmitRecurring() {

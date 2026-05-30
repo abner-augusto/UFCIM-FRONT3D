@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue';
 import { getCurrentPeriod, type PeriodKey } from '@/utils/period';
 import { TIME_SLOT_RANGES } from '@/types/reservation';
+import { toLocalISODate } from '@/utils/date';
 
 /** Pure function: format ISO date string to short pt-BR locale (e.g. "21 de mai.") */
 export function formatShortDate(dateStr: string): string {
@@ -15,7 +16,7 @@ export function createDateChips(): Array<{ value: string; label: string }> {
   for (let i = 0; i < 3; i++) {
     const d = new Date(todayDate);
     d.setDate(todayDate.getDate() + i);
-    const iso = d.toISOString().split('T')[0];
+    const iso = toLocalISODate(d);
     let label: string;
     if (i === 0) label = 'Hoje';
     else if (i === 1) label = 'Amanhã';
@@ -26,7 +27,7 @@ export function createDateChips(): Array<{ value: string; label: string }> {
 }
 
 export function useDateTimeFilter() {
-  const today = new Date().toISOString().split('T')[0];
+  const today = toLocalISODate();
   const selectedDate = ref<string>(today);
   const selectedPeriod = ref<PeriodKey>(getCurrentPeriod());
   const periodAutoDetected = ref(true);

@@ -10,6 +10,7 @@ import OccupancySummary from '@/components/reports/OccupancySummary.vue';
 import DailyOccupancyChart from '@/components/reports/DailyOccupancyChart.vue';
 import HourlyHeatmap from '@/components/reports/HourlyHeatmap.vue';
 import ReservationTimeline from '@/components/reports/ReservationTimeline.vue';
+import { toLocalISODate } from '@/utils/date';
 
 const route = useRoute();
 const router = useRouter();
@@ -25,8 +26,8 @@ const today = new Date();
 const thirtyDaysAgo = new Date(today);
 thirtyDaysAgo.setDate(today.getDate() - 29);
 
-const startDate = ref(thirtyDaysAgo.toISOString().split('T')[0]);
-const endDate = ref(today.toISOString().split('T')[0]);
+const startDate = ref(toLocalISODate(thirtyDaysAgo));
+const endDate = ref(toLocalISODate(today));
 
 // Preset chips
 const presets = [
@@ -39,8 +40,8 @@ function applyPreset(days: number) {
   const end = new Date();
   const start = new Date(end);
   start.setDate(end.getDate() - (days - 1));
-  startDate.value = start.toISOString().split('T')[0];
-  endDate.value = end.toISOString().split('T')[0];
+  startDate.value = toLocalISODate(start);
+  endDate.value = toLocalISODate(end);
 }
 
 async function loadReport() {
@@ -70,7 +71,7 @@ const adaptedSummary = computed<Summary>(() => {
   };
 });
 
-const todayStr = computed(() => new Date().toISOString().split('T')[0]);
+const todayStr = computed(() => toLocalISODate());
 </script>
 
 <template>
