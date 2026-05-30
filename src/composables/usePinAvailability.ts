@@ -1,5 +1,6 @@
 import { ref } from 'vue';
 import { api } from '@/services/api';
+import { logger } from '@/utils/logger';
 import { TIME_SLOT_RANGES } from '@/types/reservation';
 import type { Space } from '@/types/space';
 import type { PeriodKey } from '@/utils/period';
@@ -53,7 +54,7 @@ export function usePinAvailability() {
     token: string | null,
     date: string,
     period: PeriodKey,
-  ): Promise<Map<string, PinStatus>> {
+  ): Promise<Map<string, { status: PinStatus; slots: Array<{ startTime: string; endTime: string; status: string }> }>> {
     loading.value = true;
     error.value = null;
 
@@ -63,12 +64,19 @@ export function usePinAvailability() {
         entries.map(([, space]) => api.getAvailability(token, space.id, date)),
       );
 
-      const statusMap = new Map<string, PinStatus>();
+      const statusMap = new Map<string, { status: PinStatus; slots: Array<{ startTime: string; endTime: string; status: string }> }>();
 
       results.forEach((result, index) => {
-        if (result.status !== 'fulfilled') return;
+        if (result.status !== 'fulfilled') {
+          const [modelId, space] = entries[index];
+          logger.warn(`[Availability] Failed to fetch for space "${modelId}" (${space.id}):`, result.reason);
+          return;
+        }
         const [modelId] = entries[index];
-        statusMap.set(modelId, derivePinStatus(result.value, period));
+        statusMap.set(modelId, {
+          status: derivePinStatus(result.value, period),
+          slots: result.value,
+        });
       });
 
       return statusMap;

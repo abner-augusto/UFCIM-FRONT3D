@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { PERIOD_LABELS, type PeriodKey } from '@/utils/period';
+import { formatShortDate, createDateChips } from '@/composables/useDateTimeFilter';
+import { toLocalISODate } from '@/utils/date';
+import { Building2, Search, Maximize, Calendar } from 'lucide-vue-next';
 
 interface Building {
   id: string;
@@ -20,31 +23,37 @@ interface ThreeViewerExposed {
   getActiveBuildingId: () => string | null;
   getActiveFloorLevel: () => number | null;
   setFullscreen: (on: boolean) => void;
+  updatePinLabelStatus?: (pinId: string, statusText: string | null, statusColor: string | null) => void;
 }
 
 const props = defineProps<{
   viewerRef: ThreeViewerExposed | null;
   ready: boolean;
-  modelValue: PeriodKey;
+  selectedDate: string;
+  selectedPeriod: PeriodKey;
+  periodAutoDetected: boolean;
   fullscreen: boolean;
 }>();
 
 const emit = defineEmits<{
-  'update:modelValue': [period: PeriodKey];
+  'update:selectedDate': [date: string];
+  'update:selectedPeriod': [period: PeriodKey];
   'update:fullscreen': [on: boolean];
   'open-search': [];
 }>();
 
+const isToday = computed(() => props.selectedDate === toLocalISODate());
+
 const activeBuildingId = ref<string | null>(null);
 const activeFloorLevel = ref<number | null>(null);
-const periodPopoverOpen = ref(false);
+const dateTimePopoverOpen = ref(false);
 const buildingPopoverOpen = ref(false);
 const buildings = ref<Building[]>([]);
 
-const PERIODS: { key: PeriodKey; label: string }[] = [
-  { key: 'morning', label: 'Manhã' },
-  { key: 'afternoon', label: 'Tarde' },
-  { key: 'evening', label: 'Noite' },
+const PERIODS: { key: PeriodKey; label: string; range: string }[] = [
+  { key: 'morning', label: 'Manhã', range: '07h–12h' },
+  { key: 'afternoon', label: 'Tarde', range: '13h–18h' },
+  { key: 'evening', label: 'Noite', range: '19h–22h' },
 ];
 
 const floors = computed(() => {
@@ -68,10 +77,18 @@ const floorName = computed(() => {
   return f ? f.name : null;
 });
 
-const periodLabel = computed(() => PERIOD_LABELS[props.modelValue]);
+const periodLabel = computed(() => PERIOD_LABELS[props.selectedPeriod]);
+
+const dateTimeBtnLabel = computed(() => {
+  const dayLabel = isToday.value ? 'Hoje' : formatShortDate(props.selectedDate);
+  const periodAbbr = PERIOD_LABELS[props.selectedPeriod];
+  return `${dayLabel} · ${periodAbbr}`;
+});
+
+const dateChips = computed(() => createDateChips());
 
 const ariaLabel = computed(() => {
-  let label = `Período: ${periodLabel.value}, Edifício: ${buildingName.value}`;
+  let label = `${dateTimeBtnLabel.value}, Edifício: ${buildingName.value}`;
   if (floorName.value) label += `, Pavimento: ${floorName.value}`;
   return label;
 });
@@ -84,19 +101,52 @@ function shortFloorLabel(name: string): string {
   return name.substring(0, 2);
 }
 
-function togglePeriod() {
-  periodPopoverOpen.value = !periodPopoverOpen.value;
+function toggleDateTime() {
+  dateTimePopoverOpen.value = !dateTimePopoverOpen.value;
   buildingPopoverOpen.value = false;
 }
 
 function toggleBuilding() {
   buildingPopoverOpen.value = !buildingPopoverOpen.value;
-  periodPopoverOpen.value = false;
+  dateTimePopoverOpen.value = false;
+}
+
+// Hidden native date input, kept in the DOM so showPicker() works.
+const hiddenDateRef = ref<HTMLInputElement | null>(null);
+
+function openDatePicker() {
+  const input = hiddenDateRef.value;
+  if (!input) return;
+  input.value = props.selectedDate;
+  // showPicker() is the reliable way to open the native calendar from a
+  // user gesture; fall back to focus()/click() where it's unsupported.
+  if (typeof input.showPicker === 'function') {
+    try {
+      input.showPicker();
+      return;
+    } catch {
+      // showPicker can throw (e.g. not triggered by a user gesture) — fall through
+    }
+  }
+  input.focus();
+  input.click();
+}
+
+function onHiddenDateChange(e: Event) {
+  const value = (e.target as HTMLInputElement).value;
+  if (value) {
+    emit('update:selectedDate', value);
+    dateTimePopoverOpen.value = false;
+  }
+}
+
+function onDatePick(date: string) {
+  emit('update:selectedDate', date);
 }
 
 function onPeriodPick(period: PeriodKey) {
-  emit('update:modelValue', period);
-  periodPopoverOpen.value = false;
+  emit('update:selectedPeriod', period);
+  dateTimePopoverOpen.value = false;
 }
 
 function onBuildingPick(id: string | null) {
@@ -108,8 +158,8 @@ function onFloorPick(level: number) {
   props.viewerRef?.selectFloor(level);
 }
 
-function closePeriod() {
-  periodPopoverOpen.value = false;
+function closeDateTime() {
+  dateTimePopoverOpen.value = false;
 }
 
 function closeBuilding() {
@@ -117,12 +167,12 @@ function closeBuilding() {
 }
 
 // Click outside logic
-const periodRef = ref<HTMLElement | null>(null);
+const dateTimeRef = ref<HTMLElement | null>(null);
 const buildingRef = ref<HTMLElement | null>(null);
 
 function handleDocumentClick(e: MouseEvent) {
-  if (periodPopoverOpen.value && periodRef.value && !periodRef.value.contains(e.target as Node)) {
-    closePeriod();
+  if (dateTimePopoverOpen.value && dateTimeRef.value && !dateTimeRef.value.contains(e.target as Node)) {
+    closeDateTime();
   }
   if (buildingPopoverOpen.value && buildingRef.value && !buildingRef.value.contains(e.target as Node)) {
     closeBuilding();
@@ -172,16 +222,17 @@ watch(() => props.ready, (isReady) => {
 watch(() => props.viewerRef, (newRef) => {
   if (newRef && props.ready) syncState();
 }, { immediate: true });
-
 </script>
 
 <template>
   <div class="rail-root">
-    <!-- top stack: period, building, search -->
+    <!-- top stack: datetime, building, search -->
     <div class="rail-stack rail-stack--top">
-      <button class="rail-btn" :class="{ active: periodPopoverOpen }" @click="togglePeriod" title="Período">🕐</button>
-      <button class="rail-btn" :class="{ active: buildingPopoverOpen }" @click="toggleBuilding" title="Edifício">🏛</button>
-      <button class="rail-btn" @click="$emit('open-search')" title="Pesquisar">🔍</button>
+      <button class="rail-btn rail-btn--wide" :class="{ active: dateTimePopoverOpen }" @click="toggleDateTime" :title="dateTimeBtnLabel">
+        <span class="rail-btn-label">{{ dateTimeBtnLabel }}</span>
+      </button>
+      <button class="rail-btn" :class="{ active: buildingPopoverOpen }" @click="toggleBuilding" title="Edifício"><Building2 :size="20" /></button>
+      <button class="rail-btn" @click="$emit('open-search')" title="Pesquisar"><Search :size="20" /></button>
     </div>
 
     <!-- floor stack: only when a building is selected -->
@@ -199,30 +250,67 @@ watch(() => props.viewerRef, (newRef) => {
     <!-- bottom: fullscreen toggle -->
     <div class="rail-stack rail-stack--bottom">
       <button class="rail-btn" :class="{ active: fullscreen }"
-              @click="$emit('update:fullscreen', !fullscreen)" title="Tela cheia">⛶</button>
+              @click="$emit('update:fullscreen', !fullscreen)" title="Tela cheia"><Maximize :size="20" /></button>
     </div>
 
     <!-- breadcrumb pill -->
     <div class="breadcrumb-pill" :aria-label="ariaLabel">
-      <button class="crumb" @click="togglePeriod">{{ periodLabel }}</button>
+      <button class="crumb crumb--strong" @click="toggleDateTime">{{ isToday ? 'Hoje' : formatShortDate(selectedDate) }}</button>
       <span class="dot">·</span>
-      <button class="crumb crumb--strong" @click="toggleBuilding">{{ buildingName }}</button>
+      <span class="crumb crumb--passive">{{ periodLabel }}</span>
+      <template v-if="activeBuildingId">
+        <span class="dot">·</span>
+        <button class="crumb" @click="toggleBuilding">{{ buildingName }}</button>
+      </template>
       <template v-if="floorName">
         <span class="dot">·</span>
         <span class="crumb crumb--passive">{{ floorName }}</span>
       </template>
     </div>
 
-    <!-- popovers -->
+    <!-- datetime popover -->
     <Transition name="popover">
-      <div v-if="periodPopoverOpen" ref="periodRef" class="popover popover--period">
-        <button v-for="p in PERIODS" :key="p.key"
-                class="popover-item"
-                :class="{ active: p.key === modelValue }"
-                @click="onPeriodPick(p.key)">{{ p.label }}</button>
+      <div v-if="dateTimePopoverOpen" ref="dateTimeRef" class="popover popover--datetime">
+        <div class="popover-section">
+          <div class="popover-label">
+            <span>Data</span>
+          </div>
+          <div class="popover-date-chips">
+            <button
+              v-for="d in dateChips" :key="d.value"
+              class="popover-item popover-item--chip"
+              :class="{ active: d.value === selectedDate }"
+              @click="onDatePick(d.value)"
+            >{{ d.label }}</button>
+          </div>
+          <button class="popover-item popover-item--full" @click="openDatePicker">
+            <Calendar :size="14" style="vertical-align: -2px" /> Escolher outra data
+          </button>
+          <input
+            ref="hiddenDateRef"
+            type="date"
+            class="hidden-date-input"
+            min="2024-01-01"
+            @change="onHiddenDateChange"
+          />
+        </div>
+
+        <div class="popover-divider"></div>
+
+        <div class="popover-section">
+          <div class="popover-label">
+            <span>Período</span>
+            <span v-if="periodAutoDetected" class="popover-auto-tag">automático</span>
+          </div>
+          <button v-for="p in PERIODS" :key="p.key"
+                  class="popover-item"
+                  :class="{ active: p.key === selectedPeriod }"
+                  @click="onPeriodPick(p.key)">{{ p.label }} · {{ p.range }}</button>
+        </div>
       </div>
     </Transition>
 
+    <!-- building popover -->
     <Transition name="popover">
       <div v-if="buildingPopoverOpen" ref="buildingRef" class="popover popover--building">
         <div class="popover-grid">
@@ -257,6 +345,7 @@ watch(() => props.viewerRef, (newRef) => {
   right: 8px;
   display: flex;
   flex-direction: column;
+  align-items: flex-end;
   gap: var(--rail-gap);
   pointer-events: auto;
 }
@@ -285,6 +374,19 @@ watch(() => props.viewerRef, (newRef) => {
   -webkit-tap-highlight-color: transparent;
 }
 
+.rail-btn--wide {
+  width: auto;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.rail-btn-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .rail-btn.active {
   background: var(--color-brand);
   color: white;
@@ -293,7 +395,7 @@ watch(() => props.viewerRef, (newRef) => {
 .floor-stack {
   position: absolute;
   right: calc(8px + var(--rail-w) + var(--rail-gap));
-  top: 8px;
+  top: calc(8px + var(--rail-w) + var(--rail-gap));
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -367,13 +469,13 @@ watch(() => props.viewerRef, (newRef) => {
   z-index: 300;
 }
 
-.popover--period {
+.popover--datetime {
   top: 8px;
   right: calc(16px + var(--rail-w));
-  width: 140px;
+  width: 175px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0;
 }
 
 .popover--building {
@@ -382,10 +484,42 @@ watch(() => props.viewerRef, (newRef) => {
   width: 180px;
 }
 
-.popover-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
+.popover-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.popover-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #999;
+  padding: 2px 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.popover-auto-tag {
+  font-size: 0.6rem;
+  font-weight: 400;
+  text-transform: none;
+  padding: 1px 6px;
+  background: #e8f5f0;
+  color: #1D9E75;
+  border-radius: 999px;
+}
+
+.popover-divider {
+  height: 1px;
+  background: #eee;
+  margin: 6px -4px;
+}
+
+.popover-date-chips {
+  display: flex;
+  gap: 4px;
 }
 
 .popover-item {
@@ -400,9 +534,39 @@ watch(() => props.viewerRef, (newRef) => {
   transition: all 0.2s ease;
 }
 
+.popover-item--chip {
+  flex: 1;
+  font-size: 0.78rem;
+}
+
+.popover-item--full {
+  text-align: left;
+  font-size: 0.78rem;
+  color: #666;
+}
+
+/* Kept in the DOM (not display:none) so showPicker() can anchor and open. */
+.hidden-date-input {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .popover-item.active {
   background: var(--color-brand);
   color: white;
+}
+
+.popover-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
 }
 
 /* Animations */

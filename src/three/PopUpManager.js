@@ -1,21 +1,3 @@
-import { UI_IDS, UI_CLASSES } from './config.js';
-import { logger } from '../utils/logger.ts';
-
-const POPUP_DB_URL = '/assets/pins_db_popup.json';
-
-// Load popup DB once and keep it cached.
-let POPUP_DB = null;
-
-async function getPopupDB() {
-  if (POPUP_DB) return POPUP_DB;
-  const response = await fetch(POPUP_DB_URL, { cache: 'default' });
-  if (!response.ok) {
-    throw new Error(`Failed to fetch popup DB: ${response.status}`);
-  }
-  const payload = await response.json();
-  POPUP_DB = Object.fromEntries((payload.rooms || []).map((room) => [room.id, room]));
-  return POPUP_DB;
-}
 
 export class PopupManager {
   constructor(camera, controls, uiManager, cameraManager, interactionManager = null) {
@@ -34,85 +16,24 @@ export class PopupManager {
     this._interactionLocked = false;
     this._controlsLocked = false;
     this._pendingControlUnlock = null;
-    this.vueManaged = false;
   }
 
-  async show(pin, event) {
+  show(pin) {
     if (pin?.userData?.opensPopup === false) {
       this._focusPinWithoutPopup(pin);
       return;
     }
 
-    if (this.vueManaged) {
-      const label = pin.userData?.displayName || pin.userData?.id || pin.name || 'Sala';
-      this.cameraManager.focusOnPin(pin);
-      window.dispatchEvent(new CustomEvent('ufcim:pin-click', {
-        detail: {
-          pinId: pin.userData?.id,
-          displayName: label,
-          building: pin.userData?.building ?? '',
-          floorLevel: pin.userData?.floorLevel ?? 0,
-        },
-      }));
-      return;
-    }
-
-    if (document.getElementById(UI_IDS.popup)) return;
-
-    if (!this._interactionLocked && this.interactionManager && typeof this.interactionManager.setInteractionsEnabled === 'function') {
-      this.interactionManager.setInteractionsEnabled(false);
-      this._interactionLocked = true;
-    }
-
-    this.cameraManager.saveCurrentState();
-
-    const label =
-      pin.userData?.displayName ||
-      pin.userData?.id ||
-      pin.name ||
-      'Unknown Pin';
-
-    this._applySelectedPin(pin);
-
-    let roomRecord = null;
-    try {
-      if (pin?.userData?.id) {
-        const db = await getPopupDB();
-        roomRecord = db[pin.userData.id] || null;
-      }
-    } catch (error) {
-      logger.error('Failed to load popup DB', error);
-    }
-
-    const pointerX = event?.clientX ?? window.innerWidth / 2;
-    const pointerY = event?.clientY ?? window.innerHeight / 2;
-
-    const popup = this._createPopupElement(
-      pointerX,
-      pointerY,
-      label,
-      roomRecord
-    );
-    this._currentPopup = popup;
-
-    this._animatePopupOpen(popup);
-
+    const label = pin.userData?.displayName || pin.userData?.id || pin.name || 'Sala';
     this.cameraManager.focusOnPin(pin);
-
-    this.uiManager.toggleFloorUI(false);
-
-    popup.querySelector(`.${UI_CLASSES.popupCloseButton}`)
-      .addEventListener('click', () => this.close({ triggeredByPointer: true }));
-    
-    if (this._handleOutsideClick) {
-      document.removeEventListener('pointerdown', this._handleOutsideClick);
-      this._handleOutsideClick = null;
-    }
-
-    this._handleOutsideClick = (e) => {
-      if (!popup.contains(e.target)) this.close({ triggeredByPointer: true });
-    };
-    setTimeout(() => document.addEventListener('pointerdown', this._handleOutsideClick), 0);
+    window.dispatchEvent(new CustomEvent('ufcim:pin-click', {
+      detail: {
+        pinId: pin.userData?.id,
+        displayName: label,
+        building: pin.userData?.building ?? '',
+        floorLevel: pin.userData?.floorLevel ?? 0,
+      },
+    }));
   }
 
   close(options = {}) {
@@ -161,54 +82,6 @@ export class PopupManager {
       this._scheduleControlsUnlock(triggeredByPointer);
       this._controlsLocked = false;
     }
-  }
-
-  _createPopupElement(x, y, pinLabel, roomRecord) {
-    const capacityDisplay = roomRecord?.capacidade ?? '--';
-    const acValue = Number.isFinite(roomRecord?.ar_condicionado) ? roomRecord.ar_condicionado : null;
-    const acDisplay = acValue === null ? '--' : acValue === 0 ? 'Não disponível' : acValue;
-    const lightDisplay = roomRecord?.iluminacao ?? 'Natural + Led';
-    const furnitureRaw = roomRecord?.mobiliario ?? '';
-    const furnitureDisplay = furnitureRaw || 'Sem itens registrados';
-    const projectorValue = Number.isFinite(roomRecord?.projetor) ? roomRecord.projetor : null;
-    const projectorDisplay = projectorValue === null ? '--' : projectorValue === 0 ? 'Não disponível' : projectorValue;
-    const headerLabel = roomRecord?.displayName ?? pinLabel;
-
-    const popup = document.createElement('div');
-    popup.id = UI_IDS.popup;
-    popup.className = UI_CLASSES.popup;
-
-    popup.innerHTML = `
-            <button class="popup-close">&times;</button>
-            <div class="popup-header">
-                <h2>${headerLabel}</h2>
-                <!-- <div class="status-tag">Disponivel</div> -->
-            </div>
-            <div class="popup-info">
-                <ul>
-                    <li>👥 <strong>Capacidade:</strong> ${capacityDisplay}</li>
-                    <li>❄️ <strong>Ar condicionado:</strong> ${acDisplay}</li>
-                    <li>💡 <strong>Iluminacao:</strong> ${lightDisplay}</li>
-                    <li>🪑 <strong>Mobiliario:</strong> ${furnitureDisplay}</li>
-                    <li>📽️ <strong>Projetor:</strong> ${projectorDisplay}</li>
-                </ul>
-            </div>
-            <!--
-            <div class="popup-actions">
-                <button class="reserve-btn">Reservar</button>
-                <button class="details-btn">Mais Detalhes</button>
-            </div>
-            -->
-        `;
-    document.body.appendChild(popup);
-    return popup;
-  }
-
-  _animatePopupOpen(popup) {
-    requestAnimationFrame(() => {
-      popup.style.opacity = '1';
-      popup.style.transform = 'translateX(-50%)';
-    });
   }
 
   dispose() {

@@ -1,8 +1,9 @@
-<script setup lang="ts">
+1|<script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
+import { X } from 'lucide-vue-next';
 import type { Notification } from '@/types/reservation';
 
 const props = defineProps<{
@@ -107,6 +108,7 @@ watch(() => props.open, (val) => {
 
 <template>
   <Teleport to="body">
+    <Transition name="notif">
     <div
       v-if="open"
       class="notif-backdrop"
@@ -131,7 +133,7 @@ watch(() => props.open, (val) => {
             >
               {{ markingAll ? 'Marcando...' : 'Marcar todas como lidas' }}
             </button>
-            <button class="notif-panel__close" @click="emit('close')" aria-label="Fechar">✕</button>
+            <button class="notif-panel__close" @click="emit('close')" aria-label="Fechar"><X :size="18" /></button>
           </div>
         </div>
 
@@ -173,6 +175,7 @@ watch(() => props.open, (val) => {
         </div>
       </div>
     </div>
+    </Transition>
   </Teleport>
 </template>
 
@@ -325,7 +328,7 @@ watch(() => props.open, (val) => {
 }
 
 .notif-panel__item--unread {
-  border-left: 3px solid var(--color-brand);
+  border-color: var(--color-brand);
   background: #f8fffe;
 }
 
@@ -361,4 +364,30 @@ watch(() => props.open, (val) => {
   flex-shrink: 0;
   align-self: center;
 }
+
+/* ── Notification panel transitions ───────────────────────── */
+.notif-enter-active,
+.notif-leave-active {
+  transition: opacity var(--duration-med, 220ms) ease;
+}
+.notif-enter-active .notif-panel,
+.notif-leave-active .notif-panel {
+  transition: transform var(--duration-med, 220ms) var(--ease-out-expo, ease), opacity var(--duration-med, 220ms) ease;
+}
+.notif-enter-from,
+.notif-leave-to {
+  opacity: 0;
+}
+.notif-enter-from .notif-panel--bottom,
+.notif-leave-to .notif-panel--bottom {
+  transform: translateY(-8px);
+  opacity: 0;
+}
+.notif-enter-from .notif-panel--top,
+.notif-leave-to .notif-panel--top {
+  transform: translateY(8px);
+  opacity: 0;
+}
+
+
 </style>

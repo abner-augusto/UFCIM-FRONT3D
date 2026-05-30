@@ -21,18 +21,6 @@ export const BLOCK_FOCUS_MIN_DISTANCE = 35;
 // -- INTERACTION -----------------------------------------
 export const PIN_ASSET_PATH = '/assets/pin.png';
 
-// -- UI & STYLING -----------------------------------------
-export const UI_IDS = {
-    floorUI: 'floor-ui',
-    popup: 'info-popup',
-};
-
-export const UI_CLASSES = {
-    floorUIContainer: 'floor-ui-container',
-    popup: 'info-popup',
-    popupCloseButton: 'popup-close',
-};
-
 // -- ANIMATION -------------------------------------------
 export const ANIMATION_DURATION = 700; // in milliseconds
 

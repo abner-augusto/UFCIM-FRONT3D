@@ -158,7 +158,7 @@ const hasUnread = () => notifications.value.some((n) => !n.read);
   gap: 1rem;
 }
 .notification-item--unread {
-  border-left: 3px solid #1D9E75;
+  border-color: #1D9E75;
   background: #f8fffe;
 }
 .notification-item__content {

@@ -1,0 +1,81 @@
+/* ============================================================
+   Shared detail-panel styles — used by RoomPopup & SpaceCard
+   Import in src/main.ts after base.css.
+   ============================================================ */
+
+/* ── Stat cards ───────────────────────────────────────────── */
+.stat-card {
+  flex: 1;
+  background: #f7f9f8;
+  border-radius: 10px;
+  padding: 0.55rem 0.45rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.stat-card__icon { font-size: 1.1rem; }
+.stat-card__value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111;
+  text-align: center;
+  line-height: 1.2;
+}
+.stat-card__value--sm { font-size: 0.76rem; font-weight: 600; }
+.stat-card__label {
+  font-size: 0.66rem;
+  color: #999;
+  text-align: center;
+}
+
+/* ── Info list ────────────────────────────────────────────── */
+.info-label { color: #999; flex-shrink: 0; }
+.info-value {
+  font-weight: 500;
+  color: #222;
+  text-align: right;
+  max-width: 60%;
+}
+
+/* ── Section title ────────────────────────────────────────── */
+.detail-section-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #bbb;
+  letter-spacing: 0.06em;
+  margin: 0 0 0.45rem;
+}
+
+/* ── Equipment list ───────────────────────────────────────── */
+.equipment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+.equipment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+.equipment-item:last-child { border-bottom: none; }
+.equipment-name { color: #333; font-weight: 500; }
+.equipment-count { color: #aaa; font-weight: 400; margin-left: 0.15rem; }
+.equipment-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.13rem 0.52rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.eq-status--working  { background: #d1fae5; color: #065f46; }
+.eq-status--broken   { background: #fee2e2; color: #991b1b; }
+.eq-status--warning  { background: #fef3c7; color: #92400e; }

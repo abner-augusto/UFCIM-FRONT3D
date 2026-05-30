@@ -85,8 +85,8 @@ export class App {
         };
       
         try {
-            await this.modelManager.initFromManifest();
-
+            // Manifest already loaded in the Promise.all above; callbacks are now
+            // registered, so go straight to loading the floors.
             await this.modelManager.showAllBlocks();
             this.interactionManager.clearFloorSelections(true);
             return true;
@@ -97,7 +97,7 @@ export class App {
     }
 
     async _initializeUI() {
-        this.uiManager.createFloorUI(
+        this.uiManager.init(
             this.modelManager,
             this.interactionManager,
             this.cameraManager
@@ -143,8 +143,8 @@ export class App {
         const antialias = !isLowPowerHardware && !(isMobile && isLowResScreen);
 
         // 2. Determine Smart Pixel Ratio
-        let targetDPR = dpr;
-        
+        let targetDPR;
+
         if (isLowPowerHardware) {
             targetDPR = 1.0;
         } else if (isHighResMobile) {

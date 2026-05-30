@@ -13,6 +13,15 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 50 * 1024 * 1024,
         runtimeCaching: [
           {
+            urlPattern: /\/api\/v1\/spaces\/[^/]+\/availability/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'availability',
+              networkTimeoutSeconds: 3,
+              expiration: { maxAgeSeconds: 60 },
+            },
+          },
+          {
             urlPattern: /\/api\/v1\/.*/,
             handler: 'NetworkFirst',
             options: {
@@ -47,6 +56,13 @@ export default defineConfig({
   base: '/',
   build: {
     outDir: 'dist',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-three': ['three'],
+        },
+      },
+    },
   },
   server: {
     host: '0.0.0.0',
@@ -64,5 +80,6 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
+    include: ['tests/unit/**/*.{test,spec}.ts'],
   },
 });

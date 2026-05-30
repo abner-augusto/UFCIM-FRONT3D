@@ -3,17 +3,29 @@ import type { PeriodKey } from '@/utils/period';
 
 defineProps<{
   modelValue: PeriodKey;
+  selectedDate: string;
+  today: string;
   loading: boolean;
   autoDetected: boolean;
 }>();
 
 defineEmits<{
   'update:modelValue': [period: PeriodKey];
+  'update:selectedDate': [date: string];
 }>();
 </script>
 
 <template>
   <div class="period-selector">
+    <label class="period-selector__label">Data</label>
+    <input
+      type="date"
+      class="period-selector__date"
+      :value="selectedDate"
+      :min="'2024-01-01'"
+      @change="$emit('update:selectedDate', ($event.target as HTMLInputElement).value)"
+    />
+
     <label class="period-selector__label">
       Turno
       <span v-if="autoDetected" class="period-selector__auto-tag">automático</span>
@@ -81,6 +93,17 @@ defineEmits<{
   vertical-align: middle;
 }
 
+.period-selector__date {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.875rem;
+  background: white;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+}
+
 .period-selector__select {
   width: 100%;
   border: 1px solid #ddd;
@@ -125,37 +148,19 @@ defineEmits<{
   flex-shrink: 0;
 }
 
-.period-selector__dot--available {
-  background: #00b050;
-}
-
-.period-selector__dot--partial {
-  background: #f2c200;
-}
-
-.period-selector__dot--reserved {
-  background: #d32f2f;
-}
+.period-selector__dot--available { background: #00b050; }
+.period-selector__dot--partial { background: #f2c200; }
+.period-selector__dot--reserved { background: #d32f2f; }
 
 @media (max-width: 480px) {
   .period-selector {
-    /* Move from overlapping the model to top-center strip */
     top: calc(var(--header-offset) + 0.5rem);
     left: 0.5rem;
     right: 0.5rem;
     min-width: 0;
-    /* Compact it */
     padding: 0.4rem 0.6rem;
   }
-
-  /* The legend (Disponível / Parcial / Ocupado dots) is redundant on mobile
-     because the pins themselves carry the color. Hide to save vertical space. */
-  .period-selector__legend {
-    display: none;
-  }
-
-  .period-selector__auto-tag {
-    display: none;
-  }
+  .period-selector__legend { display: none; }
+  .period-selector__auto-tag { display: none; }
 }
 </style>

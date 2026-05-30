@@ -1,6 +1,7 @@
 import type { Space } from '@/types/space';
 import type { Availability, Reservation, Notification, Blocking } from '@/types/reservation';
-import type { OccupancyReport } from '@/types/report';
+import type { OccupancyReport, SpaceReportData } from '@/types/report';
+import type { EquipmentReport } from '@/types/equipment-report';
 
 const BASE_URL = '/api/v1';
 
@@ -18,6 +19,20 @@ export interface InvitationPreview {
   valid: boolean;
   inviterName?: string;
   role?: string;
+}
+
+/**
+ * Set by the caller (e.g. auth store) via setUnauthorizedHandler to handle 401 retry.
+ * Returns a new access token, or null if refresh failed.
+ */
+let unauthorizedHandler: (() => Promise<string | null>) | null = null;
+
+/**
+ * Register a handler for 401 responses that performs token refresh.
+ * Breaks the circular dep between api and auth stores.
+ */
+export function setUnauthorizedHandler(handler: (() => Promise<string | null>) | null) {
+  unauthorizedHandler = handler;
 }
 
 function getHeaders(token: string | null, method: string = 'GET'): HeadersInit {
@@ -56,17 +71,10 @@ async function request<T>(
   });
 
   if (res.status === 401 && !meta._retried && !meta.authPath) {
-    // Import inside function to avoid circular dep at module load time
-    const { useAuthStore } = await import('@/stores/auth');
-    const auth = useAuthStore();
-    if (auth.refreshToken) {
-      try {
-        const { accessToken, refreshToken } = await api.refresh(auth.refreshToken);
-        auth.setTokens(accessToken, refreshToken);
-        return request<T>(path, accessToken, options, { ...meta, _retried: true });
-      } catch {
-        auth.logout();
-        // Let the original 401 propagate so the route guard kicks in.
+    if (unauthorizedHandler) {
+      const newToken = await unauthorizedHandler();
+      if (newToken) {
+        return request<T>(path, newToken, options, { ...meta, _retried: true });
       }
     }
   }
@@ -139,7 +147,7 @@ export const api = {
   // Reservations — GET /reservations/mine returns array directly
   createReservation: (
     token: string | null,
-    body: { spaceId: string; date: string; startTime: string; endTime: string; purpose?: string }
+    body: { spaceId: string; date: string; startTime: string; endTime: string; purpose?: string; description?: string }
   ) => request<Reservation>('/reservations', token, { method: 'POST', body: JSON.stringify(body) }),
 
   createRecurringReservation: (
@@ -151,7 +159,7 @@ export const api = {
       dayOfWeek: number; // 0 = Sunday, 6 = Saturday
       startTime: string;
       endTime: string;
-      description: string;
+      description?: string;
     }
   ) => request<{ recurrenceId: string; created: Reservation[]; skipped: string[] }>(
     '/reservations/recurring', token, { method: 'POST', body: JSON.stringify(body) }
@@ -199,33 +207,63 @@ export const api = {
   getOccupancyReport: async (token: string | null, params?: { startDate?: string; endDate?: string; campus?: string; department?: string }): Promise<OccupancyReport> => {
     const raw = await request<any>(`/reports/occupancy?${new URLSearchParams(params as any)}`, token);
 
-    const turnoLabel: Record<string, string> = { morning: 'Manhã', afternoon: 'Tarde', evening: 'Noite' };
+    const totalReservas = raw.spaces?.reduce((sum: number, s: any) => sum + (s.totalReservations ?? 0), 0) ?? 0;
 
     return {
       summary: {
-        ocupacaoMedia: raw.summary.occupancyRate ?? 0,
-        totalReservas: raw.summary.totalReservations ?? 0,
-        salasUsadas: raw.summary.uniqueSpacesUsed ?? 0,
+        ocupacaoMedia: raw.totalOccupancyRate ?? 0,
+        totalReservas,
+        salasUsadas: raw.spaces?.length ?? 0,
       },
-      daily: (raw.dailySeries ?? []).map((d: any) => ({
+      daily: (raw.daily ?? []).map((d: any) => ({
         date: d.date,
         ocupacao: d.occupancyRate ?? 0,
         reservas: d.reservations ?? 0,
       })),
       turnos: (raw.byTurno ?? []).map((t: any) => ({
-        turno: turnoLabel[t.turno] ?? t.turno,
-        reservas: t.count ?? 0,
+        turno: t.turno,
+        reservas: t.reservations ?? 0,
       })),
-      spaces: (raw.tabela ?? []).map((s: any) => ({
-        id: s.spaceId ?? s.id,
+      spaces: (raw.spaces ?? []).map((s: any) => ({
+        id: s.id ?? '',
         nome: s.name ?? '',
         numero: s.number ?? '',
         bloco: s.block ?? '',
         tipo: s.type ?? '',
         capacidade: s.capacity ?? 0,
-        reservas: s.reservations ?? 0,
+        reservas: s.totalReservations ?? 0,
         taxaOcupacao: s.occupancyRate ?? 0,
       })),
     };
   },
+
+  // MEL-005: Individual space report
+  getSpaceReport: (token: string | null, spaceId: string, params: { startDate: string; endDate: string }) =>
+    request<SpaceReportData>(`/spaces/${spaceId}/report?${new URLSearchParams(params)}`, token),
+
+  // Equipment Reports
+  createEquipmentReport: (token: string | null, equipmentId: string, body: { description: string; severity: 'minor' | 'major' | 'blocking' }) =>
+    request<EquipmentReport>(`/equipment/${equipmentId}/reports`, token, {
+      method: 'POST', body: JSON.stringify(body),
+    }),
+
+  listEquipmentReports: (token: string | null, equipmentId: string) =>
+    request<EquipmentReport[]>(`/equipment/${equipmentId}/reports`, token),
+
+  listMyEquipmentReports: (token: string | null) =>
+    request<EquipmentReport[]>('/equipment/reports/mine', token),
+
+  listPendingEquipmentReports: (token: string | null, filters?: { spaceId?: string; status?: string }) =>
+    request<EquipmentReport[]>(`/equipment/reports/pending?${new URLSearchParams(filters as any)}`, token),
+
+  acknowledgeEquipmentReport: (token: string | null, id: string) =>
+    request<EquipmentReport>(`/equipment/reports/${id}/acknowledge`, token, { method: 'PATCH' }),
+
+  resolveEquipmentReport: (token: string | null, id: string) =>
+    request<EquipmentReport>(`/equipment/reports/${id}/resolve`, token, { method: 'PATCH' }),
+
+  dismissEquipmentReport: (token: string | null, id: string, reason: string) =>
+    request<EquipmentReport>(`/equipment/reports/${id}/dismiss`, token, {
+      method: 'PATCH', body: JSON.stringify({ reason }),
+    }),
 };

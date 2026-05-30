@@ -4,7 +4,7 @@ import { logger } from '../utils/logger.ts';
 
 const LABEL_STYLE = {
     pixelToWorldScale: 0.05, // world units per canvas pixel
-    pinMargin: 0.1, // gap between label top and pin bottom
+    pinMargin: 0.3, // gap between label top and pin bottom
     padding: {
         x: 4,
         y: 2
@@ -24,10 +24,14 @@ const LABEL_STYLE = {
 const PIN_LABEL_LINE_LIMIT = 7;
 const PIN_SPRITE_SCALE = 1.8;
 
+const MAX_TEXTURE_CACHE = 100;
+
 export class PinFactory {
     constructor() {
         this.pinTexture = null;
         this.textureLoader = new THREE.TextureLoader();
+        this._textureCache = new Map();
+        this._canvasCache = new Map();
     }
 
     async loadAssets() {
@@ -45,7 +49,11 @@ export class PinFactory {
 
     createPinAndLabel(pinData) {
         const displayName = this._formatLabelText(pinData.displayName ?? pinData.id);
-        const labelSprite = this._createLabelSprite(pinData, displayName);
+        const labelSprite = this._createLabelSprite(pinData, {
+            displayName,
+            statusText: pinData.statusText ?? null,
+            statusColor: pinData.statusColor ?? null,
+        });
 
         const labelWorldHeight = labelSprite.scale.y;
         const pinWorldHeight = PIN_SPRITE_SCALE;
@@ -123,10 +131,47 @@ export class PinFactory {
         return sprite;
     }
 
-    _createLabelSprite(pinData, labelText) {
-        const canvas = this._createLabelCanvas(labelText);
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.needsUpdate = true;
+    _getLabelCacheKey(labelParams) {
+        const displayName = labelParams.displayName ?? '';
+        const statusText = labelParams.statusText ?? '';
+        const statusColor = labelParams.statusColor ?? '';
+        return `${displayName}|${statusText}|${statusColor}`;
+    }
+
+    _evictCache() {
+        if (this._textureCache.size <= MAX_TEXTURE_CACHE) return;
+        const keys = [...this._textureCache.keys()];
+        const toDelete = keys.slice(0, keys.length - MAX_TEXTURE_CACHE);
+        for (const key of toDelete) {
+            const tex = this._textureCache.get(key);
+            if (tex) tex.dispose();
+            this._textureCache.delete(key);
+            this._canvasCache.delete(key);
+        }
+    }
+
+    _createLabelSprite(pinData, labelParams) {
+        const cacheKey = this._getLabelCacheKey(labelParams);
+
+        // Canvas cache: avoid re-running DOM measurement for identical labels
+        let sourceCanvas;
+        if (this._canvasCache.has(cacheKey)) {
+            sourceCanvas = this._canvasCache.get(cacheKey);
+        } else {
+            sourceCanvas = this.createLabelCanvas(labelParams);
+            this._canvasCache.set(cacheKey, sourceCanvas);
+        }
+
+        // Texture cache: clone to avoid sharing across materials
+        let texture;
+        if (this._textureCache.has(cacheKey)) {
+            texture = this._textureCache.get(cacheKey).clone();
+        } else {
+            texture = new THREE.CanvasTexture(sourceCanvas);
+            texture.needsUpdate = true;
+            this._textureCache.set(cacheKey, texture);
+            this._evictCache();
+        }
 
         const material = new THREE.SpriteMaterial({
             map: texture,
@@ -137,8 +182,8 @@ export class PinFactory {
 
         const sprite = new THREE.Sprite(material);
         const pixelToWorldScale = LABEL_STYLE.pixelToWorldScale;
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
+        const canvasWidth = sourceCanvas.width;
+        const canvasHeight = sourceCanvas.height;
         const scaleX = canvasWidth * pixelToWorldScale;
         const scaleY = canvasHeight * pixelToWorldScale;
         sprite.scale.set(scaleX, scaleY, 1);
@@ -146,12 +191,13 @@ export class PinFactory {
         sprite.position.copy(pinData.position).add(new THREE.Vector3(0, labelOffsetY, 0));
         sprite.renderOrder = 2;
         sprite.name = `${pinData.id}_label`;
-        sprite.userData.displayName = labelText;
+        sprite.userData.displayName = labelParams.displayName;
+        sprite.userData.baseDisplayName = labelParams.displayName;
 
         return sprite;
     }
 
-    _createLabelCanvas(text) {
+    createLabelCanvas({ displayName, statusText, statusColor }) {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
 
@@ -160,11 +206,17 @@ export class PinFactory {
         tempLabel.className = 'pin-label'; // match your CSS class
         tempLabel.style.position = 'absolute'; // off-screen
         tempLabel.style.visibility = 'hidden';
-        tempLabel.textContent = text;
+
+        // Build text: displayName always, statusText on second line if present
+        const hasStatus = statusText != null && statusText !== '';
+        const labelText = hasStatus ? `${displayName}\n${statusText}` : displayName;
+        tempLabel.textContent = labelText;
         document.body.appendChild(tempLabel);
         try {
             const style = getComputedStyle(tempLabel);
             const font = LABEL_STYLE.font || `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+            // Status line font: smaller (10px vs 12px)
+            const statusFont = hasStatus ? '400 10px Roboto, sans-serif' : font;
             ctx.font = font;
 
             const paddingConfig = LABEL_STYLE.padding || {};
@@ -181,19 +233,28 @@ export class PinFactory {
             const borderRadius = (borderConfig.radius ?? parseInt(style.borderRadius, 10)) || 8;
             const borderWidth = (borderConfig.width ?? parseInt(style.borderWidth, 10)) || 2;
 
-            const lines = text.split('\n');
+            const lines = labelText.split('\n');
             const lineHeight = this._resolveLineHeight(style);
-            const lineWidths = lines.map(line => Math.ceil(ctx.measureText(line).width));
+            // Status line gets a smaller line height
+            const statusLineHeight = hasStatus ? Math.round(10 * 1.2) : lineHeight;
+
+            // Measure each line with appropriate font
+            const statusIndex = lines.length - 1;
+            const lineWidths = lines.map((line, i) => {
+                const useFont = hasStatus && i === statusIndex ? statusFont : font;
+                ctx.font = useFont;
+                return Math.ceil(ctx.measureText(line).width);
+            });
             const textWidth = Math.max(...lineWidths, 0);
-            const textBlockHeight = lineHeight * lines.length;
+            const textBlockHeight = hasStatus
+                ? lineHeight * (lines.length - 1) + statusLineHeight + 2  // 2px gap before status line
+                : lineHeight * lines.length;
 
             const rectWidth = textWidth + paddingLeft + paddingRight;
             const rectHeight = textBlockHeight + paddingTop + paddingBottom;
 
             canvas.width = rectWidth + borderWidth * 2;
             canvas.height = rectHeight + borderWidth * 2;
-
-            ctx.font = font;
 
             // Colors: prefer locked palette to avoid dark-mode overrides
             const bgColor = LABEL_STYLE.colors?.background || style.backgroundColor || 'white';
@@ -212,14 +273,22 @@ export class PinFactory {
             ctx.stroke();
 
             // Draw text
-            ctx.fillStyle = textColor;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             const labelCenterX = rectX + rectWidth / 2;
-            const firstLineY = rectY + paddingTop + lineHeight / 2;
+            let currentY = rectY + paddingTop;
+
+            const statusLineIdx = lines.length - 1;
             lines.forEach((line, index) => {
-                const lineY = firstLineY + index * lineHeight;
-                ctx.fillText(line, labelCenterX, lineY);
+                const useFont = hasStatus && index === statusLineIdx ? statusFont : font;
+                const useColor = hasStatus && index === statusLineIdx && statusColor ? statusColor : textColor;
+                const lh = (hasStatus && index === statusLineIdx) ? statusLineHeight : lineHeight;
+                ctx.font = useFont;
+                ctx.fillStyle = useColor;
+                currentY += lh / 2;
+                ctx.fillText(line, labelCenterX, currentY);
+                currentY += lh / 2;
+                if (hasStatus && index === statusLineIdx - 1) currentY += 2; // 2px gap before status
             });
 
             return canvas;

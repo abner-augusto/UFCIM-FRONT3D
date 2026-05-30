@@ -263,6 +263,35 @@ export class InteractionManager extends THREE.EventDispatcher {
         });
     }
 
+    /**
+     * Updates the label text and status of an existing pin without rebuilding the sprite.
+     * Regenerates only the canvas texture.
+     */
+    updatePinLabelStatus(pinId, statusText, statusColor) {
+        const labelSprite = this.labelSprites.find(
+            s => s.name === `${pinId}_label`
+        );
+        if (!labelSprite || !labelSprite.material?.map) return;
+
+        const displayName = labelSprite.userData.baseDisplayName ?? labelSprite.userData.displayName;
+        const canvas = this.pinFactory.createLabelCanvas({
+            displayName,
+            statusText: statusText ?? null,
+            statusColor: statusColor ?? null,
+        });
+
+        // Replace the texture
+        const newTexture = new THREE.CanvasTexture(canvas);
+        newTexture.needsUpdate = true;
+        labelSprite.material.map.dispose();
+        labelSprite.material.map = newTexture;
+        labelSprite.material.needsUpdate = true;
+
+        // Update scale if canvas dimensions changed
+        const pixelToWorldScale = 0.05;
+        labelSprite.scale.set(canvas.width * pixelToWorldScale, canvas.height * pixelToWorldScale, 1);
+    }
+
     dispose() {
         this.canvas.removeEventListener('pointerdown', this._onPointerDown);
         [...this.labelSprites, ...this.clickTargets].forEach((sprite) => {

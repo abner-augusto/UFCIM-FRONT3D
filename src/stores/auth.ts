@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import { api, setUnauthorizedHandler } from '@/services/api';
 
 export type UserRole = 'student' | 'professor' | 'staff' | 'maintenance';
 
@@ -22,6 +23,18 @@ export const useAuthStore = defineStore('auth', () => {
   const userRole = computed(() => user.value?.role ?? null);
   const isMasterAdmin = computed(() => user.value?.isMasterAdmin ?? false);
 
+  // Register the 401 refresh handler — breaks circular dep between auth and api
+  setUnauthorizedHandler(async () => {
+    if (!refreshToken.value) return null;
+    try {
+      const { accessToken, refreshToken: newRefresh } = await api.refresh(refreshToken.value);
+      setTokens(accessToken, newRefresh);
+      return accessToken;
+    } catch {
+      logout();
+      return null;
+    }
+  });
   function setAuth(jwt: string, refresh: string, userData: User, unread = 0) {
     token.value = jwt;
     refreshToken.value = refresh;
@@ -49,9 +62,7 @@ export const useAuthStore = defineStore('auth', () => {
   function logout() {
     // Best-effort revocation; don't block UI on it.
     if (refreshToken.value) {
-      import('@/services/api').then(({ api }) => {
-        api.logout(refreshToken.value!).catch(() => {});
-      });
+      api.logout(refreshToken.value!).catch(() => {});
     }
     token.value = null;
     refreshToken.value = null;

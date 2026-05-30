@@ -49,6 +49,7 @@ async function handleConfirm() {
       startTime: reservationStore.startTime!,
       endTime: reservationStore.endTime!,
       purpose: reservationStore.purpose ?? undefined,
+      description: reservationStore.description ?? undefined,
     });
     reservationStore.reset();
     router.push({ name: 'my-reservations' });
@@ -87,6 +88,10 @@ async function handleConfirm() {
       <div class="confirm-row">
         <span class="confirm-label">Finalidade</span>
         <span class="confirm-value">{{ purposeLabel(reservationStore.purpose!) }}</span>
+      </div>
+      <div v-if="reservationStore.description" class="confirm-row">
+        <span class="confirm-label">Descrição</span>
+        <span class="confirm-value">{{ reservationStore.description }}</span>
       </div>
     </div>
 

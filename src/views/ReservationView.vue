@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
+import { Thermometer } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 import { useReservationStore } from '@/stores/reservation';
 import { api } from '@/services/api';
@@ -8,6 +9,7 @@ import type { Space } from '@/types/space';
 import type { Availability, AvailabilitySlot, Blocking, TimeSlot } from '@/types/reservation';
 import { BLOCK_TYPE_LABELS, TIME_SLOT_LABELS, TIME_SLOT_RANGES, PURPOSE_OPTIONS, isSlotAvailable } from '@/types/reservation';
 import { hasRole, CAN_RESERVE, CAN_CREATE_RECURRING } from '@/utils/roles';
+import { toLocalISODate } from '@/utils/date';
 
 const route = useRoute();
 const router = useRouter();
@@ -18,7 +20,7 @@ const spaceId = route.params.spaceId as string;
 
 const space = ref<Space | null>(null);
 const availability = ref<Availability | null>(null);
-const today = new Date().toISOString().split('T')[0];
+const today = toLocalISODate();
 
 const selectedDate = ref(today);
 const selectedPurpose = ref('');
@@ -27,6 +29,17 @@ const loadingAvailability = ref(false);
 const loadingBlockings = ref(false);
 const errorMsg = ref<string | null>(null);
 const blockings = ref<Blocking[]>([]);
+
+// Reference timestamp for "has this hour passed" — refreshed whenever
+// availability (re)loads. Lets us block booking slots already past for today.
+const nowTs = ref(Date.now());
+
+// A start time is past once it's at or before now (in local/campus time).
+// Future days are never past; earlier days are always past.
+function isPastTime(time: string): boolean {
+  if (!selectedDate.value) return false;
+  return new Date(`${selectedDate.value}T${time}:00`).getTime() <= nowTs.value;
+}
 
 // ── Selection mode ──────────────────────────────────────────────
 type SelectionMode = 'slots' | 'hours';
@@ -38,6 +51,9 @@ const selectedSlot = ref<TimeSlot | null>(null);
 // Hour-by-hour mode
 const pickedStart = ref<string | null>(null);
 const pickedEnd = ref<string | null>(null);
+
+// Description for single reservation
+const descriptionInput = ref('');
 
 // Recurring reservation state
 const isRecurring = ref(false);
@@ -80,14 +96,39 @@ onMounted(async () => {
   }
 });
 
+// Prefill the custom hour range from a popup selection (RoomPopup → ViewerView
+// stored a custom schedule for this space). Applied once, after availability loads.
+let pendingPrefill =
+  reservationStore.spaceId === spaceId && reservationStore.date && reservationStore.startTime && reservationStore.endTime
+    ? { date: reservationStore.date, startTime: reservationStore.startTime, endTime: reservationStore.endTime }
+    : null;
+
+if (pendingPrefill) {
+  selectionMode.value = 'hours';
+  selectedDate.value = pendingPrefill.date;
+}
+
+function applyPendingPrefill() {
+  if (!pendingPrefill || pendingPrefill.date !== selectedDate.value || !availability.value) return;
+  const { startTime, endTime } = pendingPrefill;
+  pendingPrefill = null; // one-shot
+  const startSlot = availability.value.find(s => s.startTime === startTime && s.status === 'available');
+  const endSlot = availability.value.find(s => s.endTime === endTime && s.status === 'available');
+  if (!startSlot || !endSlot) return; // range no longer fully available — leave picker empty
+  pickedStart.value = startTime;
+  pickedEnd.value = endSlot.startTime; // picker tracks the start time of the last selected hour
+}
+
 watch(selectedDate, async (date) => {
   if (!date) return;
   selectedSlot.value = null;
   pickedStart.value = null;
   pickedEnd.value = null;
+  nowTs.value = Date.now();
   loadingAvailability.value = true;
   try {
     availability.value = await api.getAvailability(auth.token, spaceId, date);
+    applyPendingPrefill();
   } catch {
     errorMsg.value = 'Não foi possível verificar disponibilidade.';
   } finally {
@@ -104,6 +145,8 @@ watch(selectionMode, () => {
 // ── Named-slot helpers ──────────────────────────────────────────
 function checkSlotAvailable(slot: TimeSlot): boolean {
   if (!availability.value) return false;
+  // A named period is bookable until it fully ends.
+  if (isPastTime(TIME_SLOT_RANGES[slot].endTime)) return false;
   return isSlotAvailable(availability.value, slot);
 }
 
@@ -142,6 +185,12 @@ function isHourAvailable(slot: AvailabilitySlot): boolean {
   return slot.status === 'available';
 }
 
+// Selectable = available AND not already fully past (for today). An hour is
+// bookable until it *ends*, so the in-progress hour stays selectable.
+function isHourSelectable(slot: AvailabilitySlot): boolean {
+  return isHourAvailable(slot) && !isPastTime(slot.endTime);
+}
+
 function hoursInRange(start: string, end: string): string[] {
   const result: string[] = [];
   for (const s of sortedHours.value) {
@@ -154,12 +203,12 @@ function rangeFullyAvailable(start: string, end: string): boolean {
   const hours = hoursInRange(start, end);
   return hours.every(h => {
     const s = sortedHours.value.find(x => x.startTime === h);
-    return s?.status === 'available';
+    return !!s && isHourSelectable(s);
   });
 }
 
 function getHourState(slot: AvailabilitySlot): 'available' | 'selected' | 'endpoint' | 'unavailable' {
-  if (!isHourAvailable(slot)) return 'unavailable';
+  if (!isHourSelectable(slot)) return 'unavailable';
   const h = slot.startTime;
   if (!pickedStart.value) return 'available';
   if (pickedEnd.value) {
@@ -172,7 +221,7 @@ function getHourState(slot: AvailabilitySlot): 'available' | 'selected' | 'endpo
 }
 
 function handleHourClick(slot: AvailabilitySlot) {
-  if (!isHourAvailable(slot)) return;
+  if (!isHourSelectable(slot)) return;
   const h = slot.startTime;
 
   // Nothing picked yet → set start
@@ -244,6 +293,7 @@ function handleContinue() {
     reservationStore.setCustomSchedule(selectedDate.value, pickedStart.value!, customRangeEnd.value!);
   }
   reservationStore.setPurpose(selectedPurpose.value);
+  reservationStore.setDescription(descriptionInput.value);
   router.push({ name: 'reservation-confirm' });
 }
 
@@ -252,7 +302,7 @@ const recurringMinEndDate = computed(() => {
   if (!recurringStartDate.value) return today;
   const d = new Date(recurringStartDate.value + 'T12:00:00');
   d.setDate(d.getDate() + 1);
-  return d.toISOString().split('T')[0];
+  return toLocalISODate(d);
 });
 
 function canSubmitRecurring() {
@@ -281,7 +331,7 @@ async function handleRecurring() {
       dayOfWeek: recurringDayOfWeek.value!,
       startTime,
       endTime,
-      description: recurringDescription.value.trim(),
+      description: recurringDescription.value.trim() || undefined,
     });
     recurringSuccessMsg.value = `${result.created.length} reservas criadas, ${result.skipped.length} conflitos ignorados.`;
     setTimeout(() => router.push({ name: 'my-reservations' }), 2000);
@@ -309,7 +359,7 @@ async function handleRecurring() {
         <p>Bloco {{ space.block }} · {{ space.campus }}</p>
         <p v-if="space.capacity" class="space-capacity">Capacidade: {{ space.capacity }} pessoas</p>
         <p v-if="space.department" class="space-meta">{{ space.department }}</p>
-        <p v-if="space.hvac" class="space-meta">🌡 {{ space.hvac }}</p>
+        <p v-if="space.hvac" class="space-meta"><Thermometer :size="14" style="vertical-align: -2px" /> {{ space.hvac }}</p>
         <p v-if="reservationStatusMessage" class="space-warning">{{ reservationStatusMessage }}</p>
       </div>
 
@@ -383,7 +433,8 @@ async function handleRecurring() {
                 :key="s.startTime"
                 class="hour-btn"
                 :class="`hour-btn--${getHourState(s)}`"
-                :disabled="!isHourAvailable(s)"
+                :disabled="!isHourSelectable(s)"
+                :aria-label="`${hourLabel(s.startTime)}${isPastTime(s.endTime) ? ' (horário já passou)' : ''}`"
                 @click="handleHourClick(s)"
               >
                 {{ hourLabel(s.startTime) }}
@@ -400,6 +451,20 @@ async function handleRecurring() {
               {{ opt.label }}
             </option>
           </select>
+        </div>
+
+        <div v-if="selectedSlot || (selectionMode === 'hours' && pickedStart && pickedEnd)" class="form-section">
+          <label class="form-label" for="description-input">Descrição</label>
+          <input
+            id="description-input"
+            type="text"
+            class="form-input"
+            maxlength="100"
+            v-model="descriptionInput"
+            placeholder="Ex: Modelagem Tridimensional"
+            aria-describedby="description-hint"
+          />
+          <p id="description-hint" class="form-hint">opcional · visível a professores · ex: Modelagem Tridimensional</p>
         </div>
 
         <p v-if="errorMsg" class="state-error">{{ errorMsg }}</p>

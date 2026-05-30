@@ -23,17 +23,14 @@ onMounted(async () => {
   threeApp = new App(canvasRef.value);
   await threeApp.init();
 
-  // Hand off popup rendering to Vue
-  if (threeApp.popupManager) {
-    threeApp.popupManager.vueManaged = true;
-  }
-
   window.addEventListener('ufcim:pin-click', onPinClick);
   emit('ready');
 });
 
 onUnmounted(() => {
   window.removeEventListener('ufcim:pin-click', onPinClick);
+  // Ensure fullscreen mode doesn't leak to other views if we unmount while active.
+  document.body.classList.remove('viewer-fullscreen');
 
   if (threeApp) {
     threeApp.dispose();
@@ -42,18 +39,13 @@ onUnmounted(() => {
 });
 
 defineExpose({
-  filterPinsToBackendSpaces: (activeModelIds: Set<string>, colorMap?: Map<string, string>) => {
+  applyBackendFilter: (activeModelIds: Set<string>, colorMap?: Map<string, string>) => {
     threeApp?.interactionManager?.applyBackendFilter(activeModelIds, colorMap ?? new Map());
   },
-  applyPinOpacity: (pinId: string, opacity: number) => {
-    threeApp?.interactionManager?.setPinOpacity(pinId, opacity);
+  updatePinLabelStatus: (pinId: string, statusText: string | null, statusColor: string | null) => {
+    threeApp?.interactionManager?.updatePinLabelStatus(pinId, statusText, statusColor);
   },
-  setFloorUIVisible: (visible: boolean) => {
-    threeApp?.uiManager?.toggleFloorUI(visible);
-  },
-  setSearchData: (spaces: Array<{ modelId: string | null; name: string; number: string; block: string; type: string; reservable: boolean }>) => {
-    threeApp?.uiManager?.setSearchSpaces(spaces);
-  },
+  navigateToPin: (modelId: string) => threeApp?.uiManager?.navigateToSpaceByModelId(modelId),
   selectBuilding: (id: string | null) => threeApp?.uiManager?.selectBuilding(id),
   selectFloor: (level: number) => threeApp?.uiManager?.selectFloor(level),
   getBuildingsList: () => threeApp?.uiManager?.getBuildingsList() ?? [],

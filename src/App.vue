@@ -47,7 +47,11 @@ onUnmounted(() => {
 <template>
   <AppHeader v-if="auth.isAuthenticated" />
   <main class="app-main">
-    <RouterView />
+    <RouterView v-slot="{ Component }">
+      <Transition name="page" mode="out-in">
+        <component :is="Component" :key="route.path" />
+      </Transition>
+    </RouterView>
   </main>
   <BottomTabBar v-if="auth.isAuthenticated" />
 </template>
@@ -64,5 +68,21 @@ onUnmounted(() => {
   .app-main {
     padding-bottom: calc(var(--bottom-bar-h) + var(--safe-bottom));
   }
+}
+
+/* Page route transitions */
+.page-enter-active {
+  transition: opacity 180ms var(--ease-out-expo, ease), transform 180ms var(--ease-out-expo, ease);
+}
+.page-leave-active {
+  transition: opacity 120ms ease-in, transform 120ms ease-in;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 </style>

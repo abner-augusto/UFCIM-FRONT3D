@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Summary } from '@/types/report';
+import { BarChart3, Calendar, DoorOpen } from 'lucide-vue-next';
 
 defineProps<{
   summary: Summary;
@@ -9,7 +10,7 @@ defineProps<{
 <template>
   <div class="summary-cards">
     <div class="card">
-      <span class="card-icon">📊</span>
+      <span class="card-icon"><BarChart3 :size="32" /></span>
       <div class="card-body">
         <span class="card-value">{{ summary.ocupacaoMedia }}%</span>
         <span class="card-label">Ocupação Média</span>
@@ -17,7 +18,7 @@ defineProps<{
     </div>
 
     <div class="card">
-      <span class="card-icon">📅</span>
+      <span class="card-icon"><Calendar :size="32" /></span>
       <div class="card-body">
         <span class="card-value">{{ summary.totalReservas }}</span>
         <span class="card-label">Total de Reservas</span>
@@ -25,7 +26,7 @@ defineProps<{
     </div>
 
     <div class="card">
-      <span class="card-icon">🚪</span>
+      <span class="card-icon"><DoorOpen :size="32" /></span>
       <div class="card-body">
         <span class="card-value">{{ summary.salasUsadas }}</span>
         <span class="card-label">Salas Usadas</span>

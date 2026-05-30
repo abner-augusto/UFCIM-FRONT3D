@@ -4,9 +4,10 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useReservationStore } from '@/stores/reservation';
 import { api } from '@/services/api';
-import { SPACE_TYPE_LABELS, EQUIPMENT_STATUS_LABELS, type Space, type Equipment } from '@/types/space';
+import { SPACE_TYPE_LABELS, type Space } from '@/types/space';
 import { BLOCK_TYPE_LABELS, TIME_SLOT_RANGES, type Blocking } from '@/types/reservation';
 import { PERIOD_COLORS, type PinStatus } from '@/composables/usePinAvailability';
+import { useEquipmentGroups, type EquipmentGroup } from '@/composables/useEquipmentGroups';
 import { hasRole, CAN_RESERVE, CAN_BLOCK } from '@/utils/roles';
 import type { PeriodKey } from '@/utils/period';
 
@@ -38,46 +39,9 @@ const blockingReason = ref<string | null>(null);
 
 const displaySpace = computed(() => detailedSpace.value ?? props.space);
 
-// Equipment grouping (same logic as RoomPopup)
-interface EquipmentGroup {
-  name: string;
-  total: number;
-  working: number;
-  broken: number;
-  underRepair: number;
-  replacementScheduled: number;
-}
-
-const equipmentGroups = computed((): EquipmentGroup[] => {
-  const equip = displaySpace.value.equipment;
-  if (!equip?.length) return [];
-  const map = new Map<string, EquipmentGroup>();
-  for (const item of equip) {
-    if (!map.has(item.name)) {
-      map.set(item.name, { name: item.name, total: 0, working: 0, broken: 0, underRepair: 0, replacementScheduled: 0 });
-    }
-    const g = map.get(item.name)!;
-    g.total++;
-    if (item.status === 'working') g.working++;
-    else if (item.status === 'broken') g.broken++;
-    else if (item.status === 'under_repair') g.underRepair++;
-    else if (item.status === 'replacement_scheduled') g.replacementScheduled++;
-  }
-  return Array.from(map.values());
-});
-
-function groupStatusClass(g: EquipmentGroup): string {
-  if (g.broken > 0) return 'eq-status--broken';
-  if (g.underRepair > 0 || g.replacementScheduled > 0) return 'eq-status--warning';
-  return 'eq-status--working';
-}
-
-function groupStatusLabel(g: EquipmentGroup): string {
-  if (g.broken > 0) return `${g.broken} com defeito`;
-  if (g.underRepair > 0) return 'Em manutenção';
-  if (g.replacementScheduled > 0) return 'Substituição agendada';
-  return 'Funcionando';
-}
+// Equipment grouping (shared with RoomPopup)
+const { equipmentGroups, groupSeverity, groupStatusLabel } = useEquipmentGroups(() => displaySpace.value);
+const groupStatusClass = (g: EquipmentGroup) => `eq-status--${groupSeverity(g)}`;
 
 // Status display
 const statusLabel = computed((): string => {
@@ -250,7 +214,7 @@ function handleToggle() {
 
         <!-- Equipment -->
         <div v-if="equipmentGroups.length" class="equipment-section">
-          <p class="section-title">Equipamentos</p>
+          <p class="detail-section-title">Equipamentos</p>
           <ul class="equipment-list">
             <li v-for="g in equipmentGroups" :key="g.name" class="equipment-item">
               <span class="equipment-name">
@@ -304,7 +268,7 @@ function handleToggle() {
   transition: border-color 0.15s;
 }
 .space-card--expanded {
-  border-color: #1D9E75;
+  border-color: var(--color-brand);
 }
 .space-card--dimmed {
   opacity: 0.6;
@@ -401,40 +365,13 @@ function handleToggle() {
   font-size: 0.85rem;
 }
 
-/* Stats grid */
+/* Stats grid — .stat-card styles in detail-panel.css */
 .stats-grid {
   display: flex;
   gap: 0.5rem;
 }
-.stat-card {
-  flex: 1;
-  background: #f7f9f8;
-  border-radius: 10px;
-  padding: 0.5rem 0.4rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.1rem;
-  min-width: 0;
-}
-.stat-card__value {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #111;
-  text-align: center;
-  line-height: 1.2;
-}
-.stat-card__value--sm {
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-.stat-card__label {
-  font-size: 0.65rem;
-  color: #999;
-  text-align: center;
-}
 
-/* Info list */
+/* Info list — .info-label/.info-value in detail-panel.css */
 .info-list {
   list-style: none;
   margin: 0;
@@ -450,54 +387,15 @@ function handleToggle() {
   border-bottom: 1px solid #f2f2f2;
   padding-bottom: 0.25rem;
 }
-.info-label { color: #999; flex-shrink: 0; }
-.info-value { font-weight: 500; color: #222; text-align: right; max-width: 60%; }
 
-/* Equipment */
-.section-title {
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: #bbb;
-  letter-spacing: 0.06em;
-  margin: 0 0 0.4rem;
-}
-.equipment-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-.equipment-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.8rem;
-  padding: 0.2rem 0;
-  border-bottom: 1px solid #f5f5f5;
-}
-.equipment-item:last-child { border-bottom: none; }
-.equipment-name { color: #333; font-weight: 500; }
-.equipment-count { color: #aaa; font-weight: 400; margin-left: 0.15rem; }
-.equipment-badge {
-  font-size: 0.68rem;
-  font-weight: 600;
-  padding: 0.12rem 0.5rem;
-  border-radius: 999px;
-  white-space: nowrap;
-}
-.eq-status--working  { background: #d1fae5; color: #065f46; }
-.eq-status--broken   { background: #fee2e2; color: #991b1b; }
-.eq-status--warning  { background: #fef3c7; color: #92400e; }
+/* Equipment — styles in detail-panel.css */
 
 /* Blocking notice */
 .blocking-notice {
   padding: 0.6rem 0.8rem;
   border-radius: 8px;
   background: #fff8f0;
-  border-left: 3px solid #f59e0b;
+  border: 1px solid #fce4c2;
 }
 .blocking-notice__label {
   margin: 0 0 0.15rem;
@@ -518,40 +416,7 @@ function handleToggle() {
   flex-direction: column;
   gap: 0.4rem;
 }
-.btn-primary {
-  width: 100%;
-  padding: 0.7rem;
-  border: none;
-  border-radius: 10px;
-  background: #1D9E75;
-  color: white;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.btn-primary:hover { background: #178a65; }
-.btn-primary:disabled { background: #b8c8c2; cursor: not-allowed; }
-
-.btn-secondary {
-  width: 100%;
-  padding: 0.65rem;
-  border: 1.5px solid #1D9E75;
-  border-radius: 10px;
-  background: none;
-  color: #1D9E75;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.btn-secondary:hover { background: #e8f5f0; }
-.btn-secondary:disabled {
-  border-color: #ccc;
-  color: #bbb;
-  cursor: not-allowed;
-}
-.btn-secondary:disabled:hover { background: none; }
+/* .btn-primary / .btn-secondary are defined globally in src/styles/base.css */
 
 .action-hint {
   margin: 0;

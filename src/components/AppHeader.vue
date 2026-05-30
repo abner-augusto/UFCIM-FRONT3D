@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router';
 import { hasRole, CAN_BLOCK, CAN_ADMIN, CAN_VIEW_REPORTS } from '@/utils/roles';
 import NavDrawer from './NavDrawer.vue';
 import NotificationsPanel from './NotificationsPanel.vue';
+import { Menu, Bell } from 'lucide-vue-next';
 
 const authStore = useAuthStore();
 const campusStore = useCampusStore();
@@ -39,7 +40,7 @@ function logout() {
   <header class="app-header">
     <div class="header-content">
       <!-- Tablet Hamburger (481-1023px) -->
-      <button class="hamburger-btn" @click="drawerOpen = true">☰</button>
+      <button class="hamburger-btn" @click="drawerOpen = true"><Menu :size="24" /></button>
 
       <div class="header-left">
         <router-link to="/campus" class="header-logo">UFCIM</router-link>
@@ -59,7 +60,7 @@ function logout() {
         <!-- Tablet/Desktop User Info -->
         <div class="user-info-desktop">
           <button class="desktop-notif" @click="notifOpen = !notifOpen">
-            🔔
+            <Bell :size="20" />
             <span v-if="authStore.unreadCount > 0" class="notif-badge">
               {{ authStore.unreadCount >= 100 ? '99+' : authStore.unreadCount }}
             </span>
@@ -71,7 +72,7 @@ function logout() {
         <!-- Mobile Actions (<= 480px) -->
         <div class="mobile-actions">
           <button class="mobile-notif" @click="notifOpen = !notifOpen">
-            🔔
+            <Bell :size="20" />
             <span v-if="authStore.unreadCount > 0" class="notif-badge">
               {{ authStore.unreadCount >= 100 ? '99+' : authStore.unreadCount }}
             </span>

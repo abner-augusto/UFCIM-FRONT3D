@@ -8,6 +8,7 @@ import { useSpaceBrowser } from '@/composables/useSpaceBrowser';
 import { PERIOD_COLORS, type PinStatus } from '@/composables/usePinAvailability';
 import SpaceCard from '@/components/SpaceCard.vue';
 import type { PeriodKey } from '@/utils/period';
+import { toLocalISODate } from '@/utils/date';
 
 const route = useRoute();
 const router = useRouter();
@@ -40,7 +41,7 @@ const {
 } = useSpaceBrowser();
 
 const expandedId = ref<string | null>(null);
-const today = new Date().toISOString().split('T')[0];
+const today = toLocalISODate();
 
 const STATUS_OPTIONS: { value: PinStatus; label: string }[] = [
   { value: 'available', label: 'Disponível' },
