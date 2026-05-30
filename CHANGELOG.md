@@ -1,5 +1,47 @@
 # Changelog
 
+## [3.1.0](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v3.0.0...v3.1.0) (2026-05-30)
+
+
+### Features
+
+* **e2e:** add Playwright E2E test suite with real backend integration ([6d3a877](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/6d3a8775f69c9641b961b9ced3815a88eca53a20))
+* IAUD/Benfica MVP — viewer, reservations, reports & UI pass ([662862a](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/662862ab7de0a59cd5633b2104cbabf074e191a0))
+* **reports:** add equipment report dialog and space report view ([864aab8](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/864aab8c4472491f1cf640f0d5226522e5125334))
+* **reports:** surface daily, turno, and per-space occupancy ([aab31c2](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/aab31c2e342fb4a0fb9c77ead555fbf407e5dcb6))
+* **router:** add type augmentation for route meta ([4e0a948](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/4e0a9489076e15be0e25d73c35b15689df78adba))
+* **ui:** motion pass — reduced-motion, easing tokens, feedback, transitions ([8f1020d](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/8f1020de1cf0727d9d344d7d6fc9874b38e1112f))
+* **ui:** page transitions + grid re-animates on date change ([c4a6ebf](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/c4a6ebf0b3f77abcf5dfd45724b2a9b6f8d01a80))
+* **viewer:** add date filter, pin status labels, schedule grid and block heatmap ([53ff612](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/53ff612f18c55b1d2301cd7db685b53e67fa7498))
+* **viewer:** collapse secondary sections behind details toggle in room popup ([db34d57](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/db34d574626f0ce12e981879eba3bf1ff5aeef42))
+* **viewer:** interactive hour-range schedule grid in room popup ([e0715f3](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/e0715f34c60699e5ff7acf79758e6f3a2467e7a7))
+* **viewer:** Vue-native search sheet replacing legacy 3D search ([858673d](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/858673dbd850b92bccceeca83026870dcafb4df5))
+
+
+### Bug Fixes
+
+* align getOccupancyReport data mapping with actual backend response shape ([1607175](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/1607175b8ff417715dde39602fba9873088c637a))
+* **date:** resolve today in local time instead of UTC ([1ddfb09](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/1ddfb09ae098f8dd8786607519ef63a73b0748c1))
+* **deps:** downgrade vite from 8.x to 7.3.3 due to compatibility issues ([ed0db98](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/ed0db98b932064a07d3da566f429bd55293d1028))
+* **pin-label:** aplicar cor/linha de status na última linha, não na index 1 ([a394da0](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/a394da09bccc6b37acca62a115dec042de347d7e))
+* **pin-label:** aumentar gap entre pin e label (0.1 → 0.3) ([d5a7cf7](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/d5a7cf7fae713498ae031a6621964067c279fca8))
+* **report:** correct 90-day preset off-by-one ([9973003](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/9973003afc8fcac464c0846b82f0702a490d3db1))
+* **reservation:** add missing useRoute import ([45bde04](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/45bde04cc9931c1a551d106d9bd08a518ca2281c))
+* **reservation:** block fully-elapsed hours and follow the grid by default ([f7a28a5](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/f7a28a5204a8afde16481134ada02f5c7864eb8e))
+* **router:** use slot props pattern for RouterView transition ([c9454d0](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/c9454d0bde0b594ec8121792725b936fef88411a))
+* **three:** drop redundant initFromManifest call ([da8fbfe](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/da8fbfe908eb8bd516c7b18e60ac083bc877c1dd))
+* **ui:** replace side-stripe borders with full borders ([8219eff](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/8219eff71347405d5d382fda43b777d213f30111))
+* **ui:** wire reservation description input and clean up dead code ([4feab95](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/4feab95f886fde6e6048ed5a9f4e5427aefbc08c))
+* **viewer:** advance default reservation start to current hour when date is today ([b00589a](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/b00589ae799a8033aa9b2bec477d6a5b730802f1))
+* **viewer:** block heatmap never matched spaces ([9c7d845](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/9c7d845a3817e4dd54fc784bc25ceaa6fbe0538d))
+* **viewer:** correct campus filter, spaces limit, and viewer-ready timing ([8a8fb83](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/8a8fb83a29a79dce3dbc5c15f0f42dba98a519bc))
+* **viewer:** grid-wrapper removed, transition wraps only hour-grid ([c11facc](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/c11facc48f7dc9877af4dfdf6f82e6c31cdcb58f))
+* **viewer:** rail alignment, floor stack offset, and date picker ([74b6dbc](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/74b6dbcfaa9b7a5d624d4674a6c15a015ccd6772))
+* **viewer:** replace bounce easing with expo ease-out in room popup ([594bab7](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/594bab7645f2d637d3b7cec8a7db318694d70ea9))
+* **viewer:** restore hour-grid flex layout + staggered slide-fade animation ([ecade10](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/ecade10a302bcc3f9d92a0ac951409ffe43d6971))
+* **viewer:** search bar limitada e andares acima dos blocos ([66d3495](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/66d349558671bfce724696fb10c449f914226677))
+* **viewer:** wire fullscreen toggle and clean up on unmount ([d31bb27](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/d31bb27b5577b6a095fcca047ba15e4b0dd85f22))
+
 ## [3.0.0](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v2.0.0...v3.0.0) (2026-05-12)
 
 
