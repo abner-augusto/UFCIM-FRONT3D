@@ -555,11 +555,27 @@ function onReportSent() {
 .room-popup__schedule { margin-bottom: 1rem; }
 .schedule-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #bbb; letter-spacing: 0.06em; }
 .schedule-hint { font-weight: 400; text-transform: none; color: #ccc; font-size: 0.62rem; }
-.schedule-loading { font-size: 0.72rem; color: #999; }
+.schedule-loading {
+  font-size: 0.72rem;
+  color: #999;
+  animation: pulse-text 1.2s ease-in-out infinite;
+}
 
-.hour-grid { display: flex; gap: 2px; margin-bottom: 3px; }
-.hour-cell { flex: 1; min-width: 0; height: 24px; border: none; border-radius: 3px; cursor: pointer; position: relative; padding: 0; background: transparent; }
+@keyframes pulse-text {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.hour-grid { display: flex; gap: 2px; margin-bottom: 3px; animation: grid-in 0.25s var(--ease-out-quart, ease) both; }
+
+@keyframes grid-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.hour-cell { flex: 1; min-width: 0; height: 24px; border: none; border-radius: 3px; cursor: pointer; position: relative; padding: 0; background: transparent; transition: background var(--duration-fast) ease, transform var(--duration-fast) ease; }
+.hour-cell:active:not(:disabled) { transform: scaleY(0.85); }
 .hour-cell--green { background: rgba(99,153,34,0.25); }
+.hour-cell--green:hover:not(.hour-cell--past) { background: rgba(99,153,34,0.4); }
 .hour-cell--red { background: rgba(226,75,74,0.25); }
 .hour-cell--red:hover { background: rgba(226,75,74,0.4); }
 .hour-cell--amber { background: rgba(186,117,23,0.3); }

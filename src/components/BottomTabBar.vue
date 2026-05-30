@@ -94,14 +94,25 @@ const isActive = (name: string) => route.name === name;
   color: #777;
   gap: 2px;
   -webkit-tap-highlight-color: transparent;
+  transition: color var(--duration-fast) ease;
+  cursor: pointer;
+}
+
+.tab-item:active {
+  transform: scale(0.92);
 }
 
 .tab-item.active {
   color: var(--color-brand);
 }
 
+.tab-item.active .tab-icon {
+  transform: scale(1.1);
+}
+
 .tab-icon {
   font-size: 1.25rem;
+  transition: transform var(--duration-fast) var(--ease-out-quart, ease);
 }
 
 .tab-label {
