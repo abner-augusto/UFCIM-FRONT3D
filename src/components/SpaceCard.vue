@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useReservationStore } from '@/stores/reservation';
 import { api } from '@/services/api';
-import { SPACE_TYPE_LABELS, EQUIPMENT_STATUS_LABELS, type Space, type Equipment } from '@/types/space';
+import { SPACE_TYPE_LABELS, type Space } from '@/types/space';
 import { BLOCK_TYPE_LABELS, TIME_SLOT_RANGES, type Blocking } from '@/types/reservation';
 import { PERIOD_COLORS, type PinStatus } from '@/composables/usePinAvailability';
 import { useEquipmentGroups, type EquipmentGroup } from '@/composables/useEquipmentGroups';

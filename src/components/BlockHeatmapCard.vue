@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { ChevronDown, ChevronUp } from 'lucide-vue-next';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
@@ -49,7 +49,7 @@ async function loadHeatmap() {
       const key = `${String(h).padStart(2, '0')}:00`;
       let occupied = 0;
       let total = 0;
-      results.forEach((r, i) => {
+      results.forEach((r) => {
         if (r.status !== 'fulfilled') return;
         const slots: AvailabilitySlot[] = r.value;
         const slot = slots.find(s => s.startTime === key);

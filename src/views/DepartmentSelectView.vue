@@ -9,7 +9,7 @@ const router = useRouter();
 const campusId = route.params.campusId as string;
 const campus = computed(() => campuses.find(c => c.id === campusId));
 
-function handleSelect(deptId: string) {
+function handleSelect(_deptId: string) {
   // Only IAUD maps to the viewer — future departments can use their own route
   router.push({ name: 'viewer', params: { campusId } });
 }

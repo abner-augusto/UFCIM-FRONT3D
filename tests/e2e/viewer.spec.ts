@@ -25,7 +25,6 @@ test.describe('ViewerView', () => {
     await page.waitForTimeout(1500);
 
     // Locate period buttons (Manhã, Tarde, Noite)
-    const manhaBtn = page.getByRole('button', { name: /Manhã/i });
     const tardeBtn = page.getByRole('button', { name: /Tarde/i });
 
     if (await tardeBtn.count() > 0) {

@@ -29,7 +29,7 @@ const props = defineProps<{
   visible: boolean;
 }>();
 
-const emit = defineEmits<{
+defineEmits<{
   'open-search': [];
 }>();
 
