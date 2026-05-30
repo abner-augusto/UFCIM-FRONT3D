@@ -256,7 +256,8 @@ function onReportSent() {
           <span class="schedule-hint">toque nas horas livres</span>
         </div>
         <div v-if="loadingAvailability" class="schedule-loading">Carregando...</div>
-        <template v-else-if="visibleSlots.length">
+        <Transition v-else-if="visibleSlots.length" name="grid-slide" mode="out-in">
+          <div class="grid-wrapper" :key="selectedDate">
           <div class="hour-grid">
             <button
               v-for="(slot, idx) in visibleSlots" :key="slot.startTime"
@@ -279,7 +280,8 @@ function onReportSent() {
             Horário selecionado: <strong>{{ reserveStartTime }}–{{ reserveEndTime }}</strong>
             <button class="schedule-selection__clear" @click="rangeStartIdx = null; rangeEndIdx = null">limpar</button>
           </p>
-        </template>
+          </div><!-- /grid-wrapper -->
+        </Transition>
       </section>
 
       <!-- Slot detail -->
@@ -566,11 +568,19 @@ function onReportSent() {
   50% { opacity: 0.4; }
 }
 
-.hour-grid { display: flex; gap: 2px; margin-bottom: 3px; animation: grid-in 0.25s var(--ease-out-quart, ease) both; }
 
-@keyframes grid-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Vue transition: grid-slide */
+.grid-slide-enter-active,
+.grid-slide-leave-active {
+  transition: opacity 0.2s var(--ease-out-quart, ease), transform 0.2s var(--ease-out-quart, ease);
+}
+.grid-slide-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.grid-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 .hour-cell { flex: 1; min-width: 0; height: 24px; border: none; border-radius: 3px; cursor: pointer; position: relative; padding: 0; background: transparent; transition: background var(--duration-fast) ease, transform var(--duration-fast) ease; }
 .hour-cell:active:not(:disabled) { transform: scaleY(0.85); }
