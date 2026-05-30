@@ -256,12 +256,14 @@ function onReportSent() {
           <span class="schedule-hint">toque nas horas livres</span>
         </div>
         <div v-if="loadingAvailability" class="schedule-loading">Carregando...</div>
-        <Transition v-else-if="visibleSlots.length" name="grid-slide">
+        <template v-else-if="visibleSlots.length">
+          <!-- :key forces a remount on date change so the stagger re-plays -->
           <div class="hour-grid" :key="selectedDate">
             <button
               v-for="(slot, idx) in visibleSlots" :key="slot.startTime"
               class="hour-cell"
               :class="getCellClass(slot, idx)"
+              :style="{ '--cell-i': idx }"
               :disabled="slot.status === 'available' && isPastSlot(slot)"
               :aria-pressed="isInSelectedRange(idx)"
               :aria-label="`${slot.startTime} a ${slot.endTime}: ${statusLabel(slot)}${isPastSlot(slot) ? ' (horário já passou)' : ''}`"
@@ -269,9 +271,7 @@ function onReportSent() {
             >
               <span v-if="slot.status === 'reserved' || slot.status === 'blocked'" class="dot">●</span>
             </button>
-          </div><!-- /hour-grid -->
-          </Transition>
-          <template v-if="visibleSlots.length">
+          </div>
           <div class="hour-axis">
             <span v-for="slot in visibleSlots" :key="slot.startTime">
               {{ parseInt(slot.startTime.split(':')[0]) }}
@@ -281,7 +281,7 @@ function onReportSent() {
             Horário selecionado: <strong>{{ reserveStartTime }}–{{ reserveEndTime }}</strong>
             <button class="schedule-selection__clear" @click="rangeStartIdx = null; rangeEndIdx = null">limpar</button>
           </p>
-          </template>
+        </template>
       </section>
 
       <!-- Slot detail -->
@@ -569,17 +569,27 @@ function onReportSent() {
 }
 
 
-/* Vue transition: grid-slide */
-.grid-slide-enter-active,
-.grid-slide-leave-active {
-  transition: opacity 0.2s var(--ease-out-quart, ease);
+.hour-grid { display: flex; gap: 2px; margin-bottom: 3px; }
+
+.hour-cell {
+  flex: 1; min-width: 0; height: 24px; border: none; border-radius: 3px;
+  cursor: pointer; position: relative; padding: 0; background: transparent;
+  transition: background var(--duration-fast) ease, transform var(--duration-fast) ease;
+  /* Each cell slides up + fades in, staggered left→right, as the popup surges.
+     `backwards` holds the hidden start during the delay; no `forwards` so the
+     final transform clears and :active press-feedback still works afterwards. */
+  animation: cell-rise 0.34s var(--ease-out-quart, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
+  animation-delay: calc(var(--cell-i, 0) * 22ms);
 }
-.grid-slide-enter-from,
-.grid-slide-leave-to {
-  opacity: 0;
+@keyframes cell-rise {
+  from { opacity: 0; transform: translateY(10px) scale(0.92); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
-.hour-cell { flex: 1; min-width: 0; height: 24px; border: none; border-radius: 3px; cursor: pointer; position: relative; padding: 0; background: transparent; transition: background var(--duration-fast) ease, transform var(--duration-fast) ease; }
 .hour-cell:active:not(:disabled) { transform: scaleY(0.85); }
+
+@media (prefers-reduced-motion: reduce) {
+  .hour-cell { animation: none; }
+}
 .hour-cell--green { background: rgba(99,153,34,0.25); }
 .hour-cell--green:hover:not(.hour-cell--past) { background: rgba(99,153,34,0.4); }
 .hour-cell--red { background: rgba(226,75,74,0.25); }
