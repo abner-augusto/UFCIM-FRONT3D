@@ -100,6 +100,12 @@ const router = createRouter({
       component: () => import('@/views/SpaceReportView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/solicitar-convite',
+      name: 'request-invite',
+      component: () => import('@/views/RequestInviteView.vue'),
+      meta: { guestOnly: true },
+    },
   ],
 });
 

@@ -124,6 +124,12 @@ export const api = {
       { authPath: true }
     ),
 
+  requestInvitation: (body: { name: string; email: string; turnstileToken: string }) =>
+    request<{ message: string }>(
+      '/auth/request-invitation', null, { method: 'POST', body: JSON.stringify(body) },
+      { authPath: true }
+    ),
+
   // Users
   getMe: (token: string | null) =>
     request<{ id: string; name: string; email: string; registration: string | null; role: string; department?: string; unreadCount: number; isMasterAdmin: boolean }>(
