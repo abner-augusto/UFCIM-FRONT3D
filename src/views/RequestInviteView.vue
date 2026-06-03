@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
 import { api } from '@/services/api';
 import { mapRequestInviteError } from '@/utils/api-errors';
-
-const router = useRouter();
 
 const name = ref('');
 const email = ref('');
