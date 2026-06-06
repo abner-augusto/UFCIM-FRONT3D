@@ -143,8 +143,8 @@ export class App {
         const antialias = !isLowPowerHardware && !(isMobile && isLowResScreen);
 
         // 2. Determine Smart Pixel Ratio
-        let targetDPR = dpr;
-        
+        let targetDPR;
+
         if (isLowPowerHardware) {
             targetDPR = 1.0;
         } else if (isHighResMobile) {
