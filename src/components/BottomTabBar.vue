@@ -3,8 +3,8 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
-import { hasRole, CAN_BLOCK, CAN_VIEW_REPORTS } from '@/utils/roles';
-import { Building2, Search, Calendar, Ban, BarChart3, User } from 'lucide-vue-next';
+import { hasRole, CAN_BLOCK, CAN_VIEW_REPORTS, CAN_MANAGE_EQUIPMENT } from '@/utils/roles';
+import { Building2, Search, Calendar, Ban, BarChart3, Wrench, User } from 'lucide-vue-next';
 
 const auth = useAuthStore();
 const campus = useCampusStore();
@@ -23,6 +23,7 @@ const browserTarget = computed(() =>
 
 const canBlock = computed(() => hasRole(auth.userRole, CAN_BLOCK));
 const canViewReports = computed(() => hasRole(auth.userRole, CAN_VIEW_REPORTS));
+const canManageEquipment = computed(() => hasRole(auth.userRole, CAN_MANAGE_EQUIPMENT));
 const isActive = (name: string) => route.name === name;
 </script>
 
@@ -51,6 +52,11 @@ const isActive = (name: string) => route.name === name;
     <router-link v-if="canViewReports" to="/relatorios" class="tab-item" :class="{ active: isActive('reports') }">
       <span class="tab-icon"><BarChart3 :size="20" /></span>
       <span class="tab-label">Relatórios</span>
+    </router-link>
+
+    <router-link v-if="canManageEquipment" to="/manutencao/reportes" class="tab-item" :class="{ active: isActive('maintenance-reports') }">
+      <span class="tab-icon"><Wrench :size="20" /></span>
+      <span class="tab-label">Reportes</span>
     </router-link>
 
     <router-link to="/perfil" class="tab-item" :class="{ active: isActive('profile') }">
