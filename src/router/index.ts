@@ -95,7 +95,7 @@ const router = createRouter({
       meta: { requiresAuth: true, roles: CAN_VIEW_REPORTS },
     },
     {
-      path: '/manutencao/reportes',
+      path: '/manutencao/chamados',
       name: 'maintenance-reports',
       component: () => import('@/views/MaintenanceReportsView.vue'),
       meta: { requiresAuth: true, roles: CAN_MANAGE_EQUIPMENT },

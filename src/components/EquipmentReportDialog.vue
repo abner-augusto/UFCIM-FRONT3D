@@ -57,10 +57,10 @@ async function submitReport() {
       if (e.status === 409) {
         error.value = 'Você já reportou este equipamento nas últimas 24h';
       } else {
-        error.value = e.message || 'Erro ao enviar reporte';
+        error.value = e.message || 'Erro ao enviar';
       }
     } else {
-      error.value = 'Erro ao enviar reporte. Tente novamente.';
+      error.value = 'Erro ao enviar. Tente novamente.';
     }
   } finally {
     loading.value = false;
@@ -81,7 +81,7 @@ function onOverlayClick() {
       <template v-if="success">
         <div class="dialog-success">
           <span class="dialog-success__icon"><Check :size="24" /></span>
-          <p class="dialog-success__text">Reporte enviado. A equipe foi notificada.</p>
+          <p class="dialog-success__text">Problema reportado. A equipe foi notificada.</p>
         </div>
       </template>
 
@@ -145,7 +145,7 @@ function onOverlayClick() {
           @click="submitReport"
         >
           <span v-if="loading" class="dialog__spinner" />
-          <span v-else>Enviar reporte</span>
+          <span v-else>Enviar</span>
         </button>
       </template>
     </div>

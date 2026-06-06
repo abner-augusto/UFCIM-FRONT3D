@@ -47,7 +47,7 @@ async function loadReports() {
       status: activeStatus.value,
     });
   } catch {
-    errorMsg.value = 'Não foi possível carregar os reportes.';
+    errorMsg.value = 'Não foi possível carregar os chamados.';
   } finally {
     loading.value = false;
   }
@@ -65,7 +65,7 @@ async function handleAcknowledge(report: EquipmentReport) {
     await api.acknowledgeEquipmentReport(auth.token, report.id);
     await loadReports();
   } catch {
-    errorMsg.value = 'Não foi possível atualizar o reporte.';
+    errorMsg.value = 'Não foi possível atualizar o chamado.';
   } finally {
     acting.value = null;
   }
@@ -77,14 +77,14 @@ async function handleResolve(report: EquipmentReport) {
     await api.resolveEquipmentReport(auth.token, report.id);
     await loadReports();
   } catch {
-    errorMsg.value = 'Não foi possível resolver o reporte.';
+    errorMsg.value = 'Não foi possível resolver o chamado.';
   } finally {
     acting.value = null;
   }
 }
 
 async function handleDismiss(report: EquipmentReport) {
-  const reason = window.prompt('Motivo para descartar este reporte:');
+  const reason = window.prompt('Motivo para descartar este chamado:');
   if (reason === null) return;
   if (reason.trim().length < 3) {
     errorMsg.value = 'O motivo deve ter pelo menos 3 caracteres.';
@@ -98,7 +98,7 @@ async function handleDismiss(report: EquipmentReport) {
     errorMsg.value =
       e instanceof ApiError && e.message
         ? e.message
-        : 'Não foi possível descartar o reporte.';
+        : 'Não foi possível descartar o chamado.';
   } finally {
     acting.value = null;
   }
@@ -126,7 +126,7 @@ function spaceLabel(report: EquipmentReport): string {
   <div class="maint-reports-view">
     <div class="view-header">
       <button class="back-btn" @click="router.back()">← Voltar</button>
-      <h1>Reportes de Equipamentos</h1>
+      <h1>Chamados de Manutenção</h1>
     </div>
 
     <div class="status-tabs" role="tablist">
@@ -144,10 +144,10 @@ function spaceLabel(report: EquipmentReport): string {
       </button>
     </div>
 
-    <div v-if="loading" class="state-msg">Carregando reportes...</div>
+    <div v-if="loading" class="state-msg">Carregando chamados...</div>
     <div v-else-if="errorMsg" class="state-error">{{ errorMsg }}</div>
     <div v-else-if="isEmpty" class="state-empty">
-      <p>Nenhum reporte {{ REPORT_STATUS_LABELS[activeStatus].toLowerCase() }}.</p>
+      <p>Nenhum chamado {{ REPORT_STATUS_LABELS[activeStatus].toLowerCase() }}.</p>
     </div>
 
     <ul v-else class="report-list">

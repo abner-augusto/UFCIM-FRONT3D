@@ -74,8 +74,8 @@ function handleLinkClick() {
             <span class="nav-icon"><BarChart3 :size="20" /></span> Relatórios
           </router-link>
 
-          <router-link v-if="canManageEquipment" to="/manutencao/reportes" class="nav-item" @click="handleLinkClick">
-            <span class="nav-icon"><Wrench :size="20" /></span> Reportes de Equipamentos
+          <router-link v-if="canManageEquipment" to="/manutencao/chamados" class="nav-item" @click="handleLinkClick">
+            <span class="nav-icon"><Wrench :size="20" /></span> Chamados de Manutenção
           </router-link>
 
           <router-link to="/notificacoes" class="nav-item" @click="handleLinkClick">
