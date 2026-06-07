@@ -129,21 +129,15 @@ watch(() => [props.visible, props.date, props.spaces], loadHeatmap, { immediate:
 </template>
 
 <style scoped>
+/* Positioning is provided by the parent (.viewer-topleft stack in ViewerView);
+   width below applies in both the mobile standalone and desktop stacked layouts. */
 .heatmap-card {
-  position: absolute;
-  top: 8px;
-  left: 8px;
   width: 185px;
   background: rgba(255, 255, 255, 0.96);
   border-radius: 8px;
   padding: 8px 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  z-index: 250;
   pointer-events: auto;
-}
-
-@media (min-width: 481px) {
-  .heatmap-card { display: none; }
 }
 
 .heatmap-head {
