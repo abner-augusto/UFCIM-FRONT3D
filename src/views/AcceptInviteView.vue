@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { api, ApiError } from '@/services/api';
@@ -23,12 +23,16 @@ type State = 'loading' | 'invalid' | 'ready' | 'submitting';
 
 const state = ref<State>('loading');
 const inviterName = ref('');
+const role = ref('');
 const roleLabel = ref('');
 
+const registration = ref('');
 const password = ref('');
 const passwordConfirm = ref('');
 const fieldErrors = ref<Record<string, string>>({});
 const submitError = ref<string | null>(null);
+
+const isStudent = computed(() => role.value === 'student');
 
 onMounted(async () => {
   try {
@@ -38,6 +42,7 @@ onMounted(async () => {
       return;
     }
     inviterName.value = preview.inviterName ?? '';
+    role.value = preview.role ?? '';
     roleLabel.value = ROLE_LABELS[preview.role ?? ''] ?? preview.role ?? '';
     state.value = 'ready';
   } catch {
@@ -45,8 +50,12 @@ onMounted(async () => {
   }
 });
 
-function validatePassword(): boolean {
+function validateForm(): boolean {
   fieldErrors.value = {};
+  if (isStudent.value && !registration.value.trim()) {
+    fieldErrors.value.registration = 'A matrícula é obrigatória para alunos.';
+    return false;
+  }
   const val = password.value;
   if (val.length < 10) {
     fieldErrors.value.password = 'A senha deve ter ao menos 10 caracteres.';
@@ -64,14 +73,14 @@ function validatePassword(): boolean {
 }
 
 async function handleAccept() {
-  if (!validatePassword()) return;
+  if (!validateForm()) return;
 
   state.value = 'submitting';
   submitError.value = null;
   fieldErrors.value = {};
 
   try {
-    const { accessToken, refreshToken, user } = await api.acceptInvitation(token, password.value);
+    const { accessToken, refreshToken, user } = await api.acceptInvitation(token, password.value, registration.value.trim() || undefined);
     auth.setAuth(accessToken, refreshToken, {
       id: user.id,
       name: user.name,
@@ -118,6 +127,20 @@ async function handleAccept() {
       <p class="invite-info">Defina uma senha para ativar sua conta.</p>
 
       <form class="invite-form" @submit.prevent="handleAccept">
+        <label class="invite-field">
+          <span>Matrícula{{ isStudent ? '' : ' (opcional)' }}</span>
+          <input
+            v-model="registration"
+            type="text"
+            inputmode="numeric"
+            placeholder="Sua matrícula UFC"
+            autocomplete="off"
+            :disabled="state === 'submitting'"
+            :required="isStudent"
+          />
+          <span v-if="fieldErrors.registration" class="field-error">{{ fieldErrors.registration }}</span>
+        </label>
+
         <label class="invite-field">
           <span>Senha</span>
           <input

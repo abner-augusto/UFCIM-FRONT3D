@@ -86,7 +86,8 @@ async function handleLogin() {
       </p>
 
       <div class="login-footer">
-        <router-link :to="{ name: 'request-invite' }" class="request-link">Solicitar convite</router-link>
+        <p class="login-footer-text">Ainda não tem conta?</p>
+        <router-link :to="{ name: 'request-invite' }" class="request-btn">Solicitar convite</router-link>
       </div>
 
     </div>
@@ -212,20 +213,33 @@ async function handleLogin() {
 }
 .login-footer {
   margin-top: 1.5rem;
-  padding-top: 1rem;
+  padding-top: 1.25rem;
   border-top: 1px solid #eee;
 }
-.request-link {
-  display: inline-block;
-  color: #1D9E75;
+.login-footer-text {
+  margin: 0 0 0.6rem;
   font-size: 0.85rem;
-  text-decoration: none;
-  font-weight: 500;
-  padding: 0.25rem 0;
-  min-height: var(--tap-min, 44px);
-  line-height: var(--tap-min, 44px);
+  color: #888;
 }
-.request-link:hover {
-  text-decoration: underline;
+.request-btn {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.7rem;
+  background: transparent;
+  color: #1D9E75;
+  border: 1px solid #1D9E75;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+  transition: background 0.15s, color 0.15s;
+  min-height: var(--tap-min, 44px);
+  line-height: 1.6;
+}
+.request-btn:hover {
+  background: #1D9E75;
+  color: white;
 }
 </style>
