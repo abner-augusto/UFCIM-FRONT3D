@@ -29,3 +29,18 @@ export function mapGenericError(e: unknown): string {
   if (e.status >= 500) return 'Erro no servidor. Tente novamente em instantes.';
   return e.message || 'Erro inesperado.';
 }
+
+export function mapRequestInviteError(e: unknown): string {
+  if (!(e instanceof ApiError)) return 'Não foi possível conectar ao servidor.';
+  if (e.code === 'RATE_LIMITED') return 'Muitas solicitações. Aguarde um momento.';
+  if (e.code === 'VALIDATION_ERROR' && e.details?.length) {
+    return e.details[0].message;
+  }
+  if (e.status === 409 || e.message?.includes('já existe') || e.message?.includes('existente')) {
+    return 'Já existe uma solicitação pendente para este email.';
+  }
+  if (e.code === 'INVALID_EMAIL' || e.message?.includes('inválido')) {
+    return 'Email inválido.';
+  }
+  return e.message || 'Erro ao solicitar convite. Tente novamente.';
+}

@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { hasRole, CAN_VIEW_REPORTS } from '@/utils/roles';
+import { hasRole, CAN_VIEW_REPORTS, CAN_MANAGE_EQUIPMENT } from '@/utils/roles';
 import type { UserRole } from '@/stores/auth';
 
 const router = createRouter({
@@ -95,10 +95,22 @@ const router = createRouter({
       meta: { requiresAuth: true, roles: CAN_VIEW_REPORTS },
     },
     {
+      path: '/manutencao/chamados',
+      name: 'maintenance-reports',
+      component: () => import('@/views/MaintenanceReportsView.vue'),
+      meta: { requiresAuth: true, roles: CAN_MANAGE_EQUIPMENT },
+    },
+    {
       path: '/espacos/:spaceId/relatorio',
       name: 'space-report',
       component: () => import('@/views/SpaceReportView.vue'),
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/solicitar-convite',
+      name: 'request-invite',
+      component: () => import('@/views/RequestInviteView.vue'),
+      meta: { guestOnly: true },
     },
   ],
 });

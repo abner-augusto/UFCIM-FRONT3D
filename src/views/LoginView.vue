@@ -85,6 +85,11 @@ async function handleLogin() {
         Entre em contato com o administrador para redefinir sua senha.
       </p>
 
+      <div class="login-footer">
+        <p class="login-footer-text">Ainda não tem conta?</p>
+        <router-link :to="{ name: 'request-invite' }" class="request-btn">Solicitar convite</router-link>
+      </div>
+
     </div>
   </div>
 </template>
@@ -205,5 +210,36 @@ async function handleLogin() {
   border-radius: 8px;
   padding: 0.6rem 0.875rem;
   text-align: left;
+}
+.login-footer {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #eee;
+}
+.login-footer-text {
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
+  color: #888;
+}
+.request-btn {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.7rem;
+  background: transparent;
+  color: #1D9E75;
+  border: 1px solid #1D9E75;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+  transition: background 0.15s, color 0.15s;
+  min-height: var(--tap-min, 44px);
+  line-height: 1.6;
+}
+.request-btn:hover {
+  background: #1D9E75;
+  color: white;
 }
 </style>

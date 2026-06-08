@@ -3,8 +3,8 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
-import { hasRole, CAN_BLOCK, CAN_VIEW_REPORTS } from '@/utils/roles';
-import { Building2, Search, Calendar, Ban, BarChart3, Bell, User, X } from 'lucide-vue-next';
+import { hasRole, CAN_BLOCK, CAN_VIEW_REPORTS, CAN_MANAGE_EQUIPMENT } from '@/utils/roles';
+import { Building2, Search, Calendar, Ban, BarChart3, Wrench, Bell, User, X } from 'lucide-vue-next';
 
 defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: [] }>();
@@ -15,6 +15,7 @@ const router = useRouter();
 
 const canBlock = computed(() => hasRole(auth.userRole, CAN_BLOCK));
 const canViewReports = computed(() => hasRole(auth.userRole, CAN_VIEW_REPORTS));
+const canManageEquipment = computed(() => hasRole(auth.userRole, CAN_MANAGE_EQUIPMENT));
 
 const viewerTarget = computed(() =>
   campus.selectedCampusId
@@ -71,6 +72,10 @@ function handleLinkClick() {
 
           <router-link v-if="canViewReports" to="/relatorios" class="nav-item" @click="handleLinkClick">
             <span class="nav-icon"><BarChart3 :size="20" /></span> Relatórios
+          </router-link>
+
+          <router-link v-if="canManageEquipment" to="/manutencao/chamados" class="nav-item" @click="handleLinkClick">
+            <span class="nav-icon"><Wrench :size="20" /></span> Chamados de Manutenção
           </router-link>
 
           <router-link to="/notificacoes" class="nav-item" @click="handleLinkClick">

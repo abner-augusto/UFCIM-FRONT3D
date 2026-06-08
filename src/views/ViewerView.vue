@@ -288,28 +288,31 @@ function closePopup() {
 
 <template>
   <div class="viewer-view" :class="{ 'viewer-view--fullscreen': fullscreen }">
-    <BlockHeatmapCard
-      v-if="isMobile"
-      :visible="!!activeBuildingId"
-      :block-name="activeBuildingName"
-      :date-label="isToday ? 'hoje' : formatShortDate(selectedDate)"
-      :spaces="spacesInActiveBlock"
-      :date="selectedDate"
-      :closed-from="'07:00'"
-      :closed-to="'23:00'"
-    />
     <ThreeViewer ref="viewerRef" @ready="handleViewerReady" @pin-click="handlePinClick" />
-    
-    <PeriodSelector
-      v-if="!isMobile"
-      :modelValue="selectedPeriod"
-      :selectedDate="selectedDate"
-      :today="today"
-      :loading="availabilityLoading"
-      :autoDetected="periodAutoDetected"
-      @update:modelValue="handlePeriodChange"
-      @update:selectedDate="handleDateChange"
-    />
+
+    <!-- Top-left stack: date/period card with the block occupancy heatmap below it.
+         On mobile the PeriodSelector is not rendered, so only the heatmap shows. -->
+    <div class="viewer-topleft">
+      <PeriodSelector
+        v-if="!isMobile"
+        :modelValue="selectedPeriod"
+        :selectedDate="selectedDate"
+        :today="today"
+        :loading="availabilityLoading"
+        :autoDetected="periodAutoDetected"
+        @update:modelValue="handlePeriodChange"
+        @update:selectedDate="handleDateChange"
+      />
+      <BlockHeatmapCard
+        :visible="!!activeBuildingId"
+        :block-name="activeBuildingName"
+        :date-label="isToday ? 'hoje' : formatShortDate(selectedDate)"
+        :spaces="spacesInActiveBlock"
+        :date="selectedDate"
+        :closed-from="'07:00'"
+        :closed-to="'23:00'"
+      />
+    </div>
 
     <ViewerControlsRail
       v-if="isMobile"
@@ -370,6 +373,35 @@ function closePopup() {
 .viewer-view--fullscreen {
   height: 100vh;
   height: 100dvh;
+}
+
+/* Top-left overlay stack: PeriodSelector with the occupancy heatmap below it. */
+.viewer-topleft {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 250;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+}
+.viewer-topleft > * {
+  pointer-events: auto;
+}
+/* The cards position themselves absolutely on their own; inside this stack
+   they flow in the column instead. */
+.viewer-topleft :deep(.period-selector),
+.viewer-topleft :deep(.heatmap-card) {
+  position: static;
+}
+
+@media (max-width: 480px) {
+  .viewer-topleft {
+    top: 8px;
+    left: 8px;
+  }
 }
 
 @media (max-width: 1023px) {

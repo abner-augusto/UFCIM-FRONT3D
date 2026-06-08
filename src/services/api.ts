@@ -116,11 +116,17 @@ export const api = {
       { authPath: true }
     ),
 
-  acceptInvitation: (token: string, password: string) =>
+  acceptInvitation: (token: string, password: string, registration?: string) =>
     request<{ accessToken: string; refreshToken: string; user: PublicUser }>(
       `/auth/invitations/${encodeURIComponent(token)}/accept`,
       null,
-      { method: 'POST', body: JSON.stringify({ password }) },
+      { method: 'POST', body: JSON.stringify({ password, ...(registration ? { registration } : {}) }) },
+      { authPath: true }
+    ),
+
+  requestInvitation: (body: { name: string; email: string; turnstileToken: string }) =>
+    request<{ message: string }>(
+      '/auth/request-invitation', null, { method: 'POST', body: JSON.stringify(body) },
       { authPath: true }
     ),
 
