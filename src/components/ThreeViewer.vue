@@ -1,8 +1,30 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 
+// Minimal typed surface of the (untyped JS) Three.js engine — see src/three/App.js.
+// This is the bridge contract consumed via defineExpose below.
+interface ViewerBuilding { id: string; name: string }
+interface ViewerFloor { level: number; name: string }
+interface ThreeApp {
+  init(): Promise<void>;
+  dispose(): void;
+  interactionManager?: {
+    applyBackendFilter(activeModelIds: Set<string>, colorMap: Map<string, string>): void;
+    updatePinLabelStatus(pinId: string, statusText: string | null, statusColor: string | null): void;
+  };
+  uiManager?: {
+    navigateToSpaceByModelId(modelId: string): void;
+    selectBuilding(id: string | null): void;
+    selectFloor(level: number): void;
+    getBuildingsList(): ViewerBuilding[];
+    getFloorsForBuilding(id: string): ViewerFloor[];
+    getActiveBuildingId(): string | null;
+    getActiveFloorLevel(): number | null;
+  };
+}
+
 const canvasRef = ref<HTMLCanvasElement | null>(null);
-let threeApp: any = null;
+let threeApp: ThreeApp | null = null;
 
 const emit = defineEmits<{
   'pin-click': [detail: { pinId: string; displayName: string; building: string; floorLevel: number }];
@@ -20,8 +42,9 @@ onMounted(async () => {
   // Dynamic import to code-split the heavy Three.js bundle
   // @ts-expect-error — legacy JS module, no types
   const { App } = await import('@/three/App.js');
-  threeApp = new App(canvasRef.value);
-  await threeApp.init();
+  const app: ThreeApp = new App(canvasRef.value);
+  threeApp = app;
+  await app.init();
 
   window.addEventListener('ufcim:pin-click', onPinClick);
   emit('ready');

@@ -335,8 +335,8 @@ async function handleRecurring() {
     });
     recurringSuccessMsg.value = `${result.created.length} reservas criadas, ${result.skipped.length} conflitos ignorados.`;
     setTimeout(() => router.push({ name: 'my-reservations' }), 2000);
-  } catch (e: any) {
-    errorMsg.value = e?.message || 'Não foi possível criar as reservas recorrentes.';
+  } catch (e) {
+    errorMsg.value = e instanceof Error ? e.message : 'Não foi possível criar as reservas recorrentes.';
   } finally {
     recurringLoading.value = false;
   }

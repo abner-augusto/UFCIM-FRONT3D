@@ -123,8 +123,8 @@ async function handleSubmit() {
     });
     successMsg.value = 'Espaço bloqueado com sucesso.';
     setTimeout(() => router.push({ name: 'my-blockings' }), 1500);
-  } catch (e: any) {
-    errorMsg.value = e?.message || 'Não foi possível criar o bloqueio.';
+  } catch (e) {
+    errorMsg.value = e instanceof Error ? e.message : 'Não foi possível criar o bloqueio.';
   } finally {
     loading.value = false;
   }

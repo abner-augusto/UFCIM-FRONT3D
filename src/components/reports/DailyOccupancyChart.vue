@@ -8,6 +8,7 @@ import {
   BarElement,
   Tooltip,
   Filler,
+  type TooltipItem,
 } from 'chart.js';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Filler);
@@ -48,7 +49,7 @@ const chartOptions = {
   plugins: {
     tooltip: {
       callbacks: {
-        afterBody: (items: any[]) => {
+        afterBody: (items: TooltipItem<'bar'>[]) => {
           const idx = items[0].dataIndex;
           const d = props.data[idx];
           return [

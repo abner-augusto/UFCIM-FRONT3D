@@ -200,7 +200,21 @@ const handleViewerReady = () => {
   if (spacesLoaded.value) {
     applyPinColors();
   }
+  maybeOpenQuerySpace();
 };
+
+// Deep-link support: `?space=<modelId>` (e.g. from a maintenance report) focuses
+// the matching pin and opens its popup once both the engine and spaces are ready.
+let querySpaceHandled = false;
+function maybeOpenQuerySpace() {
+  if (querySpaceHandled) return;
+  if (!viewerReady.value || !spacesLoaded.value) return;
+  const modelId = route.query.space;
+  if (typeof modelId !== 'string' || !modelId) return;
+  if (!spacesByModelId.has(modelId)) return;
+  querySpaceHandled = true;
+  viewerRef.value?.navigateToPin(modelId);
+}
 
 watch([selectedDate, selectedPeriod], () => {
   applyPinColors();
@@ -227,6 +241,7 @@ onMounted(async () => {
   } finally {
     spacesLoaded.value = true;
     applyPinColors();
+    maybeOpenQuerySpace();
   }
 
   // Listen for building changes

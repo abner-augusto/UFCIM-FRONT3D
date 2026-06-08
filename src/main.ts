@@ -5,7 +5,7 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
-import { useAuthStore } from './stores/auth';
+import { useAuthStore, type UserRole } from './stores/auth';
 import { api } from './services/api';
 
 const pinia = createPinia();
@@ -22,7 +22,7 @@ if (auth.token && !auth.user) {
       name: me.name,
       email: me.email,
       registration: me.registration,
-      role: me.role as any,
+      role: me.role as UserRole,
       isMasterAdmin: me.isMasterAdmin ?? false,
     }, me.unreadCount ?? 0))
     .catch(() => auth.logout()) // token is invalid/expired — clear it

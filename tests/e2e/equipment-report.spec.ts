@@ -26,7 +26,7 @@ test.describe('EquipmentReportDialog', () => {
 
   test('equipment report API endpoint is wired (POST /equipment/:id/reports)', async ({ studentPage: page }) => {
     // Intercept and verify the API call shape
-    let requestBody: any = null;
+    let requestBody: Record<string, unknown> | null = null;
     await page.route('**/api/v1/equipment/*/reports', async (route) => {
       if (route.request().method() === 'POST') {
         requestBody = JSON.parse(route.request().postData() ?? '{}');

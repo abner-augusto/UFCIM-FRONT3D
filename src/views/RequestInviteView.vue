@@ -17,8 +17,8 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  if (turnstileWidgetId && (window as any).turnstile) {
-    (window as any).turnstile.reset(turnstileWidgetId);
+  if (turnstileWidgetId && window.turnstile) {
+    window.turnstile.reset(turnstileWidgetId);
   }
 });
 
@@ -33,8 +33,8 @@ function renderTurnstile() {
   if (!el) return;
 
   const tryRender = () => {
-    if ((window as any).turnstile) {
-      const id = (window as any).turnstile.render(el, {
+    if (window.turnstile) {
+      const id = window.turnstile.render(el, {
         sitekey: siteKey,
         callback: (token: string) => {
           turnstileToken.value = token;
@@ -56,8 +56,8 @@ function renderTurnstile() {
 }
 
 function resetTurnstile() {
-  if (turnstileWidgetId && (window as any).turnstile) {
-    (window as any).turnstile.reset(turnstileWidgetId);
+  if (turnstileWidgetId && window.turnstile) {
+    window.turnstile.reset(turnstileWidgetId);
   }
   turnstileToken.value = '';
 }
