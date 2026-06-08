@@ -2,7 +2,6 @@ import { test, expect } from './fixtures';
 
 // Sala A101 from seed.sql
 const SPACE_ID = '00000000-0000-0000-0000-000000000011';
-const _SPACE_NAME = 'Sala A101';
 
 test.describe('SpaceReportView', () => {
   test('route /espacos/:id/relatorio resolves', async ({ professorPage: page }) => {
@@ -38,8 +37,6 @@ test.describe('SpaceReportView', () => {
     await sevenDaysChip.click();
     await page.waitForTimeout(500);
 
-    // The date input or displayed range should update
-    const _body = await page.locator('body').innerText();
     // After clicking, page should still be on the relatorio route
     await expect(page).toHaveURL(/relatorio/);
 

@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
 import { BLOCK_TYPE_LABELS } from '@/types/reservation';
 import { hasRole, CAN_BLOCK } from '@/utils/roles';
+import { toLocalISODate } from '@/utils/date';
 
 const route = useRoute();
 const router = useRouter();
@@ -22,7 +23,7 @@ const loading = ref(false);
 const errorMsg = ref<string | null>(null);
 const successMsg = ref<string | null>(null);
 
-const today = new Date().toISOString().split('T')[0];
+const today = toLocalISODate();
 
 // Hour selection mode
 type HourMode = 'full_day' | 'custom';

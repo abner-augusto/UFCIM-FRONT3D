@@ -1,28 +1,10 @@
 import { test, expect } from './fixtures';
 
 // Sala A101 (has Projetor Epson as equipment in seed)
-const SPACE_ID = '00000000-0000-0000-0000-000000000011';
 const EQUIPMENT_ID = '00000000-0000-0000-0000-000000000021';
 const CAMPUS = 'pici';
 
 test.describe('EquipmentReportDialog', () => {
-  async function _openEquipmentDialog(page: import('@playwright/test').Page) {
-    // The dialog is opened from RoomPopup inside the viewer
-    // Navigate to viewer, wait for canvas, then trigger it programmatically
-    await page.goto(`/#/campus/${CAMPUS}/viewer`);
-    await page.waitForURL(/#\/campus\/.*\/viewer/);
-    await page.waitForTimeout(2000);
-
-    // Try to open via a direct API call to test the dialog component in isolation
-    // by injecting a DOM event that mimics the viewer emitting openEquipmentReport
-    await page.evaluate(({ equipmentId }) => {
-      // Dispatch a custom event that ViewerView listens to for opening the dialog
-      window.dispatchEvent(new CustomEvent('test:openEquipmentReport', {
-        detail: { equipment: { id: equipmentId, name: 'Projetor Epson PowerLite', type: 'projector', status: 'working', assetId: '2020002658' }, spaceName: 'Sala A101' }
-      }));
-    }, { spaceId: SPACE_ID, equipmentId: EQUIPMENT_ID });
-  }
-
   test('viewer renders without EquipmentReportDialog import errors', async ({ studentPage: page }) => {
     const errors: string[] = [];
     page.on('console', msg => {
@@ -59,9 +41,7 @@ test.describe('EquipmentReportDialog', () => {
     await page.waitForTimeout(1000);
 
     await page.evaluate(async ({ equipmentId }) => {
-      // Access the api singleton through the module system
-      const _mod = (window as any).__vue_app__?.config?.globalProperties?.$api;
-      // If not exposed, fall back to a direct fetch to verify the route shape
+      // Fall back to a direct fetch to verify the route shape
       await fetch(`/api/v1/equipment/${equipmentId}/reports`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer test' },

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { PERIOD_LABELS, type PeriodKey } from '@/utils/period';
 import { formatShortDate, createDateChips } from '@/composables/useDateTimeFilter';
+import { toLocalISODate } from '@/utils/date';
 import { Building2, Search, Maximize, Calendar } from 'lucide-vue-next';
 
 interface Building {
@@ -41,7 +42,7 @@ const emit = defineEmits<{
   'open-search': [];
 }>();
 
-const isToday = computed(() => props.selectedDate === new Date().toISOString().split('T')[0]);
+const isToday = computed(() => props.selectedDate === toLocalISODate());
 
 const activeBuildingId = ref<string | null>(null);
 const activeFloorLevel = ref<number | null>(null);
