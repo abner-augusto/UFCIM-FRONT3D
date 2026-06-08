@@ -21,6 +21,23 @@ export interface InvitationPreview {
   role?: string;
 }
 
+/** Shape of the backend's /reports/occupancy payload, mapped to OccupancyReport. */
+interface RawOccupancyReport {
+  totalOccupancyRate?: number;
+  spaces?: Array<{
+    id?: string;
+    name?: string;
+    number?: string;
+    block?: string;
+    type?: string;
+    capacity?: number;
+    totalReservations?: number;
+    occupancyRate?: number;
+  }>;
+  daily?: Array<{ date: string; occupancyRate?: number; reservations?: number }>;
+  byTurno?: Array<{ turno: string; reservations?: number }>;
+}
+
 /**
  * Set by the caller (e.g. auth store) via setUnauthorizedHandler to handle 401 retry.
  * Returns a new access token, or null if refresh failed.
@@ -42,6 +59,21 @@ function getHeaders(token: string | null, method: string = 'GET'): HeadersInit {
   }
   if (token) headers['Authorization'] = `Bearer ${token}`;
   return headers;
+}
+
+/**
+ * Build a query string from optional params, skipping undefined/empty values
+ * (URLSearchParams would otherwise serialize them as the literal "undefined").
+ * Returns "" when there's nothing to append, or "?a=1&b=2" otherwise.
+ */
+function qs(params?: Record<string, string | undefined>): string {
+  if (!params) return '';
+  const sp = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') sp.append(key, value);
+  }
+  const s = sp.toString();
+  return s ? `?${s}` : '';
 }
 
 export class ApiError extends Error {
@@ -142,7 +174,7 @@ export const api = {
 
   // Spaces — GET /spaces returns array directly (no data wrapper)
   listSpaces: (token: string | null, params?: { campus?: string; block?: string; department?: string; type?: string; limit?: string; page?: string }) =>
-    request<Space[]>(`/spaces?${new URLSearchParams(params as any)}`, token),
+    request<Space[]>(`/spaces${qs(params)}`, token),
 
   getSpace: (token: string | null, id: string) =>
     request<Space>(`/spaces/${id}`, token),
@@ -211,9 +243,9 @@ export const api = {
 
   // Reports
   getOccupancyReport: async (token: string | null, params?: { startDate?: string; endDate?: string; campus?: string; department?: string }): Promise<OccupancyReport> => {
-    const raw = await request<any>(`/reports/occupancy?${new URLSearchParams(params as any)}`, token);
+    const raw = await request<RawOccupancyReport>(`/reports/occupancy${qs(params)}`, token);
 
-    const totalReservas = raw.spaces?.reduce((sum: number, s: any) => sum + (s.totalReservations ?? 0), 0) ?? 0;
+    const totalReservas = raw.spaces?.reduce((sum, s) => sum + (s.totalReservations ?? 0), 0) ?? 0;
 
     return {
       summary: {
@@ -221,16 +253,16 @@ export const api = {
         totalReservas,
         salasUsadas: raw.spaces?.length ?? 0,
       },
-      daily: (raw.daily ?? []).map((d: any) => ({
+      daily: (raw.daily ?? []).map((d) => ({
         date: d.date,
         ocupacao: d.occupancyRate ?? 0,
         reservas: d.reservations ?? 0,
       })),
-      turnos: (raw.byTurno ?? []).map((t: any) => ({
+      turnos: (raw.byTurno ?? []).map((t) => ({
         turno: t.turno,
         reservas: t.reservations ?? 0,
       })),
-      spaces: (raw.spaces ?? []).map((s: any) => ({
+      spaces: (raw.spaces ?? []).map((s) => ({
         id: s.id ?? '',
         nome: s.name ?? '',
         numero: s.number ?? '',
@@ -260,7 +292,7 @@ export const api = {
     request<EquipmentReport[]>('/equipment/reports/mine', token),
 
   listPendingEquipmentReports: (token: string | null, filters?: { spaceId?: string; status?: string }) =>
-    request<EquipmentReport[]>(`/equipment/reports/pending?${new URLSearchParams(filters as any)}`, token),
+    request<EquipmentReport[]>(`/equipment/reports/pending${qs(filters)}`, token),
 
   acknowledgeEquipmentReport: (token: string | null, id: string) =>
     request<EquipmentReport>(`/equipment/reports/${id}/acknowledge`, token, { method: 'PATCH' }),

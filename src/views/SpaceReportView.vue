@@ -52,8 +52,8 @@ async function loadReport() {
       startDate: startDate.value,
       endDate: endDate.value,
     });
-  } catch (e: any) {
-    errorMsg.value = e?.message ?? 'Não foi possível carregar o relatório.';
+  } catch (e) {
+    errorMsg.value = e instanceof Error ? e.message : 'Não foi possível carregar o relatório.';
   } finally {
     loading.value = false;
   }

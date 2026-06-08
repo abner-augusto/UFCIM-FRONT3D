@@ -43,8 +43,9 @@ export default async function globalSetup() {
       { cwd: BACKEND_DIR, stdio: 'pipe' }
     );
     console.log('[e2e] DB seeded');
-  } catch (e: any) {
-    console.warn('[e2e] DB seed warning (may already exist):', e.stderr?.toString().slice(0, 200));
+  } catch (e) {
+    const stderr = (e as { stderr?: { toString(): string } }).stderr;
+    console.warn('[e2e] DB seed warning (may already exist):', stderr?.toString().slice(0, 200));
   }
 
   // Generate HS256 dev JWTs (same algorithm as signAccessToken in the backend).
