@@ -6,6 +6,8 @@ import { api, ApiError } from '@/services/api';
 import type { EquipmentReport } from '@/types/equipment-report';
 import { REPORT_STATUS_LABELS } from '@/types/equipment-report';
 import { hasRole, CAN_MANAGE_EQUIPMENT } from '@/utils/roles';
+import { campuses } from '@/data/campuses';
+import { MapPin } from 'lucide-vue-next';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -115,10 +117,50 @@ const datetimeLabel = (iso: string) =>
     minute: '2-digit',
   });
 
+// Full location line, e.g. "Sala 03 · Bloco 2 · Instituto de Arquitetura, Urbanismo e Design".
+// Built defensively so it degrades gracefully when parts are missing — multiple blocks and
+// departments may share the same maintenance team, so the department matters for triage.
+
+// Room number often encodes the block as a prefix (e.g. "B2-03"); strip it so the
+// block isn't repeated, since it already has its own segment.
+function roomLabel(space: { name: string; number: string }): string {
+  const n = (space.number ?? '').trim();
+  if (!n) return space.name;
+  const dash = n.lastIndexOf('-');
+  const room = dash >= 0 ? n.slice(dash + 1).trim() : n;
+  return `Sala ${room}`;
+}
+
+// Block values may or may not already include the word "Bloco" — avoid "Bloco Bloco 2".
+function blockLabel(block?: string): string | null {
+  const b = (block ?? '').trim();
+  if (!b) return null;
+  return /^bloco\b/i.test(b) ? b : `Bloco ${b}`;
+}
+
 function spaceLabel(report: EquipmentReport): string {
   const space = report.equipment?.space;
   if (!space) return '—';
-  return space.name || `Sala ${space.number}`;
+  const parts = [
+    roomLabel(space),
+    blockLabel(space.block),
+    space.department?.name,
+  ].filter(Boolean);
+  return parts.length ? parts.join(' · ') : '—';
+}
+
+// Builds a viewer route that opens this report's space on the 3D model.
+// Requires the space to have a modelId (a pin in the GLB) and a known campus.
+function viewerLink(report: EquipmentReport) {
+  const space = report.equipment?.space;
+  if (!space?.modelId || !space.campus) return null;
+  const campus = campuses.find((c) => c.shortName === space.campus || c.id === space.campus);
+  if (!campus) return null;
+  return {
+    name: 'viewer',
+    params: { campusId: campus.id },
+    query: { space: space.modelId },
+  };
 }
 </script>
 
@@ -161,10 +203,8 @@ function spaceLabel(report: EquipmentReport): string {
           </span>
         </div>
 
-        <h3 class="report-card__title">
-          {{ r.equipment?.name ?? 'Equipamento' }}
-          <span class="report-card__space">· {{ spaceLabel(r) }}</span>
-        </h3>
+        <h3 class="report-card__title">{{ r.equipment?.name ?? 'Equipamento' }}</h3>
+        <p class="report-card__space">{{ spaceLabel(r) }}</p>
 
         <p class="report-card__desc">{{ r.description }}</p>
 
@@ -172,6 +212,10 @@ function spaceLabel(report: EquipmentReport): string {
           <span v-if="r.reporter">Reportado por {{ r.reporter.name }}</span>
           <span>{{ datetimeLabel(r.createdAt) }}</span>
         </div>
+
+        <router-link v-if="viewerLink(r)" :to="viewerLink(r)!" class="report-card__viewer-link">
+          <MapPin :size="14" /> Ver na maquete 3D
+        </router-link>
 
         <p v-if="r.status === 'dismissed' && r.dismissedReason" class="report-card__reason">
           <span class="report-card__reason-label">Motivo do descarte:</span>
@@ -311,9 +355,10 @@ function spaceLabel(report: EquipmentReport): string {
   color: #111;
 }
 .report-card__space {
+  margin: 0 0 0.6rem;
   font-weight: 400;
   color: #777;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .report-card__desc {
@@ -330,6 +375,20 @@ function spaceLabel(report: EquipmentReport): string {
   gap: 0.25rem 0.75rem;
   font-size: 0.76rem;
   color: #999;
+}
+
+.report-card__viewer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-brand, #1D9E75);
+  text-decoration: none;
+}
+.report-card__viewer-link:hover {
+  text-decoration: underline;
 }
 
 .report-card__reason {

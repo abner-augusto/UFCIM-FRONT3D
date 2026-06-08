@@ -12,7 +12,20 @@ export interface EquipmentReport {
   createdAt: string;
   reporter?: { id: string; name: string; role: string };
   acknowledger?: { id: string; name: string; role: string } | null;
-  equipment?: { id: string; name: string; assetId: string | null; space?: { id: string; name: string; number: string } };
+  equipment?: {
+    id: string;
+    name: string;
+    assetId: string | null;
+    space?: {
+      id: string;
+      name: string;
+      number: string;
+      block?: string;
+      modelId?: string | null;
+      campus?: string;
+      department?: { id: string; name: string };
+    };
+  };
 }
 
 export const SEVERITY_LABELS: Record<EquipmentReport['severity'], string> = {
