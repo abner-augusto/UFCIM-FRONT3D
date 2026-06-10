@@ -8,7 +8,7 @@ import { api } from '@/services/api';
 import type { Space } from '@/types/space';
 import type { Availability, AvailabilitySlot, Blocking, TimeSlot } from '@/types/reservation';
 import { BLOCK_TYPE_LABELS, TIME_SLOT_LABELS, TIME_SLOT_RANGES, PURPOSE_OPTIONS, isSlotAvailable } from '@/types/reservation';
-import { hasRole, CAN_RESERVE, CAN_CREATE_RECURRING } from '@/utils/roles';
+import { usePermissions } from '@/composables/usePermissions';
 import { toLocalISODate } from '@/utils/date';
 
 const route = useRoute();
@@ -64,8 +64,7 @@ const recurringDescription = ref('');
 const recurringLoading = ref(false);
 const recurringSuccessMsg = ref<string | null>(null);
 
-const canReserve = computed(() => hasRole(auth.userRole, CAN_RESERVE));
-const canRecurring = computed(() => hasRole(auth.userRole, CAN_CREATE_RECURRING));
+const { canReserve, canCreateRecurring: canRecurring } = usePermissions();
 
 onMounted(async () => {
   if (!canReserve.value) {

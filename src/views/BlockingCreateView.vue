@@ -4,12 +4,13 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
 import { BLOCK_TYPE_LABELS } from '@/types/reservation';
-import { hasRole, CAN_BLOCK } from '@/utils/roles';
+import { usePermissions } from '@/composables/usePermissions';
 import { toLocalISODate } from '@/utils/date';
 
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
+const { canBlock } = usePermissions();
 
 const spaceId = route.params.spaceId as string;
 const spaceName = ref<string | null>(null);
@@ -93,7 +94,7 @@ function getHourState(h: string): 'available' | 'selected' | 'endpoint' {
 }
 
 onMounted(async () => {
-  if (!hasRole(auth.userRole, CAN_BLOCK)) {
+  if (!canBlock.value) {
     router.replace({ name: 'campus-select' });
     return;
   }

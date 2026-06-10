@@ -5,12 +5,13 @@ import { useAuthStore } from '@/stores/auth';
 import { api, ApiError } from '@/services/api';
 import type { EquipmentReport } from '@/types/equipment-report';
 import { REPORT_STATUS_LABELS } from '@/types/equipment-report';
-import { hasRole, CAN_MANAGE_EQUIPMENT } from '@/utils/roles';
+import { usePermissions } from '@/composables/usePermissions';
 import { campuses } from '@/data/campuses';
 import { MapPin } from 'lucide-vue-next';
 
 const router = useRouter();
 const auth = useAuthStore();
+const { canManageEquipment } = usePermissions();
 
 type StatusFilter = EquipmentReport['status'];
 
@@ -34,7 +35,7 @@ const errorMsg = ref<string | null>(null);
 const acting = ref<string | null>(null);
 
 onMounted(async () => {
-  if (!hasRole(auth.userRole, CAN_MANAGE_EQUIPMENT)) {
+  if (!canManageEquipment.value) {
     router.replace({ name: 'campus-select' });
     return;
   }

@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
 import { useRouter } from 'vue-router';
-import { hasRole, CAN_BLOCK, CAN_ADMIN, CAN_VIEW_REPORTS, CAN_MANAGE_EQUIPMENT } from '@/utils/roles';
+import { usePermissions } from '@/composables/usePermissions';
 import NavDrawer from './NavDrawer.vue';
 import NotificationsPanel from './NotificationsPanel.vue';
 import { Menu, Bell } from 'lucide-vue-next';
@@ -15,10 +15,7 @@ const router = useRouter();
 const drawerOpen = ref(false);
 const notifOpen = ref(false);
 
-const canBlock = computed(() => hasRole(authStore.userRole, CAN_BLOCK));
-const canAdmin = computed(() => hasRole(authStore.userRole, CAN_ADMIN));
-const canViewReports = computed(() => hasRole(authStore.userRole, CAN_VIEW_REPORTS));
-const canManageEquipment = computed(() => hasRole(authStore.userRole, CAN_MANAGE_EQUIPMENT));
+const { canBlock, canAdmin, canViewReports, canManageEquipment } = usePermissions();
 const adminUrl = '/admin';
 const viewerRoute = computed(() =>
   campusStore.selectedCampusId

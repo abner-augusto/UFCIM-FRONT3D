@@ -8,7 +8,7 @@ import { SPACE_TYPE_LABELS, type Space } from '@/types/space';
 import { BLOCK_TYPE_LABELS, TIME_SLOT_RANGES, type Blocking } from '@/types/reservation';
 import { PERIOD_COLORS, type PinStatus } from '@/composables/usePinAvailability';
 import { useEquipmentGroups, type EquipmentGroup } from '@/composables/useEquipmentGroups';
-import { hasRole, CAN_RESERVE, CAN_BLOCK } from '@/utils/roles';
+import { usePermissions } from '@/composables/usePermissions';
 import type { PeriodKey } from '@/utils/period';
 
 const props = defineProps<{
@@ -28,8 +28,7 @@ const router = useRouter();
 const auth = useAuthStore();
 const reservationStore = useReservationStore();
 
-const canReserve = computed(() => hasRole(auth.userRole, CAN_RESERVE));
-const canBlock = computed(() => hasRole(auth.userRole, CAN_BLOCK));
+const { canReserve, canBlock } = usePermissions();
 const typeLabel = computed(() => SPACE_TYPE_LABELS[props.space.type] ?? props.space.type);
 
 // Detail loading

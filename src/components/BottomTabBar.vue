@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
-import { hasRole, CAN_BLOCK, CAN_VIEW_REPORTS, CAN_MANAGE_EQUIPMENT } from '@/utils/roles';
+import { usePermissions } from '@/composables/usePermissions';
 import { Building2, Search, Calendar, Ban, BarChart3, Wrench, User } from 'lucide-vue-next';
 
-const auth = useAuthStore();
 const campus = useCampusStore();
 const route = useRoute();
 
@@ -21,9 +19,7 @@ const browserTarget = computed(() =>
     : '/campus'
 );
 
-const canBlock = computed(() => hasRole(auth.userRole, CAN_BLOCK));
-const canViewReports = computed(() => hasRole(auth.userRole, CAN_VIEW_REPORTS));
-const canManageEquipment = computed(() => hasRole(auth.userRole, CAN_MANAGE_EQUIPMENT));
+const { canBlock, canViewReports, canManageEquipment } = usePermissions();
 const isActive = (name: string) => route.name === name;
 
 // Horizontal-scroll affordance: edge fades that show only when there's more

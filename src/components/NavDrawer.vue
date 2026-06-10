@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
-import { hasRole, CAN_BLOCK, CAN_VIEW_REPORTS, CAN_MANAGE_EQUIPMENT } from '@/utils/roles';
+import { usePermissions } from '@/composables/usePermissions';
 import { Building2, Search, Calendar, Ban, BarChart3, Wrench, Bell, User, X } from 'lucide-vue-next';
 
 defineProps<{ open: boolean }>();
@@ -13,9 +13,7 @@ const auth = useAuthStore();
 const campus = useCampusStore();
 const router = useRouter();
 
-const canBlock = computed(() => hasRole(auth.userRole, CAN_BLOCK));
-const canViewReports = computed(() => hasRole(auth.userRole, CAN_VIEW_REPORTS));
-const canManageEquipment = computed(() => hasRole(auth.userRole, CAN_MANAGE_EQUIPMENT));
+const { canBlock, canViewReports, canManageEquipment } = usePermissions();
 
 const viewerTarget = computed(() =>
   campus.selectedCampusId

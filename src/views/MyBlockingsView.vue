@@ -5,10 +5,11 @@ import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
 import type { Blocking } from '@/types/reservation';
 import { BLOCK_TYPE_LABELS } from '@/types/reservation';
-import { hasRole, CAN_BLOCK } from '@/utils/roles';
+import { usePermissions } from '@/composables/usePermissions';
 
 const router = useRouter();
 const auth = useAuthStore();
+const { canBlock } = usePermissions();
 
 const blockings = ref<Blocking[]>([]);
 const loading = ref(true);
@@ -17,7 +18,7 @@ const removing = ref<string | null>(null);
 const expandedId = ref<string | null>(null);
 
 onMounted(async () => {
-  if (!hasRole(auth.userRole, CAN_BLOCK)) {
+  if (!canBlock.value) {
     router.replace({ name: 'campus-select' });
     return;
   }

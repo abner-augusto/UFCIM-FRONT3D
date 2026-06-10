@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { SPACE_TYPE_LABELS, type Space, type Equipment } from '@/types/space';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
-import { hasRole, CAN_RESERVE, CAN_BLOCK } from '@/utils/roles';
+import { usePermissions } from '@/composables/usePermissions';
 import { PURPOSE_LABELS, BLOCK_TYPE_LABELS, type AvailabilitySlot } from '@/types/reservation';
 import EquipmentReportDialog from './EquipmentReportDialog.vue';
 import { useEquipmentGroups, type EquipmentGroup } from '@/composables/useEquipmentGroups';
@@ -38,8 +38,7 @@ function onOverlayClick() {
 }
 
 const auth = useAuthStore();
-const canReserve = computed(() => hasRole(auth.userRole, CAN_RESERVE));
-const canBlock = computed(() => hasRole(auth.userRole, CAN_BLOCK));
+const { canReserve, canBlock } = usePermissions();
 const typeLabel = computed(() => SPACE_TYPE_LABELS[props.space.type] ?? props.space.type);
 
 // Availability data for schedule grid
