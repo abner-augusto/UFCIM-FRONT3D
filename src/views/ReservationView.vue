@@ -6,9 +6,10 @@ import { useAuthStore } from '@/stores/auth';
 import { useReservationStore } from '@/stores/reservation';
 import { api } from '@/services/api';
 import type { Space } from '@/types/space';
-import type { Availability, AvailabilitySlot, Blocking, TimeSlot } from '@/types/reservation';
+import type { Availability, Blocking, TimeSlot } from '@/types/reservation';
 import { BLOCK_TYPE_LABELS, TIME_SLOT_LABELS, TIME_SLOT_RANGES, PURPOSE_OPTIONS, isSlotAvailable } from '@/types/reservation';
 import { usePermissions } from '@/composables/usePermissions';
+import { useHourRangeSelection } from '@/composables/useHourRangeSelection';
 import { toLocalISODate } from '@/utils/date';
 
 const route = useRoute();
@@ -30,27 +31,12 @@ const loadingBlockings = ref(false);
 const errorMsg = ref<string | null>(null);
 const blockings = ref<Blocking[]>([]);
 
-// Reference timestamp for "has this hour passed" — refreshed whenever
-// availability (re)loads. Lets us block booking slots already past for today.
-const nowTs = ref(Date.now());
-
-// A start time is past once it's at or before now (in local/campus time).
-// Future days are never past; earlier days are always past.
-function isPastTime(time: string): boolean {
-  if (!selectedDate.value) return false;
-  return new Date(`${selectedDate.value}T${time}:00`).getTime() <= nowTs.value;
-}
-
 // ── Selection mode ──────────────────────────────────────────────
 type SelectionMode = 'slots' | 'hours';
 const selectionMode = ref<SelectionMode>('slots');
 
 // Named-slot mode
 const selectedSlot = ref<TimeSlot | null>(null);
-
-// Hour-by-hour mode
-const pickedStart = ref<string | null>(null);
-const pickedEnd = ref<string | null>(null);
 
 // Description for single reservation
 const descriptionInput = ref('');
@@ -65,6 +51,11 @@ const recurringLoading = ref(false);
 const recurringSuccessMsg = ref<string | null>(null);
 
 const { canReserve, canCreateRecurring: canRecurring } = usePermissions();
+const {
+  pickedStart, pickedEnd, sortedHours, isPastTime, resetPicks,
+  isHourSelectable, getHourState, handleHourClick,
+  customRangeEnd, customRangeLabel, hourLabel,
+} = useHourRangeSelection(availability, selectedDate);
 
 onMounted(async () => {
   if (!canReserve.value) {
@@ -121,9 +112,6 @@ function applyPendingPrefill() {
 watch(selectedDate, async (date) => {
   if (!date) return;
   selectedSlot.value = null;
-  pickedStart.value = null;
-  pickedEnd.value = null;
-  nowTs.value = Date.now();
   loadingAvailability.value = true;
   try {
     availability.value = await api.getAvailability(auth.token, spaceId, date);
@@ -137,8 +125,7 @@ watch(selectedDate, async (date) => {
 
 watch(selectionMode, () => {
   selectedSlot.value = null;
-  pickedStart.value = null;
-  pickedEnd.value = null;
+  resetPicks();
 });
 
 // ── Named-slot helpers ──────────────────────────────────────────
@@ -170,110 +157,6 @@ const reservationStatusMessage = computed(() => {
   return null;
 });
 
-// ── Hour-picker helpers ─────────────────────────────────────────
-const sortedHours = computed<AvailabilitySlot[]>(() => {
-  if (!availability.value) return [];
-  return [...availability.value].sort((a, b) => a.startTime.localeCompare(b.startTime));
-});
-
-function hourLabel(h: string): string {
-  return h.replace(':00', 'h');
-}
-
-function isHourAvailable(slot: AvailabilitySlot): boolean {
-  return slot.status === 'available';
-}
-
-// Selectable = available AND not already fully past (for today). An hour is
-// bookable until it *ends*, so the in-progress hour stays selectable.
-function isHourSelectable(slot: AvailabilitySlot): boolean {
-  return isHourAvailable(slot) && !isPastTime(slot.endTime);
-}
-
-function hoursInRange(start: string, end: string): string[] {
-  const result: string[] = [];
-  for (const s of sortedHours.value) {
-    if (s.startTime >= start && s.startTime < end) result.push(s.startTime);
-  }
-  return result;
-}
-
-function rangeFullyAvailable(start: string, end: string): boolean {
-  const hours = hoursInRange(start, end);
-  return hours.every(h => {
-    const s = sortedHours.value.find(x => x.startTime === h);
-    return !!s && isHourSelectable(s);
-  });
-}
-
-function getHourState(slot: AvailabilitySlot): 'available' | 'selected' | 'endpoint' | 'unavailable' {
-  if (!isHourSelectable(slot)) return 'unavailable';
-  const h = slot.startTime;
-  if (!pickedStart.value) return 'available';
-  if (pickedEnd.value) {
-    if (h === pickedStart.value || h === pickedEnd.value) return 'endpoint';
-    if (h > pickedStart.value && h < pickedEnd.value) return 'selected';
-    return 'available';
-  }
-  if (h === pickedStart.value) return 'endpoint';
-  return 'available';
-}
-
-function handleHourClick(slot: AvailabilitySlot) {
-  if (!isHourSelectable(slot)) return;
-  const h = slot.startTime;
-
-  // Nothing picked yet → set start
-  if (!pickedStart.value) {
-    pickedStart.value = h;
-    pickedEnd.value = null;
-    return;
-  }
-
-  // Clicking the already-picked start → clear
-  if (h === pickedStart.value && !pickedEnd.value) {
-    pickedStart.value = null;
-    return;
-  }
-
-  // Both already set → restart from clicked hour
-  if (pickedEnd.value) {
-    pickedStart.value = h;
-    pickedEnd.value = null;
-    return;
-  }
-
-  // Start is set, no end yet → set end
-  const [lo, hi] = h > pickedStart.value
-    ? [pickedStart.value, h]
-    : [h, pickedStart.value];
-
-  // endTime of the range = endTime of the last slot in the selection
-  const lastSlot = sortedHours.value.find(s => s.startTime === hi);
-  const rangeEnd = lastSlot?.endTime ?? hi;
-
-  if (!rangeFullyAvailable(lo, rangeEnd)) {
-    // Range contains unavailable hours — restart
-    pickedStart.value = h;
-    pickedEnd.value = null;
-    return;
-  }
-
-  pickedStart.value = lo;
-  pickedEnd.value = hi; // hi is the startTime of the last selected hour
-}
-
-const customRangeEnd = computed<string | null>(() => {
-  if (!pickedEnd.value) return null;
-  const lastSlot = sortedHours.value.find(s => s.startTime === pickedEnd.value);
-  return lastSlot?.endTime ?? null;
-});
-
-const customRangeLabel = computed<string | null>(() => {
-  if (!pickedStart.value) return null;
-  if (!pickedEnd.value) return `A partir de ${hourLabel(pickedStart.value)} — selecione o horário final`;
-  return `${hourLabel(pickedStart.value)} – ${hourLabel(customRangeEnd.value ?? pickedEnd.value)}`;
-});
 
 // ── Can continue? ───────────────────────────────────────────────
 function canContinue(): boolean {
