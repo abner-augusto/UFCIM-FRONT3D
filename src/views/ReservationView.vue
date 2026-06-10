@@ -10,6 +10,7 @@ import type { Availability, Blocking, TimeSlot } from '@/types/reservation';
 import { BLOCK_TYPE_LABELS, TIME_SLOT_LABELS, TIME_SLOT_RANGES, PURPOSE_OPTIONS, isSlotAvailable } from '@/types/reservation';
 import { usePermissions } from '@/composables/usePermissions';
 import { useHourRangeSelection } from '@/composables/useHourRangeSelection';
+import RecurringReservationForm from '@/components/RecurringReservationForm.vue';
 import { toLocalISODate } from '@/utils/date';
 
 const route = useRoute();
@@ -41,14 +42,7 @@ const selectedSlot = ref<TimeSlot | null>(null);
 // Description for single reservation
 const descriptionInput = ref('');
 
-// Recurring reservation state
 const isRecurring = ref(false);
-const recurringStartDate = ref('');
-const recurringEndDate = ref('');
-const recurringDayOfWeek = ref<number | null>(null);
-const recurringDescription = ref('');
-const recurringLoading = ref(false);
-const recurringSuccessMsg = ref<string | null>(null);
 
 const { canReserve, canCreateRecurring: canRecurring } = usePermissions();
 const {
@@ -179,50 +173,6 @@ function handleContinue() {
   router.push({ name: 'reservation-confirm' });
 }
 
-// ── Recurring ───────────────────────────────────────────────────
-const recurringMinEndDate = computed(() => {
-  if (!recurringStartDate.value) return today;
-  const d = new Date(recurringStartDate.value + 'T12:00:00');
-  d.setDate(d.getDate() + 1);
-  return toLocalISODate(d);
-});
-
-function canSubmitRecurring() {
-  return (
-    space.value?.reservable !== false &&
-    recurringStartDate.value &&
-    recurringEndDate.value &&
-    recurringEndDate.value > recurringStartDate.value &&
-    recurringDayOfWeek.value !== null &&
-    selectedSlot.value &&
-    recurringDescription.value.trim()
-  );
-}
-
-async function handleRecurring() {
-  if (!canSubmitRecurring() || !space.value) return;
-  const { startTime, endTime } = TIME_SLOT_RANGES[selectedSlot.value!];
-  recurringLoading.value = true;
-  errorMsg.value = null;
-  recurringSuccessMsg.value = null;
-  try {
-    const result = await api.createRecurringReservation(auth.token, {
-      spaceId,
-      startDate: recurringStartDate.value,
-      endDate: recurringEndDate.value,
-      dayOfWeek: recurringDayOfWeek.value!,
-      startTime,
-      endTime,
-      description: recurringDescription.value.trim() || undefined,
-    });
-    recurringSuccessMsg.value = `${result.created.length} reservas criadas, ${result.skipped.length} conflitos ignorados.`;
-    setTimeout(() => router.push({ name: 'my-reservations' }), 2000);
-  } catch (e) {
-    errorMsg.value = e instanceof Error ? e.message : 'Não foi possível criar as reservas recorrentes.';
-  } finally {
-    recurringLoading.value = false;
-  }
-}
 </script>
 
 <template>
@@ -360,67 +310,7 @@ async function handleRecurring() {
 
       <!-- ── Recurring form ── -->
       <template v-else>
-        <div class="form-section">
-          <label class="form-label">Data de início</label>
-          <input type="date" class="form-input" v-model="recurringStartDate" :min="today" />
-        </div>
-
-        <div class="form-section">
-          <label class="form-label">Data de fim</label>
-          <input type="date" class="form-input" v-model="recurringEndDate" :min="recurringMinEndDate" />
-        </div>
-
-        <div class="form-section">
-          <label class="form-label">Dia da semana</label>
-          <select class="form-input" v-model="recurringDayOfWeek">
-            <option :value="null" disabled>Selecione um dia</option>
-            <option :value="1">Segunda-feira</option>
-            <option :value="2">Terça-feira</option>
-            <option :value="3">Quarta-feira</option>
-            <option :value="4">Quinta-feira</option>
-            <option :value="5">Sexta-feira</option>
-            <option :value="6">Sábado</option>
-            <option :value="0">Domingo</option>
-          </select>
-        </div>
-
-        <div class="form-section">
-          <label class="form-label">Período</label>
-          <div class="slot-grid">
-            <button
-              v-for="(label, slot) in TIME_SLOT_LABELS"
-              :key="slot"
-              class="slot-btn"
-              :class="{ 'slot-btn--selected': selectedSlot === slot }"
-              @click="selectedSlot = slot as TimeSlot"
-            >
-              {{ label }} ({{ TIME_SLOT_RANGES[slot as TimeSlot].startTime }}–{{ TIME_SLOT_RANGES[slot as TimeSlot].endTime }})
-            </button>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <label class="form-label">Descrição da recorrência</label>
-          <input
-            type="text"
-            class="form-input"
-            v-model="recurringDescription"
-            placeholder="Ex: Aula de Algoritmos — Semestre 2026.1"
-          />
-        </div>
-
-        <p v-if="recurringSuccessMsg" class="state-success">{{ recurringSuccessMsg }}</p>
-        <p v-if="errorMsg" class="state-error">{{ errorMsg }}</p>
-
-        <div class="form-actions">
-          <button
-            class="continue-btn"
-            :disabled="!canSubmitRecurring() || recurringLoading"
-            @click="handleRecurring"
-          >
-            {{ recurringLoading ? 'Agendando...' : 'Agendar Reservas Recorrentes' }}
-          </button>
-        </div>
+        <RecurringReservationForm :space-id="spaceId" :reservable="space.reservable" />
       </template>
     </div>
   </div>
