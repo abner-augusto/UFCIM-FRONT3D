@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { Search } from 'lucide-vue-next';
+import { useViewerSync } from '@/composables/useViewerSync';
 
 interface Building {
   id: string;
@@ -33,37 +33,10 @@ defineEmits<{
   'open-search': [];
 }>();
 
-const activeBuildingId = ref<string | null>(null);
-const activeFloorLevel = ref<number | null>(null);
-const buildings = ref<Building[]>([]);
-
-const floors = ref<Floor[]>([]);
-
-function syncState() {
-  if (!props.viewerRef || !props.ready) return;
-  activeBuildingId.value = props.viewerRef.getActiveBuildingId();
-  activeFloorLevel.value = props.viewerRef.getActiveFloorLevel();
-  if (buildings.value.length === 0) {
-    buildings.value = props.viewerRef.getBuildingsList();
-  }
-  floors.value = activeBuildingId.value
-    ? props.viewerRef.getFloorsForBuilding(activeBuildingId.value)
-    : [];
-}
-
-function onBuildingChanged(e: Event) {
-  const detail = (e as CustomEvent).detail;
-  activeBuildingId.value = detail.buildingID;
-  activeFloorLevel.value = detail.activeFloor;
-  floors.value = detail.buildingID
-    ? props.viewerRef?.getFloorsForBuilding(detail.buildingID) ?? []
-    : [];
-}
-
-function onFloorChanged(e: Event) {
-  const detail = (e as CustomEvent).detail;
-  activeFloorLevel.value = detail.level;
-}
+const { activeBuildingId, activeFloorLevel, buildings, floors } = useViewerSync(
+  () => props.viewerRef,
+  () => props.ready,
+);
 
 function selectBuilding(id: string | null) {
   props.viewerRef?.selectBuilding(id);
@@ -81,24 +54,7 @@ function shortFloorLabel(name: string): string {
   return name.substring(0, 2);
 }
 
-onMounted(() => {
-  window.addEventListener('ufcim:building-changed', onBuildingChanged);
-  window.addEventListener('ufcim:floor-changed', onFloorChanged);
-  if (props.ready) syncState();
-});
 
-onUnmounted(() => {
-  window.removeEventListener('ufcim:building-changed', onBuildingChanged);
-  window.removeEventListener('ufcim:floor-changed', onFloorChanged);
-});
-
-watch(() => props.ready, (isReady) => {
-  if (isReady) syncState();
-}, { immediate: true });
-
-watch(() => props.viewerRef, (newRef) => {
-  if (newRef && props.ready) syncState();
-}, { immediate: true });
 </script>
 
 <template>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useViewerSync } from '@/composables/useViewerSync';
 import { PERIOD_LABELS, type PeriodKey } from '@/utils/period';
 import { formatShortDate, createDateChips } from '@/composables/useDateTimeFilter';
 import { toLocalISODate } from '@/utils/date';
@@ -44,22 +45,18 @@ const emit = defineEmits<{
 
 const isToday = computed(() => props.selectedDate === toLocalISODate());
 
-const activeBuildingId = ref<string | null>(null);
-const activeFloorLevel = ref<number | null>(null);
+const { activeBuildingId, activeFloorLevel, buildings, floors } = useViewerSync(
+  () => props.viewerRef,
+  () => props.ready,
+);
 const dateTimePopoverOpen = ref(false);
 const buildingPopoverOpen = ref(false);
-const buildings = ref<Building[]>([]);
 
 const PERIODS: { key: PeriodKey; label: string; range: string }[] = [
   { key: 'morning', label: 'Manhã', range: '07h–12h' },
   { key: 'afternoon', label: 'Tarde', range: '13h–18h' },
   { key: 'evening', label: 'Noite', range: '19h–22h' },
 ];
-
-const floors = computed(() => {
-  if (!activeBuildingId.value || !props.viewerRef) return [];
-  return props.viewerRef.getFloorsForBuilding(activeBuildingId.value);
-});
 
 const floorsReversed = computed(() => {
   return [...floors.value].sort((a, b) => b.level - a.level);
@@ -179,49 +176,13 @@ function handleDocumentClick(e: MouseEvent) {
   }
 }
 
-function syncState() {
-  if (!props.viewerRef || !props.ready) return;
-  activeBuildingId.value = props.viewerRef.getActiveBuildingId();
-  activeFloorLevel.value = props.viewerRef.getActiveFloorLevel();
-  if (buildings.value.length === 0) {
-    buildings.value = props.viewerRef.getBuildingsList();
-  }
-}
-
-const onBuildingChanged = (e: Event) => {
-  const detail = (e as CustomEvent).detail;
-  activeBuildingId.value = detail.buildingID;
-  activeFloorLevel.value = detail.activeFloor;
-};
-
-const onFloorChanged = (e: Event) => {
-  const detail = (e as CustomEvent).detail;
-  activeFloorLevel.value = detail.level;
-};
-
 onMounted(() => {
-  window.addEventListener('ufcim:building-changed', onBuildingChanged);
-  window.addEventListener('ufcim:floor-changed', onFloorChanged);
   document.addEventListener('mousedown', handleDocumentClick);
-  
-  if (props.ready) {
-    syncState();
-  }
 });
 
 onUnmounted(() => {
-  window.removeEventListener('ufcim:building-changed', onBuildingChanged);
-  window.removeEventListener('ufcim:floor-changed', onFloorChanged);
   document.removeEventListener('mousedown', handleDocumentClick);
 });
-
-watch(() => props.ready, (isReady) => {
-  if (isReady) syncState();
-}, { immediate: true });
-
-watch(() => props.viewerRef, (newRef) => {
-  if (newRef && props.ready) syncState();
-}, { immediate: true });
 </script>
 
 <template>
