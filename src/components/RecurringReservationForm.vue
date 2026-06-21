@@ -6,6 +6,12 @@ import { api } from '@/services/api';
 import { TIME_SLOT_LABELS, TIME_SLOT_RANGES } from '@/types/reservation';
 import type { TimeSlot } from '@/types/reservation';
 import { toLocalISODate } from '@/utils/date';
+import AppDateField from '@/components/AppDateField.vue';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 const props = defineProps<{
   spaceId: string;
@@ -72,106 +78,84 @@ async function handleSubmit() {
 
 <template>
   <div>
-    <div class="form-section">
-      <label class="form-label">Data de início</label>
-      <input type="date" class="form-input" v-model="startDate" :min="today" />
+    <div class="mb-5">
+      <Label class="mb-2 block text-sm font-semibold" for="rec-start">Data de início</Label>
+      <AppDateField id="rec-start" v-model="startDate" :min="today" aria-label="Data de início" />
     </div>
 
-    <div class="form-section">
-      <label class="form-label">Data de fim</label>
-      <input type="date" class="form-input" v-model="endDate" :min="minEndDate" />
+    <div class="mb-5">
+      <Label class="mb-2 block text-sm font-semibold" for="rec-end">Data de fim</Label>
+      <AppDateField id="rec-end" v-model="endDate" :min="minEndDate" aria-label="Data de fim" />
     </div>
 
-    <div class="form-section">
-      <label class="form-label">Dia da semana</label>
-      <select class="form-input" v-model="dayOfWeek">
-        <option :value="null" disabled>Selecione um dia</option>
-        <option :value="1">Segunda-feira</option>
-        <option :value="2">Terça-feira</option>
-        <option :value="3">Quarta-feira</option>
-        <option :value="4">Quinta-feira</option>
-        <option :value="5">Sexta-feira</option>
-        <option :value="6">Sábado</option>
-        <option :value="0">Domingo</option>
-      </select>
+    <div class="mb-5">
+      <Label class="mb-2 block text-sm font-semibold" for="rec-dow">Dia da semana</Label>
+      <NativeSelect
+        id="rec-dow"
+        class="h-11 w-full"
+        :model-value="dayOfWeek ?? ''"
+        @update:model-value="dayOfWeek = $event === '' ? null : Number($event)"
+      >
+        <NativeSelectOption value="" disabled>Selecione um dia</NativeSelectOption>
+        <NativeSelectOption value="1">Segunda-feira</NativeSelectOption>
+        <NativeSelectOption value="2">Terça-feira</NativeSelectOption>
+        <NativeSelectOption value="3">Quarta-feira</NativeSelectOption>
+        <NativeSelectOption value="4">Quinta-feira</NativeSelectOption>
+        <NativeSelectOption value="5">Sexta-feira</NativeSelectOption>
+        <NativeSelectOption value="6">Sábado</NativeSelectOption>
+        <NativeSelectOption value="0">Domingo</NativeSelectOption>
+      </NativeSelect>
     </div>
 
-    <div class="form-section">
-      <label class="form-label">Período</label>
-      <div class="slot-grid">
-        <button
+    <div class="mb-5">
+      <Label class="mb-2 block text-sm font-semibold">Período</Label>
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        orientation="vertical"
+        :spacing="2"
+        class="w-full"
+        :model-value="selectedPeriod ?? ''"
+        @update:model-value="selectedPeriod = ($event || null) as TimeSlot | null"
+      >
+        <ToggleGroupItem
           v-for="(label, slot) in TIME_SLOT_LABELS"
           :key="slot"
-          class="slot-btn"
-          :class="{ 'slot-btn--selected': selectedPeriod === slot }"
-          @click="selectedPeriod = slot as TimeSlot"
+          :value="slot"
+          class="h-11 w-full justify-start"
         >
           {{ label }} ({{ TIME_SLOT_RANGES[slot as TimeSlot].startTime }}–{{ TIME_SLOT_RANGES[slot as TimeSlot].endTime }})
-        </button>
-      </div>
+        </ToggleGroupItem>
+      </ToggleGroup>
     </div>
 
-    <div class="form-section">
-      <label class="form-label">Descrição da recorrência</label>
-      <input
-        type="text"
-        class="form-input"
+    <div class="mb-5">
+      <Label class="mb-2 block text-sm font-semibold" for="rec-desc">Descrição da recorrência</Label>
+      <Input
+        id="rec-desc"
         v-model="description"
+        class="h-11"
+        type="text"
         placeholder="Ex: Aula de Algoritmos — Semestre 2026.1"
       />
     </div>
 
-    <p v-if="successMsg" class="state-success">{{ successMsg }}</p>
-    <p v-if="errorMsg" class="state-error">{{ errorMsg }}</p>
+    <p v-if="successMsg" class="text-primary mb-3 text-sm font-medium" role="status" aria-live="polite">{{ successMsg }}</p>
+    <p v-if="errorMsg" class="text-destructive mb-3 text-sm" role="alert" aria-live="polite">{{ errorMsg }}</p>
 
     <div class="form-actions">
-      <button
-        class="continue-btn"
+      <Button
+        class="h-11 w-full"
         :disabled="!canSubmit() || loading"
         @click="handleSubmit"
       >
         {{ loading ? 'Agendando...' : 'Agendar Reservas Recorrentes' }}
-      </button>
+      </Button>
     </div>
   </div>
 </template>
 
 <style scoped>
-.form-section { margin-bottom: 1.25rem; }
-.form-label {
-  display: block;
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: #333;
-}
-.form-input {
-  width: 100%;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  box-sizing: border-box;
-  min-height: var(--tap-min, 44px);
-}
-.slot-grid { display: flex; flex-direction: column; gap: 0.5rem; }
-.slot-btn {
-  padding: 0.75rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: white;
-  cursor: pointer;
-  text-align: left;
-  font-size: 0.9rem;
-  transition: border-color 0.15s, background 0.15s;
-  min-height: var(--tap-min, 44px);
-}
-.slot-btn--selected {
-  border-color: #1D9E75;
-  background: #e8f5f0;
-  color: #1D9E75;
-  font-weight: 600;
-}
 .form-actions {
   margin-top: 1rem;
 }
@@ -189,20 +173,4 @@ async function handleSubmit() {
     padding-right: 1rem;
   }
 }
-.continue-btn {
-  width: 100%;
-  padding: 0.85rem;
-  border: none;
-  border-radius: 10px;
-  background: #1D9E75;
-  color: white;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  min-height: var(--tap-min, 44px);
-}
-.continue-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.continue-btn:hover:not(:disabled) { background: #178a65; }
-.state-error { color: #c0392b; font-size: 0.9rem; margin-bottom: 0.75rem; }
-.state-success { color: #1D9E75; font-size: 0.9rem; font-weight: 500; margin-bottom: 0.75rem; }
 </style>

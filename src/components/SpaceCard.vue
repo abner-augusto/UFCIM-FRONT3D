@@ -10,6 +10,7 @@ import { PERIOD_COLORS, type PinStatus } from '@/composables/usePinAvailability'
 import { useEquipmentGroups, type EquipmentGroup } from '@/composables/useEquipmentGroups';
 import { usePermissions } from '@/composables/usePermissions';
 import type { PeriodKey } from '@/utils/period';
+import { Button } from '@/components/ui/button';
 
 const props = defineProps<{
   space: Space;
@@ -152,7 +153,7 @@ function handleToggle() {
     }"
   >
     <!-- Summary row -->
-    <button class="space-card__summary" @click="handleToggle">
+    <button class="space-card__summary" :aria-expanded="expanded" @click="handleToggle">
       <span
         class="status-dot"
         :class="{ 'status-dot--loading': !statusLoaded }"
@@ -235,23 +236,24 @@ function handleToggle() {
 
         <!-- Actions -->
         <div class="card-actions">
-          <button
+          <Button
             v-if="canReserve"
-            class="btn-primary"
+            class="h-11 w-full"
             :disabled="reserveDisabled"
             @click="handleReserve"
           >
             Fazer Reserva
-          </button>
+          </Button>
           <p v-if="reserveDisabledReason" class="action-hint">{{ reserveDisabledReason }}</p>
-          <button
+          <Button
             v-if="canBlock"
-            class="btn-secondary"
+            variant="outline"
+            class="h-11 w-full"
             :disabled="!space.reservable"
             @click="handleBlock"
           >
             Bloquear Espaço
-          </button>
+          </Button>
         </div>
       </template>
     </div>
@@ -267,7 +269,7 @@ function handleToggle() {
   transition: border-color 0.15s;
 }
 .space-card--expanded {
-  border-color: var(--color-brand);
+  border-color: var(--primary);
 }
 .space-card--dimmed {
   opacity: 0.6;

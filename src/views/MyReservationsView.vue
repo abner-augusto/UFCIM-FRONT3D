@@ -6,6 +6,7 @@ import type { Reservation } from '@/types/reservation';
 import { TIME_SLOT_LABELS, TIME_SLOT_RANGES, STATUS_LABELS, PURPOSE_OPTIONS } from '@/types/reservation';
 import { SPACE_TYPE_LABELS } from '@/types/space';
 import type { TimeSlot } from '@/types/reservation';
+import { Button } from '@/components/ui/button';
 
 const auth = useAuthStore();
 
@@ -170,7 +171,7 @@ const groupedReservations = computed<GroupedReservation[]>(() => {
         :class="{ 'reservation-card--expanded': expandedId === group.id }"
       >
         <!-- Summary row — always visible -->
-        <button class="reservation-card__summary" @click="toggleExpand(group.id)">
+        <button class="reservation-card__summary" :aria-expanded="expandedId === group.id" @click="toggleExpand(group.id)">
           <div class="reservation-card__info">
             <h3>{{ group.main.space?.name ?? group.main.space?.number ?? group.main.spaceId }}</h3>
             <p v-if="!group.isRecurrent">{{ dateLabel(group.main.date) }}</p>
@@ -281,9 +282,9 @@ const groupedReservations = computed<GroupedReservation[]>(() => {
                 <span v-else class="status-badge" :class="`status-badge--${r.status}`">
                   {{ STATUS_LABELS[r.status] }}
                 </span>
-                <button v-if="r.status === 'confirmed' && !isCompleted(r)" class="text-cancel-btn" @click="handleCancel(r.id)" :disabled="cancelling === r.id || cancellingSeries === group.id">
+                <Button v-if="r.status === 'confirmed' && !isCompleted(r)" variant="link" class="text-destructive h-auto p-0 text-xs" @click="handleCancel(r.id)" :disabled="cancelling === r.id || cancellingSeries === group.id">
                   {{ cancelling === r.id ? '...' : 'Cancelar' }}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -296,23 +297,25 @@ const groupedReservations = computed<GroupedReservation[]>(() => {
 
           <!-- Actions -->
           <div class="detail-actions" style="margin-top: 1rem">
-            <button
+            <Button
               v-if="!group.isRecurrent && group.main.status === 'confirmed' && !isCompleted(group.main)"
-              class="cancel-btn"
+              variant="outline"
+              class="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
               :disabled="cancelling === group.main.id"
               @click="handleCancel(group.main.id)"
             >
               {{ cancelling === group.main.id ? 'Cancelando...' : 'Cancelar reserva' }}
-            </button>
+            </Button>
 
-            <button
+            <Button
               v-if="group.isRecurrent && hasFutureOccurrences(group.items)"
-              class="cancel-btn cancel-btn--bulk"
+              variant="outline"
+              class="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive w-full"
               :disabled="cancellingSeries === group.id"
               @click="handleCancelSeries(group.id)"
             >
               {{ cancellingSeries === group.id ? 'Cancelando...' : 'Cancelar todas as datas futuras' }}
-            </button>
+            </Button>
           </div>
 
         </div>
@@ -545,43 +548,10 @@ h1 {
   align-items: center;
   gap: 0.75rem;
 }
-.text-cancel-btn {
-  background: none;
-  border: none;
-  color: #c0392b;
-  font-size: 0.75rem;
-  cursor: pointer;
-  text-decoration: underline;
-  padding: 0;
-}
-.text-cancel-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  text-decoration: none;
-}
 
 /* Actions */
 .detail-actions {
   padding-top: 0.25rem;
-}
-.cancel-btn {
-  font-size: 0.85rem;
-  padding: 0.5rem 1rem;
-  border: 1.5px solid #c0392b;
-  border-radius: 8px;
-  background: none;
-  cursor: pointer;
-  color: #c0392b;
-  font-weight: 500;
-  transition: background 0.15s;
-}
-.cancel-btn:hover { background: #fff0f0; }
-.cancel-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.cancel-btn--bulk {
-  width: 100%;
 }
 
 /* States */

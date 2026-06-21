@@ -7,8 +7,13 @@ import { SPACE_TYPE_LABELS } from '@/types/space';
 import { useSpaceBrowser } from '@/composables/useSpaceBrowser';
 import { PERIOD_COLORS, type PinStatus } from '@/composables/usePinAvailability';
 import SpaceCard from '@/components/SpaceCard.vue';
+import AppDateField from '@/components/AppDateField.vue';
 import type { PeriodKey } from '@/utils/period';
 import { toLocalISODate } from '@/utils/date';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 
 const route = useRoute();
 const router = useRouter();
@@ -67,88 +72,99 @@ onMounted(async () => {
   <div class="space-browser">
     <div class="sticky-header">
       <!-- Header -->
-      <div class="view-header">
-        <button class="back-btn" @click="router.back()">← Voltar</button>
-        <h1>Buscar Espaços</h1>
+      <div class="mb-5 flex items-center gap-4">
+        <Button variant="ghost" class="text-primary px-0" @click="router.back()">← Voltar</Button>
+        <h1 class="m-0 text-xl font-semibold">Buscar Espaços</h1>
       </div>
 
       <!-- Toolbar -->
-      <div class="toolbar">
-      <div class="toolbar__top-row">
-        <input
-          type="text"
-          class="toolbar__search"
-          placeholder="Buscar por nome ou número..."
-          v-model="searchQuery"
-        />
-        <div class="date-picker-wrap">
-          <label class="date-label">Data</label>
-          <input
-            type="date"
-            class="toolbar__date"
-            v-model="selectedDate"
-            :min="today"
+      <div class="bg-muted/40 flex flex-col gap-2.5 rounded-xl p-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+        <div class="flex items-end gap-2 max-[480px]:flex-col max-[480px]:items-stretch">
+          <Input
+            v-model="searchQuery"
+            type="text"
+            class="h-11 flex-1 bg-background"
+            placeholder="Buscar por nome ou número..."
+            aria-label="Buscar por nome ou número"
           />
+          <div class="flex shrink-0 flex-col gap-1">
+            <Label class="text-muted-foreground text-[0.72rem] font-semibold uppercase" for="browser-date">Data</Label>
+            <AppDateField id="browser-date" v-model="selectedDate" :min="today" aria-label="Selecionar data" />
+          </div>
         </div>
-      </div>
-      <div class="toolbar__filters">
-        <select v-model="blockFilter" class="toolbar__select">
-          <option :value="null">Todos os blocos</option>
-          <option v-for="b in availableBlocks" :key="b" :value="b">{{ b }}</option>
-        </select>
-        <select v-model="typeFilter" class="toolbar__select">
-          <option :value="null">Todos os tipos</option>
-          <option v-for="t in availableTypes" :key="t" :value="t">
-            {{ SPACE_TYPE_LABELS[t] ?? t }}
-          </option>
-        </select>
-        <select v-model="statusFilter" class="toolbar__select">
-          <option :value="null">Disponibilidade</option>
-          <option v-for="s in STATUS_OPTIONS" :key="s.value" :value="s.value">
-            {{ s.label }}
-          </option>
-        </select>
-      </div>
-      <div class="toolbar__period-row">
-        <div class="period-control">
-          <label class="period-label">
-            Turno
-            <span v-if="periodAutoDetected" class="auto-tag">automático</span>
-          </label>
-          <select
-            class="toolbar__select"
-            :value="selectedPeriod"
-            :disabled="availabilityLoading"
-            @change="setPeriod(($event.target as HTMLSelectElement).value as PeriodKey)"
+        <div class="flex flex-wrap gap-1.5 [&>*]:max-[480px]:flex-[1_1_calc(50%-0.25rem)] [&>*]:max-[480px]:min-w-0">
+          <NativeSelect
+            class="flex-1"
+            :model-value="blockFilter ?? ''"
+            aria-label="Filtrar por bloco"
+            @update:model-value="blockFilter = String($event) || null"
           >
-            <option value="morning">Manhã (07h–12h)</option>
-            <option value="afternoon">Tarde (13h–18h)</option>
-            <option value="evening">Noite (19h–22h)</option>
-          </select>
+            <NativeSelectOption value="">Todos os blocos</NativeSelectOption>
+            <NativeSelectOption v-for="b in availableBlocks" :key="b" :value="b">{{ b }}</NativeSelectOption>
+          </NativeSelect>
+          <NativeSelect
+            class="flex-1"
+            :model-value="typeFilter ?? ''"
+            aria-label="Filtrar por tipo"
+            @update:model-value="typeFilter = String($event) || null"
+          >
+            <NativeSelectOption value="">Todos os tipos</NativeSelectOption>
+            <NativeSelectOption v-for="t in availableTypes" :key="t" :value="t">
+              {{ SPACE_TYPE_LABELS[t] ?? t }}
+            </NativeSelectOption>
+          </NativeSelect>
+          <NativeSelect
+            class="flex-1"
+            :model-value="statusFilter ?? ''"
+            aria-label="Filtrar por disponibilidade"
+            @update:model-value="statusFilter = (String($event) || null) as PinStatus | null"
+          >
+            <NativeSelectOption value="">Disponibilidade</NativeSelectOption>
+            <NativeSelectOption v-for="s in STATUS_OPTIONS" :key="s.value" :value="s.value">
+              {{ s.label }}
+            </NativeSelectOption>
+          </NativeSelect>
         </div>
-        <div class="legend">
-          <span class="legend-item">
-            <span class="legend-dot" :style="{ background: PERIOD_COLORS.available }"></span>
-            Disponível
-          </span>
-          <span class="legend-item">
-            <span class="legend-dot" :style="{ background: PERIOD_COLORS.partial }"></span>
-            Parcial
-          </span>
-          <span class="legend-item">
-            <span class="legend-dot" :style="{ background: PERIOD_COLORS.reserved }"></span>
-            Ocupado
-          </span>
+        <div class="flex flex-wrap items-center gap-3 max-[480px]:flex-col max-[480px]:items-stretch">
+          <div class="flex items-center gap-1.5">
+            <Label class="text-muted-foreground text-[0.72rem] font-semibold whitespace-nowrap uppercase" for="browser-period">
+              Turno
+              <span v-if="periodAutoDetected" class="bg-secondary text-secondary-foreground rounded px-1 py-px text-[0.62rem] font-medium">automático</span>
+            </Label>
+            <NativeSelect
+              id="browser-period"
+              :model-value="selectedPeriod"
+              :disabled="availabilityLoading"
+              @update:model-value="setPeriod(String($event) as PeriodKey)"
+            >
+              <NativeSelectOption value="morning">Manhã (07h–12h)</NativeSelectOption>
+              <NativeSelectOption value="afternoon">Tarde (13h–18h)</NativeSelectOption>
+              <NativeSelectOption value="evening">Noite (19h–22h)</NativeSelectOption>
+            </NativeSelect>
+          </div>
+          <div class="flex gap-2.5">
+            <span class="flex items-center gap-[3px] text-[0.72rem] text-[#555]">
+              <span class="size-2 shrink-0 rounded-full" :style="{ background: PERIOD_COLORS.available }"></span>
+              Disponível
+            </span>
+            <span class="flex items-center gap-[3px] text-[0.72rem] text-[#555]">
+              <span class="size-2 shrink-0 rounded-full" :style="{ background: PERIOD_COLORS.partial }"></span>
+              Parcial
+            </span>
+            <span class="flex items-center gap-[3px] text-[0.72rem] text-[#555]">
+              <span class="size-2 shrink-0 rounded-full" :style="{ background: PERIOD_COLORS.reserved }"></span>
+              Ocupado
+            </span>
+          </div>
+          <span v-if="availabilityLoading" class="text-primary text-[0.72rem]">Carregando disponibilidade...</span>
         </div>
-        <span v-if="availabilityLoading" class="loading-hint">Carregando disponibilidade...</span>
       </div>
-    </div>
     </div>
 
     <!-- States -->
-    <div v-if="loading" class="state-msg">Carregando espaços...</div>
-    <div v-else-if="error" class="state-error">{{ error }}</div>
-    <div v-else-if="filteredSpaces.length === 0" class="state-empty">
+    <div v-if="loading" class="text-muted-foreground py-8 text-center text-sm">Carregando espaços...</div>
+    <div v-else-if="error" class="text-destructive py-8 text-center text-sm">{{ error }}</div>
+    <div v-else-if="filteredSpaces.length === 0" class="text-muted-foreground py-12 text-center text-sm">
       <p v-if="searchQuery || blockFilter || typeFilter || statusFilter">
         Nenhum espaço encontrado com os filtros selecionados.
       </p>
@@ -156,13 +172,13 @@ onMounted(async () => {
     </div>
 
     <!-- Grouped list -->
-    <div v-else class="space-groups">
-      <section v-for="[block, spaces] in groupedSpaces" :key="block" class="space-group">
-        <h2 class="group-heading">
+    <div v-else class="flex flex-col gap-6">
+      <section v-for="[block, spaces] in groupedSpaces" :key="block">
+        <h2 class="mb-2 text-[0.78rem] font-bold tracking-[0.05em] text-[#999] uppercase">
           {{ block }}
-          <span class="group-count">({{ spaces.length }})</span>
+          <span class="font-normal text-[#bbb]">({{ spaces.length }})</span>
         </h2>
-        <div class="group-cards">
+        <div class="flex flex-col gap-2">
           <SpaceCard
             v-for="space in spaces"
             :key="space.id"
@@ -193,202 +209,9 @@ onMounted(async () => {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: #fff;
+  background: var(--background);
   padding-top: 1.25rem;
   padding-bottom: 0.25rem;
   margin-bottom: 1rem;
-}
-
-/* Header */
-.view-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-}
-.view-header h1 {
-  margin: 0;
-  font-size: 1.3rem;
-}
-.back-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #1D9E75;
-  font-size: 0.95rem;
-  padding: 0;
-}
-
-/* Toolbar */
-.toolbar {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  margin-bottom: 0;
-  background: #f9fafb;
-  border-radius: 12px;
-  padding: 0.85rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-.toolbar__top-row {
-  display: flex;
-  gap: 0.5rem;
-  align-items: flex-end;
-}
-
-@media (max-width: 480px) {
-  .toolbar__top-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-}
-
-.toolbar__search {
-  flex: 1;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  box-sizing: border-box;
-  background: white;
-}
-.toolbar__search:focus {
-  outline: none;
-  border-color: #1D9E75;
-}
-.date-picker-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  flex-shrink: 0;
-}
-.date-label {
-  font-size: 0.72rem;
-  color: #666;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-.toolbar__date {
-  padding: 0.5rem 0.6rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  background: white;
-  cursor: pointer;
-  color: #333;
-}
-.toolbar__date:focus {
-  outline: none;
-  border-color: #1D9E75;
-}
-.toolbar__filters {
-  display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-}
-
-@media (max-width: 480px) {
-  .toolbar__filters > * {
-    flex: 1 1 calc(50% - 0.25rem);
-    min-width: 0;
-  }
-}
-
-.toolbar__select {
-  flex: 1;
-  min-width: 0;
-  padding: 0.45rem 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.82rem;
-  background: white;
-  cursor: pointer;
-}
-
-/* Period row */
-.toolbar__period-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-@media (max-width: 480px) {
-  .toolbar__period-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-}
-
-.period-control {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-.period-label {
-  font-size: 0.72rem;
-  color: #666;
-  font-weight: 600;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.auto-tag {
-  font-size: 0.62rem;
-  background: #e8f5f0;
-  color: #1D9E75;
-  border-radius: 4px;
-  padding: 1px 4px;
-  font-weight: 500;
-}
-
-.legend {
-  display: flex;
-  gap: 0.6rem;
-}
-.legend-item {
-  font-size: 0.72rem;
-  color: #555;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-.legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.loading-hint {
-  font-size: 0.72rem;
-  color: #1D9E75;
-}
-
-/* States */
-.state-msg { color: #888; font-size: 0.9rem; padding: 2rem 0; text-align: center; }
-.state-error { color: #c0392b; font-size: 0.9rem; padding: 2rem 0; text-align: center; }
-.state-empty { color: #888; font-size: 0.9rem; text-align: center; padding: 3rem 0; }
-
-/* Groups */
-.space-groups {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-.group-heading {
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #999;
-  margin: 0 0 0.5rem;
-}
-.group-count {
-  font-weight: 400;
-  color: #bbb;
-}
-.group-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
 }
 </style>

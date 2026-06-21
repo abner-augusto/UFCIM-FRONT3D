@@ -5,6 +5,10 @@ import { useAuthStore } from '@/stores/auth';
 import { api, ApiError } from '@/services/api';
 import { mapAcceptError } from '@/utils/api-errors';
 import type { UserRole } from '@/stores/auth';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 
 const route = useRoute();
 const router = useRouter();
@@ -104,193 +108,88 @@ async function handleAccept() {
 </script>
 
 <template>
-  <div class="invite-view">
+  <div class="flex min-h-screen items-center justify-center bg-muted/40 p-4 supports-[min-height:100dvh]:min-h-dvh">
     <!-- Loading -->
-    <div v-if="state === 'loading'" class="invite-card">
-      <p class="state-msg">Verificando convite...</p>
-    </div>
+    <Card v-if="state === 'loading'" class="w-full max-w-[400px] px-8 py-10 text-center">
+      <p class="text-muted-foreground text-sm">Verificando convite...</p>
+    </Card>
 
     <!-- Invalid -->
-    <div v-else-if="state === 'invalid'" class="invite-card">
-      <h1>Convite inválido</h1>
-      <p class="state-msg">Este convite é inválido ou expirou.</p>
-      <a href="#/login" class="link-btn">Ir para o login</a>
-    </div>
+    <Card v-else-if="state === 'invalid'" class="w-full max-w-[400px] px-8 py-10 text-center">
+      <h1 class="text-primary mb-4 text-2xl font-semibold">Convite inválido</h1>
+      <p class="text-muted-foreground text-sm">Este convite é inválido ou expirou.</p>
+      <a href="#/login" class="text-primary mt-4 inline-block text-sm underline">Ir para o login</a>
+    </Card>
 
     <!-- Ready / Submitting -->
-    <div v-else class="invite-card">
-      <h1>Bem-vindo(a) ao UFCIM</h1>
-      <p class="invite-info">
+    <Card v-else class="w-full max-w-[400px] px-8 py-10 text-center">
+      <h1 class="text-primary mb-4 text-2xl font-semibold">Bem-vindo(a) ao UFCIM</h1>
+      <p class="text-muted-foreground mb-2 text-sm">
         Você foi convidado(a) por <strong>{{ inviterName }}</strong> para acessar o UFCIM como
         <strong>{{ roleLabel }}</strong>.
       </p>
-      <p class="invite-info">Defina uma senha para ativar sua conta.</p>
+      <p class="text-muted-foreground mb-2 text-sm">Defina uma senha para ativar sua conta.</p>
 
-      <form class="invite-form" @submit.prevent="handleAccept">
-        <label class="invite-field">
-          <span>Matrícula{{ isStudent ? '' : ' (opcional)' }}</span>
-          <input
+      <form class="mt-6 flex flex-col gap-3.5 text-left" @submit.prevent="handleAccept">
+        <div class="flex flex-col gap-1">
+          <Label for="invite-registration">Matrícula{{ isStudent ? '' : ' (opcional)' }}</Label>
+          <Input
+            id="invite-registration"
             v-model="registration"
+            class="h-11"
             type="text"
             inputmode="numeric"
             placeholder="Sua matrícula UFC"
             autocomplete="off"
             :disabled="state === 'submitting'"
             :required="isStudent"
+            :aria-invalid="!!fieldErrors.registration"
+            :aria-describedby="fieldErrors.registration ? 'err-registration' : undefined"
           />
-          <span v-if="fieldErrors.registration" class="field-error">{{ fieldErrors.registration }}</span>
-        </label>
+          <span v-if="fieldErrors.registration" id="err-registration" class="text-destructive text-[0.8rem]" aria-live="polite">{{ fieldErrors.registration }}</span>
+        </div>
 
-        <label class="invite-field">
-          <span>Senha</span>
-          <input
+        <div class="flex flex-col gap-1">
+          <Label for="invite-password">Senha</Label>
+          <Input
+            id="invite-password"
             v-model="password"
+            class="h-11"
             type="password"
             placeholder="••••••••••"
             autocomplete="new-password"
             :disabled="state === 'submitting'"
             required
+            :aria-invalid="!!fieldErrors.password"
+            :aria-describedby="`invite-password-hint${fieldErrors.password ? ' err-password' : ''}`"
           />
-          <span class="field-hint">≥10 caracteres, ao menos uma letra e um número</span>
-          <span v-if="fieldErrors.password" class="field-error">{{ fieldErrors.password }}</span>
-        </label>
+          <span id="invite-password-hint" class="text-muted-foreground text-[0.78rem]">≥10 caracteres, ao menos uma letra e um número</span>
+          <span v-if="fieldErrors.password" id="err-password" class="text-destructive text-[0.8rem]" aria-live="polite">{{ fieldErrors.password }}</span>
+        </div>
 
-        <label class="invite-field">
-          <span>Confirmar senha</span>
-          <input
+        <div class="flex flex-col gap-1">
+          <Label for="invite-password-confirm">Confirmar senha</Label>
+          <Input
+            id="invite-password-confirm"
             v-model="passwordConfirm"
+            class="h-11"
             type="password"
             placeholder="••••••••••"
             autocomplete="new-password"
             :disabled="state === 'submitting'"
             required
+            :aria-invalid="!!fieldErrors.passwordConfirm"
+            :aria-describedby="fieldErrors.passwordConfirm ? 'err-password-confirm' : undefined"
           />
-          <span v-if="fieldErrors.passwordConfirm" class="field-error">{{ fieldErrors.passwordConfirm }}</span>
-        </label>
+          <span v-if="fieldErrors.passwordConfirm" id="err-password-confirm" class="text-destructive text-[0.8rem]" aria-live="polite">{{ fieldErrors.passwordConfirm }}</span>
+        </div>
 
-        <p v-if="submitError" class="submit-error">{{ submitError }}</p>
+        <p v-if="submitError" class="text-destructive m-0 text-sm" role="alert" aria-live="polite">{{ submitError }}</p>
 
-        <button type="submit" class="submit-btn" :disabled="state === 'submitting'">
+        <Button type="submit" class="mt-1 h-11" :disabled="state === 'submitting'">
           {{ state === 'submitting' ? 'Ativando...' : 'Ativar conta' }}
-        </button>
+        </Button>
       </form>
-    </div>
+    </Card>
   </div>
 </template>
-
-<style scoped>
-.invite-view {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  background: #f7f7f7;
-}
-
-@supports (min-height: 100dvh) {
-  .invite-view {
-    min-height: 100dvh;
-  }
-}
-
-.invite-view input,
-.invite-view button {
-  min-height: var(--tap-min, 44px);
-}
-
-.invite-card {
-  background: white;
-  border: 1px solid #e5e5e5;
-  border-radius: 16px;
-  padding: 2.5rem 2rem;
-  width: 100%;
-  max-width: 400px;
-  text-align: center;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-}
-.invite-card h1 {
-  margin: 0 0 1rem;
-  font-size: 1.5rem;
-  color: #1D9E75;
-}
-.invite-info {
-  color: #555;
-  font-size: 0.9rem;
-  margin: 0 0 0.5rem;
-}
-.invite-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.875rem;
-  margin-top: 1.5rem;
-  text-align: left;
-}
-.invite-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.875rem;
-  color: #555;
-  font-weight: 500;
-}
-.invite-field input {
-  padding: 0.65rem 0.875rem;
-  border: 1px solid #d5d5d5;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  outline: none;
-  transition: border-color 0.15s;
-}
-.invite-field input:focus {
-  border-color: #1D9E75;
-}
-.invite-field input:disabled {
-  background: #f5f5f5;
-  color: #aaa;
-}
-.field-hint {
-  font-size: 0.78rem;
-  color: #aaa;
-  font-weight: 400;
-}
-.field-error {
-  font-size: 0.8rem;
-  color: #c0392b;
-  font-weight: 400;
-}
-.submit-error {
-  color: #c0392b;
-  font-size: 0.875rem;
-  margin: 0;
-}
-.submit-btn {
-  margin-top: 0.25rem;
-  padding: 0.75rem;
-  background: #1D9E75;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.submit-btn:hover:not(:disabled) {
-  background: #178a64;
-}
-.submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-.state-msg {
-  color: #888;
-  font-size: 0.9rem;
-}
-.link-btn {
-  display: inline-block;
-  margin-top: 1rem;
-  color: #1D9E75;
-  font-size: 0.9rem;
-  text-decoration: underline;
-}
-</style>

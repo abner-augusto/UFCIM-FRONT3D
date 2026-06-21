@@ -2,6 +2,11 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { api } from '@/services/api';
 import { mapRequestInviteError } from '@/utils/api-errors';
+import { RouterLink } from 'vue-router';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 
 const name = ref('');
 const email = ref('');
@@ -89,210 +94,66 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="request-view">
+  <div class="flex min-h-screen items-center justify-center bg-muted/40 p-4 supports-[min-height:100dvh]:min-h-dvh">
     <!-- Success state -->
-    <div v-if="submitted" class="request-card success-card">
-      <div class="success-icon">&#10003;</div>
-      <h1>Solicitação enviada</h1>
-      <p class="success-msg">
+    <Card v-if="submitted" class="flex w-full max-w-[380px] flex-col items-center gap-3 px-8 py-10 text-center">
+      <div class="text-primary text-5xl leading-none">&#10003;</div>
+      <h1 class="text-primary m-0 text-2xl font-semibold">Solicitação enviada</h1>
+      <p class="text-muted-foreground m-0 text-sm leading-relaxed">
         Sua solicitação de convite foi recebida com sucesso! Um administrador
         analisará seu pedido e você receberá um convite por e-mail.
       </p>
-      <router-link :to="{ name: 'login' }" class="request-btn success-btn">Ir para o login</router-link>
-    </div>
+      <Button as-child class="mt-2 h-11 w-full">
+        <RouterLink :to="{ name: 'login' }">Ir para o login</RouterLink>
+      </Button>
+    </Card>
 
     <!-- Form state -->
-    <div v-else class="request-card">
-      <h1>Solicitar Convite</h1>
-      <p class="request-subtitle">Reserva de Espaços — UFC</p>
+    <Card v-else class="w-full max-w-[380px] px-8 py-10 text-center">
+      <h1 class="text-primary mb-1 text-[1.75rem] font-bold">Solicitar Convite</h1>
+      <p class="text-muted-foreground mb-7 text-sm">Reserva de Espaços — UFC</p>
 
-      <form class="request-form" @submit.prevent="handleSubmit">
-        <label class="request-field">
-          <span>Nome completo</span>
-          <input
+      <form class="flex flex-col gap-3.5 text-left" @submit.prevent="handleSubmit">
+        <div class="flex flex-col gap-1.5">
+          <Label for="request-name">Nome completo</Label>
+          <Input
+            id="request-name"
             v-model="name"
+            class="h-11"
             type="text"
             placeholder="Seu nome completo"
             autocomplete="name"
             required
             :disabled="loading"
           />
-        </label>
+        </div>
 
-        <label class="request-field">
-          <span>Email</span>
-          <input
+        <div class="flex flex-col gap-1.5">
+          <Label for="request-email">Email</Label>
+          <Input
+            id="request-email"
             v-model="email"
+            class="h-11"
             type="email"
             placeholder="seu@email.com"
             autocomplete="email"
             required
             :disabled="loading"
           />
-        </label>
+        </div>
 
-        <div id="turnstile-container"></div>
+        <div id="turnstile-container" class="mt-2 flex min-h-[65px] justify-center"></div>
 
-        <p v-if="errorMsg" class="request-error">{{ errorMsg }}</p>
+        <p v-if="errorMsg" class="text-destructive m-0 text-sm" role="alert" aria-live="polite">{{ errorMsg }}</p>
 
-        <button type="submit" class="request-btn" :disabled="loading || !turnstileToken">
+        <Button type="submit" class="mt-1 h-11" :disabled="loading || !turnstileToken">
           {{ loading ? 'Enviando...' : 'Solicitar convite' }}
-        </button>
+        </Button>
       </form>
 
-      <router-link :to="{ name: 'login' }" class="request-link">Já tem conta? Faça login</router-link>
-    </div>
+      <Button as-child variant="link" class="text-muted-foreground mt-4 h-11">
+        <RouterLink :to="{ name: 'login' }">Já tem conta? Faça login</RouterLink>
+      </Button>
+    </Card>
   </div>
 </template>
-
-<style scoped>
-.request-view {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  background: #f7f7f7;
-}
-
-@supports (min-height: 100dvh) {
-  .request-view {
-    min-height: 100dvh;
-  }
-}
-
-.request-view input,
-.request-view .request-btn {
-  min-height: var(--tap-min, 44px);
-}
-
-.request-card {
-  background: white;
-  border: 1px solid #e5e5e5;
-  border-radius: 16px;
-  padding: 2.5rem 2rem;
-  width: 100%;
-  max-width: 380px;
-  text-align: center;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-}
-
-.request-card h1 {
-  margin: 0 0 0.25rem;
-  font-size: 1.75rem;
-  color: #1D9E75;
-}
-
-.request-subtitle {
-  margin: 0 0 1.75rem;
-  color: #888;
-  font-size: 0.9rem;
-}
-
-.request-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.875rem;
-  text-align: left;
-}
-
-.request-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.875rem;
-  color: #555;
-  font-weight: 500;
-}
-
-.request-field input {
-  padding: 0.65rem 0.875rem;
-  border: 1px solid #d5d5d5;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  outline: none;
-  transition: border-color 0.15s;
-}
-
-.request-field input:focus {
-  border-color: #1D9E75;
-}
-
-.request-field input:disabled {
-  background: #f5f5f5;
-  color: #aaa;
-}
-
-#turnstile-container {
-  margin-top: 0.5rem;
-  display: flex;
-  justify-content: center;
-  min-height: 65px;
-}
-
-.request-btn {
-  margin-top: 0.25rem;
-  padding: 0.75rem;
-  background: #1D9E75;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-  text-decoration: none;
-  display: block;
-  text-align: center;
-}
-
-.request-btn:hover:not(:disabled) {
-  background: #178a64;
-}
-
-.request-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.request-error {
-  color: #c0392b;
-  font-size: 0.875rem;
-  margin: 0;
-}
-
-.request-link {
-  display: block;
-  margin-top: 1rem;
-  color: #888;
-  font-size: 0.85rem;
-  text-align: center;
-  min-height: var(--tap-min, 44px);
-  line-height: var(--tap-min, 44px);
-  text-decoration: underline;
-}
-
-.success-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.success-icon {
-  font-size: 3rem;
-  color: #1D9E75;
-  line-height: 1;
-}
-
-.success-msg {
-  color: #555;
-  font-size: 0.9rem;
-  margin: 0;
-  line-height: 1.5;
-}
-
-.success-btn {
-  margin-top: 0.5rem;
-  width: 100%;
-}
-</style>

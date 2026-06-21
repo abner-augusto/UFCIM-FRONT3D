@@ -8,6 +8,7 @@ import { REPORT_STATUS_LABELS } from '@/types/equipment-report';
 import { usePermissions } from '@/composables/usePermissions';
 import { campuses } from '@/data/campuses';
 import { MapPin } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -168,23 +169,24 @@ function viewerLink(report: EquipmentReport) {
 <template>
   <div class="maint-reports-view">
     <div class="view-header">
-      <button class="back-btn" @click="router.back()">← Voltar</button>
+      <Button variant="ghost" class="text-primary px-0" @click="router.back()">← Voltar</Button>
       <h1>Chamados de Manutenção</h1>
     </div>
 
     <div class="status-tabs" role="tablist">
-      <button
+      <Button
         v-for="tab in STATUS_TABS"
         :key="tab.value"
         type="button"
-        class="status-tab"
-        :class="{ 'status-tab--active': activeStatus === tab.value }"
+        size="sm"
+        :variant="activeStatus === tab.value ? 'default' : 'outline'"
+        class="shrink-0 rounded-full"
         role="tab"
         :aria-selected="activeStatus === tab.value"
         @click="selectStatus(tab.value)"
       >
         {{ tab.label }}
-      </button>
+      </Button>
     </div>
 
     <div v-if="loading" class="state-msg">Carregando chamados...</div>
@@ -227,28 +229,33 @@ function viewerLink(report: EquipmentReport) {
           v-if="r.status === 'pending' || r.status === 'acknowledged'"
           class="report-card__actions"
         >
-          <button
+          <Button
             v-if="r.status === 'pending'"
-            class="action-btn action-btn--neutral"
+            variant="outline"
+            size="sm"
             :disabled="acting === r.id"
             @click="handleAcknowledge(r)"
           >
             Marcar em análise
-          </button>
-          <button
-            class="action-btn action-btn--resolve"
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            class="border-primary text-primary hover:bg-primary/10 hover:text-primary"
             :disabled="acting === r.id"
             @click="handleResolve(r)"
           >
             Resolver
-          </button>
-          <button
-            class="action-btn action-btn--dismiss"
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            class="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
             :disabled="acting === r.id"
             @click="handleDismiss(r)"
           >
             Descartar
-          </button>
+          </Button>
         </div>
       </li>
     </ul>
@@ -271,14 +278,6 @@ function viewerLink(report: EquipmentReport) {
   margin: 0;
   font-size: 1.3rem;
 }
-.back-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #1D9E75;
-  font-size: 0.95rem;
-  padding: 0;
-}
 
 /* Status tabs */
 .status-tabs {
@@ -287,26 +286,6 @@ function viewerLink(report: EquipmentReport) {
   margin-bottom: 1.25rem;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-}
-.status-tab {
-  flex-shrink: 0;
-  padding: 0.4rem 0.85rem;
-  border: 1px solid #e5e5e5;
-  border-radius: 999px;
-  background: white;
-  color: #666;
-  font-size: 0.82rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-.status-tab:hover {
-  background: #f9fafb;
-}
-.status-tab--active {
-  background: var(--color-brand-soft, #e6f6ef);
-  border-color: var(--color-brand, #1D9E75);
-  color: var(--color-brand, #1D9E75);
 }
 
 /* List */
@@ -385,7 +364,7 @@ function viewerLink(report: EquipmentReport) {
   margin-top: 0.6rem;
   font-size: 0.82rem;
   font-weight: 500;
-  color: var(--color-brand, #1D9E75);
+  color: var(--primary);
   text-decoration: none;
 }
 .report-card__viewer-link:hover {
@@ -412,26 +391,6 @@ function viewerLink(report: EquipmentReport) {
   gap: 0.5rem;
   margin-top: 0.85rem;
 }
-.action-btn {
-  font-size: 0.82rem;
-  padding: 0.45rem 0.9rem;
-  border-radius: 8px;
-  border: 1.5px solid;
-  background: none;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background 0.15s;
-}
-.action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.action-btn--neutral { border-color: #c7c7c7; color: #555; }
-.action-btn--neutral:hover:not(:disabled) { background: #f5f5f5; }
-.action-btn--resolve { border-color: #1D9E75; color: #1D7A5A; }
-.action-btn--resolve:hover:not(:disabled) { background: #eafaf3; }
-.action-btn--dismiss { border-color: #c0392b; color: #c0392b; }
-.action-btn--dismiss:hover:not(:disabled) { background: #fff0f0; }
 
 /* States */
 .state-msg { color: #888; font-size: 0.9rem; }

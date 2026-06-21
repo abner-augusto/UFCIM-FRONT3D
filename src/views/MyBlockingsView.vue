@@ -6,6 +6,7 @@ import { api } from '@/services/api';
 import type { Blocking } from '@/types/reservation';
 import { BLOCK_TYPE_LABELS } from '@/types/reservation';
 import { usePermissions } from '@/composables/usePermissions';
+import { Button } from '@/components/ui/button';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -82,7 +83,7 @@ const datetimeLabel = (iso: string) =>
 <template>
   <div class="my-blockings-view">
     <div class="view-header">
-      <button class="back-btn" @click="router.back()">← Voltar</button>
+      <Button variant="ghost" class="text-primary px-0" @click="router.back()">← Voltar</Button>
       <h1>Meus Bloqueios</h1>
     </div>
 
@@ -100,7 +101,7 @@ const datetimeLabel = (iso: string) =>
         :class="{ 'blocking-card--expanded': expandedId === b.id }"
       >
         <!-- Summary row -->
-        <button class="blocking-card__summary" @click="toggleExpand(b.id)">
+        <button class="blocking-card__summary" :aria-expanded="expandedId === b.id" @click="toggleExpand(b.id)">
           <div class="blocking-card__info">
             <h3>{{ b.space?.name ?? b.space?.number ?? b.spaceId }}</h3>
             <p>{{ dateLong(b.date) }}</p>
@@ -172,13 +173,14 @@ const datetimeLabel = (iso: string) =>
 
           <!-- Remove action -->
           <div class="detail-actions">
-            <button
-              class="remove-btn"
+            <Button
+              variant="outline"
+              class="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
               :disabled="removing === b.id"
               @click="handleRemove(b.id)"
             >
               {{ removing === b.id ? 'Removendo...' : 'Remover bloqueio' }}
-            </button>
+            </Button>
           </div>
         </div>
       </li>
@@ -202,15 +204,6 @@ const datetimeLabel = (iso: string) =>
   margin: 0;
   font-size: 1.3rem;
 }
-.back-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #1D9E75;
-  font-size: 0.95rem;
-  padding: 0;
-}
-
 .blocking-list {
   list-style: none;
   margin: 0;
@@ -379,22 +372,6 @@ const datetimeLabel = (iso: string) =>
 /* Actions */
 .detail-actions {
   padding-top: 0.25rem;
-}
-.remove-btn {
-  font-size: 0.85rem;
-  padding: 0.5rem 1rem;
-  border: 1.5px solid #c0392b;
-  border-radius: 8px;
-  background: none;
-  cursor: pointer;
-  color: #c0392b;
-  font-weight: 500;
-  transition: background 0.15s;
-}
-.remove-btn:hover { background: #fff0f0; }
-.remove-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* States */
