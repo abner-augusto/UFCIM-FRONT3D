@@ -63,17 +63,17 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="reports-view">
-    <h1>Relatório de Ocupação</h1>
+  <div class="mx-auto flex max-w-[960px] flex-col gap-6 px-4 py-6">
+    <h1 class="m-0 text-xl font-semibold text-foreground">Relatório de Ocupação</h1>
 
     <ReportFilters @apply="handleApply" />
 
-    <div v-if="loading" class="state-msg">Carregando relatório...</div>
-    <div v-else-if="errorMsg" class="state-error">{{ errorMsg }}</div>
+    <div v-if="loading" class="text-muted-foreground p-8 text-center text-[0.95rem]">Carregando relatório...</div>
+    <div v-else-if="errorMsg" class="text-destructive p-8 text-center text-[0.95rem]">{{ errorMsg }}</div>
     <template v-else-if="report">
       <OccupancySummary :summary="report.summary" />
 
-      <div class="charts-grid">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <LineChart :data="report.daily" />
         <TurnoPie :turno-data="report.turnos" />
       </div>
@@ -93,44 +93,3 @@ onMounted(async () => {
     </template>
   </div>
 </template>
-
-<style scoped>
-.reports-view {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 1.5rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-h1 {
-  margin: 0;
-  font-size: 1.3rem;
-  color: #111;
-}
-
-.state-msg,
-.state-error {
-  text-align: center;
-  padding: 2rem;
-  color: #888;
-  font-size: 0.95rem;
-}
-
-.state-error {
-  color: #c0392b;
-}
-
-.charts-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-@media (max-width: 640px) {
-  .charts-grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

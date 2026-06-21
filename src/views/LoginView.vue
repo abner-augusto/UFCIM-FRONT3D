@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import { useRouter } from 'vue-router';
+import { useRouter, RouterLink } from 'vue-router';
 import { api } from '@/services/api';
 import { mapLoginError } from '@/utils/api-errors';
 import type { UserRole } from '@/stores/auth';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -36,210 +40,67 @@ async function handleLogin() {
     loading.value = false;
   }
 }
-
-
 </script>
 
 <template>
-  <div class="login-view">
-    <div class="login-card">
-      <h1>UFCIM</h1>
-      <p class="login-subtitle">Reserva de Espaços — UFC</p>
+  <div class="flex min-h-screen items-center justify-center bg-muted/40 supports-[min-height:100dvh]:min-h-dvh">
+    <Card class="w-full max-w-[380px] px-8 py-10 text-center">
+      <h1 class="text-primary mb-1 text-[1.75rem] font-bold">UFCIM</h1>
+      <p class="text-muted-foreground mb-7 text-sm">Reserva de Espaços — UFC</p>
 
-      <form class="login-form" @submit.prevent="handleLogin">
-        <label class="login-field">
-          <span>Email</span>
-          <input
+      <form class="flex flex-col gap-3.5 text-left" @submit.prevent="handleLogin">
+        <div class="flex flex-col gap-1.5">
+          <Label for="login-email">Email</Label>
+          <Input
+            id="login-email"
             v-model="email"
+            class="h-11"
             type="email"
             placeholder="seu@email.com"
             autocomplete="email"
             required
             :disabled="loading"
           />
-        </label>
+        </div>
 
-        <label class="login-field">
-          <span>Senha</span>
-          <input
+        <div class="flex flex-col gap-1.5">
+          <Label for="login-password">Senha</Label>
+          <Input
+            id="login-password"
             v-model="password"
+            class="h-11"
             type="password"
             placeholder="••••••••••"
             autocomplete="current-password"
             required
             :disabled="loading"
           />
-        </label>
+        </div>
 
-        <p v-if="errorMsg" class="login-error">{{ errorMsg }}</p>
+        <p v-if="errorMsg" class="text-destructive m-0 text-sm" role="alert" aria-live="polite">{{ errorMsg }}</p>
 
-        <button type="submit" class="login-btn" :disabled="loading">
+        <Button type="submit" class="mt-1 h-11" :disabled="loading">
           {{ loading ? 'Entrando...' : 'Entrar' }}
-        </button>
+        </Button>
       </form>
 
-      <button class="forgot-link" @click="showForgotInfo = !showForgotInfo">
+      <Button
+        variant="link"
+        class="text-muted-foreground mt-4 h-11"
+        @click="showForgotInfo = !showForgotInfo"
+      >
         Esqueci minha senha
-      </button>
-      <p v-if="showForgotInfo" class="forgot-info">
+      </Button>
+      <p v-if="showForgotInfo" class="bg-muted text-muted-foreground mt-2 rounded-lg px-3.5 py-2.5 text-left text-sm">
         Entre em contato com o administrador para redefinir sua senha.
       </p>
 
-      <div class="login-footer">
-        <p class="login-footer-text">Ainda não tem conta?</p>
-        <router-link :to="{ name: 'request-invite' }" class="request-btn">Solicitar convite</router-link>
+      <div class="mt-6 border-t pt-5">
+        <p class="text-muted-foreground mb-2.5 text-sm">Ainda não tem conta?</p>
+        <Button as-child variant="outline" class="h-11 w-full">
+          <RouterLink :to="{ name: 'request-invite' }">Solicitar convite</RouterLink>
+        </Button>
       </div>
-
-    </div>
+    </Card>
   </div>
 </template>
-
-<style scoped>
-.login-view {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  background: #f7f7f7;
-}
-
-@supports (min-height: 100dvh) {
-  .login-view {
-    min-height: 100dvh;
-  }
-}
-
-.login-view input,
-.login-view .login-btn {
-  min-height: var(--tap-min, 44px);
-}
-
-.login-card {
-  background: white;
-  border: 1px solid #e5e5e5;
-  border-radius: 16px;
-  padding: 2.5rem 2rem;
-  width: 100%;
-  max-width: 380px;
-  text-align: center;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-}
-.login-card h1 {
-  margin: 0 0 0.25rem;
-  font-size: 1.75rem;
-  color: #1D9E75;
-}
-.login-subtitle {
-  margin: 0 0 1.75rem;
-  color: #888;
-  font-size: 0.9rem;
-}
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.875rem;
-  text-align: left;
-}
-.login-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.875rem;
-  color: #555;
-  font-weight: 500;
-}
-.login-field input {
-  padding: 0.65rem 0.875rem;
-  border: 1px solid #d5d5d5;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  outline: none;
-  transition: border-color 0.15s;
-}
-.login-field input:focus {
-  border-color: #1D9E75;
-}
-.login-field input:disabled {
-  background: #f5f5f5;
-  color: #aaa;
-}
-.login-btn {
-  margin-top: 0.25rem;
-  padding: 0.75rem;
-  background: #1D9E75;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.login-btn:hover:not(:disabled) {
-  background: #178a64;
-}
-.login-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-.login-error {
-  color: #c0392b;
-  font-size: 0.875rem;
-  margin: 0;
-}
-.forgot-link {
-  display: block;
-  margin-top: 1rem;
-  background: none;
-  border: none;
-  color: #888;
-  font-size: 0.85rem;
-  cursor: pointer;
-  text-decoration: underline;
-  padding: 0;
-  min-height: var(--tap-min, 44px);
-}
-.forgot-link:hover {
-  color: #555;
-}
-.forgot-info {
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
-  color: #555;
-  background: #f0f0f0;
-  border-radius: 8px;
-  padding: 0.6rem 0.875rem;
-  text-align: left;
-}
-.login-footer {
-  margin-top: 1.5rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid #eee;
-}
-.login-footer-text {
-  margin: 0 0 0.6rem;
-  font-size: 0.85rem;
-  color: #888;
-}
-.request-btn {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.7rem;
-  background: transparent;
-  color: #1D9E75;
-  border: 1px solid #1D9E75;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  text-decoration: none;
-  text-align: center;
-  transition: background 0.15s, color 0.15s;
-  min-height: var(--tap-min, 44px);
-  line-height: 1.6;
-}
-.request-btn:hover {
-  background: #1D9E75;
-  color: white;
-}
-</style>

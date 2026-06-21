@@ -2,6 +2,9 @@
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { campuses } from '@/data/campuses';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 const route = useRoute();
 const router = useRouter();
@@ -16,121 +19,35 @@ function handleSelect(_deptId: string) {
 </script>
 
 <template>
-  <div class="dept-select">
-    <div class="dept-select__header">
-      <button class="back-btn" @click="router.back()">← Voltar</button>
-      <div class="dept-select__title">
-        <h1>{{ campus?.name }}</h1>
-        <p>Selecione a unidade para visualizar e reservar espaços</p>
+  <div class="mx-auto max-w-[900px] px-4 py-8">
+    <div class="mb-8 flex items-start gap-4">
+      <Button variant="ghost" class="text-primary mt-1 px-0 whitespace-nowrap" @click="router.back()">← Voltar</Button>
+      <div>
+        <h1 class="mb-1 text-2xl font-semibold">{{ campus?.name }}</h1>
+        <p class="text-muted-foreground m-0 text-sm">Selecione a unidade para visualizar e reservar espaços</p>
       </div>
     </div>
 
-    <div v-if="!campus" class="state-error">Campus não encontrado.</div>
+    <div v-if="!campus" class="text-destructive text-sm">Campus não encontrado.</div>
 
-    <div v-else class="dept-select__grid">
-      <div
+    <div v-else class="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr))]">
+      <Card
         v-for="dept in campus.departments"
         :key="dept.id"
-        class="dept-card"
-        :class="{ 'dept-card--disabled': !dept.active }"
+        class="hover:border-primary cursor-pointer gap-1.5 p-5 transition-[border-color,box-shadow] hover:shadow-[0_2px_8px_rgba(29,158,117,0.1)] aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:border-border aria-disabled:hover:shadow-none"
         role="button"
         :tabindex="dept.active ? 0 : -1"
         :aria-disabled="!dept.active"
         @click="dept.active && handleSelect(dept.id)"
         @keydown.enter="dept.active && handleSelect(dept.id)"
       >
-        <div class="dept-card__header">
-          <h3 class="dept-card__short">{{ dept.shortName }}</h3>
-          <span v-if="!dept.active" class="dept-card__badge">Em breve</span>
+        <div class="flex items-center justify-between">
+          <h3 class="m-0 text-lg font-semibold">{{ dept.shortName }}</h3>
+          <Badge v-if="!dept.active" variant="secondary" class="bg-muted text-muted-foreground">Em breve</Badge>
         </div>
-        <p class="dept-card__name">{{ dept.name }}</p>
-        <p class="dept-card__description">{{ dept.description }}</p>
-      </div>
+        <p class="text-muted-foreground m-0 text-xs">{{ dept.name }}</p>
+        <p class="text-muted-foreground m-0 text-sm">{{ dept.description }}</p>
+      </Card>
     </div>
   </div>
 </template>
-
-<style scoped>
-.dept-select {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-}
-.dept-select__header {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-.back-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #1D9E75;
-  font-size: 0.95rem;
-  padding: 0;
-  white-space: nowrap;
-  margin-top: 0.3rem;
-}
-.dept-select__title h1 {
-  margin: 0 0 0.25rem;
-  font-size: 1.5rem;
-}
-.dept-select__title p {
-  margin: 0;
-  color: #666;
-  font-size: 0.9rem;
-}
-.dept-select__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
-  gap: 1rem;
-}
-.dept-card {
-  border: 1px solid #e5e5e5;
-  border-radius: 12px;
-  padding: 1.25rem;
-  cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  background: white;
-}
-.dept-card:hover:not(.dept-card--disabled) {
-  border-color: #1D9E75;
-  box-shadow: 0 2px 8px rgba(29, 158, 117, 0.1);
-}
-.dept-card--disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.dept-card__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.35rem;
-}
-.dept-card__short {
-  margin: 0;
-  font-size: 1.1rem;
-}
-.dept-card__badge {
-  font-size: 0.75rem;
-  background: #f0f0f0;
-  color: #888;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-}
-.dept-card__name {
-  font-size: 0.8rem;
-  color: #888;
-  margin: 0 0 0.4rem;
-}
-.dept-card__description {
-  font-size: 0.85rem;
-  color: #666;
-  margin: 0;
-}
-.state-error {
-  color: #c0392b;
-  font-size: 0.9rem;
-}
-</style>
