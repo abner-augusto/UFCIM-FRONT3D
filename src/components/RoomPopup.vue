@@ -270,6 +270,7 @@ function onReportSent() {
     <component
       :is="isDesktop ? DialogContent : DrawerContent"
       class="room-popup z-[var(--z-modal)]"
+      :class="{ 'room-popup--drawer': !isDesktop }"
       :show-close-button="false"
     >
       <button class="room-popup__close" @click="$emit('close')" aria-label="Fechar popup">&times;</button>
@@ -493,6 +494,20 @@ function onReportSent() {
   background: var(--border);
   border-radius: 2px;
   margin: 0 auto 1rem;
+}
+
+/* Drawer variant (mobile): the vaul Drawer already anchors the sheet to the
+   bottom edge, slides it in, and renders its own grab handle. Drop the
+   centered-card constraints (max-width, all-corner radius, surge animation,
+   our own handle) so it reads as a full-width bottom sheet. */
+.room-popup--drawer {
+  max-width: none;
+  border-radius: 16px 16px 0 0;
+  animation: none;
+}
+
+.room-popup--drawer::before {
+  display: none;
 }
 
 @keyframes popup-in {
