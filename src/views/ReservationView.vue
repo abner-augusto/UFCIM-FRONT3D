@@ -12,6 +12,12 @@ import { usePermissions } from '@/composables/usePermissions';
 import { useHourRangeSelection } from '@/composables/useHourRangeSelection';
 import RecurringReservationForm from '@/components/RecurringReservationForm.vue';
 import { toLocalISODate } from '@/utils/date';
+import AppDateField from '@/components/AppDateField.vue';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 const route = useRoute();
 const router = useRouter();
@@ -178,7 +184,7 @@ function handleContinue() {
 <template>
   <div class="reservation-view">
     <div class="reservation-header">
-      <button class="back-btn" @click="router.back()">← Voltar</button>
+      <Button variant="ghost" class="back-btn" @click="router.back()">← Voltar</Button>
       <h1>Fazer Reserva</h1>
     </div>
 
@@ -197,17 +203,22 @@ function handleContinue() {
 
       <!-- Recurring toggle -->
       <div v-if="canRecurring" class="form-section recurring-toggle-row">
-        <label class="toggle-label">
-          <input type="checkbox" v-model="isRecurring" />
+        <Button
+          type="button"
+          variant="outline"
+          class="toggle-label"
+          :aria-pressed="isRecurring"
+          @click="isRecurring = !isRecurring"
+        >
           Reserva recorrente
-        </label>
+        </Button>
       </div>
 
       <!-- ── Non-recurring form ── -->
       <template v-if="!isRecurring">
         <div class="form-section">
-          <label class="form-label">Data da reserva</label>
-          <input type="date" class="form-input" v-model="selectedDate" :min="today" />
+          <Label class="form-label" for="reservation-date">Data da reserva</Label>
+          <AppDateField id="reservation-date" v-model="selectedDate" :min="today" aria-label="Data da reserva" />
           <p v-if="loadingBlockings && selectedDate" class="form-hint">Verificando bloqueios do dia...</p>
           <div v-else-if="selectedDateBlockings.length" class="blocking-notice">
             <p class="blocking-notice__title">Bloqueios neste dia</p>
@@ -222,26 +233,26 @@ function handleContinue() {
         </div>
 
         <div v-if="selectedDate" class="form-section">
-          <div class="period-mode-bar">
-            <button
-              class="mode-btn"
-              :class="{ 'mode-btn--active': selectionMode === 'slots' }"
-              @click="selectionMode = 'slots'"
-            >Períodos</button>
-            <button
-              class="mode-btn"
-              :class="{ 'mode-btn--active': selectionMode === 'hours' }"
-              @click="selectionMode = 'hours'"
-            >Horários</button>
-          </div>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            class="period-mode-bar"
+            :model-value="selectionMode"
+            @update:model-value="selectionMode = (($event || 'slots') as SelectionMode)"
+          >
+            <ToggleGroupItem value="slots" class="mode-btn">Períodos</ToggleGroupItem>
+            <ToggleGroupItem value="hours" class="mode-btn">Horários</ToggleGroupItem>
+          </ToggleGroup>
 
           <div v-if="loadingAvailability" class="state-msg">Verificando disponibilidade...</div>
 
           <!-- Named slots -->
           <div v-else-if="selectionMode === 'slots'" class="slot-grid">
-            <button
+            <Button
               v-for="(label, slot) in TIME_SLOT_LABELS"
               :key="slot"
+              type="button"
+              variant="outline"
               class="slot-btn"
               :class="{
                 'slot-btn--selected': selectedSlot === slot,
@@ -251,7 +262,7 @@ function handleContinue() {
               @click="selectedSlot = slot as TimeSlot"
             >
               {{ label }} ({{ TIME_SLOT_RANGES[slot as TimeSlot].startTime }}–{{ TIME_SLOT_RANGES[slot as TimeSlot].endTime }})
-            </button>
+            </Button>
           </div>
 
           <!-- Hour-by-hour picker -->
@@ -260,9 +271,11 @@ function handleContinue() {
               {{ customRangeLabel ?? 'Toque em um horário para iniciar a seleção' }}
             </p>
             <div class="hour-grid">
-              <button
+              <Button
                 v-for="s in sortedHours"
                 :key="s.startTime"
+                type="button"
+                variant="outline"
                 class="hour-btn"
                 :class="`hour-btn--${getHourState(s)}`"
                 :disabled="!isHourSelectable(s)"
@@ -270,24 +283,24 @@ function handleContinue() {
                 @click="handleHourClick(s)"
               >
                 {{ hourLabel(s.startTime) }}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
 
         <div v-if="selectedSlot || (selectionMode === 'hours' && pickedStart && pickedEnd)" class="form-section">
-          <label class="form-label">Finalidade</label>
-          <select class="form-input" v-model="selectedPurpose">
-            <option value="" disabled>Selecione uma finalidade</option>
-            <option v-for="opt in PURPOSE_OPTIONS" :key="opt.value" :value="opt.value">
+          <Label class="form-label" for="reservation-purpose">Finalidade</Label>
+          <NativeSelect id="reservation-purpose" v-model="selectedPurpose" class="form-input">
+            <NativeSelectOption value="" disabled>Selecione uma finalidade</NativeSelectOption>
+            <NativeSelectOption v-for="opt in PURPOSE_OPTIONS" :key="opt.value" :value="opt.value">
               {{ opt.label }}
-            </option>
-          </select>
+            </NativeSelectOption>
+          </NativeSelect>
         </div>
 
         <div v-if="selectedSlot || (selectionMode === 'hours' && pickedStart && pickedEnd)" class="form-section">
-          <label class="form-label" for="description-input">Descrição</label>
-          <input
+          <Label class="form-label" for="description-input">Descrição</Label>
+          <Input
             id="description-input"
             type="text"
             class="form-input"
@@ -302,9 +315,9 @@ function handleContinue() {
         <p v-if="errorMsg" class="state-error">{{ errorMsg }}</p>
 
         <div class="form-actions">
-          <button class="continue-btn" :disabled="!canContinue()" @click="handleContinue">
+          <Button class="continue-btn" :disabled="!canContinue()" @click="handleContinue">
             Continuar
-          </button>
+          </Button>
         </div>
       </template>
 
@@ -333,12 +346,7 @@ function handleContinue() {
   font-size: 1.3rem;
 }
 .back-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
   color: #1D9E75;
-  font-size: 0.95rem;
-  padding: 0;
 }
 .space-info {
   background: #f8f8f8;
@@ -374,11 +382,6 @@ function handleContinue() {
 }
 .form-input {
   width: 100%;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  box-sizing: border-box;
   min-height: var(--tap-min, 44px);
 }
 .form-hint {
@@ -407,41 +410,20 @@ function handleContinue() {
 /* Mode toggle */
 .period-mode-bar {
   display: flex;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  overflow: hidden;
   margin-bottom: 0.75rem;
+  width: 100%;
 }
 .mode-btn {
   flex: 1;
-  padding: 0.5rem;
-  border: none;
-  background: white;
-  font-size: 0.875rem;
-  cursor: pointer;
-  color: #555;
-  transition: background 0.15s, color 0.15s;
   min-height: var(--tap-min, 44px);
-}
-.mode-btn + .mode-btn { border-left: 1px solid #ddd; }
-.mode-btn--active {
-  background: #1D9E75;
-  color: white;
-  font-weight: 600;
 }
 
 /* Named slots */
 .slot-grid { display: flex; flex-direction: column; gap: 0.5rem; }
 .slot-btn {
-  padding: 0.75rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: white;
-  cursor: pointer;
   text-align: left;
-  font-size: 0.9rem;
-  transition: border-color 0.15s, background 0.15s;
   min-height: var(--tap-min, 44px);
+  justify-content: flex-start;
 }
 .slot-btn--selected {
   border-color: #1D9E75;
@@ -474,14 +456,8 @@ function handleContinue() {
 }
 
 .hour-btn {
-  padding: 0.55rem 0;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  background: white;
   font-size: 0.85rem;
-  cursor: pointer;
   text-align: center;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
   min-height: var(--tap-min, 44px);
 }
 .hour-btn--available:hover { border-color: #1D9E75; }
@@ -524,18 +500,10 @@ function handleContinue() {
 
 .continue-btn {
   width: 100%;
-  padding: 0.85rem;
-  border: none;
-  border-radius: 10px;
-  background: #1D9E75;
-  color: white;
   font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
   min-height: var(--tap-min, 44px);
 }
 .continue-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.continue-btn:hover:not(:disabled) { background: #178a65; }
 
 .state-msg   { color: #888; font-size: 0.9rem; padding: 0.5rem 0; }
 .state-error { color: #c0392b; font-size: 0.9rem; margin-bottom: 0.75rem; }

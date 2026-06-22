@@ -6,6 +6,12 @@ import { api } from '@/services/api';
 import { BLOCK_TYPE_LABELS } from '@/types/reservation';
 import { usePermissions } from '@/composables/usePermissions';
 import { toLocalISODate } from '@/utils/date';
+import AppDateField from '@/components/AppDateField.vue';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Textarea } from '@/components/ui/textarea';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 const route = useRoute();
 const router = useRouter();
@@ -135,7 +141,7 @@ async function handleSubmit() {
 <template>
   <div class="blocking-create-view">
     <div class="view-header">
-      <button class="back-btn" @click="router.back()">← Voltar</button>
+      <Button variant="ghost" class="back-btn" @click="router.back()">← Voltar</Button>
       <h1>Bloquear Espaço</h1>
     </div>
 
@@ -147,39 +153,34 @@ async function handleSubmit() {
       </div>
 
       <div class="form-section">
-        <label class="form-label">Data</label>
-        <input
-          type="date"
-          class="form-input"
-          v-model="selectedDate"
-          :min="today"
-        />
+        <Label class="form-label" for="blocking-date">Data</Label>
+        <AppDateField id="blocking-date" v-model="selectedDate" :min="today" aria-label="Data do bloqueio" />
       </div>
 
       <div class="form-section">
-        <label class="form-label">Período</label>
+        <Label class="form-label">Período</Label>
 
-        <div class="hour-mode-toggle">
-          <button
-            class="mode-btn"
-            :class="{ 'mode-btn--active': hourMode === 'full_day' }"
-            @click="hourMode = 'full_day'; pickedStart = null; pickedEnd = null"
-          >
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          class="hour-mode-toggle"
+          :model-value="hourMode"
+          @update:model-value="(value) => { hourMode = ((value || 'full_day') as HourMode); if (hourMode === 'full_day') { pickedStart = null; pickedEnd = null; } }"
+        >
+          <ToggleGroupItem value="full_day" class="mode-btn">
             Dia inteiro
-          </button>
-          <button
-            class="mode-btn"
-            :class="{ 'mode-btn--active': hourMode === 'custom' }"
-            @click="hourMode = 'custom'"
-          >
+          </ToggleGroupItem>
+          <ToggleGroupItem value="custom" class="mode-btn">
             Horário personalizado
-          </button>
-        </div>
+          </ToggleGroupItem>
+        </ToggleGroup>
 
         <div v-if="hourMode === 'custom'" class="hour-grid">
-          <button
+          <Button
             v-for="slot in ALL_HOURS"
             :key="slot.startTime"
+            type="button"
+            variant="outline"
             class="hour-btn"
             :class="{
               'hour-btn--endpoint': getHourState(slot.startTime) === 'endpoint',
@@ -188,7 +189,7 @@ async function handleSubmit() {
             @click="handleHourClick(slot.startTime)"
           >
             {{ slot.startTime.replace(':00', 'h') }}
-          </button>
+          </Button>
         </div>
 
         <p v-if="resolvedStart && resolvedEnd" class="period-summary">
@@ -199,18 +200,19 @@ async function handleSubmit() {
       </div>
 
       <div class="form-section">
-        <label class="form-label">Tipo de bloqueio</label>
-        <select class="form-input" v-model="selectedBlockType">
-          <option value="" disabled>Selecione um tipo</option>
-          <option v-for="(label, type) in BLOCK_TYPE_LABELS" :key="type" :value="type">
+        <Label class="form-label" for="blocking-type">Tipo de bloqueio</Label>
+        <NativeSelect id="blocking-type" v-model="selectedBlockType" class="form-input">
+          <NativeSelectOption value="" disabled>Selecione um tipo</NativeSelectOption>
+          <NativeSelectOption v-for="(label, type) in BLOCK_TYPE_LABELS" :key="type" :value="type">
             {{ label }}
-          </option>
-        </select>
+          </NativeSelectOption>
+        </NativeSelect>
       </div>
 
       <div class="form-section">
-        <label class="form-label">Motivo <span class="optional">(opcional)</span></label>
-        <textarea
+        <Label class="form-label" for="blocking-reason">Motivo <span class="optional">(opcional)</span></Label>
+        <Textarea
+          id="blocking-reason"
           class="form-input form-textarea"
           v-model="reason"
           placeholder="Descreva o motivo do bloqueio..."
@@ -222,13 +224,13 @@ async function handleSubmit() {
       <p v-if="errorMsg" class="state-error">{{ errorMsg }}</p>
 
       <div class="form-actions">
-        <button
+        <Button
           class="submit-btn"
           :disabled="!canSubmit || loading"
           @click="handleSubmit"
         >
           {{ loading ? 'Bloqueando...' : 'Bloquear Espaço' }}
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -251,12 +253,7 @@ async function handleSubmit() {
   font-size: 1.3rem;
 }
 .back-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
   color: #1D9E75;
-  font-size: 0.95rem;
-  padding: 0;
 }
 .space-info {
   background: #f8f8f8;
@@ -284,11 +281,6 @@ async function handleSubmit() {
 }
 .form-input {
   width: 100%;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  box-sizing: border-box;
   min-height: var(--tap-min, 44px);
 }
 .form-textarea {
@@ -300,21 +292,11 @@ async function handleSubmit() {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 0.75rem;
+  width: 100%;
 }
 .mode-btn {
-  padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: white;
-  font-size: 0.875rem;
-  cursor: pointer;
   min-height: var(--tap-min, 44px);
-}
-.mode-btn--active {
-  border-color: #1D9E75;
-  background: #e8f5f0;
-  color: #1D9E75;
-  font-weight: 600;
+  flex: 1;
 }
 .hour-grid {
   display: grid;
@@ -330,14 +312,8 @@ async function handleSubmit() {
 }
 
 .hour-btn {
-  padding: 0.4rem 0;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  background: white;
   font-size: 0.8rem;
-  cursor: pointer;
   text-align: center;
-  transition: background 0.1s, border-color 0.1s;
   min-height: var(--tap-min, 44px);
 }
 .hour-btn:hover { border-color: #1D9E75; }
@@ -378,22 +354,12 @@ async function handleSubmit() {
 
 .submit-btn {
   width: 100%;
-  padding: 0.85rem;
-  border: none;
-  border-radius: 10px;
-  background: #1D9E75;
-  color: white;
   font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
   min-height: var(--tap-min, 44px);
 }
 .submit-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-.submit-btn:hover:not(:disabled) {
-  background: #178a65;
 }
 .state-msg {
   color: #888;

@@ -7,6 +7,15 @@ import { usePermissions } from '@/composables/usePermissions';
 import NavDrawer from './NavDrawer.vue';
 import NotificationsPanel from './NotificationsPanel.vue';
 import { Menu, Bell } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const authStore = useAuthStore();
 const campusStore = useCampusStore();
@@ -38,7 +47,7 @@ function logout() {
   <header class="app-header">
     <div class="header-content">
       <!-- Tablet Hamburger (481-1023px) -->
-      <button class="hamburger-btn" @click="drawerOpen = true"><Menu :size="24" /></button>
+      <Button variant="ghost" size="icon" class="hamburger-btn" aria-label="Abrir menu" @click="drawerOpen = true"><Menu :size="24" /></Button>
 
       <div class="header-left">
         <router-link to="/campus" class="header-logo">UFCIM</router-link>
@@ -58,24 +67,33 @@ function logout() {
       <div class="header-right">
         <!-- Tablet/Desktop User Info -->
         <div class="user-info-desktop">
-          <button class="desktop-notif" @click="notifOpen = !notifOpen">
+          <Button variant="ghost" size="icon" class="desktop-notif" aria-label="Abrir notificações" @click="notifOpen = !notifOpen">
             <Bell :size="20" />
             <span v-if="authStore.unreadCount > 0" class="notif-badge">
               {{ authStore.unreadCount >= 100 ? '99+' : authStore.unreadCount }}
             </span>
-          </button>
-          <router-link to="/perfil" class="header-user">{{ authStore.user?.name }}</router-link>
-          <button @click="logout" class="header-logout">Sair</button>
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger as-child>
+              <Button variant="ghost" class="header-user">{{ authStore.user?.name }}</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" class="z-[var(--z-popover)]">
+              <DropdownMenuLabel>{{ authStore.user?.name }}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem @select="router.push({ name: 'profile' })">Perfil</DropdownMenuItem>
+              <DropdownMenuItem @select="logout">Sair</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <!-- Mobile Actions (<= 480px) -->
         <div class="mobile-actions">
-          <button class="mobile-notif" @click="notifOpen = !notifOpen">
+          <Button variant="ghost" size="icon" class="mobile-notif" aria-label="Abrir notificações" @click="notifOpen = !notifOpen">
             <Bell :size="20" />
             <span v-if="authStore.unreadCount > 0" class="notif-badge">
               {{ authStore.unreadCount >= 100 ? '99+' : authStore.unreadCount }}
             </span>
-          </button>
+          </Button>
           <router-link to="/perfil" class="mobile-avatar">
             {{ authStore.user?.name?.[0] || 'U' }}
           </router-link>

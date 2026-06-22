@@ -5,6 +5,7 @@ import { PERIOD_LABELS, type PeriodKey } from '@/utils/period';
 import { formatShortDate, createDateChips } from '@/composables/useDateTimeFilter';
 import { toLocalISODate } from '@/utils/date';
 import { Building2, Search, Maximize, Calendar } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
 
 interface Building {
   id: string;
@@ -189,39 +190,40 @@ onUnmounted(() => {
   <div class="rail-root">
     <!-- top stack: datetime, building, search -->
     <div class="rail-stack rail-stack--top">
-      <button class="rail-btn rail-btn--wide" :class="{ active: dateTimePopoverOpen }" @click="toggleDateTime" :title="dateTimeBtnLabel">
+      <Button variant="ghost" class="rail-btn rail-btn--wide" :class="{ active: dateTimePopoverOpen }" @click="toggleDateTime" :title="dateTimeBtnLabel">
         <span class="rail-btn-label">{{ dateTimeBtnLabel }}</span>
-      </button>
-      <button class="rail-btn" :class="{ active: buildingPopoverOpen }" @click="toggleBuilding" title="Edifício"><Building2 :size="20" /></button>
-      <button class="rail-btn" @click="$emit('open-search')" title="Pesquisar"><Search :size="20" /></button>
+      </Button>
+      <Button variant="ghost" size="icon" class="rail-btn" :class="{ active: buildingPopoverOpen }" @click="toggleBuilding" title="Edifício"><Building2 :size="20" /></Button>
+      <Button variant="ghost" size="icon" class="rail-btn" @click="$emit('open-search')" title="Pesquisar"><Search :size="20" /></Button>
     </div>
 
     <!-- floor stack: only when a building is selected -->
     <Transition name="floor-stack">
       <div v-if="activeBuildingId" class="floor-stack">
-        <button v-for="f in floorsReversed" :key="f.level"
+        <Button v-for="f in floorsReversed" :key="f.level"
+                variant="ghost"
                 class="floor-btn"
                 :class="{ active: f.level === activeFloorLevel }"
                 @click="onFloorPick(f.level)">
           {{ shortFloorLabel(f.name) }}
-        </button>
+        </Button>
       </div>
     </Transition>
 
     <!-- bottom: fullscreen toggle -->
     <div class="rail-stack rail-stack--bottom">
-      <button class="rail-btn" :class="{ active: fullscreen }"
-              @click="$emit('update:fullscreen', !fullscreen)" title="Tela cheia"><Maximize :size="20" /></button>
+      <Button variant="ghost" size="icon" class="rail-btn" :class="{ active: fullscreen }"
+              @click="$emit('update:fullscreen', !fullscreen)" title="Tela cheia"><Maximize :size="20" /></Button>
     </div>
 
     <!-- breadcrumb pill -->
     <div class="breadcrumb-pill" :aria-label="ariaLabel">
-      <button class="crumb crumb--strong" @click="toggleDateTime">{{ isToday ? 'Hoje' : formatShortDate(selectedDate) }}</button>
+      <Button variant="ghost" class="crumb crumb--strong" @click="toggleDateTime">{{ isToday ? 'Hoje' : formatShortDate(selectedDate) }}</Button>
       <span class="dot">·</span>
       <span class="crumb crumb--passive">{{ periodLabel }}</span>
       <template v-if="activeBuildingId">
         <span class="dot">·</span>
-        <button class="crumb" @click="toggleBuilding">{{ buildingName }}</button>
+        <Button variant="ghost" class="crumb" @click="toggleBuilding">{{ buildingName }}</Button>
       </template>
       <template v-if="floorName">
         <span class="dot">·</span>
@@ -237,16 +239,18 @@ onUnmounted(() => {
             <span>Data</span>
           </div>
           <div class="popover-date-chips">
-            <button
+            <Button
               v-for="d in dateChips" :key="d.value"
+              type="button"
+              variant="ghost"
               class="popover-item popover-item--chip"
               :class="{ active: d.value === selectedDate }"
               @click="onDatePick(d.value)"
-            >{{ d.label }}</button>
+            >{{ d.label }}</Button>
           </div>
-          <button class="popover-item popover-item--full" @click="openDatePicker">
+          <Button type="button" variant="ghost" class="popover-item popover-item--full" @click="openDatePicker">
             <Calendar :size="14" style="vertical-align: -2px" /> Escolher outra data
-          </button>
+          </Button>
           <input
             ref="hiddenDateRef"
             type="date"
@@ -263,10 +267,12 @@ onUnmounted(() => {
             <span>Período</span>
             <span v-if="periodAutoDetected" class="popover-auto-tag">automático</span>
           </div>
-          <button v-for="p in PERIODS" :key="p.key"
+          <Button v-for="p in PERIODS" :key="p.key"
+                  type="button"
+                  variant="ghost"
                   class="popover-item"
                   :class="{ active: p.key === selectedPeriod }"
-                  @click="onPeriodPick(p.key)">{{ p.label }} · {{ p.range }}</button>
+                  @click="onPeriodPick(p.key)">{{ p.label }} · {{ p.range }}</Button>
         </div>
       </div>
     </Transition>
@@ -275,11 +281,13 @@ onUnmounted(() => {
     <Transition name="popover">
       <div v-if="buildingPopoverOpen" ref="buildingRef" class="popover popover--building">
         <div class="popover-grid">
-          <button class="popover-item" :class="{ active: !activeBuildingId }" @click="onBuildingPick(null)">Todos</button>
-          <button v-for="b in buildings" :key="b.id"
+          <Button type="button" variant="ghost" class="popover-item" :class="{ active: !activeBuildingId }" @click="onBuildingPick(null)">Todos</Button>
+          <Button v-for="b in buildings" :key="b.id"
+                  type="button"
+                  variant="ghost"
                   class="popover-item"
                   :class="{ active: b.id === activeBuildingId }"
-                  @click="onBuildingPick(b.id)">{{ b.name }}</button>
+                  @click="onBuildingPick(b.id)">{{ b.name }}</Button>
         </div>
       </div>
     </Transition>
@@ -323,14 +331,9 @@ onUnmounted(() => {
   width: var(--rail-w);
   height: var(--rail-w);
   background: white;
-  border: none;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   font-size: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
   transition: all 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 }
@@ -367,15 +370,10 @@ onUnmounted(() => {
   width: 36px;
   height: 36px;
   background: white;
-  border: none;
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
   font-size: 13px;
   font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
   transition: all 0.2s ease;
 }
 
@@ -399,12 +397,11 @@ onUnmounted(() => {
 }
 
 .crumb {
-  border: none;
-  background: none;
   padding: 0;
   font-size: 0.78rem;
   color: #333;
-  cursor: pointer;
+  height: auto;
+  min-height: 0;
 }
 
 .crumb--strong {
@@ -485,14 +482,14 @@ onUnmounted(() => {
 
 .popover-item {
   padding: 10px;
-  border: none;
   background: #f5f5f5;
   border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 500;
   text-align: center;
-  cursor: pointer;
   transition: all 0.2s ease;
+  height: auto;
+  min-height: var(--tap-min);
 }
 
 .popover-item--chip {

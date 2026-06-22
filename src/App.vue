@@ -46,7 +46,7 @@ onUnmounted(() => {
 
 <template>
   <AppHeader v-if="auth.isAuthenticated" />
-  <main class="app-main">
+  <main class="app-main bg-background text-foreground">
     <RouterView v-slot="{ Component }">
       <Transition name="page" mode="out-in">
         <component :is="Component" :key="route.path" />

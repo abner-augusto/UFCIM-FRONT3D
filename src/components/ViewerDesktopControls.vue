@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Search } from 'lucide-vue-next';
 import { useViewerSync } from '@/composables/useViewerSync';
+import { Button } from '@/components/ui/button';
 
 interface Building {
   id: string;
@@ -63,32 +64,35 @@ function shortFloorLabel(name: string): string {
       <!-- Floor buttons (above buildings, only when a building is selected) -->
       <Transition name="floor-slide">
         <div v-if="activeBuildingId && floors.length > 0" class="controls-row controls-row--floors">
-          <button
+          <Button
             v-for="f in floors" :key="f.level"
+            variant="ghost"
             class="ctrl-btn ctrl-btn--sm"
             :class="{ active: f.level === activeFloorLevel }"
             @click="selectFloor(f.level)"
-          >{{ shortFloorLabel(f.name) }}</button>
+          >{{ shortFloorLabel(f.name) }}</Button>
         </div>
       </Transition>
 
       <!-- Building buttons -->
       <div class="controls-row">
-        <button
+        <Button
+          variant="ghost"
           class="ctrl-btn"
           :class="{ active: activeBuildingId === null }"
           @click="selectBuilding(null)"
-        >Todos</button>
-        <button
+        >Todos</Button>
+        <Button
           v-for="b in buildings" :key="b.id"
+          variant="ghost"
           class="ctrl-btn"
           :class="{ active: b.id === activeBuildingId }"
           @click="selectBuilding(b.id)"
-        >{{ b.name }}</button>
+        >{{ b.name }}</Button>
         <div class="controls-separator"></div>
-        <button class="ctrl-btn ctrl-btn--icon" @click="$emit('open-search')" title="Pesquisar">
+        <Button variant="ghost" size="icon" class="ctrl-btn ctrl-btn--icon" @click="$emit('open-search')" title="Pesquisar">
           <Search :size="18" />
-        </button>
+        </Button>
       </div>
     </div>
   </Transition>
@@ -135,16 +139,13 @@ function shortFloorLabel(name: string): string {
 .ctrl-btn {
   padding: 8px 14px;
   border-radius: 8px;
-  border: none;
   background: transparent;
   color: #333;
   font-size: 13px;
   font-weight: 500;
-  cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
   min-height: 36px;
-  font-family: inherit;
 }
 
 .ctrl-btn:hover {

@@ -21,11 +21,9 @@ test.describe('ReservationView', () => {
     await page.goto(`/#/reserva/${SPACE_ID}`);
     await waitForSpaceLoad(page);
 
-    // Select a time slot (Manhã) to reveal the description section
-    const manhaBtn = page.locator('button.slot-btn').filter({ hasText: /Manhã/i }).first();
-    await expect(manhaBtn).toBeVisible({ timeout: 8_000 });
-    await expect(manhaBtn).not.toBeDisabled({ timeout: 5_000 });
-    await manhaBtn.click();
+    const availableSlot = page.locator('button.slot-btn:not([disabled])').first();
+    await expect(availableSlot).toBeVisible({ timeout: 8_000 });
+    await availableSlot.click();
 
     const descInput = page.locator('#description-input');
     await expect(descInput).toBeVisible({ timeout: 5_000 });
@@ -37,10 +35,9 @@ test.describe('ReservationView', () => {
     await page.goto(`/#/reserva/${SPACE_ID}`);
     await waitForSpaceLoad(page);
 
-    const manhaBtn = page.locator('button.slot-btn').filter({ hasText: /Manhã/i }).first();
-    await expect(manhaBtn).toBeVisible({ timeout: 8_000 });
-    await expect(manhaBtn).not.toBeDisabled({ timeout: 5_000 });
-    await manhaBtn.click();
+    const availableSlot = page.locator('button.slot-btn:not([disabled])').first();
+    await expect(availableSlot).toBeVisible({ timeout: 8_000 });
+    await availableSlot.click();
 
     await expect(page.locator('body')).toContainText(/opcional|visível|Descrição/i);
   });
@@ -54,10 +51,10 @@ test.describe('ReservationView', () => {
     await expect(page).toHaveURL(/#\/campus/);
   });
 
-  test('professor: date input is present', async ({ professorPage: page }) => {
+  test('professor: date control is present', async ({ professorPage: page }) => {
     await page.goto(`/#/reserva/${SPACE_ID}`);
     await waitForSpaceLoad(page);
-    await expect(page.locator('input[type="date"]').first()).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator('#reservation-date')).toBeVisible({ timeout: 8_000 });
   });
 
   test('student: can access reservation view (CAN_RESERVE includes students)', async ({ studentPage: page }) => {
