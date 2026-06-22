@@ -55,7 +55,7 @@ function handleOpenChange(open: boolean) {
 }
 
 const auth = useAuthStore();
-const { canReserve, canBlock } = usePermissions();
+const { canReserve, canBlock, canViewReports } = usePermissions();
 const typeLabel = computed(() => SPACE_TYPE_LABELS[props.space.type] ?? props.space.type);
 
 // Availability data for schedule grid
@@ -436,7 +436,7 @@ function onReportSent() {
         >
           Bloquear Espaço
         </Button>
-        <Button variant="ghost" class="h-11 w-full" aria-label="Ver relatório de ocupação" @click="goToReport">
+        <Button v-if="canViewReports" variant="ghost" class="h-11 w-full" aria-label="Ver relatório de ocupação" @click="goToReport">
           <BarChart3 :size="14" style="vertical-align: -2px" /> Ver relatório
         </Button>
       </div>

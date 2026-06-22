@@ -56,6 +56,15 @@ test.describe('Authenticated routing', () => {
     await expect(page).toHaveURL(/#\/campus/, { timeout: 5000 });
   });
 
+  test('student: /espacos/:id/relatorio → redirects (role-gated)', async ({ studentPage: page }) => {
+    // Ensure the student role is hydrated before the guard fires
+    await page.goto('/#/campus');
+    await page.waitForURL(/#\/campus/, { timeout: 5000 });
+    // Per-space report is gated by CAN_VIEW_REPORTS — students are redirected
+    await page.goto('/#/espacos/00000000-0000-0000-0000-000000000011/relatorio');
+    await expect(page).toHaveURL(/#\/campus/, { timeout: 5000 });
+  });
+
   test('staff: /relatorios → accessible', async ({ staffPage: page }) => {
     await page.goto('/#/relatorios');
     // Staff can view reports
