@@ -193,6 +193,23 @@ const reserveEndTime = computed(() =>
     : props.selectedEndTime,
 );
 
+// Whether the range the reserve button would actually book has a free, future
+// hour. A hand-picked range is always valid (selection is constrained to
+// available, non-past cells). With no pick we fall back to the default period,
+// which can be entirely in the past (e.g. morning viewed in the afternoon) even
+// though the backend pin status still reads "available" — so check it here.
+const reserveRangeBookable = computed(() => {
+  if (loadingAvailability.value) return true; // don't flag before slots load
+  if (hasUserSelection.value) return true;
+  return visibleSlots.value.some(
+    (s) =>
+      s.status === 'available' &&
+      !isPastSlot(s) &&
+      s.startTime >= props.selectedStartTime &&
+      s.startTime < props.selectedEndTime,
+  );
+});
+
 function emitReserve() {
   emit('reserve', { startTime: reserveStartTime.value, endTime: reserveEndTime.value });
 }
@@ -418,7 +435,7 @@ function onReportSent() {
         <Button
           v-if="canReserve"
           class="h-11 w-full"
-          :disabled="reserveDisabled || loadingReservationState"
+          :disabled="reserveDisabled || loadingReservationState || !reserveRangeBookable"
           :aria-label="`Reservar das ${reserveStartTime} às ${reserveEndTime}`"
           @click="emitReserve"
         >
@@ -426,6 +443,7 @@ function onReportSent() {
         </Button>
         <p v-if="loadingReservationState" class="action-hint">Verificando disponibilidade...</p>
         <p v-else-if="reserveDisabledReason" class="action-hint action-hint--warn">{{ reserveDisabledReason }}</p>
+        <p v-else-if="!reserveRangeBookable" class="action-hint action-hint--warn">Todos os horários deste turno já passaram.</p>
         <Button
           v-if="canBlock"
           variant="outline"
