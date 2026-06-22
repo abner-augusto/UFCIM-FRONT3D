@@ -417,7 +417,6 @@ function handleToggle() {
   flex-direction: column;
   gap: 0.4rem;
 }
-/* .btn-primary / .btn-secondary are defined globally in src/styles/base.css */
 
 .action-hint {
   margin: 0;

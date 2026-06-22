@@ -157,7 +157,7 @@ watch(
   background: white;
   border-top: 1px solid #e5e5e5;
   padding-bottom: var(--safe-bottom);
-  z-index: 300;
+  z-index: var(--z-chrome);
 }
 
 @media (min-width: 1024px) {

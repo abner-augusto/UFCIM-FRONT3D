@@ -104,7 +104,7 @@ function shortFloorLabel(name: string): string {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  z-index: 10;
+  z-index: var(--z-chrome);
   pointer-events: auto;
 }
 

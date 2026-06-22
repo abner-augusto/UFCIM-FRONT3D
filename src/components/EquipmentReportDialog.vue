@@ -5,6 +5,10 @@ import { api, ApiError } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
 import { Check } from 'lucide-vue-next';
 import type { Equipment } from '@/types/space';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 const props = defineProps<{
   equipment: Equipment;
@@ -67,16 +71,14 @@ async function submitReport() {
   }
 }
 
-function onOverlayClick() {
-  if (!loading.value) emit('close');
+function handleOpenChange(open: boolean) {
+  if (!open && !loading.value) emit('close');
 }
 </script>
 
 <template>
-  <div class="dialog-overlay" @click.self="onOverlayClick">
-    <div class="dialog" role="dialog" aria-labelledby="dialog-title">
-      <button class="dialog__close" @click="onOverlayClick" aria-label="Fechar">&times;</button>
-
+  <Dialog :open="true" @update:open="handleOpenChange">
+    <DialogContent class="dialog z-[var(--z-modal)]" :show-close-button="!loading">
       <!-- Success state -->
       <template v-if="success">
         <div class="dialog-success">
@@ -87,42 +89,45 @@ function onOverlayClick() {
 
       <!-- Form state -->
       <template v-else>
-        <h2 id="dialog-title" class="dialog__title">Reportar problema</h2>
-        <p class="dialog__subtitle">
+        <DialogTitle class="dialog__title">Reportar problema</DialogTitle>
+        <DialogDescription class="dialog__subtitle">
           {{ equipment.name }} · {{ spaceName }}
-        </p>
+        </DialogDescription>
 
         <!-- Severity selector -->
         <div class="dialog__field">
-          <label class="dialog__label">Gravidade</label>
+          <Label class="dialog__label">Gravidade</Label>
           <div class="severity-options">
-            <button
+            <Button
               v-for="s in (['minor', 'major', 'blocking'] as const)"
               :key="s"
               type="button"
+              variant="outline"
               class="severity-btn"
               :class="{ 'severity-btn--selected': severity === s, [`severity-btn--${s}`]: severity === s }"
               :aria-pressed="severity === s"
               @click="selectSeverity(s)"
             >
               <span class="severity-btn__label">{{ SEVERITY_LABELS[s] }}</span>
-            </button>
+            </Button>
           </div>
         </div>
 
         <!-- Description textarea -->
         <div class="dialog__field">
-          <label class="dialog__label" for="report-desc">Descrição do problema</label>
-          <textarea
+          <Label class="dialog__label" for="report-desc">Descrição do problema</Label>
+          <Textarea
             id="report-desc"
             v-model="description"
             class="dialog__textarea"
             :class="{ 'dialog__textarea--invalid': submitted && !descriptionValid }"
+            :aria-invalid="submitted && !descriptionValid"
+            aria-describedby="report-desc-help"
             placeholder="Descreva o que está acontecendo..."
             maxlength="500"
             rows="4"
           />
-          <div class="dialog__field-footer">
+          <div id="report-desc-help" class="dialog__field-footer">
             <span
               v-if="submitted && !descriptionValid"
               class="dialog__field-error"
@@ -139,45 +144,22 @@ function onOverlayClick() {
         </div>
 
         <!-- Submit button -->
-        <button
+        <Button
           class="dialog__submit"
           :disabled="loading || !formValid"
           @click="submitReport"
         >
           <span v-if="loading" class="dialog__spinner" />
           <span v-else>Enviar</span>
-        </button>
+        </Button>
       </template>
-    </div>
-  </div>
+    </DialogContent>
+  </Dialog>
 </template>
 
 <style scoped>
-.dialog-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 1.25rem;
-  z-index: 300;
-  animation: overlay-in 0.25s ease both;
-}
-
-@media (max-width: 1023px) {
-  .dialog-overlay {
-    position: fixed;
-    z-index: 500;
-  }
-}
-
-@keyframes overlay-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
 .dialog {
-  background: white;
+  background: var(--popover);
   border-radius: 20px;
   padding: 1.5rem 1.5rem 1.25rem;
   width: 100%;
@@ -203,24 +185,6 @@ function onOverlayClick() {
 @keyframes dialog-in {
   from { opacity: 0; transform: translateY(28px) scale(0.96); }
   to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.dialog__close {
-  position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
-  border: none;
-  background: #f5f5f5;
-  border-radius: 50%;
-  width: 2rem;
-  height: 2rem;
-  font-size: 1.1rem;
-  line-height: 1;
-  cursor: pointer;
-  color: #666;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .dialog__title {
@@ -264,7 +228,7 @@ function onOverlayClick() {
   padding: 0.65rem 0.75rem;
   border: 1.5px solid #e0e0e0;
   border-radius: 10px;
-  background: #fafafa;
+  background: var(--background);
   font-size: 0.82rem;
   color: #444;
   text-align: left;
@@ -364,13 +328,9 @@ function onOverlayClick() {
 .dialog__submit {
   width: 100%;
   padding: 0.8rem;
-  border: none;
   border-radius: 10px;
-  background: #1D9E75;
-  color: white;
   font-size: 0.95rem;
   font-weight: 600;
-  cursor: pointer;
   transition: background 0.15s;
   min-height: 44px;
   display: flex;
@@ -378,12 +338,7 @@ function onOverlayClick() {
   justify-content: center;
 }
 
-.dialog__submit:hover:not(:disabled) {
-  background: #178a65;
-}
-
 .dialog__submit:disabled {
-  background: #b8c8c2;
   cursor: not-allowed;
 }
 

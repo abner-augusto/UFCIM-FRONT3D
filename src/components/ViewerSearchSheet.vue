@@ -135,7 +135,7 @@ function clear() {
   bottom: 8px;
   left: 8px;
   right: 8px;
-  z-index: 300;
+  z-index: var(--z-overlay);
   display: flex;
   flex-direction: column;
   gap: 6px;

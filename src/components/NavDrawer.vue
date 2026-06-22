@@ -4,7 +4,10 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
 import { usePermissions } from '@/composables/usePermissions';
-import { Building2, Search, Calendar, Ban, BarChart3, Wrench, Bell, User, X } from 'lucide-vue-next';
+import { Building2, Search, Calendar, Ban, BarChart3, Wrench, Bell, User } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: [] }>();
@@ -36,22 +39,21 @@ function logout() {
 function handleLinkClick() {
   emit('close');
 }
+
+function handleOpenChange(open: boolean) {
+  if (!open) emit('close');
+}
 </script>
 
 <template>
-  <div class="drawer-root">
-    <Transition name="fade">
-      <div v-if="open" class="drawer-backdrop" @click="emit('close')"></div>
-    </Transition>
+  <Sheet :open="open" @update:open="handleOpenChange">
+    <SheetContent side="left" class="drawer-content z-[var(--z-overlay)]" :show-close-button="true">
+        <SheetHeader class="drawer-header">
+          <SheetTitle class="drawer-logo">UFCIM</SheetTitle>
+        </SheetHeader>
 
-    <Transition name="drawer">
-      <div v-if="open" class="drawer-content">
-        <div class="drawer-header">
-          <span class="drawer-logo">UFCIM</span>
-          <button class="close-btn" @click="emit('close')"><X :size="20" /></button>
-        </div>
-
-        <nav class="drawer-nav">
+        <ScrollArea class="drawer-nav">
+        <nav>
           <router-link :to="viewerTarget" class="nav-item" @click="handleLinkClick">
             <span class="nav-icon"><Building2 :size="20" /></span> Maquete 3D
           </router-link>
@@ -87,44 +89,28 @@ function handleLinkClick() {
             <span class="nav-icon"><User :size="20" /></span> Perfil
           </router-link>
         </nav>
+        </ScrollArea>
 
         <div class="drawer-footer">
           <div class="user-info">
             <div class="user-avatar">{{ auth.user?.name?.[0] || 'U' }}</div>
             <span class="user-name">{{ auth.user?.name }}</span>
           </div>
-          <button class="logout-btn" @click="logout">Sair</button>
+          <Button variant="outline" class="logout-btn" @click="logout">Sair</Button>
         </div>
-      </div>
-    </Transition>
-  </div>
+    </SheetContent>
+  </Sheet>
 </template>
 
 <style scoped>
-.drawer-root {
-  position: relative;
-  z-index: 2000;
-}
-
-.drawer-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100dvh;
-  background: rgba(0, 0, 0, 0.5);
-}
-
 .drawer-content {
-  position: fixed;
-  top: 0;
-  left: 0;
   width: min(280px, 85vw);
-  height: 100dvh;
-  background: white;
+  background: var(--popover);
   display: flex;
   flex-direction: column;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  gap: 0;
+  padding: 0;
 }
 
 .drawer-header {
@@ -141,15 +127,6 @@ function handleLinkClick() {
   font-weight: 700;
   font-size: 1.25rem;
   color: var(--color-brand);
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  color: #777;
-  cursor: pointer;
-  padding: 0.5rem;
 }
 
 .drawer-nav {
@@ -233,19 +210,7 @@ function handleLinkClick() {
 
 .logout-btn {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: white;
   color: #c0392b;
   font-weight: 600;
-  cursor: pointer;
 }
-
-/* Transitions */
-.fade-enter-active, .fade-leave-active { transition: opacity 0.25s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
-
-.drawer-enter-active, .drawer-leave-active { transition: transform 0.25s ease; }
-.drawer-enter-from, .drawer-leave-to { transform: translateX(-100%); }
 </style>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue';
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { SPACE_TYPE_LABELS, type Space, type Equipment } from '@/types/space';
 import { useAuthStore } from '@/stores/auth';
@@ -9,6 +9,9 @@ import { PURPOSE_LABELS, BLOCK_TYPE_LABELS, type AvailabilitySlot } from '@/type
 import EquipmentReportDialog from './EquipmentReportDialog.vue';
 import { useEquipmentGroups, type EquipmentGroup } from '@/composables/useEquipmentGroups';
 import { Users, Lightbulb, Snowflake, Flag, Repeat, BarChart3 } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 
 const props = defineProps<{
   space: Space;
@@ -31,10 +34,24 @@ const emit = defineEmits<{
 const router = useRouter();
 const overlayReady = ref(false);
 const detailsExpanded = ref(false);
+const isDesktop = ref(window.matchMedia('(min-width: 768px)').matches);
 onMounted(() => setTimeout(() => { overlayReady.value = true; }, 300));
 
-function onOverlayClick() {
-  if (overlayReady.value) emit('close');
+const mediaQuery = window.matchMedia('(min-width: 768px)');
+const handleMediaChange = (event: MediaQueryListEvent | MediaQueryList) => {
+  isDesktop.value = event.matches;
+};
+
+onMounted(() => {
+  mediaQuery.addEventListener('change', handleMediaChange);
+});
+
+onUnmounted(() => {
+  mediaQuery.removeEventListener('change', handleMediaChange);
+});
+
+function handleOpenChange(open: boolean) {
+  if (!open && overlayReady.value) emit('close');
 }
 
 const auth = useAuthStore();
@@ -232,15 +249,19 @@ function onReportSent() {
 </script>
 
 <template>
-  <div class="room-popup-overlay" @click.self="onOverlayClick">
-    <div class="room-popup">
+  <component :is="isDesktop ? Dialog : Drawer" :open="true" @update:open="handleOpenChange">
+    <component
+      :is="isDesktop ? DialogContent : DrawerContent"
+      class="room-popup z-[var(--z-modal)]"
+      :show-close-button="false"
+    >
       <button class="room-popup__close" @click="$emit('close')" aria-label="Fechar popup">&times;</button>
 
       <!-- Header -->
-      <h2 class="room-popup__title">
+      <component :is="isDesktop ? DialogTitle : DrawerTitle" class="room-popup__title">
         {{ space.name }}
         <span class="room-popup__number">{{ space.number }}</span>
-      </h2>
+      </component>
       <p class="room-popup__meta">
         <span>{{ typeLabel }}</span>
         <span class="meta-sep">·</span>
@@ -369,15 +390,17 @@ function onReportSent() {
                 <span class="equipment-badge" :class="groupStatusClass(g)">
                   {{ groupStatusLabel(g) }}
                 </span>
-                <button
-                  v-if="canReport"
-                  class="equipment-report-btn"
-                  :aria-label="`Reportar problema em ${g.name}`"
-                  @click="openReportFor(g)"
+            <Button
+              v-if="canReport"
+              type="button"
+              variant="outline"
+              class="equipment-report-btn"
+              :aria-label="`Reportar problema em ${g.name}`"
+              @click="openReportFor(g)"
                 >
-                  <span aria-hidden="true"><Flag :size="12" /></span>
-                  <span>Reportar</span>
-                </button>
+              <span aria-hidden="true"><Flag :size="12" /></span>
+              <span>Reportar</span>
+            </Button>
               </li>
             </ul>
           </div>
@@ -392,31 +415,32 @@ function onReportSent() {
 
       <!-- Actions -->
       <div class="room-popup__actions">
-        <button
+        <Button
           v-if="canReserve"
-          class="btn-primary"
+          class="h-11 w-full"
           :disabled="reserveDisabled || loadingReservationState"
           :aria-label="`Reservar das ${reserveStartTime} às ${reserveEndTime}`"
           @click="emitReserve"
         >
           Reservar {{ reserveStartTime }}–{{ reserveEndTime }}
-        </button>
+        </Button>
         <p v-if="loadingReservationState" class="action-hint">Verificando disponibilidade...</p>
         <p v-else-if="reserveDisabledReason" class="action-hint action-hint--warn">{{ reserveDisabledReason }}</p>
-        <button
+        <Button
           v-if="canBlock"
-          class="btn-secondary"
+          variant="outline"
+          class="h-11 w-full"
           :disabled="blockingAllowed === false"
           aria-label="Bloquear espaço"
           @click="$emit('block')"
         >
           Bloquear Espaço
-        </button>
-        <button class="btn-tertiary" aria-label="Ver relatório de ocupação" @click="goToReport">
+        </Button>
+        <Button variant="ghost" class="h-11 w-full" aria-label="Ver relatório de ocupação" @click="goToReport">
           <BarChart3 :size="14" style="vertical-align: -2px" /> Ver relatório
-        </button>
+        </Button>
       </div>
-    </div>
+    </component>
 
     <EquipmentReportDialog
       v-if="reportingEquipment"
@@ -425,32 +449,12 @@ function onReportSent() {
       @close="reportingEquipment = null"
       @reported="onReportSent"
     />
-  </div>
+  </component>
 </template>
 
 <style scoped>
-.room-popup-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 1.25rem;
-  z-index: 200;
-  animation: overlay-in 0.25s ease both;
-}
-
-@media (max-width: 1023px) {
-  .room-popup-overlay {
-    position: fixed;
-    z-index: 400;
-  }
-}
-
-@keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
-
 .room-popup {
-  background: white;
+  background: var(--popover);
   border-radius: 20px;
   padding: 1.5rem 1.5rem 1.25rem;
   width: 100%;
@@ -661,7 +665,6 @@ function onReportSent() {
 
 /* Actions */
 .room-popup__actions { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
-/* .btn-primary / .btn-secondary / .btn-tertiary are defined globally in src/styles/base.css */
 .action-hint { margin: 0; color: #888; font-size: 0.78rem; text-align: center; }
 .action-hint--warn { color: #c05a1f; }
 </style>

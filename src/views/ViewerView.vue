@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useReservationStore } from '@/stores/reservation';
 import { useAuthStore } from '@/stores/auth';
@@ -47,6 +47,7 @@ const popupReservationStateLoading = ref(false);
 const fullscreen = ref(false);
 const searchSheetOpen = ref(false);
 const isMobile = ref(window.matchMedia('(max-width: 480px)').matches);
+const viewerOverlayOpen = computed(() => showPopup.value || searchSheetOpen.value);
 
 const mql = window.matchMedia('(max-width: 480px)');
 const onResize = (e: MediaQueryListEvent | MediaQueryList) => {
@@ -197,6 +198,7 @@ function handleDateChange(date: string) {
 
 const handleViewerReady = () => {
   viewerReady.value = true;
+  viewerRef.value?.setInteractive(!viewerOverlayOpen.value);
   if (spacesLoaded.value) {
     applyPinColors();
   }
@@ -223,6 +225,10 @@ watch([selectedDate, selectedPeriod], () => {
   }
   updateBlockHeatmap();
 });
+
+watch(viewerOverlayOpen, (open) => {
+  viewerRef.value?.setInteractive(!open);
+}, { immediate: true });
 
 onMounted(async () => {
   mql.addEventListener('change', onResize);
@@ -395,7 +401,7 @@ function closePopup() {
   position: absolute;
   top: 1rem;
   left: 1rem;
-  z-index: 250;
+  z-index: var(--z-chrome);
   display: flex;
   flex-direction: column;
   align-items: flex-start;

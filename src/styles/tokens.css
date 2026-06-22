@@ -61,6 +61,14 @@
   /* ── Rail ────────────────────────────────────────────── */
   --rail-w: 44px;
   --rail-gap: 8px;
+
+  /* ── Layering ────────────────────────────────────────── */
+  --z-canvas: 10;
+  --z-chrome: 40;
+  --z-overlay: 50;
+  --z-modal: 60;
+  --z-popover: 70;
+  --z-toast: 100;
 }
 
 /* Phones and tablets get a bottom tab bar */

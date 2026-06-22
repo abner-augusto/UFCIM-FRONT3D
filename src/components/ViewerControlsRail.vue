@@ -291,7 +291,7 @@ onUnmounted(() => {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 250;
+  z-index: var(--z-chrome);
   transform: translate3d(0, 0, 0);
 }
 
@@ -427,7 +427,7 @@ onUnmounted(() => {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   padding: 8px;
   pointer-events: auto;
-  z-index: 300;
+  z-index: var(--z-popover);
 }
 
 .popover--datetime {

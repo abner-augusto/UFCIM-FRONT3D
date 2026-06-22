@@ -1,10 +1,13 @@
-1|<script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
-import { X } from 'lucide-vue-next';
 import type { Notification } from '@/types/reservation';
+import { Button } from '@/components/ui/button';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 const props = defineProps<{
   open: boolean;
@@ -87,18 +90,9 @@ function viewAll() {
   router.push({ name: 'notifications' });
 }
 
-function onBackdropClick(e: MouseEvent) {
-  if ((e.target as HTMLElement).classList.contains('notif-backdrop')) {
-    emit('close');
-  }
+function handleOpenChange(open: boolean) {
+  if (!open) emit('close');
 }
-
-function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') emit('close');
-}
-
-onMounted(() => document.addEventListener('keydown', onKeydown));
-onUnmounted(() => document.removeEventListener('keydown', onKeydown));
 
 // Load when panel first opens
 watch(() => props.open, (val) => {
@@ -107,38 +101,36 @@ watch(() => props.open, (val) => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="notif">
-    <div
-      v-if="open"
-      class="notif-backdrop"
-      :class="`notif-backdrop--${anchor ?? 'bottom'}`"
-      @click="onBackdropClick"
+  <component
+    :is="(anchor ?? 'bottom') === 'top' ? Drawer : Sheet"
+    :open="open"
+    direction="bottom"
+    @update:open="handleOpenChange"
+  >
+    <component
+      :is="(anchor ?? 'bottom') === 'top' ? DrawerContent : SheetContent"
+      :side="(anchor ?? 'bottom') === 'top' ? 'bottom' : 'right'"
+      class="notif-panel z-[var(--z-overlay)]"
     >
-      <div
-        class="notif-panel"
-        :class="`notif-panel--${anchor ?? 'bottom'}`"
-        role="dialog"
-        aria-label="Notificações"
-      >
         <!-- Header -->
-        <div class="notif-panel__header">
-          <span class="notif-panel__title">Notificações</span>
+        <component :is="(anchor ?? 'bottom') === 'top' ? DrawerHeader : SheetHeader" class="notif-panel__header">
+          <component :is="(anchor ?? 'bottom') === 'top' ? DrawerTitle : SheetTitle" class="notif-panel__title">Notificações</component>
           <div class="notif-panel__header-actions">
-            <button
+            <Button
               v-if="hasUnread()"
+              type="button"
+              variant="ghost"
               class="notif-panel__mark-all"
               :disabled="markingAll"
               @click="markAllRead"
             >
               {{ markingAll ? 'Marcando...' : 'Marcar todas como lidas' }}
-            </button>
-            <button class="notif-panel__close" @click="emit('close')" aria-label="Fechar"><X :size="18" /></button>
+            </Button>
           </div>
-        </div>
+        </component>
 
         <!-- Body -->
-        <div class="notif-panel__body" :class="{ 'notif-panel__body--scroll': !loading && notifications.length > 0 }">
+        <ScrollArea class="notif-panel__body" :class="{ 'notif-panel__body--scroll': !loading && notifications.length > 0 }">
           <div v-if="loading" class="notif-panel__state">Carregando notificações...</div>
           <div v-else-if="errorMsg" class="notif-panel__state notif-panel__state--error">{{ errorMsg }}</div>
           <div v-else-if="notifications.length === 0" class="notif-panel__state notif-panel__state--empty">
@@ -156,57 +148,32 @@ watch(() => props.open, (val) => {
                 <p class="notif-panel__item-message">{{ n.message }}</p>
                 <p class="notif-panel__item-date">{{ dateLabel(n.createdAt) }}</p>
               </div>
-              <button
+              <Button
                 v-if="!n.read"
+                type="button"
+                variant="ghost"
                 class="notif-panel__mark-read"
                 @click="markRead(n.id)"
               >
                 Lida
-              </button>
+              </Button>
             </li>
           </ul>
-        </div>
+        </ScrollArea>
 
         <!-- Footer -->
         <div v-if="!loading && notifications.length > 0" class="notif-panel__footer">
-          <button class="notif-panel__view-all" @click="viewAll">
+          <Button type="button" variant="ghost" class="notif-panel__view-all" @click="viewAll">
             {{ hasMore ? `Ver todas as notificações (${notifications.length})` : 'Ver todas as notificações' }}
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
-    </Transition>
-  </Teleport>
+    </component>
+  </component>
 </template>
 
 <style scoped>
-.notif-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 500;
-  /* transparent — clicks outside the panel hit the backdrop and close it */
-}
-
-/* Panel anchored below the header (desktop / mobile header bell) */
-.notif-panel--bottom {
-  position: fixed;
-  top: var(--header-offset);
-  right: 1rem;
-  width: min(380px, calc(100vw - 2rem));
-}
-
-/* Panel anchored above the bottom tab bar (mobile tab) */
-.notif-panel--top {
-  position: fixed;
-  bottom: calc(var(--bottom-bar-h) + var(--safe-bottom));
-  left: 0;
-  right: 0;
-  width: 100%;
-  max-width: 100%;
-}
-
 .notif-panel {
-  background: white;
+  background: var(--popover);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
   overflow: hidden;
@@ -215,8 +182,7 @@ watch(() => props.open, (val) => {
   max-height: calc(100dvh - var(--header-offset) - 1rem);
 }
 
-.notif-panel--top {
-  border-radius: 16px 16px 0 0;
+.notif-panel[data-vaul-drawer-direction='bottom'] {
   max-height: 70dvh;
 }
 
@@ -245,9 +211,6 @@ watch(() => props.open, (val) => {
 .notif-panel__mark-all {
   font-size: 0.775rem;
   color: var(--color-brand);
-  background: none;
-  border: none;
-  cursor: pointer;
   padding: 0;
   white-space: nowrap;
 }
@@ -255,23 +218,6 @@ watch(() => props.open, (val) => {
   opacity: 0.5;
   cursor: not-allowed;
 }
-
-.notif-panel__close {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.85rem;
-  color: #999;
-  line-height: 1;
-  padding: 0.25rem;
-  border-radius: 4px;
-  min-width: var(--tap-min);
-  min-height: var(--tap-min);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.notif-panel__close:hover { color: #333; }
 
 .notif-panel__body {
   flex: 1;
@@ -290,9 +236,6 @@ watch(() => props.open, (val) => {
   display: block;
   width: 100%;
   padding: 0.75rem 1rem;
-  background: none;
-  border: none;
-  cursor: pointer;
   font-size: 0.825rem;
   color: var(--color-brand);
   font-weight: 600;
@@ -356,38 +299,10 @@ watch(() => props.open, (val) => {
 .notif-panel__mark-read {
   font-size: 0.725rem;
   color: var(--color-brand);
-  background: none;
-  border: none;
-  cursor: pointer;
   white-space: nowrap;
   padding: 0;
   flex-shrink: 0;
   align-self: center;
 }
-
-/* ── Notification panel transitions ───────────────────────── */
-.notif-enter-active,
-.notif-leave-active {
-  transition: opacity var(--duration-med, 220ms) ease;
-}
-.notif-enter-active .notif-panel,
-.notif-leave-active .notif-panel {
-  transition: transform var(--duration-med, 220ms) var(--ease-out-expo, ease), opacity var(--duration-med, 220ms) ease;
-}
-.notif-enter-from,
-.notif-leave-to {
-  opacity: 0;
-}
-.notif-enter-from .notif-panel--bottom,
-.notif-leave-to .notif-panel--bottom {
-  transform: translateY(-8px);
-  opacity: 0;
-}
-.notif-enter-from .notif-panel--top,
-.notif-leave-to .notif-panel--top {
-  transform: translateY(8px);
-  opacity: 0;
-}
-
 
 </style>
