@@ -4,9 +4,10 @@ import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
 import { useRouter } from 'vue-router';
 import { usePermissions } from '@/composables/usePermissions';
+import { useDarkMode } from '@/composables/useDarkMode';
 import NavDrawer from './NavDrawer.vue';
 import NotificationsPanel from './NotificationsPanel.vue';
-import { Menu, Bell } from 'lucide-vue-next';
+import { Menu, Bell, Moon, Sun } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -23,6 +24,8 @@ const router = useRouter();
 
 const drawerOpen = ref(false);
 const notifOpen = ref(false);
+const { isDark, toggleDarkMode } = useDarkMode();
+const themeToggleLabel = computed(() => isDark.value ? 'Ativar tema claro' : 'Ativar tema escuro');
 
 const { canBlock, canAdmin, canViewReports, canManageEquipment } = usePermissions();
 const adminUrl = '/admin';
@@ -67,6 +70,17 @@ function logout() {
       <div class="header-right">
         <!-- Tablet/Desktop User Info -->
         <div class="user-info-desktop">
+          <Button
+            variant="ghost"
+            size="icon"
+            class="theme-toggle"
+            :aria-label="themeToggleLabel"
+            :aria-pressed="isDark"
+            @click="toggleDarkMode"
+          >
+            <Sun v-if="isDark" :size="20" />
+            <Moon v-else :size="20" />
+          </Button>
           <Button variant="ghost" size="icon" class="desktop-notif" aria-label="Abrir notificações" @click="notifOpen = !notifOpen">
             <Bell :size="20" />
             <span v-if="authStore.unreadCount > 0" class="notif-badge">
@@ -88,6 +102,17 @@ function logout() {
 
         <!-- Mobile Actions (<= 480px) -->
         <div class="mobile-actions">
+          <Button
+            variant="ghost"
+            size="icon"
+            class="theme-toggle"
+            :aria-label="themeToggleLabel"
+            :aria-pressed="isDark"
+            @click="toggleDarkMode"
+          >
+            <Sun v-if="isDark" :size="20" />
+            <Moon v-else :size="20" />
+          </Button>
           <Button variant="ghost" size="icon" class="mobile-notif" aria-label="Abrir notificações" @click="notifOpen = !notifOpen">
             <Bell :size="20" />
             <span v-if="authStore.unreadCount > 0" class="notif-badge">
@@ -109,8 +134,8 @@ function logout() {
 <style scoped>
 .app-header {
   height: var(--header-offset);
-  background: white;
-  border-bottom: 1px solid #e5e5e5;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
   position: fixed;
   top: 0;
   left: 0;
@@ -134,7 +159,7 @@ function logout() {
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: #333;
+  color: var(--foreground);
   cursor: pointer;
   padding: 0.5rem;
   margin-left: -0.5rem;
@@ -154,7 +179,7 @@ function logout() {
 
 .header-nav a {
   text-decoration: none;
-  color: #555;
+  color: var(--muted-foreground);
   font-size: 0.9rem;
   font-weight: 500;
 }
@@ -176,7 +201,7 @@ function logout() {
 
 .header-user {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--muted-foreground);
   text-decoration: none;
   max-width: 140px;
   white-space: nowrap;
@@ -216,6 +241,10 @@ function logout() {
   justify-content: center;
   min-width: var(--tap-min);
   min-height: var(--tap-min);
+}
+
+.theme-toggle {
+  color: var(--foreground);
 }
 
 .mobile-avatar {

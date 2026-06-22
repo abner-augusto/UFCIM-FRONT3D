@@ -330,7 +330,7 @@ onUnmounted(() => {
 .rail-btn {
   width: var(--rail-w);
   height: var(--rail-w);
-  background: white;
+  background: var(--popover);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   font-size: 20px;
@@ -369,7 +369,7 @@ onUnmounted(() => {
 .floor-btn {
   width: 36px;
   height: 36px;
-  background: white;
+  background: var(--popover);
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
   font-size: 13px;
@@ -386,7 +386,7 @@ onUnmounted(() => {
   position: absolute;
   bottom: 8px;
   left: 8px;
-  background: rgba(255, 255, 255, 0.94);
+  background: color-mix(in oklab, var(--popover) 94%, transparent);
   padding: 6px 10px;
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -399,7 +399,7 @@ onUnmounted(() => {
 .crumb {
   padding: 0;
   font-size: 0.78rem;
-  color: #333;
+  color: var(--foreground);
   height: auto;
   min-height: 0;
 }
@@ -419,7 +419,7 @@ onUnmounted(() => {
 
 .popover {
   position: absolute;
-  background: white;
+  background: var(--popover);
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   padding: 8px;
@@ -482,7 +482,7 @@ onUnmounted(() => {
 
 .popover-item {
   padding: 10px;
-  background: #f5f5f5;
+  background: var(--muted);
   border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 500;
@@ -500,7 +500,7 @@ onUnmounted(() => {
 .popover-item--full {
   text-align: left;
   font-size: 0.78rem;
-  color: #666;
+  color: var(--muted-foreground);
 }
 
 /* Kept in the DOM (not display:none) so showPicker() can anchor and open. */

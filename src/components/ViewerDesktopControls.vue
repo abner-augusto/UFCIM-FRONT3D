@@ -122,7 +122,7 @@ function shortFloorLabel(name: string): string {
 .controls-row {
   display: flex;
   gap: 5px;
-  background: rgba(255, 255, 255, 0.88);
+  background: color-mix(in oklab, var(--popover) 88%, transparent);
   backdrop-filter: blur(8px);
   padding: 6px;
   border-radius: 12px;
@@ -131,7 +131,7 @@ function shortFloorLabel(name: string): string {
 
 .controls-separator {
   width: 1px;
-  background: #e0e0e0;
+  background: var(--border);
   margin: 4px 2px;
   align-self: stretch;
 }
@@ -140,7 +140,7 @@ function shortFloorLabel(name: string): string {
   padding: 8px 14px;
   border-radius: 8px;
   background: transparent;
-  color: #333;
+  color: var(--foreground);
   font-size: 13px;
   font-weight: 500;
   transition: all 0.15s ease;

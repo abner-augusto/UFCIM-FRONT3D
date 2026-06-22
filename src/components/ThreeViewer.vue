@@ -8,6 +8,7 @@ interface ViewerFloor { level: number; name: string }
 interface ThreeApp {
   init(): Promise<void>;
   dispose(): void;
+  setThemeMode(isDark: boolean): void;
   controls?: {
     enabled: boolean;
   };
@@ -87,6 +88,9 @@ defineExpose({
       threeApp.controls.enabled = enabled;
     }
     threeApp?.interactionManager?.setInteractionsEnabled(enabled);
+  },
+  setThemeMode: (isDark: boolean) => {
+    threeApp?.setThemeMode(isDark);
   },
 });
 </script>

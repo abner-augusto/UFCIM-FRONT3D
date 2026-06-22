@@ -154,8 +154,8 @@ watch(
   left: 0;
   right: 0;
   height: calc(var(--bottom-bar-h) + var(--safe-bottom));
-  background: white;
-  border-top: 1px solid #e5e5e5;
+  background: var(--background);
+  border-top: 1px solid var(--border);
   padding-bottom: var(--safe-bottom);
   z-index: var(--z-chrome);
 }
@@ -197,11 +197,11 @@ watch(
 }
 .bottom-tab-bar::before {
   left: 0;
-  background: linear-gradient(to right, white, transparent);
+  background: linear-gradient(to right, var(--background), transparent);
 }
 .bottom-tab-bar::after {
   right: 0;
-  background: linear-gradient(to left, white, transparent);
+  background: linear-gradient(to left, var(--background), transparent);
 }
 .bottom-tab-bar.has-left-fade::before {
   opacity: 1;
@@ -242,7 +242,7 @@ watch(
   height: var(--bottom-bar-h);
   min-height: var(--tap-min);
   text-decoration: none;
-  color: #777;
+  color: var(--muted-foreground);
   gap: 2px;
   -webkit-tap-highlight-color: transparent;
   transition: color var(--duration-fast) ease;

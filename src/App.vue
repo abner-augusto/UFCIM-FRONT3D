@@ -5,9 +5,11 @@ import BottomTabBar from './components/BottomTabBar.vue';
 import { useAuthStore } from './stores/auth';
 import { api } from './services/api';
 import { onMounted, onUnmounted, watch } from 'vue';
+import { useDarkMode } from './composables/useDarkMode';
 
 const auth = useAuthStore();
 const route = useRoute();
+useDarkMode();
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 

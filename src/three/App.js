@@ -11,6 +11,11 @@ import { CameraManager } from './CameraManager.js';
 import { CAMERA_CONFIG, CONTROLS_CONFIG } from './config.js';
 import { logger } from '../utils/logger.ts';
 
+const CLEAR_COLOR = {
+    light: 0xeeeeee,
+    dark: 0x18181b,
+};
+
 export class App {
     constructor(canvas) {
         this.canvas = canvas;
@@ -122,8 +127,12 @@ export class App {
             antialias: this.renderConfig.antialias,
             powerPreference: 'high-performance',
         });
-        renderer.setClearColor(0xeeeeee);
+        renderer.setClearColor(CLEAR_COLOR.light);
         return renderer;
+    }
+
+    setThemeMode(isDark) {
+        this.renderer?.setClearColor(isDark ? CLEAR_COLOR.dark : CLEAR_COLOR.light);
     }
 
     _getPerformanceConfiguration() {

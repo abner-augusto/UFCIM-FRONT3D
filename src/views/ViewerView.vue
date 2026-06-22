@@ -16,6 +16,7 @@ import BlockHeatmapCard from '@/components/BlockHeatmapCard.vue';
 import { useDateTimeFilter, formatShortDate } from '@/composables/useDateTimeFilter';
 import { usePinAvailability, PERIOD_COLORS } from '@/composables/usePinAvailability';
 import { buildPinStatusLabel } from '@/composables/usePinStatusLabel';
+import { useDarkMode } from '@/composables/useDarkMode';
 import type { PeriodKey, PinStatus } from '@/composables/usePinAvailability';
 import { BLOCK_TYPE_LABELS, TIME_SLOT_RANGES, type Blocking } from '@/types/reservation';
 import { logger } from '@/utils/logger';
@@ -24,6 +25,7 @@ const route = useRoute();
 const router = useRouter();
 const reservationStore = useReservationStore();
 const auth = useAuthStore();
+const { isDark } = useDarkMode();
 
 const campusId = route.params.campusId as string;
 const campus = campuses.find((c) => c.id === campusId);
@@ -199,6 +201,7 @@ function handleDateChange(date: string) {
 const handleViewerReady = () => {
   viewerReady.value = true;
   viewerRef.value?.setInteractive(!viewerOverlayOpen.value);
+  viewerRef.value?.setThemeMode(isDark.value);
   if (spacesLoaded.value) {
     applyPinColors();
   }
@@ -228,6 +231,10 @@ watch([selectedDate, selectedPeriod], () => {
 
 watch(viewerOverlayOpen, (open) => {
   viewerRef.value?.setInteractive(!open);
+}, { immediate: true });
+
+watch(isDark, (dark) => {
+  viewerRef.value?.setThemeMode(dark);
 }, { immediate: true });
 
 onMounted(async () => {
