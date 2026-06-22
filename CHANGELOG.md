@@ -1,5 +1,34 @@
 # Changelog
 
+## [3.2.0](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v3.1.0...v3.2.0) (2026-06-22)
+
+
+### Features
+
+* **B1-B3:** setup Tailwind v4 + shadcn-vue init + brand OKLCH tokens ([9e9bf8f](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/9e9bf8fe233dc4eb66fe6619c411463971606919))
+* **invite:** collect matrícula on accept and add request-invite CTA on login ([20c303d](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/20c303d6e25c061aee13395ba6f21e04261dd58e))
+* **maintenance:** desktop nav link, full space location, and 3D deep-link ([e7a4eab](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/e7a4eab58498fa730ed35c58b3109e25f56af8af))
+* **maintenance:** equipment report triage page for staff/maintenance ([a2d8c01](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/a2d8c01c83b0bb0821c81eb8c30cd358907faeb0))
+* **MEL-009:** add dark mode toggle and viewer theme sync (Phase 5) ([72a1735](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/72a1735b8cf2138ef27229e5cb3fe4f3099c1338))
+* **MEL-009:** migrate forms & list views to shadcn (Tranche 3B) ([4ccdbcf](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/4ccdbcf506416a6a4d2e31cf1da4b24fd6234ef7))
+* **MEL-009:** migrate overlays to shadcn + viewer groundwork (Tranche 3C) ([0b24565](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/0b245651d6ed2949070836084f67caf613ecebb1))
+* **MEL-009:** migrate reservation flow, viewer chrome & app shell (Tranche 3D) ([56b7004](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/56b700414220ae54872193f4ab50cd68b50f8c8b))
+* **MEL-009:** shadcn setup + leaf components (Tranche 3A) ([5322d8f](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/5322d8f3b6617b9e2bc120bac3359539b584083e))
+* **MEL-009:** shadcn-vue migration + QA fixes (BUG-009/010/011) ([5e79b8c](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/5e79b8c55150c372bc89569c14f27620b6633d10))
+* **MEL-009:** tokenize all colors for dark mode (Phase 7) ([17325eb](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/17325eb34ac42edd21b22aa237c9cfdd94434731))
+* **mobile:** horizontally scrollable bottom tab bar with one-time scroll hint ([d8fb640](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/d8fb6402134679387137eafb0f7ee51b03d4ed46))
+* self-service invite flow, maintenance triage & viewer UI fixes ([253f6a9](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/253f6a90f8edb931f627cac217144b36b762eff3))
+* **wp-4:** request invite page with Turnstile, LoginView link, api-errors, route ([c3fe0ac](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/c3fe0ac9d39fddfad21157a1be84508f23ae1dd6))
+
+
+### Bug Fixes
+
+* **e2e:** corrigir binding D1 e claims de department no global-setup ([815c87a](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/815c87ac840920de9e2c219ddf891a37279bcc2f))
+* **MEL-009:** disable RoomPopup reserve CTA when period fully past (BUG-010) ([1cd3047](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/1cd304767a710cd0e82c02e5f82c6c7bdc6c71fa))
+* **MEL-009:** gate per-space report route and CTA by role (BUG-009) ([ce521b3](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/ce521b3d5229cd7520fab9873d9b71d70a60e094))
+* **MEL-009:** render RoomPopup as bottom drawer on mobile (BUG-011) ([6619187](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/6619187dc0c823d4c79ad2799cc359c98353b597))
+* **viewer:** show occupancy heatmap on desktop below the date card ([31314e9](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/31314e935254160e50c8867c57826ebe41286205))
+
 ## [3.1.0](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v3.0.0...v3.1.0) (2026-05-30)
 
 
