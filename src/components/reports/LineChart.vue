@@ -13,6 +13,8 @@ import {
   Filler,
 } from 'chart.js';
 import type { DailyPoint } from '@/types/report';
+import { useDarkMode } from '@/composables/useDarkMode';
+import { chartColors } from '@/lib/chartColors';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
@@ -20,57 +22,70 @@ const props = defineProps<{
   data: DailyPoint[];
 }>();
 
-const chartData = computed(() => ({
-  labels: props.data.map((d) => {
-    const date = new Date(d.date + 'T12:00:00');
-    return date.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' });
-  }),
-  datasets: [
-    {
-      label: 'Ocupação (%)',
-      data: props.data.map((d) => d.ocupacao),
-      borderColor: '#1D9E75',
-      backgroundColor: 'rgba(29, 158, 117, 0.1)',
-      fill: true,
-      tension: 0.3,
-      pointRadius: 3,
-      pointBackgroundColor: '#1D9E75',
-    },
-    {
-      label: 'Reservas',
-      data: props.data.map((d) => d.reservas),
-      borderColor: '#3B82F6',
-      backgroundColor: 'rgba(59, 130, 246, 0.1)',
-      fill: true,
-      tension: 0.3,
-      pointRadius: 3,
-      pointBackgroundColor: '#3B82F6',
-    },
-  ],
-}));
+const { isDark } = useDarkMode();
 
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  interaction: {
-    intersect: false,
-    mode: 'index' as const,
-  },
-  scales: {
-    y: {
-      beginAtZero: true,
-      grid: { color: '#f0f0f0' },
+const chartData = computed(() => {
+  void isDark.value;
+  const c = chartColors();
+  return {
+    labels: props.data.map((d) => {
+      const date = new Date(d.date + 'T12:00:00');
+      return date.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' });
+    }),
+    datasets: [
+      {
+        label: 'Ocupação (%)',
+        data: props.data.map((d) => d.ocupacao),
+        borderColor: c.chart1,
+        backgroundColor: `color-mix(in srgb, ${c.chart1} 12%, transparent)`,
+        fill: true,
+        tension: 0.3,
+        pointRadius: 3,
+        pointBackgroundColor: c.chart1,
+      },
+      {
+        label: 'Reservas',
+        data: props.data.map((d) => d.reservas),
+        borderColor: c.chart2,
+        backgroundColor: `color-mix(in srgb, ${c.chart2} 12%, transparent)`,
+        fill: true,
+        tension: 0.3,
+        pointRadius: 3,
+        pointBackgroundColor: c.chart2,
+      },
+    ],
+  };
+});
+
+const chartOptions = computed(() => {
+  void isDark.value;
+  const c = chartColors();
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      intersect: false,
+      mode: 'index' as const,
     },
-    x: {
-      grid: { display: false },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: { color: c.grid },
+        ticks: { color: c.mutedText },
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: c.mutedText },
+      },
     },
-  },
-  plugins: {
-    legend: {
-      position: 'top' as const,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+        labels: { color: c.foreground },
+      },
     },
-  },
-};
+  };
+});
 </script>
 
 <template>
@@ -85,8 +100,8 @@ const chartOptions = {
 
 <style scoped>
 .chart-container {
-  background: white;
-  border: 1px solid #e5e5e5;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.25rem;
 }
@@ -95,7 +110,7 @@ const chartOptions = {
   margin: 0 0 1rem;
   font-size: 1rem;
   font-weight: 600;
-  color: #222;
+  color: var(--foreground);
 }
 
 .chart-wrapper {
@@ -104,7 +119,7 @@ const chartOptions = {
 
 .chart-empty {
   text-align: center;
-  color: #aaa;
+  color: var(--muted-foreground);
   padding: 4rem 0;
 }
 </style>

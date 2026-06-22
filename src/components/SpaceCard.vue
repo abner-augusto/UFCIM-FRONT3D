@@ -58,7 +58,7 @@ const statusLabel = computed((): string => {
 });
 
 const statusColor = computed(() =>
-  props.status ? PERIOD_COLORS[props.status] : '#ccc',
+  props.status ? PERIOD_COLORS[props.status] : 'var(--avail-disabled)',
 );
 
 // Reserve / block state
@@ -262,9 +262,9 @@ function handleToggle() {
 
 <style scoped>
 .space-card {
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: white;
+  background: var(--card);
   overflow: hidden;
   transition: border-color 0.15s;
 }
@@ -288,7 +288,7 @@ function handleToggle() {
   gap: 0.75rem;
 }
 .space-card__summary:hover {
-  background: #f9fafb;
+  background: var(--accent);
 }
 
 .status-dot {
@@ -296,7 +296,7 @@ function handleToggle() {
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
-  background: #ccc;
+  background: var(--avail-disabled);
 }
 .status-dot--loading {
   animation: pulse 1.2s ease-in-out infinite;
@@ -314,17 +314,17 @@ function handleToggle() {
   margin: 0;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #111;
+  color: var(--foreground);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .space-card__info p {
   margin: 0.15rem 0 0;
-  color: #777;
+  color: var(--muted-foreground);
   font-size: 0.8rem;
 }
-.sep { color: #ccc; margin: 0 0.15rem; }
+.sep { color: var(--border); margin: 0 0.15rem; }
 
 .space-card__right {
   display: flex;
@@ -338,7 +338,7 @@ function handleToggle() {
 }
 .expand-chevron {
   font-size: 1.1rem;
-  color: #aaa;
+  color: var(--muted-foreground);
   transform: rotate(90deg);
   transition: transform 0.2s ease;
   display: inline-block;
@@ -349,7 +349,7 @@ function handleToggle() {
 
 /* Detail */
 .space-card__detail {
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--border);
   padding: 1rem 1rem 1.1rem;
   display: flex;
   flex-direction: column;
@@ -362,7 +362,7 @@ function handleToggle() {
 }
 
 .detail-loading {
-  color: #888;
+  color: var(--muted-foreground);
   font-size: 0.85rem;
 }
 
@@ -385,7 +385,7 @@ function handleToggle() {
   display: flex;
   justify-content: space-between;
   font-size: 0.8rem;
-  border-bottom: 1px solid #f2f2f2;
+  border-bottom: 1px solid var(--border);
   padding-bottom: 0.25rem;
 }
 
@@ -395,19 +395,19 @@ function handleToggle() {
 .blocking-notice {
   padding: 0.6rem 0.8rem;
   border-radius: 8px;
-  background: #fff8f0;
-  border: 1px solid #fce4c2;
+  background: var(--warning-surface);
+  border: 1px solid var(--warning-border);
 }
 .blocking-notice__label {
   margin: 0 0 0.15rem;
-  color: #92400e;
+  color: var(--warning);
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
 }
 .blocking-notice__text {
   margin: 0;
-  color: #78350f;
+  color: var(--warning);
   font-size: 0.8rem;
 }
 
@@ -420,7 +420,7 @@ function handleToggle() {
 
 .action-hint {
   margin: 0;
-  color: #c05a1f;
+  color: var(--warning);
   font-size: 0.75rem;
   text-align: center;
 }

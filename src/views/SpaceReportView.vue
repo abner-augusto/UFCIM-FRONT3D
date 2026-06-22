@@ -144,23 +144,23 @@ const todayStr = computed(() => toLocalISODate());
 .view-header h1 {
   margin: 0;
   font-size: 1.3rem;
-  color: #111;
+  color: var(--foreground);
 }
 
 .back-btn {
   background: none;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.4rem 0.75rem;
   font-size: 0.85rem;
-  color: #555;
+  color: var(--muted-foreground);
   cursor: pointer;
   transition: background 0.15s;
   min-height: var(--tap-min, 44px);
 }
 
 .back-btn:hover {
-  background: #f5f5f5;
+  background: var(--accent);
 }
 
 .filter-row {
@@ -177,10 +177,10 @@ const todayStr = computed(() => toLocalISODate());
 
 .preset-chip {
   padding: 0.35rem 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border);
   border-radius: 999px;
-  background: white;
-  color: #555;
+  background: var(--card);
+  color: var(--muted-foreground);
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
@@ -189,9 +189,9 @@ const todayStr = computed(() => toLocalISODate());
 }
 
 .preset-chip:hover {
-  background: #f0f0f0;
-  border-color: #1D9E75;
-  color: #1D9E75;
+  background: var(--accent);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .custom-range {
@@ -199,16 +199,16 @@ const todayStr = computed(() => toLocalISODate());
   align-items: center;
   gap: 0.4rem;
   font-size: 0.82rem;
-  color: #888;
+  color: var(--muted-foreground);
 }
 
 .custom-range input[type="date"] {
-  border: 1px solid #ddd;
+  border: 1px solid var(--input);
   border-radius: 8px;
   padding: 0.35rem 0.5rem;
   font-size: 0.82rem;
-  color: #333;
-  background: white;
+  color: var(--foreground);
+  background: var(--background);
   min-height: 36px;
 }
 
@@ -216,18 +216,18 @@ const todayStr = computed(() => toLocalISODate());
 .state-error {
   text-align: center;
   padding: 2rem;
-  color: #888;
+  color: var(--muted-foreground);
   font-size: 0.95rem;
 }
 
 .state-error {
-  color: #c0392b;
+  color: var(--destructive);
 }
 
 .report-section h2 {
   margin: 0 0 0.75rem;
   font-size: 1rem;
   font-weight: 600;
-  color: #333;
+  color: var(--foreground);
 }
 </style>

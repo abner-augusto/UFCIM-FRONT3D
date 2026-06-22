@@ -44,8 +44,8 @@ defineProps<{
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  background: white;
-  border: 1px solid #e5e5e5;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.25rem;
 }
@@ -54,7 +54,7 @@ defineProps<{
   margin: 0;
   font-size: 1.2rem;
   font-weight: 700;
-  color: #111;
+  color: var(--foreground);
   display: flex;
   align-items: baseline;
   gap: 0.4rem;
@@ -63,12 +63,12 @@ defineProps<{
 .header-number {
   font-size: 0.8rem;
   font-weight: 500;
-  color: #999;
+  color: var(--muted-foreground);
 }
 
 .header-meta {
   margin: 0.15rem 0 0;
-  color: #888;
+  color: var(--muted-foreground);
   font-size: 0.82rem;
   display: flex;
   flex-wrap: wrap;
@@ -77,7 +77,7 @@ defineProps<{
 }
 
 .meta-sep {
-  color: #ccc;
+  color: var(--border);
 }
 
 .header-range {
@@ -85,13 +85,13 @@ defineProps<{
   align-items: center;
   gap: 0.4rem;
   font-size: 0.82rem;
-  background: #f5f5f5;
+  background: var(--muted);
   border-radius: 8px;
   padding: 0.4rem 0.75rem;
 }
 
 .range-label {
-  color: #999;
+  color: var(--muted-foreground);
   font-weight: 600;
   text-transform: uppercase;
   font-size: 0.7rem;
@@ -99,12 +99,12 @@ defineProps<{
 }
 
 .range-dates {
-  color: #333;
+  color: var(--foreground);
   font-weight: 500;
 }
 
 .range-days {
-  color: #aaa;
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 </style>

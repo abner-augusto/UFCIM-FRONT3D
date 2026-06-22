@@ -163,10 +163,10 @@ async function handleSubmit() {
   .form-actions {
     position: sticky;
     bottom: calc(var(--bottom-bar-h, 0px) + var(--safe-bottom, 0px));
-    background: white;
+    background: var(--background);
     padding: 0.75rem 0 calc(0.5rem + var(--safe-bottom, 0px));
     z-index: 5;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 -4px 12px rgb(var(--shadow-color) / 0.06);
     margin-left: -1rem;
     margin-right: -1rem;
     padding-left: 1rem;

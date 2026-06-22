@@ -56,16 +56,16 @@ defineEmits<{
     <span v-if="loading" class="text-primary mt-1 block text-[0.72rem]">Atualizando...</span>
 
     <div class="mt-2 flex gap-3 max-[480px]:hidden">
-      <span class="flex items-center gap-[3px] text-[0.72rem] text-[#555]">
-        <span class="size-2 shrink-0 rounded-full bg-[#00b050]"></span>
+      <span class="flex items-center gap-[3px] text-[0.72rem] text-muted-foreground">
+        <span class="size-2 shrink-0 rounded-full bg-available"></span>
         Disponível
       </span>
-      <span class="flex items-center gap-[3px] text-[0.72rem] text-[#555]">
-        <span class="size-2 shrink-0 rounded-full bg-[#f2c200]"></span>
+      <span class="flex items-center gap-[3px] text-[0.72rem] text-muted-foreground">
+        <span class="size-2 shrink-0 rounded-full bg-partial"></span>
         Parcial
       </span>
-      <span class="flex items-center gap-[3px] text-[0.72rem] text-[#555]">
-        <span class="size-2 shrink-0 rounded-full bg-[#d32f2f]"></span>
+      <span class="flex items-center gap-[3px] text-[0.72rem] text-muted-foreground">
+        <span class="size-2 shrink-0 rounded-full bg-reserved"></span>
         Ocupado
       </span>
     </div>

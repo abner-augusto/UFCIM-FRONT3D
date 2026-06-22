@@ -332,7 +332,7 @@ onUnmounted(() => {
   height: var(--rail-w);
   background: var(--popover);
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgb(var(--shadow-color) / 0.15);
   font-size: 20px;
   transition: all 0.2s ease;
   -webkit-tap-highlight-color: transparent;
@@ -352,8 +352,8 @@ onUnmounted(() => {
 }
 
 .rail-btn.active {
-  background: var(--color-brand);
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .floor-stack {
@@ -371,15 +371,15 @@ onUnmounted(() => {
   height: 36px;
   background: var(--popover);
   border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 6px rgb(var(--shadow-color) / 0.12);
   font-size: 13px;
   font-weight: 600;
   transition: all 0.2s ease;
 }
 
 .floor-btn.active {
-  background: var(--color-brand);
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .breadcrumb-pill {
@@ -389,7 +389,7 @@ onUnmounted(() => {
   background: color-mix(in oklab, var(--popover) 94%, transparent);
   padding: 6px 10px;
   border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgb(var(--shadow-color) / 0.1);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -413,7 +413,7 @@ onUnmounted(() => {
 }
 
 .dot {
-  color: #ccc;
+  color: var(--border);
   font-weight: bold;
 }
 
@@ -421,7 +421,7 @@ onUnmounted(() => {
   position: absolute;
   background: var(--popover);
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 20px rgb(var(--shadow-color) / 0.2);
   padding: 8px;
   pointer-events: auto;
   z-index: var(--z-popover);
@@ -452,7 +452,7 @@ onUnmounted(() => {
   font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: #999;
+  color: var(--muted-foreground);
   padding: 2px 4px;
   display: flex;
   justify-content: space-between;
@@ -464,14 +464,14 @@ onUnmounted(() => {
   font-weight: 400;
   text-transform: none;
   padding: 1px 6px;
-  background: #e8f5f0;
-  color: #1D9E75;
+  background: var(--secondary);
+  color: var(--secondary-foreground);
   border-radius: 999px;
 }
 
 .popover-divider {
   height: 1px;
-  background: #eee;
+  background: var(--border);
   margin: 6px -4px;
 }
 
@@ -517,8 +517,8 @@ onUnmounted(() => {
 }
 
 .popover-item.active {
-  background: var(--color-brand);
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .popover-grid {

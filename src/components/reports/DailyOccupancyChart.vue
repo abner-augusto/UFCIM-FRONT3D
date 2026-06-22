@@ -10,6 +10,8 @@ import {
   Filler,
   type TooltipItem,
 } from 'chart.js';
+import { useDarkMode } from '@/composables/useDarkMode';
+import { chartColors } from '@/lib/chartColors';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Filler);
 
@@ -17,31 +19,33 @@ const props = defineProps<{
   data: Array<{ date: string; occupancyRate: number; reservations: number; blockings: number }>;
 }>();
 
-const chartData = computed(() => ({
-  labels: props.data.map((d) => {
-    // Short date format: DD/MM
-    const parts = d.date.split('-');
-    return `${parts[2]}/${parts[1]}`;
-  }),
-  datasets: [
-    {
-      label: 'Ocupação (%)',
-      data: props.data.map((d) => d.occupancyRate),
-      backgroundColor: props.data.map((d) =>
-        d.occupancyRate >= 75 ? 'rgba(226, 75, 74, 0.75)' :
-        d.occupancyRate >= 40 ? 'rgba(186, 117, 23, 0.7)' :
-        'rgba(99, 153, 34, 0.65)'
-      ),
-      borderColor: props.data.map((d) =>
-        d.occupancyRate >= 75 ? '#e24b4a' :
-        d.occupancyRate >= 40 ? '#ba7517' :
-        '#639922'
-      ),
-      borderWidth: 1,
-      borderRadius: 3,
-    },
-  ],
-}));
+const { isDark } = useDarkMode();
+
+const chartData = computed(() => {
+  void isDark.value;
+  const c = chartColors();
+  const hueFor = (rate: number) =>
+    rate >= 75 ? c.reserved : rate >= 40 ? c.blocked : c.available;
+  return {
+    labels: props.data.map((d) => {
+      // Short date format: DD/MM
+      const parts = d.date.split('-');
+      return `${parts[2]}/${parts[1]}`;
+    }),
+    datasets: [
+      {
+        label: 'Ocupação (%)',
+        data: props.data.map((d) => d.occupancyRate),
+        backgroundColor: props.data.map((d) =>
+          `color-mix(in srgb, ${hueFor(d.occupancyRate)} 70%, transparent)`,
+        ),
+        borderColor: props.data.map((d) => hueFor(d.occupancyRate)),
+        borderWidth: 1,
+        borderRadius: 3,
+      },
+    ],
+  };
+});
 
 const chartOptions = {
   responsive: true,
@@ -96,8 +100,8 @@ const chartOptions = {
 
 <style scoped>
 .chart-container {
-  background: white;
-  border: 1px solid #e5e5e5;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1rem;
   height: 300px;
@@ -106,7 +110,7 @@ const chartOptions = {
 
 .chart-empty {
   text-align: center;
-  color: #aaa;
+  color: var(--muted-foreground);
   padding: 3rem 0;
 }
 </style>

@@ -254,7 +254,7 @@ watch(
 }
 
 .tab-item.active {
-  color: var(--color-brand);
+  color: var(--primary);
 }
 
 .tab-item.active .tab-icon {

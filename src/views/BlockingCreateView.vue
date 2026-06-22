@@ -253,10 +253,10 @@ async function handleSubmit() {
   font-size: 1.3rem;
 }
 .back-btn {
-  color: #1D9E75;
+  color: var(--primary);
 }
 .space-info {
-  background: #f8f8f8;
+  background: var(--muted);
   border-radius: 10px;
   padding: 1rem 1.25rem;
   margin-bottom: 1.5rem;
@@ -273,11 +273,11 @@ async function handleSubmit() {
   font-size: 0.9rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
-  color: #333;
+  color: var(--foreground);
 }
 .optional {
   font-weight: 400;
-  color: #888;
+  color: var(--muted-foreground);
 }
 .form-input {
   width: 100%;
@@ -316,20 +316,20 @@ async function handleSubmit() {
   text-align: center;
   min-height: var(--tap-min, 44px);
 }
-.hour-btn:hover { border-color: #1D9E75; }
+.hour-btn:hover { border-color: var(--primary); }
 .hour-btn--endpoint {
-  background: #1D9E75;
-  border-color: #1D9E75;
-  color: white;
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
   font-weight: 600;
 }
 .hour-btn--selected {
-  background: #d4edea;
-  border-color: #1D9E75;
+  background: var(--secondary);
+  border-color: var(--primary);
 }
 .period-summary {
   font-size: 0.85rem;
-  color: #555;
+  color: var(--muted-foreground);
   margin: 0.25rem 0 0;
 }
 
@@ -341,10 +341,10 @@ async function handleSubmit() {
   .form-actions {
     position: sticky;
     bottom: calc(var(--bottom-bar-h, 0px) + var(--safe-bottom, 0px));
-    background: white;
+    background: var(--background);
     padding: 0.75rem 0 calc(0.5rem + var(--safe-bottom, 0px));
     z-index: 5;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 -4px 12px rgb(var(--shadow-color) / 0.06);
     margin-left: -1rem;
     margin-right: -1rem;
     padding-left: 1rem;
@@ -362,15 +362,15 @@ async function handleSubmit() {
   cursor: not-allowed;
 }
 .state-msg {
-  color: #888;
+  color: var(--muted-foreground);
   font-size: 0.9rem;
 }
 .state-error {
-  color: #c0392b;
+  color: var(--destructive);
   font-size: 0.9rem;
   margin-bottom: 0.75rem;
 }
 .state-success {
-  color: #1D9E75;
+  color: var(--primary);
   font-size: 0.9rem; font-weight: 500; margin-bottom: 0.75rem; }
 </style>

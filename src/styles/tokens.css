@@ -30,16 +30,51 @@
   --input:                oklch(0.9219 0 0);
   --ring:                 oklch(0.6231 0.1232 165.5);
   --radius:               0.75rem;
-
-  /* ── Brand (backward compat during Fase 3 migration) ──── */
-  --color-brand:      #1D9E75;
-  --color-brand-dark: #178a65;
-  --color-brand-soft: #e8f5f0;
+  color-scheme: light;
 
   /* ── Semantic ────────────────────────────────────────── */
   --color-link:    #185FA5;
   --color-danger:  #c0392b;
   --color-muted:   #999;
+
+  /* ── Status families: on-surface text + tinted surface + border ──
+     Used by badges, slot details, notices, equipment status. Light values
+     match the pre-token palette; .dark overrides keep contrast on dark cards. */
+  --success:          #065f46;
+  --success-surface:  #d1fae5;
+  --success-border:   #a7e8cf;
+  --warning:          #92400e;
+  --warning-surface:  #fef3c7;
+  --warning-border:   #fce4c2;
+  --danger-fg:        #991b1b;
+  --danger-surface:   #fee2e2;
+  --danger-border:    #f5c6cb;
+  --info:             #0369a1;
+  --info-surface:     #e0f2fe;
+  --info-border:      #b9e2fb;
+  --violet:           #5b21b6;
+  --violet-surface:   #ede9fe;
+
+  /* ── Availability (pins, hour-cells, heatmap) — base hues applied with
+     color-mix() for tints so opacity steps stay token-driven. Values mirror
+     PERIOD_COLORS in usePinAvailability.ts, which stays hex (the WebGL engine
+     can't read CSS vars). Keep the two in sync. ──────────────────── */
+  --avail-free:       #00b050;
+  --avail-partial:    #f2c200;
+  --avail-reserved:   #d32f2f;
+  --avail-blocked:    #e8650a;
+  --avail-disabled:   #9e9e9e;
+
+  /* ── Data-viz palette (charts/reports) ──────────────────── */
+  --chart-1: #1d9e75;
+  --chart-2: #3b82f6;
+  --chart-3: #ba7517;
+  --chart-4: #e24b4a;
+  --chart-5: #8b5cf6;
+  --chart-grid: var(--border);
+
+  /* ── Elevation ───────────────────────────────────────── */
+  --shadow-color: 0 0 0;  /* r g b channels for rgb(... / a) shadows */
 
   /* ── Typography ──────────────────────────────────────── */
   --font-body: 'Roboto', 'Segoe UI', sans-serif;
@@ -98,6 +133,41 @@
   --border:               oklch(1 0 0 / 12%);
   --input:                oklch(1 0 0 / 15%);
   --ring:                 oklch(0.70 0.14 165.5);
+  color-scheme: dark;
+
+  /* Status families — brighter foreground, low-luminance translucent surfaces
+     so tinted badges/notices read on dark cards. */
+  --success:          oklch(0.82 0.13 165);
+  --success-surface:  oklch(0.45 0.09 165 / 0.28);
+  --success-border:   oklch(0.55 0.09 165 / 0.4);
+  --warning:          oklch(0.86 0.11 75);
+  --warning-surface:  oklch(0.5 0.1 70 / 0.28);
+  --warning-border:   oklch(0.6 0.1 70 / 0.4);
+  --danger-fg:        oklch(0.8 0.13 25);
+  --danger-surface:   oklch(0.5 0.16 27 / 0.28);
+  --danger-border:    oklch(0.6 0.16 27 / 0.4);
+  --info:             oklch(0.82 0.1 235);
+  --info-surface:     oklch(0.5 0.1 240 / 0.28);
+  --info-border:      oklch(0.6 0.1 240 / 0.4);
+  --violet:           oklch(0.8 0.11 300);
+  --violet-surface:   oklch(0.5 0.12 300 / 0.28);
+
+  /* Availability hues stay vivid (status semantics read on dark too); only
+     the tint opacity over the dark card differs, handled by color-mix. */
+
+  /* Legacy semantic refs that components still reference via var(). */
+  --color-link:       oklch(0.72 0.1 235);
+  --color-danger:     oklch(0.7 0.16 25);
+  --color-muted:      oklch(0.65 0 0);
+
+  /* Data-viz — brighten the cooler hues for contrast on dark. */
+  --chart-1: oklch(0.7 0.14 165.5);
+  --chart-2: oklch(0.72 0.13 235);
+  --chart-3: oklch(0.74 0.12 75);
+  --chart-4: oklch(0.7 0.16 25);
+  --chart-5: oklch(0.72 0.13 295);
+
+  --shadow-color: 0 0 0;
 }
 
 @theme inline {
@@ -120,6 +190,23 @@
   --color-border:                var(--border);
   --color-input:                 var(--input);
   --color-ring:                  var(--ring);
+  --color-success:               var(--success);
+  --color-success-surface:       var(--success-surface);
+  --color-warning:               var(--warning);
+  --color-warning-surface:       var(--warning-surface);
+  --color-danger-surface:        var(--danger-surface);
+  --color-info:                  var(--info);
+  --color-info-surface:          var(--info-surface);
+  --color-available:             var(--avail-free);
+  --color-partial:               var(--avail-partial);
+  --color-reserved:              var(--avail-reserved);
+  --color-blocked:               var(--avail-blocked);
+  --color-disabled:              var(--avail-disabled);
+  --color-chart-1:               var(--chart-1);
+  --color-chart-2:               var(--chart-2);
+  --color-chart-3:               var(--chart-3);
+  --color-chart-4:               var(--chart-4);
+  --color-chart-5:               var(--chart-5);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

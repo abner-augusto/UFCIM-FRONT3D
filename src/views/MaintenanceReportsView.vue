@@ -299,9 +299,9 @@ function viewerLink(report: EquipmentReport) {
 }
 
 .report-card {
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: white;
+  background: var(--card);
   padding: 1rem 1.25rem;
 }
 
@@ -319,32 +319,32 @@ function viewerLink(report: EquipmentReport) {
   font-weight: 600;
   white-space: nowrap;
 }
-.severity-badge--minor { background: #fef9e7; color: #7d6608; }
-.severity-badge--major { background: #fdf2f2; color: #922b21; }
-.severity-badge--blocking { background: #fce4ec; color: #7b241c; }
+.severity-badge--minor { background: var(--warning-surface); color: var(--warning); }
+.severity-badge--major { background: var(--danger-surface); color: var(--danger-fg); }
+.severity-badge--blocking { background: color-mix(in srgb, var(--destructive) 15%, transparent); color: var(--destructive); }
 
-.status-badge--pending { background: #fff4e5; color: #9a5b00; }
-.status-badge--acknowledged { background: #e7f0ff; color: #1e40af; }
-.status-badge--resolved { background: #e7f7ef; color: #1D7A5A; }
-.status-badge--dismissed { background: #f0f0f0; color: #777; }
+.status-badge--pending { background: var(--warning-surface); color: var(--warning); }
+.status-badge--acknowledged { background: var(--info-surface); color: var(--info); }
+.status-badge--resolved { background: var(--success-surface); color: var(--success); }
+.status-badge--dismissed { background: var(--muted); color: var(--muted-foreground); }
 
 .report-card__title {
   margin: 0 0 0.35rem;
   font-size: 1rem;
   font-weight: 600;
-  color: #111;
+  color: var(--foreground);
 }
 .report-card__space {
   margin: 0 0 0.6rem;
   font-weight: 400;
-  color: #777;
+  color: var(--muted-foreground);
   font-size: 0.85rem;
 }
 
 .report-card__desc {
   margin: 0 0 0.6rem;
   font-size: 0.88rem;
-  color: #444;
+  color: var(--foreground);
   line-height: 1.5;
   white-space: pre-wrap;
 }
@@ -354,7 +354,7 @@ function viewerLink(report: EquipmentReport) {
   flex-wrap: wrap;
   gap: 0.25rem 0.75rem;
   font-size: 0.76rem;
-  color: #999;
+  color: var(--muted-foreground);
 }
 
 .report-card__viewer-link {
@@ -374,14 +374,14 @@ function viewerLink(report: EquipmentReport) {
 .report-card__reason {
   margin: 0.6rem 0 0;
   font-size: 0.82rem;
-  color: #666;
-  background: #f9fafb;
+  color: var(--muted-foreground);
+  background: var(--muted);
   border-radius: 8px;
   padding: 0.5rem 0.65rem;
 }
 .report-card__reason-label {
   font-weight: 600;
-  color: #555;
+  color: var(--foreground);
 }
 
 /* Actions */
@@ -393,7 +393,7 @@ function viewerLink(report: EquipmentReport) {
 }
 
 /* States */
-.state-msg { color: #888; font-size: 0.9rem; }
-.state-error { color: #c0392b; font-size: 0.9rem; }
-.state-empty { color: #888; font-size: 0.9rem; text-align: center; padding: 3rem 0; }
+.state-msg { color: var(--muted-foreground); font-size: 0.9rem; }
+.state-error { color: var(--destructive); font-size: 0.9rem; }
+.state-empty { color: var(--muted-foreground); font-size: 0.9rem; text-align: center; padding: 3rem 0; }
 </style>

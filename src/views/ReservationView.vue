@@ -346,20 +346,20 @@ function handleContinue() {
   font-size: 1.3rem;
 }
 .back-btn {
-  color: #1D9E75;
+  color: var(--primary);
 }
 .space-info {
-  background: #f8f8f8;
+  background: var(--muted);
   border-radius: 10px;
   padding: 1rem 1.25rem;
   margin-bottom: 1.5rem;
 }
 .space-info h2 { margin: 0 0 0.25rem; font-size: 1.1rem; }
-.space-info p  { margin: 0; color: #666; font-size: 0.85rem; }
+.space-info p  { margin: 0; color: var(--muted-foreground); font-size: 0.85rem; }
 .space-capacity { margin-top: 0.35rem !important; }
 .space-warning {
   margin-top: 0.5rem !important;
-  color: #b42318 !important;
+  color: var(--destructive) !important;
   font-weight: 600;
 }
 .recurring-toggle-row { display: flex; align-items: center; }
@@ -369,7 +369,7 @@ function handleContinue() {
   gap: 0.5rem;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #333;
+  color: var(--foreground);
   cursor: pointer;
 }
 .form-section { margin-bottom: 1.25rem; }
@@ -378,7 +378,7 @@ function handleContinue() {
   font-size: 0.9rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
-  color: #333;
+  color: var(--foreground);
 }
 .form-input {
   width: 100%;
@@ -387,24 +387,24 @@ function handleContinue() {
 .form-hint {
   margin: 0.5rem 0 0;
   font-size: 0.8rem;
-  color: #666;
+  color: var(--muted-foreground);
 }
 .blocking-notice {
   margin-top: 0.5rem;
   padding: 0.75rem;
   border-radius: 8px;
-  background: #f8f8f8;
+  background: var(--muted);
 }
 .blocking-notice__title {
   margin: 0 0 0.35rem;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #555;
+  color: var(--muted-foreground);
 }
 .blocking-notice__item {
   margin: 0.2rem 0 0;
   font-size: 0.82rem;
-  color: #666;
+  color: var(--muted-foreground);
 }
 
 /* Mode toggle */
@@ -426,21 +426,21 @@ function handleContinue() {
   justify-content: flex-start;
 }
 .slot-btn--selected {
-  border-color: #1D9E75;
-  background: #e8f5f0;
-  color: #1D9E75;
+  border-color: var(--primary);
+  background: var(--secondary);
+  color: var(--primary);
   font-weight: 600;
 }
 .slot-btn--unavailable {
   opacity: 0.4;
   cursor: not-allowed;
-  background: #f5f5f5;
+  background: var(--muted);
 }
 
 /* Hour picker */
 .hour-picker__hint {
   font-size: 0.8rem;
-  color: #888;
+  color: var(--muted-foreground);
   margin: 0 0 0.6rem;
   min-height: 1.2em;
 }
@@ -460,22 +460,22 @@ function handleContinue() {
   text-align: center;
   min-height: var(--tap-min, 44px);
 }
-.hour-btn--available:hover { border-color: #1D9E75; }
+.hour-btn--available:hover { border-color: var(--primary); }
 .hour-btn--selected {
-  background: #e8f5f0;
-  border-color: #1D9E75;
-  color: #1D9E75;
+  background: var(--secondary);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 .hour-btn--endpoint {
-  background: #1D9E75;
-  border-color: #1D9E75;
-  color: white;
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
   font-weight: 600;
 }
 .hour-btn--unavailable {
   opacity: 0.35;
   cursor: not-allowed;
-  background: #f5f5f5;
+  background: var(--muted);
 }
 
 /* Actions */
@@ -487,10 +487,10 @@ function handleContinue() {
   .form-actions {
     position: sticky;
     bottom: calc(var(--bottom-bar-h, 0px) + var(--safe-bottom, 0px));
-    background: white;
+    background: var(--background);
     padding: 0.75rem 0 calc(0.5rem + var(--safe-bottom, 0px));
     z-index: 5;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 -4px 12px rgb(var(--shadow-color) / 0.06);
     margin-left: -1rem;
     margin-right: -1rem;
     padding-left: 1rem;
@@ -505,7 +505,7 @@ function handleContinue() {
 }
 .continue-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.state-msg   { color: #888; font-size: 0.9rem; padding: 0.5rem 0; }
-.state-error { color: #c0392b; font-size: 0.9rem; margin-bottom: 0.75rem; }
-.state-success { color: #1D9E75; font-size: 0.9rem; font-weight: 500; margin-bottom: 0.75rem; }
+.state-msg   { color: var(--muted-foreground); font-size: 0.9rem; padding: 0.5rem 0; }
+.state-error { color: var(--destructive); font-size: 0.9rem; margin-bottom: 0.75rem; }
+.state-success { color: var(--primary); font-size: 0.9rem; font-weight: 500; margin-bottom: 0.75rem; }
 </style>

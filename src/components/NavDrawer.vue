@@ -108,7 +108,7 @@ function handleOpenChange(open: boolean) {
   background: var(--popover);
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 2px 0 8px rgb(var(--shadow-color) / 0.1);
   gap: 0;
   padding: 0;
 }
@@ -119,14 +119,14 @@ function handleOpenChange(open: boolean) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border);
   padding-top: var(--safe-top);
 }
 
 .drawer-logo {
   font-weight: 700;
   font-size: 1.25rem;
-  color: var(--color-brand);
+  color: var(--primary);
 }
 
 .drawer-nav {
@@ -140,15 +140,15 @@ function handleOpenChange(open: boolean) {
   align-items: center;
   padding: 0.8rem 1.5rem;
   text-decoration: none;
-  color: #444;
+  color: var(--foreground);
   font-size: 1rem;
   gap: 12px;
   position: relative;
 }
 
 .nav-item.router-link-active {
-  color: var(--color-brand);
-  background: var(--color-brand-soft);
+  color: var(--primary);
+  background: var(--secondary);
   font-weight: 500;
 }
 
@@ -160,8 +160,8 @@ function handleOpenChange(open: boolean) {
 
 .notif-badge {
   margin-left: auto;
-  background: #c0392b;
-  color: white;
+  background: var(--destructive);
+  color: var(--destructive-foreground);
   font-size: 0.7rem;
   font-weight: 700;
   min-width: 18px;
@@ -175,7 +175,7 @@ function handleOpenChange(open: boolean) {
 
 .drawer-footer {
   padding: 1.5rem;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border);
   padding-bottom: calc(1.5rem + var(--safe-bottom));
 }
 
@@ -189,8 +189,8 @@ function handleOpenChange(open: boolean) {
 .user-avatar {
   width: 36px;
   height: 36px;
-  background: var(--color-brand);
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -202,7 +202,7 @@ function handleOpenChange(open: boolean) {
 .user-name {
   font-size: 0.95rem;
   font-weight: 500;
-  color: #333;
+  color: var(--foreground);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -210,7 +210,7 @@ function handleOpenChange(open: boolean) {
 
 .logout-btn {
   width: 100%;
-  color: #c0392b;
+  color: var(--destructive);
   font-weight: 600;
 }
 </style>

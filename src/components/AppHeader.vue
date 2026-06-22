@@ -168,7 +168,7 @@ function logout() {
 .header-logo {
   font-weight: 700;
   font-size: 1.25rem;
-  color: var(--color-brand);
+  color: var(--primary);
   text-decoration: none;
 }
 
@@ -185,7 +185,7 @@ function logout() {
 }
 
 .header-nav a.router-link-active {
-  color: var(--color-brand);
+  color: var(--primary);
 }
 
 .header-right {
@@ -210,17 +210,17 @@ function logout() {
 }
 
 .header-user:hover {
-  color: var(--color-brand);
+  color: var(--primary);
 }
 
 .header-logout {
   padding: 0.4rem 0.8rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border);
   border-radius: 6px;
   background: none;
   cursor: pointer;
   font-size: 0.85rem;
-  color: #555;
+  color: var(--muted-foreground);
 }
 
 .mobile-actions {
@@ -250,8 +250,8 @@ function logout() {
 .mobile-avatar {
   width: 32px;
   height: 32px;
-  background: var(--color-brand);
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -262,7 +262,7 @@ function logout() {
 }
 
 .admin-link {
-  color: var(--color-brand) !important;
+  color: var(--primary) !important;
   font-weight: 600 !important;
 }
 
@@ -282,8 +282,8 @@ function logout() {
   position: absolute;
   top: -6px;
   right: -10px;
-  background: #c0392b;
-  color: white;
+  background: var(--destructive);
+  color: var(--destructive-foreground);
   font-size: 0.65rem;
   font-weight: 700;
   min-width: 16px;

@@ -34,7 +34,7 @@ function handleSelect(_deptId: string) {
       <Card
         v-for="dept in campus.departments"
         :key="dept.id"
-        class="hover:border-primary cursor-pointer gap-1.5 p-5 transition-[border-color,box-shadow] hover:shadow-[0_2px_8px_rgba(29,158,117,0.1)] aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:border-border aria-disabled:hover:shadow-none"
+        class="hover:border-primary cursor-pointer gap-1.5 p-5 transition-[border-color,box-shadow] hover:shadow-[0_2px_8px_color-mix(in_srgb,var(--primary)_12%,transparent)] aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:border-border aria-disabled:hover:shadow-none"
         role="button"
         :tabindex="dept.active ? 0 : -1"
         :aria-disabled="!dept.active"

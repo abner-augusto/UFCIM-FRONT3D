@@ -14,7 +14,7 @@ defineEmits<{
 
 <template>
   <Card
-    class="hover:border-primary cursor-pointer gap-2 p-5 transition-[border-color,box-shadow] hover:shadow-[0_2px_8px_rgba(29,158,117,0.1)] aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:border-border aria-disabled:hover:shadow-none"
+    class="hover:border-primary cursor-pointer gap-2 p-5 transition-[border-color,box-shadow] hover:shadow-[0_2px_8px_color-mix(in_srgb,var(--primary)_12%,transparent)] aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:border-border aria-disabled:hover:shadow-none"
     role="button"
     :tabindex="campus.active ? 0 : -1"
     :aria-disabled="!campus.active"
@@ -26,7 +26,7 @@ defineEmits<{
       <Badge v-if="!campus.active" variant="secondary" class="bg-muted text-muted-foreground">Em breve</Badge>
     </div>
     <p class="text-muted-foreground m-0 text-sm">{{ campus.description }}</p>
-    <p class="m-0 text-xs text-[#999]">
+    <p class="m-0 text-xs text-muted-foreground">
       {{ campus.city }}{{ campus.neighborhood ? ` — ${campus.neighborhood}` : '' }}
     </p>
     <div v-if="campus.active && campus.buildings.length" class="mt-1 flex flex-wrap gap-1.5">

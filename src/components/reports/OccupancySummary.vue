@@ -44,8 +44,8 @@ defineProps<{
 }
 
 .card {
-  background: white;
-  border: 1px solid #e5e5e5;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.25rem;
   display: flex;
@@ -67,13 +67,13 @@ defineProps<{
 .card-value {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #111;
+  color: var(--foreground);
   line-height: 1.2;
 }
 
 .card-label {
   font-size: 0.8rem;
-  color: #777;
+  color: var(--muted-foreground);
   margin-top: 0.15rem;
 }
 </style>

@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
 import type { OccupancyReport } from '@/types/report';
+import { useDarkMode } from '@/composables/useDarkMode';
+import { chartColors } from '@/lib/chartColors';
 import ReportFilters from '@/components/reports/ReportFilters.vue';
 import OccupancySummary from '@/components/reports/OccupancySummary.vue';
 import LineChart from '@/components/reports/LineChart.vue';
@@ -11,6 +13,7 @@ import TurnoPie from '@/components/reports/TurnoPie.vue';
 import SpacesTable from '@/components/reports/SpacesTable.vue';
 
 const auth = useAuthStore();
+const { isDark } = useDarkMode();
 
 const report = ref<OccupancyReport | null>(null);
 const loading = ref(true);
@@ -22,6 +25,18 @@ const currentFilters = ref<{
   campus: string;
   department: string;
 } | null>(null);
+
+const reservationsDataset = computed(() => {
+  void isDark.value;
+  const colors = chartColors();
+  return [
+    {
+      label: 'Reservas',
+      data: report.value?.spaces.map((s) => s.reservas) ?? [],
+      backgroundColor: colors.chart1,
+    },
+  ];
+});
 
 function formatFilters(filters: { startDate: string; endDate: string; campus: string; department: string }) {
   const params: Record<string, string> = {};
@@ -80,13 +95,7 @@ onMounted(async () => {
 
       <BarChart
         :labels="report.spaces.map((s) => s.nome || s.numero)"
-        :datasets="[
-          {
-            label: 'Reservas',
-            data: report.spaces.map((s) => s.reservas),
-            backgroundColor: '#1D9E75',
-          },
-        ]"
+        :datasets="reservationsDataset"
       />
 
       <SpacesTable :spaces="report.spaces" />

@@ -96,19 +96,19 @@ watch(() => [props.visible, props.date, props.spaces], loadHeatmap, { immediate:
 <template>
   <Transition name="heatmap">
     <!-- Positioning is provided by the parent (.viewer-topleft stack in ViewerView). -->
-    <div v-if="visible" class="pointer-events-auto w-[185px] rounded-lg bg-background/95 px-2.5 py-2 shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
+    <div v-if="visible" class="pointer-events-auto w-[185px] rounded-lg bg-background/95 px-2.5 py-2 shadow-[0_2px_8px_rgb(var(--shadow-color)/0.15)]">
       <button
         type="button"
         class="flex w-full cursor-pointer items-center justify-between bg-transparent text-left"
         :aria-expanded="!collapsed"
         @click="collapsed = !collapsed"
       >
-        <span class="text-[0.72rem] font-semibold text-[#333]">{{ blockName }} · {{ dateLabel }}</span>
-        <span class="text-[0.65rem] text-[#999]"><component :is="collapsed ? ChevronDown : ChevronUp" :size="10" /></span>
+        <span class="text-[0.72rem] font-semibold text-foreground">{{ blockName }} · {{ dateLabel }}</span>
+        <span class="text-[0.65rem] text-muted-foreground"><component :is="collapsed ? ChevronDown : ChevronUp" :size="10" /></span>
       </button>
 
       <div v-if="!collapsed" class="mt-1.5">
-        <div v-if="loading" class="text-[0.7rem] text-[#999]">Carregando...</div>
+        <div v-if="loading" class="text-[0.7rem] text-muted-foreground">Carregando...</div>
         <template v-else>
           <div class="flex h-4 gap-px">
             <div
@@ -118,12 +118,12 @@ watch(() => [props.visible, props.date, props.spaces], loadHeatmap, { immediate:
               :title="hour.tooltip"
             ></div>
           </div>
-          <div class="mt-0.5 flex justify-between text-[0.55rem] text-[#aaa]">
+          <div class="mt-0.5 flex justify-between text-[0.55rem] text-muted-foreground">
             <span>{{ firstHour }}h</span>
             <span>{{ midHour }}h</span>
             <span>{{ lastHour }}h</span>
           </div>
-          <div class="mt-1 text-[0.6rem] whitespace-nowrap text-[#666]">
+          <div class="mt-1 text-[0.6rem] whitespace-nowrap text-muted-foreground">
             <strong>{{ stats.free }} livres</strong>
             · {{ stats.partial }} parciais
             · {{ stats.occupied }} ocupadas
@@ -136,9 +136,9 @@ watch(() => [props.visible, props.date, props.spaces], loadHeatmap, { immediate:
 
 <style scoped>
 /* Dynamic occupancy cell colors (class string built in JS) + entrance transition. */
-.cell--green { background: rgba(99, 153, 34, 0.5); }
-.cell--amber { background: rgba(186, 117, 23, 0.5); }
-.cell--red   { background: rgba(226, 75, 74, 0.5); }
+.cell--green { background: color-mix(in srgb, var(--avail-free) 50%, transparent); }
+.cell--amber { background: color-mix(in srgb, var(--avail-blocked) 50%, transparent); }
+.cell--red   { background: color-mix(in srgb, var(--avail-reserved) 50%, transparent); }
 
 .heatmap-enter-active,
 .heatmap-leave-active {

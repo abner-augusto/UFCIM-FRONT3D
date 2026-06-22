@@ -166,7 +166,7 @@ function handleOpenChange(open: boolean) {
   max-width: 420px;
   max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 12px 40px rgb(var(--shadow-color) / 0.18);
   position: relative;
   animation: dialog-in 0.3s var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
   padding-bottom: calc(1.5rem + var(--safe-bottom, 0px));
@@ -177,7 +177,7 @@ function handleOpenChange(open: boolean) {
   display: block;
   width: 36px;
   height: 4px;
-  background: #ddd;
+  background: var(--border);
   border-radius: 2px;
   margin: 0 auto 1rem;
 }
@@ -190,12 +190,12 @@ function handleOpenChange(open: boolean) {
 .dialog__title {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #111;
+  color: var(--foreground);
   margin: 0 2rem 0.15rem 0;
 }
 
 .dialog__subtitle {
-  color: #888;
+  color: var(--muted-foreground);
   font-size: 0.8rem;
   margin: 0 0 1rem;
 }
@@ -210,7 +210,7 @@ function handleOpenChange(open: boolean) {
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: #888;
+  color: var(--muted-foreground);
   letter-spacing: 0.06em;
   margin-bottom: 0.4rem;
 }
@@ -226,11 +226,11 @@ function handleOpenChange(open: boolean) {
   display: block;
   width: 100%;
   padding: 0.65rem 0.75rem;
-  border: 1.5px solid #e0e0e0;
+  border: 1.5px solid var(--input);
   border-radius: 10px;
   background: var(--background);
   font-size: 0.82rem;
-  color: #444;
+  color: var(--foreground);
   text-align: left;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
@@ -238,8 +238,8 @@ function handleOpenChange(open: boolean) {
 }
 
 .severity-btn:hover {
-  background: #f0f0f0;
-  border-color: #ccc;
+  background: var(--accent);
+  border-color: var(--border);
 }
 
 .severity-btn--selected {
@@ -247,21 +247,21 @@ function handleOpenChange(open: boolean) {
 }
 
 .severity-btn--selected.severity-btn--minor {
-  background: #fef9e7;
-  border-color: #f1c40f;
-  color: #7d6608;
+  background: var(--warning-surface);
+  border-color: var(--warning);
+  color: var(--warning);
 }
 
 .severity-btn--selected.severity-btn--major {
-  background: #fdf2f2;
-  border-color: #e74c3c;
-  color: #922b21;
+  background: var(--danger-surface);
+  border-color: var(--danger-fg);
+  color: var(--danger-fg);
 }
 
 .severity-btn--selected.severity-btn--blocking {
-  background: #fce4ec;
-  border-color: #c0392b;
-  color: #7b241c;
+  background: color-mix(in srgb, var(--destructive) 15%, transparent);
+  border-color: var(--destructive);
+  color: var(--destructive);
 }
 
 .severity-btn__label {
@@ -272,12 +272,12 @@ function handleOpenChange(open: boolean) {
 .dialog__textarea {
   width: 100%;
   padding: 0.65rem 0.75rem;
-  border: 1.5px solid #e0e0e0;
+  border: 1.5px solid var(--input);
   border-radius: 10px;
   font-size: 0.85rem;
   font-family: inherit;
-  color: #333;
-  background: #fafafa;
+  color: var(--foreground);
+  background: var(--muted);
   resize: vertical;
   min-height: 80px;
   transition: border-color 0.15s;
@@ -286,13 +286,13 @@ function handleOpenChange(open: boolean) {
 
 .dialog__textarea:focus {
   outline: none;
-  border-color: #1D9E75;
-  background: #fff;
+  border-color: var(--ring);
+  background: var(--background);
 }
 
 .dialog__textarea--invalid {
-  border-color: #e74c3c;
-  background: #fdf2f2;
+  border-color: var(--destructive);
+  background: var(--danger-surface);
 }
 
 .dialog__field-footer {
@@ -304,12 +304,12 @@ function handleOpenChange(open: boolean) {
 
 .dialog__field-error {
   font-size: 0.72rem;
-  color: #e74c3c;
+  color: var(--destructive);
 }
 
 .dialog__char-count {
   font-size: 0.68rem;
-  color: #aaa;
+  color: var(--muted-foreground);
   margin-left: auto;
 }
 
@@ -317,9 +317,9 @@ function handleOpenChange(open: boolean) {
 .dialog__error {
   padding: 0.6rem 0.75rem;
   border-radius: 10px;
-  background: #fdf2f2;
-  border: 1px solid #f5c6cb;
-  color: #991b1b;
+  background: var(--danger-surface);
+  border: 1px solid var(--danger-border);
+  color: var(--danger-fg);
   font-size: 0.82rem;
   margin-bottom: 0.75rem;
 }
@@ -347,8 +347,8 @@ function handleOpenChange(open: boolean) {
   display: inline-block;
   width: 1rem;
   height: 1rem;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
+  border: 2px solid color-mix(in srgb, var(--primary-foreground) 35%, transparent);
+  border-top-color: var(--primary-foreground);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
@@ -373,8 +373,8 @@ function handleOpenChange(open: boolean) {
   width: 3rem;
   height: 3rem;
   border-radius: 50%;
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--success-surface);
+  color: var(--success);
   font-size: 1.4rem;
   font-weight: 700;
   margin-bottom: 0.75rem;
@@ -382,7 +382,7 @@ function handleOpenChange(open: boolean) {
 
 .dialog-success__text {
   font-size: 0.9rem;
-  color: #065f46;
+  color: var(--success);
   font-weight: 500;
   margin: 0;
 }

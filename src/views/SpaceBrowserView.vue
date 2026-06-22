@@ -78,7 +78,7 @@ onMounted(async () => {
       </div>
 
       <!-- Toolbar -->
-      <div class="bg-muted/40 flex flex-col gap-2.5 rounded-xl p-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+      <div class="bg-muted/40 flex flex-col gap-2.5 rounded-xl p-3.5 shadow-[0_2px_8px_rgb(var(--shadow-color)/0.06)]">
         <div class="flex items-end gap-2 max-[480px]:flex-col max-[480px]:items-stretch">
           <Input
             v-model="searchQuery"
@@ -143,15 +143,15 @@ onMounted(async () => {
             </NativeSelect>
           </div>
           <div class="flex gap-2.5">
-            <span class="flex items-center gap-[3px] text-[0.72rem] text-[#555]">
+            <span class="flex items-center gap-[3px] text-[0.72rem] text-muted-foreground">
               <span class="size-2 shrink-0 rounded-full" :style="{ background: PERIOD_COLORS.available }"></span>
               Disponível
             </span>
-            <span class="flex items-center gap-[3px] text-[0.72rem] text-[#555]">
+            <span class="flex items-center gap-[3px] text-[0.72rem] text-muted-foreground">
               <span class="size-2 shrink-0 rounded-full" :style="{ background: PERIOD_COLORS.partial }"></span>
               Parcial
             </span>
-            <span class="flex items-center gap-[3px] text-[0.72rem] text-[#555]">
+            <span class="flex items-center gap-[3px] text-[0.72rem] text-muted-foreground">
               <span class="size-2 shrink-0 rounded-full" :style="{ background: PERIOD_COLORS.reserved }"></span>
               Ocupado
             </span>
@@ -174,9 +174,9 @@ onMounted(async () => {
     <!-- Grouped list -->
     <div v-else class="flex flex-col gap-6">
       <section v-for="[block, spaces] in groupedSpaces" :key="block">
-        <h2 class="mb-2 text-[0.78rem] font-bold tracking-[0.05em] text-[#999] uppercase">
+        <h2 class="mb-2 text-[0.78rem] font-bold tracking-[0.05em] text-muted-foreground uppercase">
           {{ block }}
-          <span class="font-normal text-[#bbb]">({{ spaces.length }})</span>
+          <span class="font-normal text-muted-foreground">({{ spaces.length }})</span>
         </h2>
         <div class="flex flex-col gap-2">
           <SpaceCard

@@ -126,7 +126,7 @@ function shortFloorLabel(name: string): string {
   backdrop-filter: blur(8px);
   padding: 6px;
   border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 12px rgb(var(--shadow-color) / 0.12);
 }
 
 .controls-separator {
@@ -149,16 +149,16 @@ function shortFloorLabel(name: string): string {
 }
 
 .ctrl-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--accent);
 }
 
 .ctrl-btn.active {
-  background: var(--color-brand);
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .ctrl-btn.active:hover {
-  background: var(--color-brand-dark);
+  background: color-mix(in srgb, var(--primary), black 12%);
 }
 
 .ctrl-btn--icon {

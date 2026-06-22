@@ -17,6 +17,7 @@ import { useDateTimeFilter, formatShortDate } from '@/composables/useDateTimeFil
 import { usePinAvailability, PERIOD_COLORS } from '@/composables/usePinAvailability';
 import { buildPinStatusLabel } from '@/composables/usePinStatusLabel';
 import { useDarkMode } from '@/composables/useDarkMode';
+import { useViewerTestHarness } from '@/composables/useViewerTestHarness';
 import type { PeriodKey, PinStatus } from '@/composables/usePinAvailability';
 import { BLOCK_TYPE_LABELS, TIME_SLOT_RANGES, type Blocking } from '@/types/reservation';
 import { logger } from '@/utils/logger';
@@ -178,16 +179,18 @@ async function applyPinColors() {
     });
     viewerRef.value?.applyBackendFilter(new Set(cachedStatusMap.keys()), colorMap);
 
-    // Update pin labels with status
-    if (viewerRef.value?.updatePinLabelStatus) {
-      cachedStatusMap.forEach(({ status, slots }, modelId) => {
-        const labelInfo = buildPinStatusLabel(status, slots, periodRange.value);
-        viewerRef.value!.updatePinLabelStatus!(modelId, labelInfo.statusText, labelInfo.statusColor);
-      });
-    }
+    updatePinLabels();
   } catch (e) {
     logger.error('Falha ao atualizar cores:', e);
   }
+}
+
+function updatePinLabels() {
+  if (!viewerRef.value?.updatePinLabelStatus) return;
+  cachedStatusMap.forEach(({ status, slots }, modelId) => {
+    const labelInfo = buildPinStatusLabel(status, slots, periodRange.value);
+    viewerRef.value!.updatePinLabelStatus!(modelId, labelInfo.statusText, labelInfo.statusColor);
+  });
 }
 
 function handlePeriodChange(period: PeriodKey) {
@@ -235,6 +238,7 @@ watch(viewerOverlayOpen, (open) => {
 
 watch(isDark, (dark) => {
   viewerRef.value?.setThemeMode(dark);
+  updatePinLabels();
 }, { immediate: true });
 
 onMounted(async () => {
@@ -312,6 +316,26 @@ function closePopup() {
   popupBlockingReason.value = null;
   popupReservationStateLoading.value = false;
 }
+
+// Dev-only: expose programmatic viewer control on window.__ufcimViewer so
+// automated browser tests can open room popups without clicking WebGL sprites.
+// Stripped from production builds (see useViewerTestHarness).
+useViewerTestHarness({
+  openRoom: (modelId: string) => {
+    viewerRef.value?.navigateToPin(modelId);
+    return handlePinClick({
+      pinId: modelId,
+      displayName: spacesByModelId.get(modelId)?.name ?? '',
+      building: spacesByModelId.get(modelId)?.block ?? '',
+      floorLevel: 0,
+    });
+  },
+  closePopup,
+  focusBuilding: (id: string | null) => viewerRef.value?.selectBuilding(id),
+  focusFloor: (level: number) => viewerRef.value?.selectFloor(level),
+  listRooms: () =>
+    [...spacesByModelId.values()].map((s) => ({ modelId: s.modelId as string, name: s.name })),
+});
 </script>
 
 <template>

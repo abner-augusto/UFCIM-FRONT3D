@@ -8,6 +8,8 @@ import {
   Legend,
 } from 'chart.js';
 import type { TurnoData } from '@/types/report';
+import { useDarkMode } from '@/composables/useDarkMode';
+import { chartColors } from '@/lib/chartColors';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -15,29 +17,39 @@ const props = defineProps<{
   turnoData: TurnoData[];
 }>();
 
-const COLORS = ['#1D9E75', '#F59E0B', '#3B82F6'];
+const { isDark } = useDarkMode();
 
-const chartData = computed(() => ({
-  labels: props.turnoData.map((t) => t.turno),
-  datasets: [
-    {
-      data: props.turnoData.map((t) => t.reservas),
-      backgroundColor: COLORS.slice(0, props.turnoData.length),
-      borderWidth: 2,
-      borderColor: 'white',
-    },
-  ],
-}));
+const chartData = computed(() => {
+  void isDark.value;
+  const c = chartColors();
+  const palette = [c.chart1, c.chart3, c.chart2];
+  return {
+    labels: props.turnoData.map((t) => t.turno),
+    datasets: [
+      {
+        data: props.turnoData.map((t) => t.reservas),
+        backgroundColor: palette.slice(0, props.turnoData.length),
+        borderWidth: 2,
+        borderColor: c.card,
+      },
+    ],
+  };
+});
 
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: 'bottom' as const,
+const chartOptions = computed(() => {
+  void isDark.value;
+  const c = chartColors();
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom' as const,
+        labels: { color: c.foreground },
+      },
     },
-  },
-};
+  };
+});
 </script>
 
 <template>
@@ -52,8 +64,8 @@ const chartOptions = {
 
 <style scoped>
 .chart-container {
-  background: white;
-  border: 1px solid #e5e5e5;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.25rem;
 }
@@ -62,7 +74,7 @@ const chartOptions = {
   margin: 0 0 1rem;
   font-size: 1rem;
   font-weight: 600;
-  color: #222;
+  color: var(--foreground);
 }
 
 .chart-wrapper {
@@ -74,7 +86,7 @@ const chartOptions = {
 
 .chart-empty {
   text-align: center;
-  color: #aaa;
+  color: var(--muted-foreground);
   padding: 4rem 0;
 }
 </style>

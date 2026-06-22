@@ -175,7 +175,7 @@ watch(() => props.open, (val) => {
 .notif-panel {
   background: var(--popover);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 8px 32px rgb(var(--shadow-color) / 0.18);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -191,7 +191,7 @@ watch(() => props.open, (val) => {
   align-items: center;
   justify-content: space-between;
   padding: 0.85rem 1rem 0.85rem 1.1rem;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   gap: 0.5rem;
 }
@@ -199,7 +199,7 @@ watch(() => props.open, (val) => {
 .notif-panel__title {
   font-weight: 700;
   font-size: 0.95rem;
-  color: #222;
+  color: var(--foreground);
 }
 
 .notif-panel__header-actions {
@@ -210,7 +210,7 @@ watch(() => props.open, (val) => {
 
 .notif-panel__mark-all {
   font-size: 0.775rem;
-  color: var(--color-brand);
+  color: var(--primary);
   padding: 0;
   white-space: nowrap;
 }
@@ -228,7 +228,7 @@ watch(() => props.open, (val) => {
 }
 
 .notif-panel__footer {
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
 
@@ -237,19 +237,19 @@ watch(() => props.open, (val) => {
   width: 100%;
   padding: 0.75rem 1rem;
   font-size: 0.825rem;
-  color: var(--color-brand);
+  color: var(--primary);
   font-weight: 600;
   text-align: center;
 }
-.notif-panel__view-all:hover { background: #f8fffe; }
+.notif-panel__view-all:hover { background: var(--accent); }
 
 .notif-panel__state {
   padding: 2rem 1rem;
   text-align: center;
-  color: #888;
+  color: var(--muted-foreground);
   font-size: 0.875rem;
 }
-.notif-panel__state--error { color: #c0392b; }
+.notif-panel__state--error { color: var(--destructive); }
 
 .notif-panel__list {
   list-style: none;
@@ -266,13 +266,13 @@ watch(() => props.open, (val) => {
   align-items: flex-start;
   padding: 0.75rem 0.875rem;
   border-radius: 8px;
-  border: 1px solid #efefef;
+  border: 1px solid var(--border);
   gap: 0.75rem;
 }
 
 .notif-panel__item--unread {
-  border-color: var(--color-brand);
-  background: #f8fffe;
+  border-color: var(--primary);
+  background: var(--accent);
 }
 
 .notif-panel__item-content { flex: 1; min-width: 0; }
@@ -285,20 +285,20 @@ watch(() => props.open, (val) => {
 
 .notif-panel__item-message {
   margin: 0 0 0.25rem;
-  color: #555;
+  color: var(--muted-foreground);
   font-size: 0.8rem;
   word-break: break-word;
 }
 
 .notif-panel__item-date {
   margin: 0;
-  color: #aaa;
+  color: var(--muted-foreground);
   font-size: 0.72rem;
 }
 
 .notif-panel__mark-read {
   font-size: 0.725rem;
-  color: var(--color-brand);
+  color: var(--primary);
   white-space: nowrap;
   padding: 0;
   flex-shrink: 0;
