@@ -104,7 +104,7 @@ const router = createRouter({
       path: '/espacos/:spaceId/relatorio',
       name: 'space-report',
       component: () => import('@/views/SpaceReportView.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, roles: CAN_VIEW_REPORTS },
     },
     {
       path: '/solicitar-convite',

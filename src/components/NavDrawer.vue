@@ -3,8 +3,11 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
-import { hasRole, CAN_BLOCK, CAN_VIEW_REPORTS, CAN_MANAGE_EQUIPMENT } from '@/utils/roles';
-import { Building2, Search, Calendar, Ban, BarChart3, Wrench, Bell, User, X } from 'lucide-vue-next';
+import { usePermissions } from '@/composables/usePermissions';
+import { Building2, Search, Calendar, Ban, BarChart3, Wrench, Bell, User } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: [] }>();
@@ -13,9 +16,7 @@ const auth = useAuthStore();
 const campus = useCampusStore();
 const router = useRouter();
 
-const canBlock = computed(() => hasRole(auth.userRole, CAN_BLOCK));
-const canViewReports = computed(() => hasRole(auth.userRole, CAN_VIEW_REPORTS));
-const canManageEquipment = computed(() => hasRole(auth.userRole, CAN_MANAGE_EQUIPMENT));
+const { canBlock, canViewReports, canManageEquipment } = usePermissions();
 
 const viewerTarget = computed(() =>
   campus.selectedCampusId
@@ -38,22 +39,21 @@ function logout() {
 function handleLinkClick() {
   emit('close');
 }
+
+function handleOpenChange(open: boolean) {
+  if (!open) emit('close');
+}
 </script>
 
 <template>
-  <div class="drawer-root">
-    <Transition name="fade">
-      <div v-if="open" class="drawer-backdrop" @click="emit('close')"></div>
-    </Transition>
+  <Sheet :open="open" @update:open="handleOpenChange">
+    <SheetContent side="left" class="drawer-content z-[var(--z-overlay)]" :show-close-button="true">
+        <SheetHeader class="drawer-header">
+          <SheetTitle class="drawer-logo">UFCIM</SheetTitle>
+        </SheetHeader>
 
-    <Transition name="drawer">
-      <div v-if="open" class="drawer-content">
-        <div class="drawer-header">
-          <span class="drawer-logo">UFCIM</span>
-          <button class="close-btn" @click="emit('close')"><X :size="20" /></button>
-        </div>
-
-        <nav class="drawer-nav">
+        <ScrollArea class="drawer-nav">
+        <nav>
           <router-link :to="viewerTarget" class="nav-item" @click="handleLinkClick">
             <span class="nav-icon"><Building2 :size="20" /></span> Maquete 3D
           </router-link>
@@ -89,44 +89,28 @@ function handleLinkClick() {
             <span class="nav-icon"><User :size="20" /></span> Perfil
           </router-link>
         </nav>
+        </ScrollArea>
 
         <div class="drawer-footer">
           <div class="user-info">
             <div class="user-avatar">{{ auth.user?.name?.[0] || 'U' }}</div>
             <span class="user-name">{{ auth.user?.name }}</span>
           </div>
-          <button class="logout-btn" @click="logout">Sair</button>
+          <Button variant="outline" class="logout-btn" @click="logout">Sair</Button>
         </div>
-      </div>
-    </Transition>
-  </div>
+    </SheetContent>
+  </Sheet>
 </template>
 
 <style scoped>
-.drawer-root {
-  position: relative;
-  z-index: 2000;
-}
-
-.drawer-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100dvh;
-  background: rgba(0, 0, 0, 0.5);
-}
-
 .drawer-content {
-  position: fixed;
-  top: 0;
-  left: 0;
   width: min(280px, 85vw);
-  height: 100dvh;
-  background: white;
+  background: var(--popover);
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 2px 0 8px rgb(var(--shadow-color) / 0.1);
+  gap: 0;
+  padding: 0;
 }
 
 .drawer-header {
@@ -135,23 +119,14 @@ function handleLinkClick() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border);
   padding-top: var(--safe-top);
 }
 
 .drawer-logo {
   font-weight: 700;
   font-size: 1.25rem;
-  color: var(--color-brand);
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  color: #777;
-  cursor: pointer;
-  padding: 0.5rem;
+  color: var(--primary);
 }
 
 .drawer-nav {
@@ -165,15 +140,15 @@ function handleLinkClick() {
   align-items: center;
   padding: 0.8rem 1.5rem;
   text-decoration: none;
-  color: #444;
+  color: var(--foreground);
   font-size: 1rem;
   gap: 12px;
   position: relative;
 }
 
 .nav-item.router-link-active {
-  color: var(--color-brand);
-  background: var(--color-brand-soft);
+  color: var(--primary);
+  background: var(--secondary);
   font-weight: 500;
 }
 
@@ -185,8 +160,8 @@ function handleLinkClick() {
 
 .notif-badge {
   margin-left: auto;
-  background: #c0392b;
-  color: white;
+  background: var(--destructive);
+  color: var(--destructive-foreground);
   font-size: 0.7rem;
   font-weight: 700;
   min-width: 18px;
@@ -200,7 +175,7 @@ function handleLinkClick() {
 
 .drawer-footer {
   padding: 1.5rem;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border);
   padding-bottom: calc(1.5rem + var(--safe-bottom));
 }
 
@@ -214,8 +189,8 @@ function handleLinkClick() {
 .user-avatar {
   width: 36px;
   height: 36px;
-  background: var(--color-brand);
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -227,7 +202,7 @@ function handleLinkClick() {
 .user-name {
   font-size: 0.95rem;
   font-weight: 500;
-  color: #333;
+  color: var(--foreground);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -235,19 +210,7 @@ function handleLinkClick() {
 
 .logout-btn {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: white;
-  color: #c0392b;
+  color: var(--destructive);
   font-weight: 600;
-  cursor: pointer;
 }
-
-/* Transitions */
-.fade-enter-active, .fade-leave-active { transition: opacity 0.25s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
-
-.drawer-enter-active, .drawer-leave-active { transition: transform 0.25s ease; }
-.drawer-enter-from, .drawer-leave-to { transform: translateX(-100%); }
 </style>

@@ -95,29 +95,35 @@ watch(() => [props.visible, props.date, props.spaces], loadHeatmap, { immediate:
 
 <template>
   <Transition name="heatmap">
-    <div v-if="visible" class="heatmap-card" :class="{ 'heatmap-card--collapsed': collapsed }">
-      <div class="heatmap-head" @click="collapsed = !collapsed">
-        <span class="heatmap-title">{{ blockName }} · {{ dateLabel }}</span>
-        <span class="heatmap-chevron"><component :is="collapsed ? ChevronDown : ChevronUp" :size="10" /></span>
-      </div>
+    <!-- Positioning is provided by the parent (.viewer-topleft stack in ViewerView). -->
+    <div v-if="visible" class="pointer-events-auto w-[185px] rounded-lg bg-background/95 px-2.5 py-2 shadow-[0_2px_8px_rgb(var(--shadow-color)/0.15)]">
+      <button
+        type="button"
+        class="flex w-full cursor-pointer items-center justify-between bg-transparent text-left"
+        :aria-expanded="!collapsed"
+        @click="collapsed = !collapsed"
+      >
+        <span class="text-[0.72rem] font-semibold text-foreground">{{ blockName }} · {{ dateLabel }}</span>
+        <span class="text-[0.65rem] text-muted-foreground"><component :is="collapsed ? ChevronDown : ChevronUp" :size="10" /></span>
+      </button>
 
-      <div v-if="!collapsed" class="heatmap-body">
-        <div v-if="loading" class="heatmap-loading">Carregando...</div>
+      <div v-if="!collapsed" class="mt-1.5">
+        <div v-if="loading" class="text-[0.7rem] text-muted-foreground">Carregando...</div>
         <template v-else>
-          <div class="heatmap-bar">
+          <div class="flex h-4 gap-px">
             <div
               v-for="hour in hours" :key="hour.hour"
-              class="heatmap-cell"
+              class="flex-1 rounded-[2px]"
               :class="hour.cssClass"
               :title="hour.tooltip"
             ></div>
           </div>
-          <div class="heatmap-axis">
+          <div class="mt-0.5 flex justify-between text-[0.55rem] text-muted-foreground">
             <span>{{ firstHour }}h</span>
             <span>{{ midHour }}h</span>
             <span>{{ lastHour }}h</span>
           </div>
-          <div class="heatmap-foot">
+          <div class="mt-1 text-[0.6rem] whitespace-nowrap text-muted-foreground">
             <strong>{{ stats.free }} livres</strong>
             · {{ stats.partial }} parciais
             · {{ stats.occupied }} ocupadas
@@ -129,73 +135,10 @@ watch(() => [props.visible, props.date, props.spaces], loadHeatmap, { immediate:
 </template>
 
 <style scoped>
-/* Positioning is provided by the parent (.viewer-topleft stack in ViewerView);
-   width below applies in both the mobile standalone and desktop stacked layouts. */
-.heatmap-card {
-  width: 185px;
-  background: rgba(255, 255, 255, 0.96);
-  border-radius: 8px;
-  padding: 8px 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  pointer-events: auto;
-}
-
-.heatmap-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-}
-
-.heatmap-title {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #333;
-}
-
-.heatmap-chevron {
-  font-size: 0.65rem;
-  color: #999;
-}
-
-.heatmap-body {
-  margin-top: 6px;
-}
-
-.heatmap-loading {
-  font-size: 0.7rem;
-  color: #999;
-}
-
-.heatmap-bar {
-  display: flex;
-  gap: 1px;
-  height: 16px;
-}
-
-.heatmap-cell {
-  flex: 1;
-  border-radius: 2px;
-}
-
-.cell--green { background: rgba(99, 153, 34, 0.5); }
-.cell--amber { background: rgba(186, 117, 23, 0.5); }
-.cell--red   { background: rgba(226, 75, 74, 0.5); }
-
-.heatmap-axis {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.55rem;
-  color: #aaa;
-  margin-top: 2px;
-}
-
-.heatmap-foot {
-  font-size: 0.6rem;
-  color: #666;
-  margin-top: 4px;
-  white-space: nowrap;
-}
+/* Dynamic occupancy cell colors (class string built in JS) + entrance transition. */
+.cell--green { background: color-mix(in srgb, var(--avail-free) 50%, transparent); }
+.cell--amber { background: color-mix(in srgb, var(--avail-blocked) 50%, transparent); }
+.cell--red   { background: color-mix(in srgb, var(--avail-reserved) 50%, transparent); }
 
 .heatmap-enter-active,
 .heatmap-leave-active {

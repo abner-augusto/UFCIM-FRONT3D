@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
 import type { OccupancyReport } from '@/types/report';
+import { useDarkMode } from '@/composables/useDarkMode';
+import { chartColors } from '@/lib/chartColors';
 import ReportFilters from '@/components/reports/ReportFilters.vue';
 import OccupancySummary from '@/components/reports/OccupancySummary.vue';
 import LineChart from '@/components/reports/LineChart.vue';
@@ -11,6 +13,7 @@ import TurnoPie from '@/components/reports/TurnoPie.vue';
 import SpacesTable from '@/components/reports/SpacesTable.vue';
 
 const auth = useAuthStore();
+const { isDark } = useDarkMode();
 
 const report = ref<OccupancyReport | null>(null);
 const loading = ref(true);
@@ -22,6 +25,18 @@ const currentFilters = ref<{
   campus: string;
   department: string;
 } | null>(null);
+
+const reservationsDataset = computed(() => {
+  void isDark.value;
+  const colors = chartColors();
+  return [
+    {
+      label: 'Reservas',
+      data: report.value?.spaces.map((s) => s.reservas) ?? [],
+      backgroundColor: colors.chart1,
+    },
+  ];
+});
 
 function formatFilters(filters: { startDate: string; endDate: string; campus: string; department: string }) {
   const params: Record<string, string> = {};
@@ -63,74 +78,27 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="reports-view">
-    <h1>Relatório de Ocupação</h1>
+  <div class="mx-auto flex max-w-[960px] flex-col gap-6 px-4 py-6">
+    <h1 class="m-0 text-xl font-semibold text-foreground">Relatório de Ocupação</h1>
 
     <ReportFilters @apply="handleApply" />
 
-    <div v-if="loading" class="state-msg">Carregando relatório...</div>
-    <div v-else-if="errorMsg" class="state-error">{{ errorMsg }}</div>
+    <div v-if="loading" class="text-muted-foreground p-8 text-center text-[0.95rem]">Carregando relatório...</div>
+    <div v-else-if="errorMsg" class="text-destructive p-8 text-center text-[0.95rem]">{{ errorMsg }}</div>
     <template v-else-if="report">
       <OccupancySummary :summary="report.summary" />
 
-      <div class="charts-grid">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <LineChart :data="report.daily" />
         <TurnoPie :turno-data="report.turnos" />
       </div>
 
       <BarChart
         :labels="report.spaces.map((s) => s.nome || s.numero)"
-        :datasets="[
-          {
-            label: 'Reservas',
-            data: report.spaces.map((s) => s.reservas),
-            backgroundColor: '#1D9E75',
-          },
-        ]"
+        :datasets="reservationsDataset"
       />
 
       <SpacesTable :spaces="report.spaces" />
     </template>
   </div>
 </template>
-
-<style scoped>
-.reports-view {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 1.5rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-h1 {
-  margin: 0;
-  font-size: 1.3rem;
-  color: #111;
-}
-
-.state-msg,
-.state-error {
-  text-align: center;
-  padding: 2rem;
-  color: #888;
-  font-size: 0.95rem;
-}
-
-.state-error {
-  color: #c0392b;
-}
-
-.charts-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-@media (max-width: 640px) {
-  .charts-grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { Search } from 'lucide-vue-next';
+import { useViewerSync } from '@/composables/useViewerSync';
+import { Button } from '@/components/ui/button';
 
 interface Building {
   id: string;
@@ -33,37 +34,10 @@ defineEmits<{
   'open-search': [];
 }>();
 
-const activeBuildingId = ref<string | null>(null);
-const activeFloorLevel = ref<number | null>(null);
-const buildings = ref<Building[]>([]);
-
-const floors = ref<Floor[]>([]);
-
-function syncState() {
-  if (!props.viewerRef || !props.ready) return;
-  activeBuildingId.value = props.viewerRef.getActiveBuildingId();
-  activeFloorLevel.value = props.viewerRef.getActiveFloorLevel();
-  if (buildings.value.length === 0) {
-    buildings.value = props.viewerRef.getBuildingsList();
-  }
-  floors.value = activeBuildingId.value
-    ? props.viewerRef.getFloorsForBuilding(activeBuildingId.value)
-    : [];
-}
-
-function onBuildingChanged(e: Event) {
-  const detail = (e as CustomEvent).detail;
-  activeBuildingId.value = detail.buildingID;
-  activeFloorLevel.value = detail.activeFloor;
-  floors.value = detail.buildingID
-    ? props.viewerRef?.getFloorsForBuilding(detail.buildingID) ?? []
-    : [];
-}
-
-function onFloorChanged(e: Event) {
-  const detail = (e as CustomEvent).detail;
-  activeFloorLevel.value = detail.level;
-}
+const { activeBuildingId, activeFloorLevel, buildings, floors } = useViewerSync(
+  () => props.viewerRef,
+  () => props.ready,
+);
 
 function selectBuilding(id: string | null) {
   props.viewerRef?.selectBuilding(id);
@@ -81,24 +55,7 @@ function shortFloorLabel(name: string): string {
   return name.substring(0, 2);
 }
 
-onMounted(() => {
-  window.addEventListener('ufcim:building-changed', onBuildingChanged);
-  window.addEventListener('ufcim:floor-changed', onFloorChanged);
-  if (props.ready) syncState();
-});
 
-onUnmounted(() => {
-  window.removeEventListener('ufcim:building-changed', onBuildingChanged);
-  window.removeEventListener('ufcim:floor-changed', onFloorChanged);
-});
-
-watch(() => props.ready, (isReady) => {
-  if (isReady) syncState();
-}, { immediate: true });
-
-watch(() => props.viewerRef, (newRef) => {
-  if (newRef && props.ready) syncState();
-}, { immediate: true });
 </script>
 
 <template>
@@ -107,32 +64,35 @@ watch(() => props.viewerRef, (newRef) => {
       <!-- Floor buttons (above buildings, only when a building is selected) -->
       <Transition name="floor-slide">
         <div v-if="activeBuildingId && floors.length > 0" class="controls-row controls-row--floors">
-          <button
+          <Button
             v-for="f in floors" :key="f.level"
+            variant="ghost"
             class="ctrl-btn ctrl-btn--sm"
             :class="{ active: f.level === activeFloorLevel }"
             @click="selectFloor(f.level)"
-          >{{ shortFloorLabel(f.name) }}</button>
+          >{{ shortFloorLabel(f.name) }}</Button>
         </div>
       </Transition>
 
       <!-- Building buttons -->
       <div class="controls-row">
-        <button
+        <Button
+          variant="ghost"
           class="ctrl-btn"
           :class="{ active: activeBuildingId === null }"
           @click="selectBuilding(null)"
-        >Todos</button>
-        <button
+        >Todos</Button>
+        <Button
           v-for="b in buildings" :key="b.id"
+          variant="ghost"
           class="ctrl-btn"
           :class="{ active: b.id === activeBuildingId }"
           @click="selectBuilding(b.id)"
-        >{{ b.name }}</button>
+        >{{ b.name }}</Button>
         <div class="controls-separator"></div>
-        <button class="ctrl-btn ctrl-btn--icon" @click="$emit('open-search')" title="Pesquisar">
+        <Button variant="ghost" size="icon" class="ctrl-btn ctrl-btn--icon" @click="$emit('open-search')" title="Pesquisar">
           <Search :size="18" />
-        </button>
+        </Button>
       </div>
     </div>
   </Transition>
@@ -148,7 +108,7 @@ watch(() => props.viewerRef, (newRef) => {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  z-index: 10;
+  z-index: var(--z-chrome);
   pointer-events: auto;
 }
 
@@ -162,16 +122,16 @@ watch(() => props.viewerRef, (newRef) => {
 .controls-row {
   display: flex;
   gap: 5px;
-  background: rgba(255, 255, 255, 0.88);
+  background: color-mix(in oklab, var(--popover) 88%, transparent);
   backdrop-filter: blur(8px);
   padding: 6px;
   border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 12px rgb(var(--shadow-color) / 0.12);
 }
 
 .controls-separator {
   width: 1px;
-  background: #e0e0e0;
+  background: var(--border);
   margin: 4px 2px;
   align-self: stretch;
 }
@@ -179,29 +139,26 @@ watch(() => props.viewerRef, (newRef) => {
 .ctrl-btn {
   padding: 8px 14px;
   border-radius: 8px;
-  border: none;
   background: transparent;
-  color: #333;
+  color: var(--foreground);
   font-size: 13px;
   font-weight: 500;
-  cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
   min-height: 36px;
-  font-family: inherit;
 }
 
 .ctrl-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--accent);
 }
 
 .ctrl-btn.active {
-  background: var(--color-brand);
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .ctrl-btn.active:hover {
-  background: var(--color-brand-dark);
+  background: color-mix(in srgb, var(--primary), black 12%);
 }
 
 .ctrl-btn--icon {

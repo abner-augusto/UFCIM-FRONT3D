@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useViewerSync } from '@/composables/useViewerSync';
 import { PERIOD_LABELS, type PeriodKey } from '@/utils/period';
 import { formatShortDate, createDateChips } from '@/composables/useDateTimeFilter';
 import { toLocalISODate } from '@/utils/date';
 import { Building2, Search, Maximize, Calendar } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
 
 interface Building {
   id: string;
@@ -44,22 +46,18 @@ const emit = defineEmits<{
 
 const isToday = computed(() => props.selectedDate === toLocalISODate());
 
-const activeBuildingId = ref<string | null>(null);
-const activeFloorLevel = ref<number | null>(null);
+const { activeBuildingId, activeFloorLevel, buildings, floors } = useViewerSync(
+  () => props.viewerRef,
+  () => props.ready,
+);
 const dateTimePopoverOpen = ref(false);
 const buildingPopoverOpen = ref(false);
-const buildings = ref<Building[]>([]);
 
 const PERIODS: { key: PeriodKey; label: string; range: string }[] = [
   { key: 'morning', label: 'Manhã', range: '07h–12h' },
   { key: 'afternoon', label: 'Tarde', range: '13h–18h' },
   { key: 'evening', label: 'Noite', range: '19h–22h' },
 ];
-
-const floors = computed(() => {
-  if (!activeBuildingId.value || !props.viewerRef) return [];
-  return props.viewerRef.getFloorsForBuilding(activeBuildingId.value);
-});
 
 const floorsReversed = computed(() => {
   return [...floors.value].sort((a, b) => b.level - a.level);
@@ -179,88 +177,53 @@ function handleDocumentClick(e: MouseEvent) {
   }
 }
 
-function syncState() {
-  if (!props.viewerRef || !props.ready) return;
-  activeBuildingId.value = props.viewerRef.getActiveBuildingId();
-  activeFloorLevel.value = props.viewerRef.getActiveFloorLevel();
-  if (buildings.value.length === 0) {
-    buildings.value = props.viewerRef.getBuildingsList();
-  }
-}
-
-const onBuildingChanged = (e: Event) => {
-  const detail = (e as CustomEvent).detail;
-  activeBuildingId.value = detail.buildingID;
-  activeFloorLevel.value = detail.activeFloor;
-};
-
-const onFloorChanged = (e: Event) => {
-  const detail = (e as CustomEvent).detail;
-  activeFloorLevel.value = detail.level;
-};
-
 onMounted(() => {
-  window.addEventListener('ufcim:building-changed', onBuildingChanged);
-  window.addEventListener('ufcim:floor-changed', onFloorChanged);
   document.addEventListener('mousedown', handleDocumentClick);
-  
-  if (props.ready) {
-    syncState();
-  }
 });
 
 onUnmounted(() => {
-  window.removeEventListener('ufcim:building-changed', onBuildingChanged);
-  window.removeEventListener('ufcim:floor-changed', onFloorChanged);
   document.removeEventListener('mousedown', handleDocumentClick);
 });
-
-watch(() => props.ready, (isReady) => {
-  if (isReady) syncState();
-}, { immediate: true });
-
-watch(() => props.viewerRef, (newRef) => {
-  if (newRef && props.ready) syncState();
-}, { immediate: true });
 </script>
 
 <template>
   <div class="rail-root">
     <!-- top stack: datetime, building, search -->
     <div class="rail-stack rail-stack--top">
-      <button class="rail-btn rail-btn--wide" :class="{ active: dateTimePopoverOpen }" @click="toggleDateTime" :title="dateTimeBtnLabel">
+      <Button variant="ghost" class="rail-btn rail-btn--wide" :class="{ active: dateTimePopoverOpen }" @click="toggleDateTime" :title="dateTimeBtnLabel">
         <span class="rail-btn-label">{{ dateTimeBtnLabel }}</span>
-      </button>
-      <button class="rail-btn" :class="{ active: buildingPopoverOpen }" @click="toggleBuilding" title="Edifício"><Building2 :size="20" /></button>
-      <button class="rail-btn" @click="$emit('open-search')" title="Pesquisar"><Search :size="20" /></button>
+      </Button>
+      <Button variant="ghost" size="icon" class="rail-btn" :class="{ active: buildingPopoverOpen }" @click="toggleBuilding" title="Edifício"><Building2 :size="20" /></Button>
+      <Button variant="ghost" size="icon" class="rail-btn" @click="$emit('open-search')" title="Pesquisar"><Search :size="20" /></Button>
     </div>
 
     <!-- floor stack: only when a building is selected -->
     <Transition name="floor-stack">
       <div v-if="activeBuildingId" class="floor-stack">
-        <button v-for="f in floorsReversed" :key="f.level"
+        <Button v-for="f in floorsReversed" :key="f.level"
+                variant="ghost"
                 class="floor-btn"
                 :class="{ active: f.level === activeFloorLevel }"
                 @click="onFloorPick(f.level)">
           {{ shortFloorLabel(f.name) }}
-        </button>
+        </Button>
       </div>
     </Transition>
 
     <!-- bottom: fullscreen toggle -->
     <div class="rail-stack rail-stack--bottom">
-      <button class="rail-btn" :class="{ active: fullscreen }"
-              @click="$emit('update:fullscreen', !fullscreen)" title="Tela cheia"><Maximize :size="20" /></button>
+      <Button variant="ghost" size="icon" class="rail-btn" :class="{ active: fullscreen }"
+              @click="$emit('update:fullscreen', !fullscreen)" title="Tela cheia"><Maximize :size="20" /></Button>
     </div>
 
     <!-- breadcrumb pill -->
     <div class="breadcrumb-pill" :aria-label="ariaLabel">
-      <button class="crumb crumb--strong" @click="toggleDateTime">{{ isToday ? 'Hoje' : formatShortDate(selectedDate) }}</button>
+      <Button variant="ghost" class="crumb crumb--strong" @click="toggleDateTime">{{ isToday ? 'Hoje' : formatShortDate(selectedDate) }}</Button>
       <span class="dot">·</span>
       <span class="crumb crumb--passive">{{ periodLabel }}</span>
       <template v-if="activeBuildingId">
         <span class="dot">·</span>
-        <button class="crumb" @click="toggleBuilding">{{ buildingName }}</button>
+        <Button variant="ghost" class="crumb" @click="toggleBuilding">{{ buildingName }}</Button>
       </template>
       <template v-if="floorName">
         <span class="dot">·</span>
@@ -276,16 +239,18 @@ watch(() => props.viewerRef, (newRef) => {
             <span>Data</span>
           </div>
           <div class="popover-date-chips">
-            <button
+            <Button
               v-for="d in dateChips" :key="d.value"
+              type="button"
+              variant="ghost"
               class="popover-item popover-item--chip"
               :class="{ active: d.value === selectedDate }"
               @click="onDatePick(d.value)"
-            >{{ d.label }}</button>
+            >{{ d.label }}</Button>
           </div>
-          <button class="popover-item popover-item--full" @click="openDatePicker">
+          <Button type="button" variant="ghost" class="popover-item popover-item--full" @click="openDatePicker">
             <Calendar :size="14" style="vertical-align: -2px" /> Escolher outra data
-          </button>
+          </Button>
           <input
             ref="hiddenDateRef"
             type="date"
@@ -302,10 +267,12 @@ watch(() => props.viewerRef, (newRef) => {
             <span>Período</span>
             <span v-if="periodAutoDetected" class="popover-auto-tag">automático</span>
           </div>
-          <button v-for="p in PERIODS" :key="p.key"
+          <Button v-for="p in PERIODS" :key="p.key"
+                  type="button"
+                  variant="ghost"
                   class="popover-item"
                   :class="{ active: p.key === selectedPeriod }"
-                  @click="onPeriodPick(p.key)">{{ p.label }} · {{ p.range }}</button>
+                  @click="onPeriodPick(p.key)">{{ p.label }} · {{ p.range }}</Button>
         </div>
       </div>
     </Transition>
@@ -314,11 +281,13 @@ watch(() => props.viewerRef, (newRef) => {
     <Transition name="popover">
       <div v-if="buildingPopoverOpen" ref="buildingRef" class="popover popover--building">
         <div class="popover-grid">
-          <button class="popover-item" :class="{ active: !activeBuildingId }" @click="onBuildingPick(null)">Todos</button>
-          <button v-for="b in buildings" :key="b.id"
+          <Button type="button" variant="ghost" class="popover-item" :class="{ active: !activeBuildingId }" @click="onBuildingPick(null)">Todos</Button>
+          <Button v-for="b in buildings" :key="b.id"
+                  type="button"
+                  variant="ghost"
                   class="popover-item"
                   :class="{ active: b.id === activeBuildingId }"
-                  @click="onBuildingPick(b.id)">{{ b.name }}</button>
+                  @click="onBuildingPick(b.id)">{{ b.name }}</Button>
         </div>
       </div>
     </Transition>
@@ -330,7 +299,7 @@ watch(() => props.viewerRef, (newRef) => {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 250;
+  z-index: var(--z-chrome);
   transform: translate3d(0, 0, 0);
 }
 
@@ -361,15 +330,10 @@ watch(() => props.viewerRef, (newRef) => {
 .rail-btn {
   width: var(--rail-w);
   height: var(--rail-w);
-  background: white;
-  border: none;
+  background: var(--popover);
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgb(var(--shadow-color) / 0.15);
   font-size: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
   transition: all 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 }
@@ -388,8 +352,8 @@ watch(() => props.viewerRef, (newRef) => {
 }
 
 .rail-btn.active {
-  background: var(--color-brand);
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .floor-stack {
@@ -405,32 +369,27 @@ watch(() => props.viewerRef, (newRef) => {
 .floor-btn {
   width: 36px;
   height: 36px;
-  background: white;
-  border: none;
+  background: var(--popover);
   border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 6px rgb(var(--shadow-color) / 0.12);
   font-size: 13px;
   font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .floor-btn.active {
-  background: var(--color-brand);
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .breadcrumb-pill {
   position: absolute;
   bottom: 8px;
   left: 8px;
-  background: rgba(255, 255, 255, 0.94);
+  background: color-mix(in oklab, var(--popover) 94%, transparent);
   padding: 6px 10px;
   border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgb(var(--shadow-color) / 0.1);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -438,12 +397,11 @@ watch(() => props.viewerRef, (newRef) => {
 }
 
 .crumb {
-  border: none;
-  background: none;
   padding: 0;
   font-size: 0.78rem;
-  color: #333;
-  cursor: pointer;
+  color: var(--foreground);
+  height: auto;
+  min-height: 0;
 }
 
 .crumb--strong {
@@ -455,18 +413,18 @@ watch(() => props.viewerRef, (newRef) => {
 }
 
 .dot {
-  color: #ccc;
+  color: var(--border);
   font-weight: bold;
 }
 
 .popover {
   position: absolute;
-  background: white;
+  background: var(--popover);
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 20px rgb(var(--shadow-color) / 0.2);
   padding: 8px;
   pointer-events: auto;
-  z-index: 300;
+  z-index: var(--z-popover);
 }
 
 .popover--datetime {
@@ -494,7 +452,7 @@ watch(() => props.viewerRef, (newRef) => {
   font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: #999;
+  color: var(--muted-foreground);
   padding: 2px 4px;
   display: flex;
   justify-content: space-between;
@@ -506,14 +464,14 @@ watch(() => props.viewerRef, (newRef) => {
   font-weight: 400;
   text-transform: none;
   padding: 1px 6px;
-  background: #e8f5f0;
-  color: #1D9E75;
+  background: var(--secondary);
+  color: var(--secondary-foreground);
   border-radius: 999px;
 }
 
 .popover-divider {
   height: 1px;
-  background: #eee;
+  background: var(--border);
   margin: 6px -4px;
 }
 
@@ -524,14 +482,14 @@ watch(() => props.viewerRef, (newRef) => {
 
 .popover-item {
   padding: 10px;
-  border: none;
-  background: #f5f5f5;
+  background: var(--muted);
   border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 500;
   text-align: center;
-  cursor: pointer;
   transition: all 0.2s ease;
+  height: auto;
+  min-height: var(--tap-min);
 }
 
 .popover-item--chip {
@@ -542,7 +500,7 @@ watch(() => props.viewerRef, (newRef) => {
 .popover-item--full {
   text-align: left;
   font-size: 0.78rem;
-  color: #666;
+  color: var(--muted-foreground);
 }
 
 /* Kept in the DOM (not display:none) so showPicker() can anchor and open. */
@@ -559,8 +517,8 @@ watch(() => props.viewerRef, (newRef) => {
 }
 
 .popover-item.active {
-  background: var(--color-brand);
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .popover-grid {

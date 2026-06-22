@@ -60,8 +60,8 @@ function taxaClass(taxa: number): string {
 
 <style scoped>
 .table-container {
-  background: white;
-  border: 1px solid #e5e5e5;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.25rem;
 }
@@ -70,7 +70,7 @@ function taxaClass(taxa: number): string {
   margin: 0 0 1rem;
   font-size: 1rem;
   font-weight: 600;
-  color: #222;
+  color: var(--foreground);
 }
 
 .table-scroll {
@@ -86,23 +86,23 @@ function taxaClass(taxa: number): string {
 .spaces-table th {
   text-align: left;
   font-weight: 600;
-  color: #888;
+  color: var(--muted-foreground);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 0.6rem 0.75rem;
-  border-bottom: 2px solid #eee;
+  border-bottom: 2px solid var(--border);
 }
 
 .spaces-table td {
   padding: 0.6rem 0.75rem;
-  border-bottom: 1px solid #f5f5f5;
-  color: #333;
+  border-bottom: 1px solid var(--border);
+  color: var(--foreground);
 }
 
 .cell-name {
   font-weight: 500;
-  color: #111;
+  color: var(--foreground);
 }
 
 .space-row {
@@ -111,7 +111,7 @@ function taxaClass(taxa: number): string {
 }
 
 .space-row:hover {
-  background: #f0f7f3;
+  background: var(--accent);
 }
 
 .taxa-badge {
@@ -123,23 +123,23 @@ function taxaClass(taxa: number): string {
 }
 
 .taxa--alta {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--danger-surface);
+  color: var(--danger-fg);
 }
 
 .taxa--media {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--warning-surface);
+  color: var(--warning);
 }
 
 .taxa--baixa {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--success-surface);
+  color: var(--success);
 }
 
 .empty-row {
   text-align: center;
-  color: #aaa;
+  color: var(--muted-foreground);
   padding: 2rem !important;
 }
 </style>

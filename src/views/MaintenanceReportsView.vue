@@ -5,12 +5,14 @@ import { useAuthStore } from '@/stores/auth';
 import { api, ApiError } from '@/services/api';
 import type { EquipmentReport } from '@/types/equipment-report';
 import { REPORT_STATUS_LABELS } from '@/types/equipment-report';
-import { hasRole, CAN_MANAGE_EQUIPMENT } from '@/utils/roles';
+import { usePermissions } from '@/composables/usePermissions';
 import { campuses } from '@/data/campuses';
 import { MapPin } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
 
 const router = useRouter();
 const auth = useAuthStore();
+const { canManageEquipment } = usePermissions();
 
 type StatusFilter = EquipmentReport['status'];
 
@@ -34,7 +36,7 @@ const errorMsg = ref<string | null>(null);
 const acting = ref<string | null>(null);
 
 onMounted(async () => {
-  if (!hasRole(auth.userRole, CAN_MANAGE_EQUIPMENT)) {
+  if (!canManageEquipment.value) {
     router.replace({ name: 'campus-select' });
     return;
   }
@@ -167,23 +169,24 @@ function viewerLink(report: EquipmentReport) {
 <template>
   <div class="maint-reports-view">
     <div class="view-header">
-      <button class="back-btn" @click="router.back()">← Voltar</button>
+      <Button variant="ghost" class="text-primary px-0" @click="router.back()">← Voltar</Button>
       <h1>Chamados de Manutenção</h1>
     </div>
 
     <div class="status-tabs" role="tablist">
-      <button
+      <Button
         v-for="tab in STATUS_TABS"
         :key="tab.value"
         type="button"
-        class="status-tab"
-        :class="{ 'status-tab--active': activeStatus === tab.value }"
+        size="sm"
+        :variant="activeStatus === tab.value ? 'default' : 'outline'"
+        class="shrink-0 rounded-full"
         role="tab"
         :aria-selected="activeStatus === tab.value"
         @click="selectStatus(tab.value)"
       >
         {{ tab.label }}
-      </button>
+      </Button>
     </div>
 
     <div v-if="loading" class="state-msg">Carregando chamados...</div>
@@ -226,28 +229,33 @@ function viewerLink(report: EquipmentReport) {
           v-if="r.status === 'pending' || r.status === 'acknowledged'"
           class="report-card__actions"
         >
-          <button
+          <Button
             v-if="r.status === 'pending'"
-            class="action-btn action-btn--neutral"
+            variant="outline"
+            size="sm"
             :disabled="acting === r.id"
             @click="handleAcknowledge(r)"
           >
             Marcar em análise
-          </button>
-          <button
-            class="action-btn action-btn--resolve"
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            class="border-primary text-primary hover:bg-primary/10 hover:text-primary"
             :disabled="acting === r.id"
             @click="handleResolve(r)"
           >
             Resolver
-          </button>
-          <button
-            class="action-btn action-btn--dismiss"
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            class="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
             :disabled="acting === r.id"
             @click="handleDismiss(r)"
           >
             Descartar
-          </button>
+          </Button>
         </div>
       </li>
     </ul>
@@ -270,14 +278,6 @@ function viewerLink(report: EquipmentReport) {
   margin: 0;
   font-size: 1.3rem;
 }
-.back-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #1D9E75;
-  font-size: 0.95rem;
-  padding: 0;
-}
 
 /* Status tabs */
 .status-tabs {
@@ -286,26 +286,6 @@ function viewerLink(report: EquipmentReport) {
   margin-bottom: 1.25rem;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-}
-.status-tab {
-  flex-shrink: 0;
-  padding: 0.4rem 0.85rem;
-  border: 1px solid #e5e5e5;
-  border-radius: 999px;
-  background: white;
-  color: #666;
-  font-size: 0.82rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-.status-tab:hover {
-  background: #f9fafb;
-}
-.status-tab--active {
-  background: var(--color-brand-soft, #e6f6ef);
-  border-color: var(--color-brand, #1D9E75);
-  color: var(--color-brand, #1D9E75);
 }
 
 /* List */
@@ -319,9 +299,9 @@ function viewerLink(report: EquipmentReport) {
 }
 
 .report-card {
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: white;
+  background: var(--card);
   padding: 1rem 1.25rem;
 }
 
@@ -339,32 +319,32 @@ function viewerLink(report: EquipmentReport) {
   font-weight: 600;
   white-space: nowrap;
 }
-.severity-badge--minor { background: #fef9e7; color: #7d6608; }
-.severity-badge--major { background: #fdf2f2; color: #922b21; }
-.severity-badge--blocking { background: #fce4ec; color: #7b241c; }
+.severity-badge--minor { background: var(--warning-surface); color: var(--warning); }
+.severity-badge--major { background: var(--danger-surface); color: var(--danger-fg); }
+.severity-badge--blocking { background: color-mix(in srgb, var(--destructive) 15%, transparent); color: var(--destructive); }
 
-.status-badge--pending { background: #fff4e5; color: #9a5b00; }
-.status-badge--acknowledged { background: #e7f0ff; color: #1e40af; }
-.status-badge--resolved { background: #e7f7ef; color: #1D7A5A; }
-.status-badge--dismissed { background: #f0f0f0; color: #777; }
+.status-badge--pending { background: var(--warning-surface); color: var(--warning); }
+.status-badge--acknowledged { background: var(--info-surface); color: var(--info); }
+.status-badge--resolved { background: var(--success-surface); color: var(--success); }
+.status-badge--dismissed { background: var(--muted); color: var(--muted-foreground); }
 
 .report-card__title {
   margin: 0 0 0.35rem;
   font-size: 1rem;
   font-weight: 600;
-  color: #111;
+  color: var(--foreground);
 }
 .report-card__space {
   margin: 0 0 0.6rem;
   font-weight: 400;
-  color: #777;
+  color: var(--muted-foreground);
   font-size: 0.85rem;
 }
 
 .report-card__desc {
   margin: 0 0 0.6rem;
   font-size: 0.88rem;
-  color: #444;
+  color: var(--foreground);
   line-height: 1.5;
   white-space: pre-wrap;
 }
@@ -374,7 +354,7 @@ function viewerLink(report: EquipmentReport) {
   flex-wrap: wrap;
   gap: 0.25rem 0.75rem;
   font-size: 0.76rem;
-  color: #999;
+  color: var(--muted-foreground);
 }
 
 .report-card__viewer-link {
@@ -384,7 +364,7 @@ function viewerLink(report: EquipmentReport) {
   margin-top: 0.6rem;
   font-size: 0.82rem;
   font-weight: 500;
-  color: var(--color-brand, #1D9E75);
+  color: var(--primary);
   text-decoration: none;
 }
 .report-card__viewer-link:hover {
@@ -394,14 +374,14 @@ function viewerLink(report: EquipmentReport) {
 .report-card__reason {
   margin: 0.6rem 0 0;
   font-size: 0.82rem;
-  color: #666;
-  background: #f9fafb;
+  color: var(--muted-foreground);
+  background: var(--muted);
   border-radius: 8px;
   padding: 0.5rem 0.65rem;
 }
 .report-card__reason-label {
   font-weight: 600;
-  color: #555;
+  color: var(--foreground);
 }
 
 /* Actions */
@@ -411,29 +391,9 @@ function viewerLink(report: EquipmentReport) {
   gap: 0.5rem;
   margin-top: 0.85rem;
 }
-.action-btn {
-  font-size: 0.82rem;
-  padding: 0.45rem 0.9rem;
-  border-radius: 8px;
-  border: 1.5px solid;
-  background: none;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background 0.15s;
-}
-.action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.action-btn--neutral { border-color: #c7c7c7; color: #555; }
-.action-btn--neutral:hover:not(:disabled) { background: #f5f5f5; }
-.action-btn--resolve { border-color: #1D9E75; color: #1D7A5A; }
-.action-btn--resolve:hover:not(:disabled) { background: #eafaf3; }
-.action-btn--dismiss { border-color: #c0392b; color: #c0392b; }
-.action-btn--dismiss:hover:not(:disabled) { background: #fff0f0; }
 
 /* States */
-.state-msg { color: #888; font-size: 0.9rem; }
-.state-error { color: #c0392b; font-size: 0.9rem; }
-.state-empty { color: #888; font-size: 0.9rem; text-align: center; padding: 3rem 0; }
+.state-msg { color: var(--muted-foreground); font-size: 0.9rem; }
+.state-error { color: var(--destructive); font-size: 0.9rem; }
+.state-empty { color: var(--muted-foreground); font-size: 0.9rem; text-align: center; padding: 3rem 0; }
 </style>

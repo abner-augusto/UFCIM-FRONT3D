@@ -25,10 +25,12 @@
 :root,
 body {
   font-family: 'Roboto', 'Segoe UI', sans-serif;
-  color-scheme: light; /* hint extensions to keep light mode */
-  background-color: #ffffff;
-  color: #0f1e22;
 }
+/* Theme background/text color and color-scheme are owned by the Tailwind base
+   layer in src/styles/tokens.css (bg-background / text-foreground + the .dark
+   overrides). Do NOT hard-code them here: this file is linked statically from
+   index.html, outside the Tailwind pipeline, so any color set here wins over
+   @layer base and breaks dark mode (body stays white, header icons inherit dark). */
 
 /* Legacy floor-UI styles removed — now handled by ViewerDesktopControls.vue */
 

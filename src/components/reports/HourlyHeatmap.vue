@@ -3,20 +3,20 @@ defineProps<{
   data: Array<{ hour: string; occupancyRate: number }>;
 }>();
 
+// Inline DOM style bindings, so CSS tokens + color-mix resolve directly.
 function opacity(rate: number): string {
-  if (rate >= 75) return 'rgba(226, 75, 74, 0.85)';
-  if (rate >= 50) return 'rgba(226, 75, 74, 0.55)';
-  if (rate >= 25) return 'rgba(186, 117, 23, 0.55)';
-  if (rate >= 10) return 'rgba(99, 153, 34, 0.5)';
-  return 'rgba(99, 153, 34, 0.2)';
+  if (rate >= 75) return 'color-mix(in srgb, var(--avail-reserved) 85%, transparent)';
+  if (rate >= 50) return 'color-mix(in srgb, var(--avail-reserved) 55%, transparent)';
+  if (rate >= 25) return 'color-mix(in srgb, var(--avail-blocked) 55%, transparent)';
+  if (rate >= 10) return 'color-mix(in srgb, var(--avail-free) 50%, transparent)';
+  return 'color-mix(in srgb, var(--avail-free) 20%, transparent)';
 }
 
 function color(rate: number): string {
-  if (rate >= 75) return '#e24b4a';
-  if (rate >= 50) return '#c0392b';
-  if (rate >= 25) return '#ba7517';
-  if (rate >= 10) return '#639922';
-  return '#639922';
+  if (rate >= 75) return 'var(--avail-reserved)';
+  if (rate >= 50) return 'var(--color-danger)';
+  if (rate >= 25) return 'var(--avail-blocked)';
+  return 'var(--avail-free)';
 }
 </script>
 
@@ -46,8 +46,8 @@ function color(rate: number): string {
 
 <style scoped>
 .heatmap-container {
-  background: white;
-  border: 1px solid #e5e5e5;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1rem;
 }
@@ -81,14 +81,14 @@ function color(rate: number): string {
 
 .heatbar-label {
   font-size: 0.6rem;
-  color: #999;
+  color: var(--muted-foreground);
   margin-top: 4px;
   white-space: nowrap;
 }
 
 .heatmap-empty {
   text-align: center;
-  color: #aaa;
+  color: var(--muted-foreground);
   padding: 2rem 0;
 }
 </style>

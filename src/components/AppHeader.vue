@@ -3,10 +3,20 @@ import { ref, computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
 import { useRouter } from 'vue-router';
-import { hasRole, CAN_BLOCK, CAN_ADMIN, CAN_VIEW_REPORTS, CAN_MANAGE_EQUIPMENT } from '@/utils/roles';
+import { usePermissions } from '@/composables/usePermissions';
+import { useDarkMode } from '@/composables/useDarkMode';
 import NavDrawer from './NavDrawer.vue';
 import NotificationsPanel from './NotificationsPanel.vue';
-import { Menu, Bell } from 'lucide-vue-next';
+import { Menu, Bell, Moon, Sun } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const authStore = useAuthStore();
 const campusStore = useCampusStore();
@@ -14,11 +24,10 @@ const router = useRouter();
 
 const drawerOpen = ref(false);
 const notifOpen = ref(false);
+const { isDark, toggleDarkMode } = useDarkMode();
+const themeToggleLabel = computed(() => isDark.value ? 'Ativar tema claro' : 'Ativar tema escuro');
 
-const canBlock = computed(() => hasRole(authStore.userRole, CAN_BLOCK));
-const canAdmin = computed(() => hasRole(authStore.userRole, CAN_ADMIN));
-const canViewReports = computed(() => hasRole(authStore.userRole, CAN_VIEW_REPORTS));
-const canManageEquipment = computed(() => hasRole(authStore.userRole, CAN_MANAGE_EQUIPMENT));
+const { canBlock, canAdmin, canViewReports, canManageEquipment } = usePermissions();
 const adminUrl = '/admin';
 const viewerRoute = computed(() =>
   campusStore.selectedCampusId
@@ -41,7 +50,7 @@ function logout() {
   <header class="app-header">
     <div class="header-content">
       <!-- Tablet Hamburger (481-1023px) -->
-      <button class="hamburger-btn" @click="drawerOpen = true"><Menu :size="24" /></button>
+      <Button variant="ghost" size="icon" class="hamburger-btn" aria-label="Abrir menu" @click="drawerOpen = true"><Menu :size="24" /></Button>
 
       <div class="header-left">
         <router-link to="/campus" class="header-logo">UFCIM</router-link>
@@ -61,24 +70,55 @@ function logout() {
       <div class="header-right">
         <!-- Tablet/Desktop User Info -->
         <div class="user-info-desktop">
-          <button class="desktop-notif" @click="notifOpen = !notifOpen">
+          <Button
+            variant="ghost"
+            size="icon"
+            class="theme-toggle"
+            :aria-label="themeToggleLabel"
+            :aria-pressed="isDark"
+            @click="toggleDarkMode"
+          >
+            <Sun v-if="isDark" :size="20" />
+            <Moon v-else :size="20" />
+          </Button>
+          <Button variant="ghost" size="icon" class="desktop-notif" aria-label="Abrir notificações" @click="notifOpen = !notifOpen">
             <Bell :size="20" />
             <span v-if="authStore.unreadCount > 0" class="notif-badge">
               {{ authStore.unreadCount >= 100 ? '99+' : authStore.unreadCount }}
             </span>
-          </button>
-          <router-link to="/perfil" class="header-user">{{ authStore.user?.name }}</router-link>
-          <button @click="logout" class="header-logout">Sair</button>
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger as-child>
+              <Button variant="ghost" class="header-user">{{ authStore.user?.name }}</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" class="z-[var(--z-popover)]">
+              <DropdownMenuLabel>{{ authStore.user?.name }}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem @select="router.push({ name: 'profile' })">Perfil</DropdownMenuItem>
+              <DropdownMenuItem @select="logout">Sair</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <!-- Mobile Actions (<= 480px) -->
         <div class="mobile-actions">
-          <button class="mobile-notif" @click="notifOpen = !notifOpen">
+          <Button
+            variant="ghost"
+            size="icon"
+            class="theme-toggle"
+            :aria-label="themeToggleLabel"
+            :aria-pressed="isDark"
+            @click="toggleDarkMode"
+          >
+            <Sun v-if="isDark" :size="20" />
+            <Moon v-else :size="20" />
+          </Button>
+          <Button variant="ghost" size="icon" class="mobile-notif" aria-label="Abrir notificações" @click="notifOpen = !notifOpen">
             <Bell :size="20" />
             <span v-if="authStore.unreadCount > 0" class="notif-badge">
               {{ authStore.unreadCount >= 100 ? '99+' : authStore.unreadCount }}
             </span>
-          </button>
+          </Button>
           <router-link to="/perfil" class="mobile-avatar">
             {{ authStore.user?.name?.[0] || 'U' }}
           </router-link>
@@ -94,13 +134,13 @@ function logout() {
 <style scoped>
 .app-header {
   height: var(--header-offset);
-  background: white;
-  border-bottom: 1px solid #e5e5e5;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 100;
+  z-index: var(--z-chrome);
   padding-top: var(--safe-top);
 }
 
@@ -119,7 +159,7 @@ function logout() {
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: #333;
+  color: var(--foreground);
   cursor: pointer;
   padding: 0.5rem;
   margin-left: -0.5rem;
@@ -128,7 +168,7 @@ function logout() {
 .header-logo {
   font-weight: 700;
   font-size: 1.25rem;
-  color: var(--color-brand);
+  color: var(--primary);
   text-decoration: none;
 }
 
@@ -139,13 +179,13 @@ function logout() {
 
 .header-nav a {
   text-decoration: none;
-  color: #555;
+  color: var(--muted-foreground);
   font-size: 0.9rem;
   font-weight: 500;
 }
 
 .header-nav a.router-link-active {
-  color: var(--color-brand);
+  color: var(--primary);
 }
 
 .header-right {
@@ -161,7 +201,7 @@ function logout() {
 
 .header-user {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--muted-foreground);
   text-decoration: none;
   max-width: 140px;
   white-space: nowrap;
@@ -170,17 +210,17 @@ function logout() {
 }
 
 .header-user:hover {
-  color: var(--color-brand);
+  color: var(--primary);
 }
 
 .header-logout {
   padding: 0.4rem 0.8rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border);
   border-radius: 6px;
   background: none;
   cursor: pointer;
   font-size: 0.85rem;
-  color: #555;
+  color: var(--muted-foreground);
 }
 
 .mobile-actions {
@@ -203,11 +243,15 @@ function logout() {
   min-height: var(--tap-min);
 }
 
+.theme-toggle {
+  color: var(--foreground);
+}
+
 .mobile-avatar {
   width: 32px;
   height: 32px;
-  background: var(--color-brand);
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -218,7 +262,7 @@ function logout() {
 }
 
 .admin-link {
-  color: var(--color-brand) !important;
+  color: var(--primary) !important;
   font-weight: 600 !important;
 }
 
@@ -238,8 +282,8 @@ function logout() {
   position: absolute;
   top: -6px;
   right: -10px;
-  background: #c0392b;
-  color: white;
+  background: var(--destructive);
+  color: var(--destructive-foreground);
   font-size: 0.65rem;
   font-weight: 700;
   min-width: 16px;

@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue';
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { SPACE_TYPE_LABELS, type Space, type Equipment } from '@/types/space';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
-import { hasRole, CAN_RESERVE, CAN_BLOCK } from '@/utils/roles';
+import { usePermissions } from '@/composables/usePermissions';
 import { PURPOSE_LABELS, BLOCK_TYPE_LABELS, type AvailabilitySlot } from '@/types/reservation';
 import EquipmentReportDialog from './EquipmentReportDialog.vue';
 import { useEquipmentGroups, type EquipmentGroup } from '@/composables/useEquipmentGroups';
 import { Users, Lightbulb, Snowflake, Flag, Repeat, BarChart3 } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 
 const props = defineProps<{
   space: Space;
@@ -31,15 +34,28 @@ const emit = defineEmits<{
 const router = useRouter();
 const overlayReady = ref(false);
 const detailsExpanded = ref(false);
+const isDesktop = ref(window.matchMedia('(min-width: 768px)').matches);
 onMounted(() => setTimeout(() => { overlayReady.value = true; }, 300));
 
-function onOverlayClick() {
-  if (overlayReady.value) emit('close');
+const mediaQuery = window.matchMedia('(min-width: 768px)');
+const handleMediaChange = (event: MediaQueryListEvent | MediaQueryList) => {
+  isDesktop.value = event.matches;
+};
+
+onMounted(() => {
+  mediaQuery.addEventListener('change', handleMediaChange);
+});
+
+onUnmounted(() => {
+  mediaQuery.removeEventListener('change', handleMediaChange);
+});
+
+function handleOpenChange(open: boolean) {
+  if (!open && overlayReady.value) emit('close');
 }
 
 const auth = useAuthStore();
-const canReserve = computed(() => hasRole(auth.userRole, CAN_RESERVE));
-const canBlock = computed(() => hasRole(auth.userRole, CAN_BLOCK));
+const { canReserve, canBlock, canViewReports } = usePermissions();
 const typeLabel = computed(() => SPACE_TYPE_LABELS[props.space.type] ?? props.space.type);
 
 // Availability data for schedule grid
@@ -177,6 +193,23 @@ const reserveEndTime = computed(() =>
     : props.selectedEndTime,
 );
 
+// Whether the range the reserve button would actually book has a free, future
+// hour. A hand-picked range is always valid (selection is constrained to
+// available, non-past cells). With no pick we fall back to the default period,
+// which can be entirely in the past (e.g. morning viewed in the afternoon) even
+// though the backend pin status still reads "available" — so check it here.
+const reserveRangeBookable = computed(() => {
+  if (loadingAvailability.value) return true; // don't flag before slots load
+  if (hasUserSelection.value) return true;
+  return visibleSlots.value.some(
+    (s) =>
+      s.status === 'available' &&
+      !isPastSlot(s) &&
+      s.startTime >= props.selectedStartTime &&
+      s.startTime < props.selectedEndTime,
+  );
+});
+
 function emitReserve() {
   emit('reserve', { startTime: reserveStartTime.value, endTime: reserveEndTime.value });
 }
@@ -233,15 +266,20 @@ function onReportSent() {
 </script>
 
 <template>
-  <div class="room-popup-overlay" @click.self="onOverlayClick">
-    <div class="room-popup">
+  <component :is="isDesktop ? Dialog : Drawer" :open="true" @update:open="handleOpenChange">
+    <component
+      :is="isDesktop ? DialogContent : DrawerContent"
+      class="room-popup z-[var(--z-modal)]"
+      :class="{ 'room-popup--drawer': !isDesktop }"
+      :show-close-button="false"
+    >
       <button class="room-popup__close" @click="$emit('close')" aria-label="Fechar popup">&times;</button>
 
       <!-- Header -->
-      <h2 class="room-popup__title">
+      <component :is="isDesktop ? DialogTitle : DrawerTitle" class="room-popup__title">
         {{ space.name }}
         <span class="room-popup__number">{{ space.number }}</span>
-      </h2>
+      </component>
       <p class="room-popup__meta">
         <span>{{ typeLabel }}</span>
         <span class="meta-sep">·</span>
@@ -370,15 +408,17 @@ function onReportSent() {
                 <span class="equipment-badge" :class="groupStatusClass(g)">
                   {{ groupStatusLabel(g) }}
                 </span>
-                <button
-                  v-if="canReport"
-                  class="equipment-report-btn"
-                  :aria-label="`Reportar problema em ${g.name}`"
-                  @click="openReportFor(g)"
+            <Button
+              v-if="canReport"
+              type="button"
+              variant="outline"
+              class="equipment-report-btn"
+              :aria-label="`Reportar problema em ${g.name}`"
+              @click="openReportFor(g)"
                 >
-                  <span aria-hidden="true"><Flag :size="12" /></span>
-                  <span>Reportar</span>
-                </button>
+              <span aria-hidden="true"><Flag :size="12" /></span>
+              <span>Reportar</span>
+            </Button>
               </li>
             </ul>
           </div>
@@ -393,31 +433,33 @@ function onReportSent() {
 
       <!-- Actions -->
       <div class="room-popup__actions">
-        <button
+        <Button
           v-if="canReserve"
-          class="btn-primary"
-          :disabled="reserveDisabled || loadingReservationState"
+          class="h-11 w-full"
+          :disabled="reserveDisabled || loadingReservationState || !reserveRangeBookable"
           :aria-label="`Reservar das ${reserveStartTime} às ${reserveEndTime}`"
           @click="emitReserve"
         >
           Reservar {{ reserveStartTime }}–{{ reserveEndTime }}
-        </button>
+        </Button>
         <p v-if="loadingReservationState" class="action-hint">Verificando disponibilidade...</p>
         <p v-else-if="reserveDisabledReason" class="action-hint action-hint--warn">{{ reserveDisabledReason }}</p>
-        <button
+        <p v-else-if="!reserveRangeBookable" class="action-hint action-hint--warn">Todos os horários deste turno já passaram.</p>
+        <Button
           v-if="canBlock"
-          class="btn-secondary"
+          variant="outline"
+          class="h-11 w-full"
           :disabled="blockingAllowed === false"
           aria-label="Bloquear espaço"
           @click="$emit('block')"
         >
           Bloquear Espaço
-        </button>
-        <button class="btn-tertiary" aria-label="Ver relatório de ocupação" @click="goToReport">
+        </Button>
+        <Button v-if="canViewReports" variant="ghost" class="h-11 w-full" aria-label="Ver relatório de ocupação" @click="goToReport">
           <BarChart3 :size="14" style="vertical-align: -2px" /> Ver relatório
-        </button>
+        </Button>
       </div>
-    </div>
+    </component>
 
     <EquipmentReportDialog
       v-if="reportingEquipment"
@@ -426,39 +468,19 @@ function onReportSent() {
       @close="reportingEquipment = null"
       @reported="onReportSent"
     />
-  </div>
+  </component>
 </template>
 
 <style scoped>
-.room-popup-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 1.25rem;
-  z-index: 200;
-  animation: overlay-in 0.25s ease both;
-}
-
-@media (max-width: 1023px) {
-  .room-popup-overlay {
-    position: fixed;
-    z-index: 400;
-  }
-}
-
-@keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
-
 .room-popup {
-  background: white;
+  background: var(--popover);
   border-radius: 20px;
   padding: 1.5rem 1.5rem 1.25rem;
   width: 100%;
   max-width: 420px;
   max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 12px 40px rgb(var(--shadow-color) / 0.18);
   position: relative;
   animation: popup-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
   padding-bottom: calc(1.5rem + var(--safe-bottom, 0px));
@@ -469,9 +491,23 @@ function onReportSent() {
   display: block;
   width: 36px;
   height: 4px;
-  background: #ddd;
+  background: var(--border);
   border-radius: 2px;
   margin: 0 auto 1rem;
+}
+
+/* Drawer variant (mobile): the vaul Drawer already anchors the sheet to the
+   bottom edge, slides it in, and renders its own grab handle. Drop the
+   centered-card constraints (max-width, all-corner radius, surge animation,
+   our own handle) so it reads as a full-width bottom sheet. */
+.room-popup--drawer {
+  max-width: none;
+  border-radius: 16px 16px 0 0;
+  animation: none;
+}
+
+.room-popup--drawer::before {
+  display: none;
 }
 
 @keyframes popup-in {
@@ -484,14 +520,14 @@ function onReportSent() {
   top: 1.5rem;
   right: 1.5rem;
   border: none;
-  background: #f5f5f5;
+  background: var(--muted);
   border-radius: 50%;
   width: 2rem;
   height: 2rem;
   font-size: 1.1rem;
   line-height: 1;
   cursor: pointer;
-  color: #666;
+  color: var(--muted-foreground);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -500,7 +536,7 @@ function onReportSent() {
 .room-popup__title {
   font-size: 1.2rem;
   font-weight: 700;
-  color: #111;
+  color: var(--foreground);
   margin: 0 2.5rem 0.25rem 0;
   display: flex;
   align-items: baseline;
@@ -508,9 +544,9 @@ function onReportSent() {
   flex-wrap: wrap;
 }
 
-.room-popup__number { font-size: 0.8rem; font-weight: 500; color: #999; }
-.room-popup__meta { color: #888; font-size: 0.8rem; margin: 0 0 0.75rem; display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; }
-.meta-sep { color: #ccc; }
+.room-popup__number { font-size: 0.8rem; font-weight: 500; color: var(--muted-foreground); }
+.room-popup__meta { color: var(--muted-foreground); font-size: 0.8rem; margin: 0 0 0.75rem; display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; }
+.meta-sep { color: var(--border); }
 
 /* Schedule */
 /* Details toggle */
@@ -525,7 +561,7 @@ function onReportSent() {
   cursor: pointer;
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--color-link, #185FA5);
+  color: var(--color-link);
 }
 .details-toggle__chevron {
   font-size: 1rem;
@@ -556,11 +592,11 @@ function onReportSent() {
 }
 
 .room-popup__schedule { margin-bottom: 1rem; }
-.schedule-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #bbb; letter-spacing: 0.06em; }
-.schedule-hint { font-weight: 400; text-transform: none; color: #ccc; font-size: 0.62rem; }
+.schedule-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.06em; }
+.schedule-hint { font-weight: 400; text-transform: none; color: var(--muted-foreground); font-size: 0.62rem; }
 .schedule-loading {
   font-size: 0.72rem;
-  color: #999;
+  color: var(--muted-foreground);
   animation: pulse-text 1.2s ease-in-out infinite;
 }
 
@@ -591,36 +627,36 @@ function onReportSent() {
 @media (prefers-reduced-motion: reduce) {
   .hour-cell { animation: none; }
 }
-.hour-cell--green { background: rgba(99,153,34,0.25); }
-.hour-cell--green:hover:not(.hour-cell--past) { background: rgba(99,153,34,0.4); }
-.hour-cell--red { background: rgba(226,75,74,0.25); }
-.hour-cell--red:hover { background: rgba(226,75,74,0.4); }
-.hour-cell--amber { background: rgba(186,117,23,0.3); }
+.hour-cell--green { background: color-mix(in srgb, var(--avail-free) 25%, transparent); }
+.hour-cell--green:hover:not(.hour-cell--past) { background: color-mix(in srgb, var(--avail-free) 40%, transparent); }
+.hour-cell--red { background: color-mix(in srgb, var(--avail-reserved) 25%, transparent); }
+.hour-cell--red:hover { background: color-mix(in srgb, var(--avail-reserved) 40%, transparent); }
+.hour-cell--amber { background: color-mix(in srgb, var(--avail-blocked) 30%, transparent); }
 .hour-cell--past { opacity: 0.4; }
 .hour-cell--past.hour-cell--green { cursor: default; }
-.hour-cell--default-selected { background: rgba(99,153,34,0.45); border: 1px dashed #639922; }
-.hour-cell--selected { background: var(--color-brand); border: 1.5px solid var(--color-brand-dark); }
+.hour-cell--default-selected { background: color-mix(in srgb, var(--avail-free) 45%, transparent); border: 1px dashed var(--avail-free); }
+.hour-cell--selected { background: var(--primary); border: 1.5px solid color-mix(in srgb, var(--primary), black 25%); }
 .hour-cell--clicked { outline: 2px solid var(--color-link); outline-offset: 1px; }
-.hour-cell .dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 8px; color: #501313; }
+.hour-cell .dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 8px; color: color-mix(in srgb, var(--avail-reserved), black 35%); }
 
-.hour-axis { display: flex; gap: 2px; font-size: 0.6rem; color: #aaa; }
+.hour-axis { display: flex; gap: 2px; font-size: 0.6rem; color: var(--muted-foreground); }
 .hour-axis span { flex: 1; min-width: 0; text-align: center; }
 
-.schedule-selection { margin: 6px 0 0; font-size: 0.78rem; color: #444; display: flex; align-items: center; gap: 8px; }
-.schedule-selection strong { color: #111; }
+.schedule-selection { margin: 6px 0 0; font-size: 0.78rem; color: var(--muted-foreground); display: flex; align-items: center; gap: 8px; }
+.schedule-selection strong { color: var(--foreground); }
 .schedule-selection__clear { border: none; background: none; color: var(--color-link); font-size: 0.74rem; cursor: pointer; padding: 0; text-decoration: underline; }
 
 /* Slot detail */
 .slot-detail { padding: 8px 10px; border-radius: 8px; margin-top: 6px; margin-bottom: 6px; font-size: 0.78rem; }
-.slot-detail--reserved { background: #fdf2f2; border: 1px solid #f5c6cb; }
-.slot-detail--blocked { background: #fff8f0; border: 1px solid #fce4c2; }
+.slot-detail--reserved { background: var(--danger-surface); border: 1px solid var(--danger-border); }
+.slot-detail--blocked { background: var(--warning-surface); border: 1px solid var(--warning-border); }
 .slot-detail-head { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
-.slot-time { font-weight: 600; color: #333; }
+.slot-time { font-weight: 600; color: var(--foreground); }
 .slot-badge { font-size: 0.62rem; padding: 1px 6px; border-radius: 999px; font-weight: 600; }
-.slot-badge--recurring { background: #e0f2fe; color: #0369a1; }
-.slot-badge--own { background: #d1fae5; color: #065f46; }
-.slot-purpose { margin-bottom: 2px; color: #333; }
-.slot-author { color: #666; }
+.slot-badge--recurring { background: var(--info-surface); color: var(--info); }
+.slot-badge--own { background: var(--success-surface); color: var(--success); }
+.slot-purpose { margin-bottom: 2px; color: var(--foreground); }
+.slot-author { color: var(--muted-foreground); }
 .slot-link { color: var(--color-link); cursor: pointer; }
 
 /* Stats grid — .stat-card styles in detail-panel.css */
@@ -629,7 +665,7 @@ function onReportSent() {
 
 /* Info list — .info-label/.info-value in detail-panel.css */
 .room-popup__info-list { list-style: none; margin: 0 0 0.9rem; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
-.room-popup__info-list li { display: flex; justify-content: space-between; font-size: 0.82rem; border-bottom: 1px solid #f2f2f2; padding-bottom: 0.3rem; }
+.room-popup__info-list li { display: flex; justify-content: space-between; font-size: 0.82rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
 
 /* Equipment — styles in detail-panel.css */
 .room-popup__section { margin-bottom: 0.75rem; }
@@ -642,27 +678,26 @@ function onReportSent() {
   padding: 4px 8px;
   font-size: 0.72rem;
   background: transparent;
-  border: 0.5px solid #ddd;
+  border: 0.5px solid var(--border);
   border-radius: 6px;
-  color: #888;
+  color: var(--muted-foreground);
   cursor: pointer;
   min-height: 32px;
   flex-shrink: 0;
 }
 .equipment-report-btn:hover {
-  background: #fafafa;
+  background: var(--muted);
   color: var(--color-danger);
-  border-color: #e0a89f;
+  border-color: var(--danger-border);
 }
 
 /* Blocking notice */
-.room-popup__notice { margin-bottom: 0.75rem; padding: 0.7rem 0.9rem; border-radius: 10px; background: #fff8f0; border: 1px solid #fce4c2; }
-.room-popup__notice-label { margin: 0 0 0.2rem; color: #92400e; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
-.room-popup__notice-text { margin: 0; color: #78350f; font-size: 0.82rem; }
+.room-popup__notice { margin-bottom: 0.75rem; padding: 0.7rem 0.9rem; border-radius: 10px; background: var(--warning-surface); border: 1px solid var(--warning-border); }
+.room-popup__notice-label { margin: 0 0 0.2rem; color: var(--warning); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
+.room-popup__notice-text { margin: 0; color: var(--warning); font-size: 0.82rem; }
 
 /* Actions */
 .room-popup__actions { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
-/* .btn-primary / .btn-secondary / .btn-tertiary are defined globally in src/styles/base.css */
-.action-hint { margin: 0; color: #888; font-size: 0.78rem; text-align: center; }
-.action-hint--warn { color: #c05a1f; }
+.action-hint { margin: 0; color: var(--muted-foreground); font-size: 0.78rem; text-align: center; }
+.action-hint--warn { color: var(--warning); }
 </style>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Bar } from 'vue-chartjs';
+import { useDarkMode } from '@/composables/useDarkMode';
+import { chartColors } from '@/lib/chartColors';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -23,35 +25,48 @@ const props = defineProps<{
   }>;
 }>();
 
-const chartData = computed(() => ({
-  labels: props.labels,
-  datasets: props.datasets.map((ds) => ({
-    ...ds,
-    backgroundColor: ds.backgroundColor || '#1D9E75',
-    borderColor: ds.borderColor || '#1D9E75',
-    borderWidth: 1,
-    borderRadius: 4,
-  })),
-}));
+const { isDark } = useDarkMode();
 
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  scales: {
-    y: {
-      beginAtZero: true,
-      grid: { color: '#f0f0f0' },
+const chartData = computed(() => {
+  void isDark.value; // re-resolve tokens on theme change
+  const c = chartColors();
+  return {
+    labels: props.labels,
+    datasets: props.datasets.map((ds) => ({
+      ...ds,
+      backgroundColor: ds.backgroundColor || c.chart1,
+      borderColor: ds.borderColor || c.chart1,
+      borderWidth: 1,
+      borderRadius: 4,
+    })),
+  };
+});
+
+const chartOptions = computed(() => {
+  void isDark.value;
+  const c = chartColors();
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: { color: c.grid },
+        ticks: { color: c.mutedText },
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: c.mutedText },
+      },
     },
-    x: {
-      grid: { display: false },
+    plugins: {
+      legend: {
+        position: 'top' as const,
+        labels: { color: c.foreground },
+      },
     },
-  },
-  plugins: {
-    legend: {
-      position: 'top' as const,
-    },
-  },
-};
+  };
+});
 </script>
 
 <template>
@@ -66,8 +81,8 @@ const chartOptions = {
 
 <style scoped>
 .chart-container {
-  background: white;
-  border: 1px solid #e5e5e5;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.25rem;
 }
@@ -76,7 +91,7 @@ const chartOptions = {
   margin: 0 0 1rem;
   font-size: 1rem;
   font-weight: 600;
-  color: #222;
+  color: var(--foreground);
 }
 
 .chart-wrapper {
@@ -85,7 +100,7 @@ const chartOptions = {
 
 .chart-empty {
   text-align: center;
-  color: #aaa;
+  color: var(--muted-foreground);
   padding: 4rem 0;
 }
 </style>

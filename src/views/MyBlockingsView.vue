@@ -5,10 +5,12 @@ import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
 import type { Blocking } from '@/types/reservation';
 import { BLOCK_TYPE_LABELS } from '@/types/reservation';
-import { hasRole, CAN_BLOCK } from '@/utils/roles';
+import { usePermissions } from '@/composables/usePermissions';
+import { Button } from '@/components/ui/button';
 
 const router = useRouter();
 const auth = useAuthStore();
+const { canBlock } = usePermissions();
 
 const blockings = ref<Blocking[]>([]);
 const loading = ref(true);
@@ -17,7 +19,7 @@ const removing = ref<string | null>(null);
 const expandedId = ref<string | null>(null);
 
 onMounted(async () => {
-  if (!hasRole(auth.userRole, CAN_BLOCK)) {
+  if (!canBlock.value) {
     router.replace({ name: 'campus-select' });
     return;
   }
@@ -81,7 +83,7 @@ const datetimeLabel = (iso: string) =>
 <template>
   <div class="my-blockings-view">
     <div class="view-header">
-      <button class="back-btn" @click="router.back()">← Voltar</button>
+      <Button variant="ghost" class="text-primary px-0" @click="router.back()">← Voltar</Button>
       <h1>Meus Bloqueios</h1>
     </div>
 
@@ -99,7 +101,7 @@ const datetimeLabel = (iso: string) =>
         :class="{ 'blocking-card--expanded': expandedId === b.id }"
       >
         <!-- Summary row -->
-        <button class="blocking-card__summary" @click="toggleExpand(b.id)">
+        <button class="blocking-card__summary" :aria-expanded="expandedId === b.id" @click="toggleExpand(b.id)">
           <div class="blocking-card__info">
             <h3>{{ b.space?.name ?? b.space?.number ?? b.spaceId }}</h3>
             <p>{{ dateLong(b.date) }}</p>
@@ -171,13 +173,14 @@ const datetimeLabel = (iso: string) =>
 
           <!-- Remove action -->
           <div class="detail-actions">
-            <button
-              class="remove-btn"
+            <Button
+              variant="outline"
+              class="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
               :disabled="removing === b.id"
               @click="handleRemove(b.id)"
             >
               {{ removing === b.id ? 'Removendo...' : 'Remover bloqueio' }}
-            </button>
+            </Button>
           </div>
         </div>
       </li>
@@ -201,15 +204,6 @@ const datetimeLabel = (iso: string) =>
   margin: 0;
   font-size: 1.3rem;
 }
-.back-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #1D9E75;
-  font-size: 0.95rem;
-  padding: 0;
-}
-
 .blocking-list {
   list-style: none;
   margin: 0;
@@ -221,14 +215,14 @@ const datetimeLabel = (iso: string) =>
 
 /* Card */
 .blocking-card {
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: white;
+  background: var(--card);
   overflow: hidden;
   transition: border-color 0.15s;
 }
 .blocking-card--expanded {
-  border-color: #1D9E75;
+  border-color: var(--primary);
 }
 
 /* Summary row */
@@ -245,7 +239,7 @@ const datetimeLabel = (iso: string) =>
   gap: 0.75rem;
 }
 .blocking-card__summary:hover {
-  background: #f9fafb;
+  background: var(--accent);
 }
 
 .blocking-card__info {
@@ -255,14 +249,14 @@ const datetimeLabel = (iso: string) =>
   margin: 0 0 0.25rem;
   font-size: 1rem;
   font-weight: 600;
-  color: #111;
+  color: var(--foreground);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .blocking-card__info p {
   margin: 0;
-  color: #666;
+  color: var(--muted-foreground);
   font-size: 0.85rem;
   line-height: 1.5;
 }
@@ -278,7 +272,7 @@ const datetimeLabel = (iso: string) =>
 /* Chevron */
 .expand-chevron {
   font-size: 1.1rem;
-  color: #aaa;
+  color: var(--muted-foreground);
   line-height: 1;
   transform: rotate(90deg);
   transition: transform 0.2s ease;
@@ -296,12 +290,12 @@ const datetimeLabel = (iso: string) =>
   font-weight: 500;
   white-space: nowrap;
 }
-.type-badge--administrative { background: #dbeafe; color: #1e40af; }
-.type-badge--maintenance    { background: #fef3c7; color: #92400e; }
+.type-badge--administrative { background: var(--info-surface); color: var(--info); }
+.type-badge--maintenance    { background: var(--warning-surface); color: var(--warning); }
 
 /* Detail panel */
 .blocking-detail {
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--border);
   padding: 1rem 1.25rem 1.25rem;
   display: flex;
   flex-direction: column;
@@ -319,7 +313,7 @@ const datetimeLabel = (iso: string) =>
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #bbb;
+  color: var(--muted-foreground);
   margin: 0 0 0.6rem;
 }
 
@@ -334,7 +328,7 @@ const datetimeLabel = (iso: string) =>
   justify-content: space-between;
   align-items: baseline;
   font-size: 0.84rem;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--border);
   padding-bottom: 0.3rem;
   gap: 0.5rem;
 }
@@ -352,12 +346,12 @@ const datetimeLabel = (iso: string) =>
 }
 
 .detail-label {
-  color: #999;
+  color: var(--muted-foreground);
   flex-shrink: 0;
 }
 .detail-value {
   font-weight: 500;
-  color: #222;
+  color: var(--foreground);
   text-align: right;
   word-break: break-all;
 }
@@ -372,32 +366,16 @@ const datetimeLabel = (iso: string) =>
 .detail-value--mono {
   font-family: monospace;
   font-size: 0.75rem;
-  color: #666;
+  color: var(--muted-foreground);
 }
 
 /* Actions */
 .detail-actions {
   padding-top: 0.25rem;
 }
-.remove-btn {
-  font-size: 0.85rem;
-  padding: 0.5rem 1rem;
-  border: 1.5px solid #c0392b;
-  border-radius: 8px;
-  background: none;
-  cursor: pointer;
-  color: #c0392b;
-  font-weight: 500;
-  transition: background 0.15s;
-}
-.remove-btn:hover { background: #fff0f0; }
-.remove-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 
 /* States */
-.state-msg { color: #888; font-size: 0.9rem; }
-.state-error { color: #c0392b; font-size: 0.9rem; }
-.state-empty { color: #888; font-size: 0.9rem; text-align: center; padding: 3rem 0; }
+.state-msg { color: var(--muted-foreground); font-size: 0.9rem; }
+.state-error { color: var(--destructive); font-size: 0.9rem; }
+.state-empty { color: var(--muted-foreground); font-size: 0.9rem; text-align: center; padding: 3rem 0; }
 </style>

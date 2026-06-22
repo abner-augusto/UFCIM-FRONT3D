@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useReservationStore } from '@/stores/reservation';
 import { useAuthStore } from '@/stores/auth';
@@ -16,6 +16,8 @@ import BlockHeatmapCard from '@/components/BlockHeatmapCard.vue';
 import { useDateTimeFilter, formatShortDate } from '@/composables/useDateTimeFilter';
 import { usePinAvailability, PERIOD_COLORS } from '@/composables/usePinAvailability';
 import { buildPinStatusLabel } from '@/composables/usePinStatusLabel';
+import { useDarkMode } from '@/composables/useDarkMode';
+import { useViewerTestHarness } from '@/composables/useViewerTestHarness';
 import type { PeriodKey, PinStatus } from '@/composables/usePinAvailability';
 import { BLOCK_TYPE_LABELS, TIME_SLOT_RANGES, type Blocking } from '@/types/reservation';
 import { logger } from '@/utils/logger';
@@ -24,6 +26,7 @@ const route = useRoute();
 const router = useRouter();
 const reservationStore = useReservationStore();
 const auth = useAuthStore();
+const { isDark } = useDarkMode();
 
 const campusId = route.params.campusId as string;
 const campus = campuses.find((c) => c.id === campusId);
@@ -47,6 +50,7 @@ const popupReservationStateLoading = ref(false);
 const fullscreen = ref(false);
 const searchSheetOpen = ref(false);
 const isMobile = ref(window.matchMedia('(max-width: 480px)').matches);
+const viewerOverlayOpen = computed(() => showPopup.value || searchSheetOpen.value);
 
 const mql = window.matchMedia('(max-width: 480px)');
 const onResize = (e: MediaQueryListEvent | MediaQueryList) => {
@@ -175,16 +179,18 @@ async function applyPinColors() {
     });
     viewerRef.value?.applyBackendFilter(new Set(cachedStatusMap.keys()), colorMap);
 
-    // Update pin labels with status
-    if (viewerRef.value?.updatePinLabelStatus) {
-      cachedStatusMap.forEach(({ status, slots }, modelId) => {
-        const labelInfo = buildPinStatusLabel(status, slots, periodRange.value);
-        viewerRef.value!.updatePinLabelStatus!(modelId, labelInfo.statusText, labelInfo.statusColor);
-      });
-    }
+    updatePinLabels();
   } catch (e) {
     logger.error('Falha ao atualizar cores:', e);
   }
+}
+
+function updatePinLabels() {
+  if (!viewerRef.value?.updatePinLabelStatus) return;
+  cachedStatusMap.forEach(({ status, slots }, modelId) => {
+    const labelInfo = buildPinStatusLabel(status, slots, periodRange.value);
+    viewerRef.value!.updatePinLabelStatus!(modelId, labelInfo.statusText, labelInfo.statusColor);
+  });
 }
 
 function handlePeriodChange(period: PeriodKey) {
@@ -197,6 +203,8 @@ function handleDateChange(date: string) {
 
 const handleViewerReady = () => {
   viewerReady.value = true;
+  viewerRef.value?.setInteractive(!viewerOverlayOpen.value);
+  viewerRef.value?.setThemeMode(isDark.value);
   if (spacesLoaded.value) {
     applyPinColors();
   }
@@ -223,6 +231,15 @@ watch([selectedDate, selectedPeriod], () => {
   }
   updateBlockHeatmap();
 });
+
+watch(viewerOverlayOpen, (open) => {
+  viewerRef.value?.setInteractive(!open);
+}, { immediate: true });
+
+watch(isDark, (dark) => {
+  viewerRef.value?.setThemeMode(dark);
+  updatePinLabels();
+}, { immediate: true });
 
 onMounted(async () => {
   mql.addEventListener('change', onResize);
@@ -299,6 +316,26 @@ function closePopup() {
   popupBlockingReason.value = null;
   popupReservationStateLoading.value = false;
 }
+
+// Dev-only: expose programmatic viewer control on window.__ufcimViewer so
+// automated browser tests can open room popups without clicking WebGL sprites.
+// Stripped from production builds (see useViewerTestHarness).
+useViewerTestHarness({
+  openRoom: (modelId: string) => {
+    viewerRef.value?.navigateToPin(modelId);
+    return handlePinClick({
+      pinId: modelId,
+      displayName: spacesByModelId.get(modelId)?.name ?? '',
+      building: spacesByModelId.get(modelId)?.block ?? '',
+      floorLevel: 0,
+    });
+  },
+  closePopup,
+  focusBuilding: (id: string | null) => viewerRef.value?.selectBuilding(id),
+  focusFloor: (level: number) => viewerRef.value?.selectFloor(level),
+  listRooms: () =>
+    [...spacesByModelId.values()].map((s) => ({ modelId: s.modelId as string, name: s.name })),
+});
 </script>
 
 <template>
@@ -395,7 +432,7 @@ function closePopup() {
   position: absolute;
   top: 1rem;
   left: 1rem;
-  z-index: 250;
+  z-index: var(--z-chrome);
   display: flex;
   flex-direction: column;
   align-items: flex-start;

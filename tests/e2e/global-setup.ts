@@ -14,10 +14,10 @@ const JWT_ISSUER = 'http://localhost:8787';
 const JWT_SIGNING_SECRET = 'dev-only-secret-not-for-production-use-do-not-leak';
 
 const SEED_USERS = {
-  student:     { sub: '00000000-0000-0000-0000-000000000001', name: 'João Silva',       email: 'joao.silva@alu.ufc.br',  registration: '2023001001', department: 'Ciência da Computação', role: 'ufcim-student' },
-  professor:   { sub: '00000000-0000-0000-0000-000000000002', name: 'Dra. Maria Costa', email: 'maria.costa@ufc.br',      registration: '1998010001', department: 'Ciência da Computação', role: 'ufcim-professor' },
-  staff:       { sub: '00000000-0000-0000-0000-000000000003', name: 'Carlos Oliveira',  email: 'carlos.oliveira@ufc.br', registration: '2010005001', department: 'Administração',          role: 'ufcim-staff' },
-  maintenance: { sub: '00000000-0000-0000-0000-000000000004', name: 'Pedro Santos',     email: 'pedro.santos@ufc.br',    registration: '2015002001', department: 'Manutenção',             role: 'ufcim-maintenance' },
+  student:     { sub: '00000000-0000-0000-0000-000000000001', name: 'João Silva',       email: 'joao.silva@alu.ufc.br',  registration: '2023001001', department: 'dc',  role: 'ufcim-student' },
+  professor:   { sub: '00000000-0000-0000-0000-000000000002', name: 'Dra. Maria Costa', email: 'maria.costa@ufc.br',      registration: '1998010001', department: 'dc',  role: 'ufcim-professor' },
+  staff:       { sub: '00000000-0000-0000-0000-000000000003', name: 'Carlos Oliveira',  email: 'carlos.oliveira@ufc.br', registration: '2010005001', department: 'adm', role: 'ufcim-staff' },
+  maintenance: { sub: '00000000-0000-0000-0000-000000000004', name: 'Pedro Santos',     email: 'pedro.santos@ufc.br',    registration: '2015002001', department: 'si',  role: 'ufcim-maintenance' },
 };
 
 function b64url(input: string | Buffer): string {
@@ -39,7 +39,7 @@ export default async function globalSetup() {
   // Seed the local D1 database (INSERT OR IGNORE — safe to run multiple times)
   try {
     execSync(
-      'npx wrangler d1 execute ufcim-db --local --env dev --file=scripts/seed.sql',
+      'npx wrangler d1 execute DB --local --env dev --file=scripts/seed.sql',
       { cwd: BACKEND_DIR, stdio: 'pipe' }
     );
     console.log('[e2e] DB seeded');

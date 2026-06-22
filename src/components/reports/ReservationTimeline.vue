@@ -176,8 +176,8 @@ function statusLabel(s: string): string {
 
 <style scoped>
 .timeline-container {
-  background: white;
-  border: 1px solid #e5e5e5;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.25rem;
 }
@@ -193,11 +193,11 @@ function statusLabel(s: string): string {
 .month-label {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #555;
+  color: var(--foreground);
   text-transform: capitalize;
   margin: 0 0 0.75rem;
   padding-bottom: 0.4rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border);
 }
 
 .entry-list {
@@ -218,7 +218,7 @@ function statusLabel(s: string): string {
 }
 
 .entry:hover {
-  background: #fafafa;
+  background: var(--accent);
 }
 
 .entry--canceled {
@@ -234,15 +234,15 @@ function statusLabel(s: string): string {
 }
 
 .entry--reservation .entry-dot {
-  background: #1D9E75;
+  background: var(--primary);
 }
 
 .entry--canceled .entry-dot {
-  background: #ccc;
+  background: var(--avail-disabled);
 }
 
 .entry--blocking .entry-dot {
-  background: #e24b4a;
+  background: var(--avail-reserved);
 }
 
 .entry-body {
@@ -260,7 +260,7 @@ function statusLabel(s: string): string {
 
 .entry-datetime {
   font-size: 0.7rem;
-  color: #888;
+  color: var(--muted-foreground);
   font-weight: 500;
 }
 
@@ -272,41 +272,41 @@ function statusLabel(s: string): string {
 }
 
 .entry-badge--recurring {
-  background: #e0f2fe;
-  color: #0369a1;
+  background: var(--info-surface);
+  color: var(--info);
 }
 
 .entry-badge--blocking {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--danger-surface);
+  color: var(--danger-fg);
 }
 
 .entry-title {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #222;
+  color: var(--foreground);
   margin-bottom: 0.05rem;
 }
 
 .entry-desc {
   font-size: 0.75rem;
-  color: #888;
+  color: var(--muted-foreground);
   margin-bottom: 0.05rem;
 }
 
 .entry-author {
   font-size: 0.72rem;
-  color: #777;
+  color: var(--muted-foreground);
 }
 
 .entry-status {
   font-size: 0.65rem;
-  color: #aaa;
+  color: var(--muted-foreground);
 }
 
 .timeline-empty {
   text-align: center;
-  color: #aaa;
+  color: var(--muted-foreground);
   padding: 2rem 0;
 }
 </style>

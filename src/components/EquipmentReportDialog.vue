@@ -5,6 +5,10 @@ import { api, ApiError } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
 import { Check } from 'lucide-vue-next';
 import type { Equipment } from '@/types/space';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 const props = defineProps<{
   equipment: Equipment;
@@ -67,16 +71,14 @@ async function submitReport() {
   }
 }
 
-function onOverlayClick() {
-  if (!loading.value) emit('close');
+function handleOpenChange(open: boolean) {
+  if (!open && !loading.value) emit('close');
 }
 </script>
 
 <template>
-  <div class="dialog-overlay" @click.self="onOverlayClick">
-    <div class="dialog" role="dialog" aria-labelledby="dialog-title">
-      <button class="dialog__close" @click="onOverlayClick" aria-label="Fechar">&times;</button>
-
+  <Dialog :open="true" @update:open="handleOpenChange">
+    <DialogContent class="dialog z-[var(--z-modal)]" :show-close-button="!loading">
       <!-- Success state -->
       <template v-if="success">
         <div class="dialog-success">
@@ -87,42 +89,45 @@ function onOverlayClick() {
 
       <!-- Form state -->
       <template v-else>
-        <h2 id="dialog-title" class="dialog__title">Reportar problema</h2>
-        <p class="dialog__subtitle">
+        <DialogTitle class="dialog__title">Reportar problema</DialogTitle>
+        <DialogDescription class="dialog__subtitle">
           {{ equipment.name }} · {{ spaceName }}
-        </p>
+        </DialogDescription>
 
         <!-- Severity selector -->
         <div class="dialog__field">
-          <label class="dialog__label">Gravidade</label>
+          <Label class="dialog__label">Gravidade</Label>
           <div class="severity-options">
-            <button
+            <Button
               v-for="s in (['minor', 'major', 'blocking'] as const)"
               :key="s"
               type="button"
+              variant="outline"
               class="severity-btn"
               :class="{ 'severity-btn--selected': severity === s, [`severity-btn--${s}`]: severity === s }"
               :aria-pressed="severity === s"
               @click="selectSeverity(s)"
             >
               <span class="severity-btn__label">{{ SEVERITY_LABELS[s] }}</span>
-            </button>
+            </Button>
           </div>
         </div>
 
         <!-- Description textarea -->
         <div class="dialog__field">
-          <label class="dialog__label" for="report-desc">Descrição do problema</label>
-          <textarea
+          <Label class="dialog__label" for="report-desc">Descrição do problema</Label>
+          <Textarea
             id="report-desc"
             v-model="description"
             class="dialog__textarea"
             :class="{ 'dialog__textarea--invalid': submitted && !descriptionValid }"
+            :aria-invalid="submitted && !descriptionValid"
+            aria-describedby="report-desc-help"
             placeholder="Descreva o que está acontecendo..."
             maxlength="500"
             rows="4"
           />
-          <div class="dialog__field-footer">
+          <div id="report-desc-help" class="dialog__field-footer">
             <span
               v-if="submitted && !descriptionValid"
               class="dialog__field-error"
@@ -139,52 +144,29 @@ function onOverlayClick() {
         </div>
 
         <!-- Submit button -->
-        <button
+        <Button
           class="dialog__submit"
           :disabled="loading || !formValid"
           @click="submitReport"
         >
           <span v-if="loading" class="dialog__spinner" />
           <span v-else>Enviar</span>
-        </button>
+        </Button>
       </template>
-    </div>
-  </div>
+    </DialogContent>
+  </Dialog>
 </template>
 
 <style scoped>
-.dialog-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 1.25rem;
-  z-index: 300;
-  animation: overlay-in 0.25s ease both;
-}
-
-@media (max-width: 1023px) {
-  .dialog-overlay {
-    position: fixed;
-    z-index: 500;
-  }
-}
-
-@keyframes overlay-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
 .dialog {
-  background: white;
+  background: var(--popover);
   border-radius: 20px;
   padding: 1.5rem 1.5rem 1.25rem;
   width: 100%;
   max-width: 420px;
   max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 12px 40px rgb(var(--shadow-color) / 0.18);
   position: relative;
   animation: dialog-in 0.3s var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
   padding-bottom: calc(1.5rem + var(--safe-bottom, 0px));
@@ -195,7 +177,7 @@ function onOverlayClick() {
   display: block;
   width: 36px;
   height: 4px;
-  background: #ddd;
+  background: var(--border);
   border-radius: 2px;
   margin: 0 auto 1rem;
 }
@@ -205,33 +187,15 @@ function onOverlayClick() {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.dialog__close {
-  position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
-  border: none;
-  background: #f5f5f5;
-  border-radius: 50%;
-  width: 2rem;
-  height: 2rem;
-  font-size: 1.1rem;
-  line-height: 1;
-  cursor: pointer;
-  color: #666;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .dialog__title {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #111;
+  color: var(--foreground);
   margin: 0 2rem 0.15rem 0;
 }
 
 .dialog__subtitle {
-  color: #888;
+  color: var(--muted-foreground);
   font-size: 0.8rem;
   margin: 0 0 1rem;
 }
@@ -246,7 +210,7 @@ function onOverlayClick() {
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: #888;
+  color: var(--muted-foreground);
   letter-spacing: 0.06em;
   margin-bottom: 0.4rem;
 }
@@ -262,11 +226,11 @@ function onOverlayClick() {
   display: block;
   width: 100%;
   padding: 0.65rem 0.75rem;
-  border: 1.5px solid #e0e0e0;
+  border: 1.5px solid var(--input);
   border-radius: 10px;
-  background: #fafafa;
+  background: var(--background);
   font-size: 0.82rem;
-  color: #444;
+  color: var(--foreground);
   text-align: left;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
@@ -274,8 +238,8 @@ function onOverlayClick() {
 }
 
 .severity-btn:hover {
-  background: #f0f0f0;
-  border-color: #ccc;
+  background: var(--accent);
+  border-color: var(--border);
 }
 
 .severity-btn--selected {
@@ -283,21 +247,21 @@ function onOverlayClick() {
 }
 
 .severity-btn--selected.severity-btn--minor {
-  background: #fef9e7;
-  border-color: #f1c40f;
-  color: #7d6608;
+  background: var(--warning-surface);
+  border-color: var(--warning);
+  color: var(--warning);
 }
 
 .severity-btn--selected.severity-btn--major {
-  background: #fdf2f2;
-  border-color: #e74c3c;
-  color: #922b21;
+  background: var(--danger-surface);
+  border-color: var(--danger-fg);
+  color: var(--danger-fg);
 }
 
 .severity-btn--selected.severity-btn--blocking {
-  background: #fce4ec;
-  border-color: #c0392b;
-  color: #7b241c;
+  background: color-mix(in srgb, var(--destructive) 15%, transparent);
+  border-color: var(--destructive);
+  color: var(--destructive);
 }
 
 .severity-btn__label {
@@ -308,12 +272,12 @@ function onOverlayClick() {
 .dialog__textarea {
   width: 100%;
   padding: 0.65rem 0.75rem;
-  border: 1.5px solid #e0e0e0;
+  border: 1.5px solid var(--input);
   border-radius: 10px;
   font-size: 0.85rem;
   font-family: inherit;
-  color: #333;
-  background: #fafafa;
+  color: var(--foreground);
+  background: var(--muted);
   resize: vertical;
   min-height: 80px;
   transition: border-color 0.15s;
@@ -322,13 +286,13 @@ function onOverlayClick() {
 
 .dialog__textarea:focus {
   outline: none;
-  border-color: #1D9E75;
-  background: #fff;
+  border-color: var(--ring);
+  background: var(--background);
 }
 
 .dialog__textarea--invalid {
-  border-color: #e74c3c;
-  background: #fdf2f2;
+  border-color: var(--destructive);
+  background: var(--danger-surface);
 }
 
 .dialog__field-footer {
@@ -340,12 +304,12 @@ function onOverlayClick() {
 
 .dialog__field-error {
   font-size: 0.72rem;
-  color: #e74c3c;
+  color: var(--destructive);
 }
 
 .dialog__char-count {
   font-size: 0.68rem;
-  color: #aaa;
+  color: var(--muted-foreground);
   margin-left: auto;
 }
 
@@ -353,9 +317,9 @@ function onOverlayClick() {
 .dialog__error {
   padding: 0.6rem 0.75rem;
   border-radius: 10px;
-  background: #fdf2f2;
-  border: 1px solid #f5c6cb;
-  color: #991b1b;
+  background: var(--danger-surface);
+  border: 1px solid var(--danger-border);
+  color: var(--danger-fg);
   font-size: 0.82rem;
   margin-bottom: 0.75rem;
 }
@@ -364,13 +328,9 @@ function onOverlayClick() {
 .dialog__submit {
   width: 100%;
   padding: 0.8rem;
-  border: none;
   border-radius: 10px;
-  background: #1D9E75;
-  color: white;
   font-size: 0.95rem;
   font-weight: 600;
-  cursor: pointer;
   transition: background 0.15s;
   min-height: 44px;
   display: flex;
@@ -378,12 +338,7 @@ function onOverlayClick() {
   justify-content: center;
 }
 
-.dialog__submit:hover:not(:disabled) {
-  background: #178a65;
-}
-
 .dialog__submit:disabled {
-  background: #b8c8c2;
   cursor: not-allowed;
 }
 
@@ -392,8 +347,8 @@ function onOverlayClick() {
   display: inline-block;
   width: 1rem;
   height: 1rem;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
+  border: 2px solid color-mix(in srgb, var(--primary-foreground) 35%, transparent);
+  border-top-color: var(--primary-foreground);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
@@ -418,8 +373,8 @@ function onOverlayClick() {
   width: 3rem;
   height: 3rem;
   border-radius: 50%;
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--success-surface);
+  color: var(--success);
   font-size: 1.4rem;
   font-weight: 700;
   margin-bottom: 0.75rem;
@@ -427,7 +382,7 @@ function onOverlayClick() {
 
 .dialog-success__text {
   font-size: 0.9rem;
-  color: #065f46;
+  color: var(--success);
   font-weight: 500;
   margin: 0;
 }

@@ -8,9 +8,14 @@ interface ViewerFloor { level: number; name: string }
 interface ThreeApp {
   init(): Promise<void>;
   dispose(): void;
+  setThemeMode(isDark: boolean): void;
+  controls?: {
+    enabled: boolean;
+  };
   interactionManager?: {
     applyBackendFilter(activeModelIds: Set<string>, colorMap: Map<string, string>): void;
     updatePinLabelStatus(pinId: string, statusText: string | null, statusColor: string | null): void;
+    setInteractionsEnabled(enabled: boolean): void;
   };
   uiManager?: {
     navigateToSpaceByModelId(modelId: string): void;
@@ -77,6 +82,15 @@ defineExpose({
   getActiveFloorLevel: () => threeApp?.uiManager?.getActiveFloorLevel() ?? null,
   setFullscreen: (on: boolean) => {
     document.body.classList.toggle('viewer-fullscreen', on);
+  },
+  setInteractive: (enabled: boolean) => {
+    if (threeApp?.controls) {
+      threeApp.controls.enabled = enabled;
+    }
+    threeApp?.interactionManager?.setInteractionsEnabled(enabled);
+  },
+  setThemeMode: (isDark: boolean) => {
+    threeApp?.setThemeMode(isDark);
   },
 });
 </script>

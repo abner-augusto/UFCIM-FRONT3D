@@ -51,7 +51,7 @@ function handleSelect(campusId: string) {
 }
 .campus-select__header p {
   margin: 0;
-  color: #666;
+  color: var(--muted-foreground);
 }
 .campus-select__grid {
   display: grid;

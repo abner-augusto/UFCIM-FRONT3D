@@ -6,6 +6,7 @@ import type { Reservation } from '@/types/reservation';
 import { TIME_SLOT_LABELS, TIME_SLOT_RANGES, STATUS_LABELS, PURPOSE_OPTIONS } from '@/types/reservation';
 import { SPACE_TYPE_LABELS } from '@/types/space';
 import type { TimeSlot } from '@/types/reservation';
+import { Button } from '@/components/ui/button';
 
 const auth = useAuthStore();
 
@@ -170,7 +171,7 @@ const groupedReservations = computed<GroupedReservation[]>(() => {
         :class="{ 'reservation-card--expanded': expandedId === group.id }"
       >
         <!-- Summary row — always visible -->
-        <button class="reservation-card__summary" @click="toggleExpand(group.id)">
+        <button class="reservation-card__summary" :aria-expanded="expandedId === group.id" @click="toggleExpand(group.id)">
           <div class="reservation-card__info">
             <h3>{{ group.main.space?.name ?? group.main.space?.number ?? group.main.spaceId }}</h3>
             <p v-if="!group.isRecurrent">{{ dateLabel(group.main.date) }}</p>
@@ -281,9 +282,9 @@ const groupedReservations = computed<GroupedReservation[]>(() => {
                 <span v-else class="status-badge" :class="`status-badge--${r.status}`">
                   {{ STATUS_LABELS[r.status] }}
                 </span>
-                <button v-if="r.status === 'confirmed' && !isCompleted(r)" class="text-cancel-btn" @click="handleCancel(r.id)" :disabled="cancelling === r.id || cancellingSeries === group.id">
+                <Button v-if="r.status === 'confirmed' && !isCompleted(r)" variant="link" class="text-destructive h-auto p-0 text-xs" @click="handleCancel(r.id)" :disabled="cancelling === r.id || cancellingSeries === group.id">
                   {{ cancelling === r.id ? '...' : 'Cancelar' }}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -296,23 +297,25 @@ const groupedReservations = computed<GroupedReservation[]>(() => {
 
           <!-- Actions -->
           <div class="detail-actions" style="margin-top: 1rem">
-            <button
+            <Button
               v-if="!group.isRecurrent && group.main.status === 'confirmed' && !isCompleted(group.main)"
-              class="cancel-btn"
+              variant="outline"
+              class="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
               :disabled="cancelling === group.main.id"
               @click="handleCancel(group.main.id)"
             >
               {{ cancelling === group.main.id ? 'Cancelando...' : 'Cancelar reserva' }}
-            </button>
+            </Button>
 
-            <button
+            <Button
               v-if="group.isRecurrent && hasFutureOccurrences(group.items)"
-              class="cancel-btn cancel-btn--bulk"
+              variant="outline"
+              class="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive w-full"
               :disabled="cancellingSeries === group.id"
               @click="handleCancelSeries(group.id)"
             >
               {{ cancellingSeries === group.id ? 'Cancelando...' : 'Cancelar todas as datas futuras' }}
-            </button>
+            </Button>
           </div>
 
         </div>
@@ -342,14 +345,14 @@ h1 {
 
 /* Card */
 .reservation-card {
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: white;
+  background: var(--card);
   overflow: hidden;
   transition: border-color 0.15s;
 }
 .reservation-card--expanded {
-  border-color: #1D9E75;
+  border-color: var(--primary);
 }
 
 /* Summary row */
@@ -366,7 +369,7 @@ h1 {
   gap: 0.75rem;
 }
 .reservation-card__summary:hover {
-  background: #f9fafb;
+  background: var(--accent);
 }
 
 .reservation-card__info {
@@ -376,14 +379,14 @@ h1 {
   margin: 0 0 0.25rem;
   font-size: 1rem;
   font-weight: 600;
-  color: #111;
+  color: var(--foreground);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .reservation-card__info p {
   margin: 0;
-  color: #666;
+  color: var(--muted-foreground);
   font-size: 0.85rem;
   line-height: 1.5;
 }
@@ -398,7 +401,7 @@ h1 {
 /* Chevron */
 .expand-chevron {
   font-size: 1.1rem;
-  color: #aaa;
+  color: var(--muted-foreground);
   line-height: 1;
   transform: rotate(90deg);
   transition: transform 0.2s ease;
@@ -416,16 +419,16 @@ h1 {
   font-weight: 500;
   white-space: nowrap;
 }
-.status-badge--confirmed  { background: #d1fae5; color: #065f46; }
-.status-badge--canceled   { background: #fee2e2; color: #991b1b; }
-.status-badge--modified   { background: #fef3c7; color: #92400e; }
-.status-badge--overridden { background: #ede9fe; color: #5b21b6; }
-.status-badge--completed  { background: #f3f4f6; color: #6b7280; }
-.status-badge--recurrent  { background: #e0f2fe; color: #0369a1; }
+.status-badge--confirmed  { background: var(--success-surface); color: var(--success); }
+.status-badge--canceled   { background: var(--danger-surface); color: var(--danger-fg); }
+.status-badge--modified   { background: var(--warning-surface); color: var(--warning); }
+.status-badge--overridden { background: var(--violet-surface); color: var(--violet); }
+.status-badge--completed  { background: var(--muted); color: var(--muted-foreground); }
+.status-badge--recurrent  { background: var(--info-surface); color: var(--info); }
 
 /* Detail panel */
 .reservation-detail {
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--border);
   padding: 1rem 1.25rem 1.25rem;
   display: flex;
   flex-direction: column;
@@ -443,7 +446,7 @@ h1 {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #bbb;
+  color: var(--muted-foreground);
   margin: 0 0 0.6rem;
 }
 
@@ -458,7 +461,7 @@ h1 {
   justify-content: space-between;
   align-items: baseline;
   font-size: 0.84rem;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--border);
   padding-bottom: 0.3rem;
   gap: 0.5rem;
 }
@@ -476,12 +479,12 @@ h1 {
 }
 
 .detail-label {
-  color: #999;
+  color: var(--muted-foreground);
   flex-shrink: 0;
 }
 .detail-value {
   font-weight: 500;
-  color: #222;
+  color: var(--foreground);
   text-align: right;
   word-break: break-all;
 }
@@ -496,19 +499,19 @@ h1 {
 .detail-value--mono {
   font-family: monospace;
   font-size: 0.75rem;
-  color: #666;
+  color: var(--muted-foreground);
 }
 
 /* Cancellation reason */
 .detail-cancel-reason {
   padding: 0.65rem 0.9rem;
   border-radius: 10px;
-  background: #fff5f5;
-  border: 1px solid #f5c6cb;
+  background: var(--danger-surface);
+  border: 1px solid var(--danger-border);
 }
 .detail-cancel-reason__label {
   margin: 0 0 0.2rem;
-  color: #991b1b;
+  color: var(--danger-fg);
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -516,7 +519,7 @@ h1 {
 }
 .detail-cancel-reason__text {
   margin: 0;
-  color: #7f1d1d;
+  color: var(--danger-fg);
   font-size: 0.84rem;
 }
 
@@ -532,60 +535,27 @@ h1 {
   align-items: center;
   font-size: 0.85rem;
   padding: 0.4rem 0;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--border);
 }
 .recurrence-item:last-child {
   border-bottom: none;
 }
 .recurrence-date {
-  color: #333;
+  color: var(--foreground);
 }
 .recurrence-actions {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
-.text-cancel-btn {
-  background: none;
-  border: none;
-  color: #c0392b;
-  font-size: 0.75rem;
-  cursor: pointer;
-  text-decoration: underline;
-  padding: 0;
-}
-.text-cancel-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  text-decoration: none;
-}
 
 /* Actions */
 .detail-actions {
   padding-top: 0.25rem;
 }
-.cancel-btn {
-  font-size: 0.85rem;
-  padding: 0.5rem 1rem;
-  border: 1.5px solid #c0392b;
-  border-radius: 8px;
-  background: none;
-  cursor: pointer;
-  color: #c0392b;
-  font-weight: 500;
-  transition: background 0.15s;
-}
-.cancel-btn:hover { background: #fff0f0; }
-.cancel-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.cancel-btn--bulk {
-  width: 100%;
-}
 
 /* States */
-.state-msg { color: #888; font-size: 0.9rem; }
-.state-error { color: #c0392b; font-size: 0.9rem; }
-.state-empty { color: #888; font-size: 0.9rem; text-align: center; padding: 3rem 0; }
+.state-msg { color: var(--muted-foreground); font-size: 0.9rem; }
+.state-error { color: var(--destructive); font-size: 0.9rem; }
+.state-empty { color: var(--muted-foreground); font-size: 0.9rem; text-align: center; padding: 3rem 0; }
 </style>

@@ -80,8 +80,8 @@ function applyFilters() {
 
 <style scoped>
 .filters-container {
-  background: white;
-  border: 1px solid #e5e5e5;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1rem 1.25rem;
 }
@@ -104,24 +104,24 @@ function applyFilters() {
 .filter-group label {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #888;
+  color: var(--muted-foreground);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .filter-input {
   padding: 0.5rem 0.6rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--input);
   border-radius: 8px;
   font-size: 0.85rem;
-  color: #333;
-  background: white;
+  color: var(--foreground);
+  background: var(--background);
   min-height: 36px;
 }
 
 .filter-input:focus {
   outline: none;
-  border-color: var(--color-brand);
+  border-color: var(--ring);
 }
 
 .filter-actions {
@@ -132,8 +132,8 @@ function applyFilters() {
 
 .btn-apply {
   padding: 0.5rem 1.25rem;
-  background: var(--color-brand, #1D9E75);
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
   border: none;
   border-radius: 8px;
   font-size: 0.85rem;
@@ -144,6 +144,6 @@ function applyFilters() {
 }
 
 .btn-apply:hover {
-  background: #178a63;
+  background: color-mix(in srgb, var(--primary), black 12%);
 }
 </style>

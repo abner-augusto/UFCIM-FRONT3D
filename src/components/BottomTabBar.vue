@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
-import { hasRole, CAN_BLOCK, CAN_VIEW_REPORTS, CAN_MANAGE_EQUIPMENT } from '@/utils/roles';
+import { usePermissions } from '@/composables/usePermissions';
 import { Building2, Search, Calendar, Ban, BarChart3, Wrench, User } from 'lucide-vue-next';
 
-const auth = useAuthStore();
 const campus = useCampusStore();
 const route = useRoute();
 
@@ -21,9 +19,7 @@ const browserTarget = computed(() =>
     : '/campus'
 );
 
-const canBlock = computed(() => hasRole(auth.userRole, CAN_BLOCK));
-const canViewReports = computed(() => hasRole(auth.userRole, CAN_VIEW_REPORTS));
-const canManageEquipment = computed(() => hasRole(auth.userRole, CAN_MANAGE_EQUIPMENT));
+const { canBlock, canViewReports, canManageEquipment } = usePermissions();
 const isActive = (name: string) => route.name === name;
 
 // Horizontal-scroll affordance: edge fades that show only when there's more
@@ -158,10 +154,10 @@ watch(
   left: 0;
   right: 0;
   height: calc(var(--bottom-bar-h) + var(--safe-bottom));
-  background: white;
-  border-top: 1px solid #e5e5e5;
+  background: var(--background);
+  border-top: 1px solid var(--border);
   padding-bottom: var(--safe-bottom);
-  z-index: 300;
+  z-index: var(--z-chrome);
 }
 
 @media (min-width: 1024px) {
@@ -201,11 +197,11 @@ watch(
 }
 .bottom-tab-bar::before {
   left: 0;
-  background: linear-gradient(to right, white, transparent);
+  background: linear-gradient(to right, var(--background), transparent);
 }
 .bottom-tab-bar::after {
   right: 0;
-  background: linear-gradient(to left, white, transparent);
+  background: linear-gradient(to left, var(--background), transparent);
 }
 .bottom-tab-bar.has-left-fade::before {
   opacity: 1;
@@ -246,7 +242,7 @@ watch(
   height: var(--bottom-bar-h);
   min-height: var(--tap-min);
   text-decoration: none;
-  color: #777;
+  color: var(--muted-foreground);
   gap: 2px;
   -webkit-tap-highlight-color: transparent;
   transition: color var(--duration-fast) ease;
@@ -258,7 +254,7 @@ watch(
 }
 
 .tab-item.active {
-  color: var(--color-brand);
+  color: var(--primary);
 }
 
 .tab-item.active .tab-icon {
