@@ -474,6 +474,16 @@ function onReportSent() {
   </component>
 </template>
 
+<!-- Non-scoped: targets the vaul drawer element (it carries the .room-popup class
+     but NOT this component's data-v, so a scoped rule can't reach it). vaul adds a
+     [data-vaul-drawer]::after overscroll spacer (top:100%, height:200%). Because we
+     make the drawer body scrollable (overflow-y-auto), that absolutely-positioned
+     spacer would otherwise become ~2x drawer-height of blank scrollable space below
+     the content. Remove it for this drawer only. -->
+<style>
+.room-popup[data-vaul-drawer]::after { content: none !important; }
+</style>
+
 <style scoped>
 .room-popup {
   background: var(--popover);
