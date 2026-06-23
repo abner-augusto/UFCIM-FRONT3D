@@ -10,6 +10,7 @@ import OccupancySummary from '@/components/reports/OccupancySummary.vue';
 import DailyOccupancyChart from '@/components/reports/DailyOccupancyChart.vue';
 import HourlyHeatmap from '@/components/reports/HourlyHeatmap.vue';
 import ReservationTimeline from '@/components/reports/ReservationTimeline.vue';
+import AppDateField from '@/components/AppDateField.vue';
 import { toLocalISODate } from '@/utils/date';
 
 const route = useRoute();
@@ -95,9 +96,9 @@ const todayStr = computed(() => toLocalISODate());
         </button>
       </div>
       <div class="custom-range">
-        <input type="date" v-model="startDate" :max="endDate" />
+        <AppDateField v-model="startDate" :max="endDate" aria-label="Data inicial do relatório" class="w-fit max-w-full px-3" />
         <span>até</span>
-        <input type="date" v-model="endDate" :min="startDate" :max="todayStr" />
+        <AppDateField v-model="endDate" :min="startDate" :max="todayStr" aria-label="Data final do relatório" class="w-fit max-w-full px-3" />
       </div>
     </section>
 
@@ -172,6 +173,7 @@ const todayStr = computed(() => toLocalISODate());
 
 .presets {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
 }
 
@@ -196,20 +198,23 @@ const todayStr = computed(() => toLocalISODate());
 
 .custom-range {
   display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
   font-size: 0.82rem;
   color: var(--muted-foreground);
+  min-width: 0;
 }
 
-.custom-range input[type="date"] {
-  border: 1px solid var(--input);
-  border-radius: 8px;
-  padding: 0.35rem 0.5rem;
-  font-size: 0.82rem;
-  color: var(--foreground);
-  background: var(--background);
-  min-height: 36px;
+@media (max-width: 520px) {
+  .filter-row {
+    align-items: stretch;
+  }
+
+  .custom-range {
+    width: 100%;
+  }
 }
 
 .state-msg,

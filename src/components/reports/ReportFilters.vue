@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
+import AppDateField from '@/components/AppDateField.vue';
 
 const auth = useAuthStore();
 
@@ -47,12 +48,12 @@ function applyFilters() {
     <div class="filter-row">
       <div class="filter-group">
         <label for="startDate">Data início</label>
-        <input id="startDate" v-model="startDate" type="date" class="filter-input" />
+        <AppDateField id="startDate" v-model="startDate" :max="endDate" aria-label="Data início" class="filter-input" />
       </div>
 
       <div class="filter-group">
         <label for="endDate">Data fim</label>
-        <input id="endDate" v-model="endDate" type="date" class="filter-input" />
+        <AppDateField id="endDate" v-model="endDate" :min="startDate" aria-label="Data fim" class="filter-input" />
       </div>
 
       <div class="filter-group">

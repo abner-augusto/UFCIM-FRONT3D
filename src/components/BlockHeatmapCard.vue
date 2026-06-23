@@ -61,10 +61,9 @@ async function loadHeatmap() {
     }
 
     hours.value = hourData.map(h => {
-      const ratio = h.totalCount > 0 ? h.occupiedCount / h.totalCount : 0;
       let cssClass = 'cell--green';
-      if (ratio > 0.7) cssClass = 'cell--red';
-      else if (ratio > 0.3) cssClass = 'cell--amber';
+      if (h.totalCount > 0 && h.occupiedCount === h.totalCount) cssClass = 'cell--red';
+      else if (h.occupiedCount > 0) cssClass = 'cell--amber';
       return { ...h, cssClass, tooltip: `${h.occupiedCount}/${h.totalCount} ocupadas às ${h.hour}` };
     });
 
@@ -77,7 +76,7 @@ async function loadHeatmap() {
         const h = parseInt(s.startTime.split(':')[0], 10);
         return h >= startH && h < endH && s.status !== 'closed' && s.status !== 'not_reservable';
       });
-      const hasReserved = filtered.some(s => s.status === 'reserved');
+      const hasReserved = filtered.some(s => s.status === 'reserved' || s.status === 'blocked');
       const hasAvailable = filtered.some(s => s.status === 'available');
       if (!hasReserved && hasAvailable) freeCount++;
       else if (hasReserved && hasAvailable) partialCount++;
@@ -137,7 +136,7 @@ watch(() => [props.visible, props.date, props.spaces], loadHeatmap, { immediate:
 <style scoped>
 /* Dynamic occupancy cell colors (class string built in JS) + entrance transition. */
 .cell--green { background: color-mix(in srgb, var(--avail-free) 50%, transparent); }
-.cell--amber { background: color-mix(in srgb, var(--avail-blocked) 50%, transparent); }
+.cell--amber { background: color-mix(in srgb, var(--avail-partial) 60%, transparent); }
 .cell--red   { background: color-mix(in srgb, var(--avail-reserved) 50%, transparent); }
 
 .heatmap-enter-active,
