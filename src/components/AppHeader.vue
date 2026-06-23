@@ -7,6 +7,7 @@ import { usePermissions } from '@/composables/usePermissions';
 import { useDarkMode } from '@/composables/useDarkMode';
 import NavDrawer from './NavDrawer.vue';
 import NotificationsPanel from './NotificationsPanel.vue';
+import UfcimLogo from './UfcimLogo.vue';
 import { Menu, Bell, Moon, Sun } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import {
@@ -53,7 +54,9 @@ function logout() {
       <Button variant="ghost" size="icon" class="hamburger-btn" aria-label="Abrir menu" @click="drawerOpen = true"><Menu :size="24" /></Button>
 
       <div class="header-left">
-        <router-link to="/campus" class="header-logo">UFCIM</router-link>
+        <router-link to="/campus" class="header-logo" aria-label="UFCIM — Início">
+          <UfcimLogo class="header-logo__mark" />
+        </router-link>
       </div>
 
       <!-- Desktop Nav (>= 1024px) -->
@@ -166,10 +169,17 @@ function logout() {
 }
 
 .header-logo {
-  font-weight: 700;
-  font-size: 1.25rem;
-  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  /* drives the "UFC" letter paths (fill: currentColor) so they read on both themes */
+  color: var(--foreground);
   text-decoration: none;
+}
+
+.header-logo__mark {
+  height: 34px;
+  width: auto;
+  display: block;
 }
 
 .header-nav {

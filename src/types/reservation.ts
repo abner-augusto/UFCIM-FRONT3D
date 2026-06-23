@@ -65,6 +65,19 @@ export interface Reservation {
   space?: { id: string; number: string; name: string; block?: string; campus?: string; type?: string; capacity?: number; department?: string; [key: string]: unknown };
 }
 
+export interface RecurringReservationSkipped {
+  date: string;
+  startTime: string;
+  endTime: string;
+  reason: string;
+}
+
+export interface RecurringReservationResult {
+  recurrenceId: string;
+  created: Reservation[];
+  skipped: RecurringReservationSkipped[];
+}
+
 export interface Notification {
   id: string;
   userId: string;

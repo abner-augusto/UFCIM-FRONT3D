@@ -240,7 +240,7 @@ export class InteractionManager extends THREE.EventDispatcher {
 
             sprite.userData.opensPopup = isActive;
             if (isActive) {
-                const color = colorMap.get(id) ?? '#1D9E75';
+                const color = colorMap.get(id) ?? '#00697D';
                 sprite.material.color.set(color);
             }
         });

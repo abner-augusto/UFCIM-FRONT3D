@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import UfcimLogo from '@/components/UfcimLogo.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -45,7 +46,9 @@ async function handleLogin() {
 <template>
   <div class="flex min-h-screen items-center justify-center bg-muted/40 supports-[min-height:100dvh]:min-h-dvh">
     <Card class="w-full max-w-[380px] px-8 py-10 text-center">
-      <h1 class="text-primary mb-1 text-[1.75rem] font-bold">UFCIM</h1>
+      <h1 class="mb-2 flex justify-center">
+        <UfcimLogo label="UFCIM" class="text-foreground h-16 w-auto" />
+      </h1>
       <p class="text-muted-foreground mb-7 text-sm">Reserva de Espaços — UFC</p>
 
       <form class="flex flex-col gap-3.5 text-left" @submit.prevent="handleLogin">
