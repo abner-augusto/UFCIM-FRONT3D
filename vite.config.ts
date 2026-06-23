@@ -36,7 +36,7 @@ export default defineConfig({
       manifest: {
         name: 'UFCIM — Reserva de Espaços UFC',
         short_name: 'UFCIM',
-        theme_color: '#1D9E75',
+        theme_color: '#00697D',
         background_color: '#ffffff',
         display: 'standalone',
         display_override: ['standalone', 'minimal-ui'],

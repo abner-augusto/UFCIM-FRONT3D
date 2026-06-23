@@ -14,7 +14,7 @@ function cssVar(name: string, fallback: string): string {
 
 export function chartColors() {
   return {
-    chart1: cssVar('--chart-1', '#1d9e75'),
+    chart1: cssVar('--chart-1', '#00697d'),
     chart2: cssVar('--chart-2', '#3b82f6'),
     chart3: cssVar('--chart-3', '#ba7517'),
     chart4: cssVar('--chart-4', '#e24b4a'),

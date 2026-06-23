@@ -2,9 +2,11 @@
 name: UFCIM
 description: Reserve UFC campus rooms through a 3D model of the campus.
 colors:
-  brand-primary: "#1D9E75"
-  brand-dark: "#178A65"
-  brand-soft: "#E8F5F0"
+  brand-primary: "#00697D"
+  brand-dark: "#00566A"
+  brand-mid: "#338797"
+  brand-light: "#549BA8"
+  brand-soft: "#E6F1F3"
   status-available: "#00B050"
   status-partial: "#F2C200"
   status-reserved: "#D32F2F"
@@ -86,23 +88,25 @@ UFCIM is the way the UFC community finds and books a room without leaving the ma
 
 The personality is trustworthy and official with a human, approachable edge. This is the university's real system of record, so it has to read as credible and dependable, but it carries the warmth of a good front desk: plain Brazilian-Portuguese labels, reassuring empty and error states, nothing that intimidates a first-year student. It explicitly rejects two looks. It is **not generic SaaS** (no purple-to-blue gradients, no Inter-for-everything, no hero-metric dashboards, no endless identical card grids). And it is **not a bureaucratic government portal** (no dense gray tables, no tiny text, no flat hierarchy, no intimidating multi-field forms).
 
-The system is mobile-first by conviction, not by breakpoint: students book on phones between classes, so thumb reach, 44px tap targets, and one-handed flows come before any desktop nicety. A single brand green carries the identity across a clean white-and-near-neutral canvas; color is spent deliberately, mostly on the one thing the user came to learn — is this room free.
+The system is mobile-first by conviction, not by breakpoint: students book on phones between classes, so thumb reach, 44px tap targets, and one-handed flows come before any desktop nicety. A single brand teal — drawn from the UFCIM logo — carries the identity across a clean white-and-near-neutral canvas; color is spent deliberately, mostly on the one thing the user came to learn — is this room free.
 
 **Key Characteristics:**
 - Map-first: the 3D campus and the room are the hero; forms are a short follow-through.
-- One restrained brand green on a clean light canvas, with a separate, deliberate availability palette.
+- One restrained brand teal on a clean light canvas, with a separate, deliberate availability palette.
 - Soft-lifted depth: flat at rest, gentle shadows on floating surfaces (map rail, popups, sheets).
 - Calm and efficient components — quiet confidence, low friction.
 - Mobile-first and WCAG 2.1 AA throughout.
 
 ## 2. Colors
 
-A restrained, single-accent system: one brand green on a clean white-to-near-neutral canvas, plus a distinct, functional palette reserved for availability status.
+A restrained, single-accent system: one brand teal (from the UFCIM logo) on a clean white-to-near-neutral canvas, plus a distinct, functional palette reserved for availability status.
 
 ### Primary
-- **Campus Green** (`#1D9E75`): the brand. Primary actions ("Reservar"), active states, nav highlights, selected hour cells. The one saturated color on most screens; spend it on the primary action and identity, not decoration.
-- **Campus Green Deep** (`#178A65`): hover/pressed state for primary green surfaces.
-- **Campus Green Mist** (`#E8F5F0`): tints for selected/active backgrounds in nav and lists.
+The brand teal is taken straight from the UFCIM logo's isometric mark.
+- **Campus Teal** (`#00697D`): the brand. Primary actions ("Reservar"), active states, nav highlights, selected hour cells. The one saturated color on most screens; spend it on the primary action and identity, not decoration. White text on it reads 6.3:1 (AA at any size).
+- **Campus Teal Deep** (`#00566A`): hover/pressed state for primary teal surfaces.
+- **Campus Teal Mist** (`#E6F1F3`): tints for selected/active backgrounds in nav and lists.
+- **Campus Teal Mid / Light** (`#338797` / `#549BA8`): the logo's lighter facets. Use only where the deep teal needs a companion (e.g. logo mark, an illustrative chip, the dark-theme primary). Not for body text on white — they fall below 4.5:1.
 
 ### Secondary
 - **Wayfinder Blue** (`#185FA5`): in-context links and "manage" affordances inside detail panels (e.g. "Gerenciar reserva →"). Never a second brand color; strictly a textual link signal.
@@ -126,7 +130,7 @@ Equipment-status pills reuse the same semantics with soft tints: working (`#D1FA
 - **Border** (`#DDDDDD`) with lighter hairlines (`#EEEEEE`, `#F0F0F0`) for dividers.
 
 ### Named Rules
-**The Two-Green Rule.** There are two greens and they never trade jobs. `#1D9E75` is identity and action; `#00B050` means "available". Don't tint UI chrome with the availability green or render a status with the brand green.
+**The Brand-vs-Available Rule.** The brand teal and the availability palette never trade jobs. `#00697D` is identity and action; the availability green `#00B050` means "available". Don't tint UI chrome with the availability green, and don't render a status with the brand teal. (The teal/green split now makes the two read as clearly different hues, not near-twins.)
 
 **The Spent-Color Rule.** On a product screen, saturated color is reserved for the primary action and the availability signal. If an element isn't one of those, it lives in the neutral ramp.
 
@@ -165,14 +169,14 @@ Components are calm and efficient: rounded but not bubbly, generously tappable, 
 
 ### Buttons
 - **Shape:** gently rounded (`10px`), full-width in action stacks, minimum height `44px` (`--tap-min`).
-- **Primary:** Campus Green (`#1D9E75`) fill, white text, weight 600. The single loud action per screen; label is verb + object ("Reservar 09:00–11:00", "Bloquear Espaço").
-- **Hover / Focus:** background shifts to Campus Green Deep (`#178A65`); needs a visible focus ring for AA.
-- **Secondary:** white fill, 1.5px Campus Green border, green text. Equal weight, quieter presence.
+- **Primary:** Campus Teal (`#00697D`) fill, white text, weight 600. The single loud action per screen; label is verb + object ("Reservar 09:00–11:00", "Bloquear Espaço").
+- **Hover / Focus:** background shifts to Campus Teal Deep (`#00566A`); needs a visible focus ring for AA.
+- **Secondary:** white fill, 1.5px Campus Teal border, teal text. Equal weight, quieter presence.
 - **Tertiary:** white fill, 1px neutral border, ink-soft text — low-emphasis actions ("📊 Ver relatório").
 - **Disabled:** primary desaturates to `#B8C8C2`; secondary borders/text drop to gray.
 
 ### Chips
-- **Date / period chips and filter selects:** rounded (`8px`), surface-alt fill at rest, Campus Green fill with white text when active. Used in the viewer rail popover and space browser toolbar.
+- **Date / period chips and filter selects:** rounded (`8px`), surface-alt fill at rest, Campus Teal fill with white text when active. Used in the viewer rail popover and space browser toolbar.
 
 ### Cards / Containers
 - **Corner Style:** `12px` for stat cards, `20px` for the popup/sheet.
@@ -184,13 +188,13 @@ Components are calm and efficient: rounded but not bubbly, generously tappable, 
 
 ### Inputs / Fields
 - **Style:** white fill, 1px (`#DDD`) border, `8–10px` radius. Mobile font-size 16px to prevent iOS zoom; desktop drops to 0.95rem.
-- **Focus:** border shifts to Campus Green (`#1D9E75`); keep a clearly visible focus state.
+- **Focus:** border shifts to Campus Teal (`#00697D`); keep a clearly visible focus state.
 - **Date picker:** native input opened via `showPicker()`; appearance normalized across platforms.
 
 ### Navigation
-- **Bottom tab bar (mobile, 64px):** the primary nav on phones; icon + label, active item in Campus Green. Respects `--safe-bottom`.
-- **App header (56px):** title + drawer + notifications; brand green for active/icon accents.
-- **Nav drawer:** list items with Campus Green Mist (`#E8F5F0`) active background and green text.
+- **Bottom tab bar (mobile, 64px):** the primary nav on phones; icon + label, active item in Campus Teal. Respects `--safe-bottom`.
+- **App header (56px):** the UFCIM logo at the left, drawer + notifications; brand teal for active/icon accents.
+- **Nav drawer:** list items with Campus Teal Mist (`#E6F1F3`) active background and teal text.
 
 ### Signature Component — The 3D Viewer surface
 The defining surface. A full-bleed Three.js campus canvas with floating chrome layered over it:
@@ -201,7 +205,7 @@ The defining surface. A full-bleed Three.js campus canvas with floating chrome l
 ## 6. Do's and Don'ts
 
 ### Do:
-- **Do** spend the brand green (`#1D9E75`) on the one primary action per screen and on identity; keep everything else in the neutral ramp.
+- **Do** spend the brand teal (`#00697D`) on the one primary action per screen and on identity; keep everything else in the neutral ramp.
 - **Do** use the separate availability palette (`#00B050` / `#F2C200` / `#D32F2F` / `#E8650A` / `#9E9E9E`) only for status, and always pair it with text or an icon — color is never the only signal.
 - **Do** keep every tappable control ≥44px (`--tap-min`) and design phone-first.
 - **Do** keep body text at Ink (`#111`) or Ink Soft (`#666`); never lighter than Muted (`#999`) for reading copy. Hit AA (4.5:1 body, 3:1 large).
@@ -213,7 +217,7 @@ The defining surface. A full-bleed Three.js campus canvas with floating chrome l
 - **Don't** drift toward **generic SaaS**: no purple-to-blue gradients, no Inter, no hero-metric dashboard template, no endless identical card grids, no rounded-icon tile above every heading.
 - **Don't** drift toward a **bureaucratic government portal**: no dense gray tables, no sub-12px body text, no flat hierarchy, no intimidating multi-field forms.
 - **Don't** use `border-left` / `border-right` greater than 1px as a colored accent stripe on cards, notices, or list items. (Existing instances in `NotificationsPanel.vue` and the RoomPopup blocking notice should be reworked to a full border or background tint.)
-- **Don't** mix the two greens: brand `#1D9E75` is never a status, availability `#00B050` is never UI chrome.
+- **Don't** mix brand and availability: brand teal `#00697D` is never a status, availability green `#00B050` is never UI chrome.
 - **Don't** use gradient text, decorative glassmorphism, or shadows on static in-flow sections.
 - **Don't** nest a card inside a card.
 - **Don't** uppercase sentences or buttons; reserve caps for ≤4-word labels and eyebrows.
