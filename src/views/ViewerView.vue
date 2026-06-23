@@ -419,7 +419,11 @@ useViewerTestHarness({
   height: calc(100dvh - var(--header-offset));
   overflow: hidden;
   position: relative;
-  width: 100vw;
+  /* 100% (parent .app-main is full-width), not 100vw: on real phones with
+     viewport-fit=cover, 100vw spans the full layout viewport and overflows the
+     page horizontally, which widens the layout viewport and makes fixed overlays
+     (e.g. the RoomPopup bottom drawer) render wider than the visible screen. */
+  width: 100%;
 }
 
 .viewer-view--fullscreen {
