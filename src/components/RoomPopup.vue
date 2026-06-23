@@ -270,7 +270,9 @@ function onReportSent() {
     <component
       :is="isDesktop ? DialogContent : DrawerContent"
       class="room-popup z-[var(--z-modal)]"
-      :class="{ 'room-popup--drawer': !isDesktop }"
+      :class="isDesktop
+        ? ''
+        : 'overflow-y-auto px-6 pt-2 pb-[calc(1.5rem_+_var(--safe-bottom))]'"
       overlay-class="supports-backdrop-filter:backdrop-blur-none"
       :show-close-button="false"
     >
@@ -497,19 +499,13 @@ function onReportSent() {
   margin: 0 auto 1rem;
 }
 
-/* Drawer variant (mobile): the vaul Drawer already anchors the sheet to the
-   bottom edge, slides it in, and renders its own grab handle. Drop the
-   centered-card constraints (max-width, all-corner radius, surge animation,
-   our own handle) so it reads as a full-width bottom sheet. */
-.room-popup--drawer {
-  max-width: none;
-  border-radius: 16px 16px 0 0;
-  animation: none;
-}
-
-.room-popup--drawer::before {
-  display: none;
-}
+/* Drawer variant (mobile): vaul-vue's portal does NOT forward this component's
+   scoped data-v attribute to the sheet element, so none of the .room-popup
+   *container* rules above (padding, max-width, radius, the ::before handle,
+   the popup-in animation) reach it — they only style the slotted content, which
+   keeps its data-v. The drawer's container layout (padding + scroll) is therefore
+   applied via global Tailwind utilities on the component in the template instead.
+   vaul itself supplies the bottom anchor, slide-in, rounded top, and grab handle. */
 
 @keyframes popup-in {
   from { opacity: 0; transform: translateY(28px) scale(0.96); }
