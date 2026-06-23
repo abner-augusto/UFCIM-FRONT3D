@@ -3,6 +3,9 @@ CLAUDE.md
 opencode.json
 .*/*
 
+# Local-only design mockups (static style explorations, not shipped)
+/mockups/
+
 # Logs
 logs
 *.log
