@@ -50,7 +50,7 @@ onUnmounted(() => {
   <AppHeader v-if="auth.isAuthenticated" />
   <main class="app-main bg-background text-foreground">
     <RouterView v-slot="{ Component }">
-      <Transition name="page" mode="out-in">
+      <Transition name="page">
         <component :is="Component" :key="route.path" />
       </Transition>
     </RouterView>
@@ -60,6 +60,7 @@ onUnmounted(() => {
 
 <style scoped>
 .app-main {
+  position: relative; /* containing block for the leaving page during route crossfade */
   min-height: 100vh; /* fallback */
   min-height: 100dvh;
   padding-top: var(--header-offset);
@@ -72,19 +73,27 @@ onUnmounted(() => {
   }
 }
 
-/* Page route transitions */
+/* Page route transitions — a parallel crossfade: the entering page rises into
+   place while the outgoing one fades up. The leaving page is taken out of flow
+   (absolute, pinned to the content box below the header) so the two overlap
+   without the layout jumping or scroll height collapsing mid-transition. */
 .page-enter-active {
-  transition: opacity 180ms var(--ease-out-expo, ease), transform 180ms var(--ease-out-expo, ease);
+  transition: opacity 220ms var(--ease-out-expo, ease), transform 220ms var(--ease-out-expo, ease);
 }
 .page-leave-active {
-  transition: opacity 120ms ease-in, transform 120ms ease-in;
+  transition: opacity 140ms ease-in, transform 140ms ease-in;
+  position: absolute;
+  top: var(--header-offset);
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 .page-enter-from {
   opacity: 0;
-  transform: translateY(6px);
+  transform: translateY(10px);
 }
 .page-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
+  transform: translateY(-6px);
 }
 </style>

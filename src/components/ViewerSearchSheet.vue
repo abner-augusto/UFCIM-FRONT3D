@@ -84,7 +84,7 @@ function clear() {
               <button
                 v-for="s in results"
                 :key="s.id"
-                class="result-item"
+                class="result-item press-feedback"
                 @click="select(s)"
               >
                 <span class="result-name">{{ s.name }}</span>

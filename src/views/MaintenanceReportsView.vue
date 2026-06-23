@@ -196,7 +196,7 @@ function viewerLink(report: EquipmentReport) {
     </div>
 
     <ul v-else class="report-list">
-      <li v-for="r in reports" :key="r.id" class="report-card">
+      <li v-for="(r, i) in reports" :key="r.id" class="report-card stagger-item" :style="{ '--i': i }">
         <div class="report-card__head">
           <span class="severity-badge" :class="`severity-badge--${r.severity}`">
             {{ SEVERITY_SHORT[r.severity] }}

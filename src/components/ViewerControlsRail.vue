@@ -425,6 +425,10 @@ onUnmounted(() => {
   padding: 8px;
   pointer-events: auto;
   z-index: var(--z-popover);
+  /* Both popovers sit just left of the right-edge rail, so growing from the
+     top-right makes them feel like they spring out of the button that opened
+     them rather than zooming in from their own center. */
+  transform-origin: top right;
 }
 
 .popover--datetime {
@@ -538,13 +542,15 @@ onUnmounted(() => {
   transform: translateX(20px);
 }
 
-.popover-enter-active,
+.popover-enter-active {
+  transition: opacity 0.18s ease, transform 0.18s var(--ease-out-expo, ease);
+}
 .popover-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity 0.12s ease, transform 0.12s ease;
 }
 .popover-enter-from,
 .popover-leave-to {
   opacity: 0;
-  transform: scale(0.95) translateX(10px);
+  transform: scale(0.9);
 }
 </style>
