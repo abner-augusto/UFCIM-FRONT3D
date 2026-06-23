@@ -272,7 +272,7 @@ function onReportSent() {
       class="room-popup z-[var(--z-modal)]"
       :class="isDesktop
         ? ''
-        : 'overflow-y-auto px-6 pt-2 pb-[calc(1.5rem_+_var(--safe-bottom))]'"
+        : 'overflow-y-auto rounded-xl mx-2 mb-[calc(0.5rem_+_var(--safe-bottom))] px-6 pt-2 pb-6'"
       overlay-class="supports-backdrop-filter:backdrop-blur-none"
       :show-close-button="false"
     >
