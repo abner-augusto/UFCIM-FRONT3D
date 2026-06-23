@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router';
 import { usePermissions } from '@/composables/usePermissions';
 import { useDarkMode } from '@/composables/useDarkMode';
 import NavDrawer from './NavDrawer.vue';
+import NotificationBadge from './NotificationBadge.vue';
 import NotificationsPanel from './NotificationsPanel.vue';
 import UfcimLogo from './UfcimLogo.vue';
 import { Menu, Bell, Moon, Sun } from 'lucide-vue-next';
@@ -86,9 +87,7 @@ function logout() {
           </Button>
           <Button variant="ghost" size="icon" class="desktop-notif" aria-label="Abrir notificações" @click="notifOpen = !notifOpen">
             <Bell :size="20" />
-            <span v-if="authStore.unreadCount > 0" class="notif-badge">
-              {{ authStore.unreadCount >= 100 ? '99+' : authStore.unreadCount }}
-            </span>
+            <NotificationBadge :count="authStore.unreadCount" />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger as-child>
@@ -118,9 +117,7 @@ function logout() {
           </Button>
           <Button variant="ghost" size="icon" class="mobile-notif" aria-label="Abrir notificações" @click="notifOpen = !notifOpen">
             <Bell :size="20" />
-            <span v-if="authStore.unreadCount > 0" class="notif-badge">
-              {{ authStore.unreadCount >= 100 ? '99+' : authStore.unreadCount }}
-            </span>
+            <NotificationBadge :count="authStore.unreadCount" />
           </Button>
           <router-link to="/perfil" class="mobile-avatar">
             {{ authStore.user?.name?.[0] || 'U' }}
@@ -286,24 +283,6 @@ function logout() {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.notif-badge {
-  position: absolute;
-  top: -6px;
-  right: -10px;
-  background: var(--destructive);
-  color: var(--destructive-foreground);
-  font-size: 0.65rem;
-  font-weight: 700;
-  min-width: 16px;
-  height: 16px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 4px;
-  line-height: 1;
 }
 
 /* Responsive Tiers */
