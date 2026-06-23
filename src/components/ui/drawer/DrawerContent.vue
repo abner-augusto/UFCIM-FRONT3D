@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import type { DialogContentEmits, DialogContentProps } from "reka-ui"
 import type { HTMLAttributes } from "vue"
+import { reactiveOmit } from "@vueuse/core"
 import { useForwardPropsEmits } from "reka-ui"
 import { DrawerContent, DrawerPortal } from "vaul-vue"
 import { cn } from "@/lib/utils"
@@ -10,15 +11,16 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = defineProps<DialogContentProps & { class?: HTMLAttributes["class"] }>()
+const props = defineProps<DialogContentProps & { class?: HTMLAttributes["class"], overlayClass?: HTMLAttributes["class"] }>()
 const emits = defineEmits<DialogContentEmits>()
 
-const forwarded = useForwardPropsEmits(props, emits)
+const delegatedProps = reactiveOmit(props, "overlayClass")
+const forwarded = useForwardPropsEmits(delegatedProps, emits)
 </script>
 
 <template>
   <DrawerPortal>
-    <DrawerOverlay />
+    <DrawerOverlay :class="overlayClass" />
     <DrawerContent
       data-slot="drawer-content"
       v-bind="{ ...$attrs, ...forwarded }"

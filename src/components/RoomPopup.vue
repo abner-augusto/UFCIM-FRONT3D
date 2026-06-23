@@ -271,6 +271,7 @@ function onReportSent() {
       :is="isDesktop ? DialogContent : DrawerContent"
       class="room-popup z-[var(--z-modal)]"
       :class="{ 'room-popup--drawer': !isDesktop }"
+      overlay-class="supports-backdrop-filter:backdrop-blur-none"
       :show-close-button="false"
     >
       <button class="room-popup__close" @click="$emit('close')" aria-label="Fechar popup">&times;</button>
