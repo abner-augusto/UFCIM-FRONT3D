@@ -1,5 +1,5 @@
 import type { Space } from '@/types/space';
-import type { Availability, Reservation, Notification, Blocking } from '@/types/reservation';
+import type { Availability, Reservation, Notification, Blocking, RecurringReservationResult } from '@/types/reservation';
 import type { OccupancyReport, SpaceReportData } from '@/types/report';
 import type { EquipmentReport } from '@/types/equipment-report';
 
@@ -199,7 +199,7 @@ export const api = {
       endTime: string;
       description?: string;
     }
-  ) => request<{ recurrenceId: string; created: Reservation[]; skipped: string[] }>(
+  ) => request<RecurringReservationResult>(
     '/reservations/recurring', token, { method: 'POST', body: JSON.stringify(body) }
   ),
 
