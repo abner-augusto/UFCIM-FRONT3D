@@ -93,15 +93,16 @@ const datetimeLabel = (iso: string) =>
       <p>Você não tem bloqueios ativos.</p>
     </div>
 
-    <ul v-else class="blocking-list">
+    <TransitionGroup v-else tag="ul" name="blist" class="blocking-list">
       <li
-        v-for="b in blockings"
+        v-for="(b, i) in blockings"
         :key="b.id"
-        class="blocking-card"
+        class="blocking-card stagger-item"
+        :style="{ '--i': i }"
         :class="{ 'blocking-card--expanded': expandedId === b.id }"
       >
         <!-- Summary row -->
-        <button class="blocking-card__summary" :aria-expanded="expandedId === b.id" @click="toggleExpand(b.id)">
+        <button class="blocking-card__summary press-feedback" :aria-expanded="expandedId === b.id" @click="toggleExpand(b.id)">
           <div class="blocking-card__info">
             <h3>{{ b.space?.name ?? b.space?.number ?? b.spaceId }}</h3>
             <p>{{ dateLong(b.date) }}</p>
@@ -184,7 +185,7 @@ const datetimeLabel = (iso: string) =>
           </div>
         </div>
       </li>
-    </ul>
+    </TransitionGroup>
   </div>
 </template>
 
@@ -211,6 +212,23 @@ const datetimeLabel = (iso: string) =>
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  position: relative; /* anchor for a leaving card's absolute position (FLIP) */
+}
+
+/* FLIP: siblings glide when a card expands or one is removed. Entrance is
+   handled by `.stagger-item`. */
+.blist-move {
+  transition: transform 300ms var(--ease-out-quart, ease);
+}
+.blist-leave-active {
+  transition: opacity 200ms ease, transform 200ms ease;
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+.blist-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
 }
 
 /* Card */

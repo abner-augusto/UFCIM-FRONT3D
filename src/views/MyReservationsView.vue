@@ -163,15 +163,16 @@ const groupedReservations = computed<GroupedReservation[]>(() => {
       <p>Você ainda não tem nenhuma reserva.</p>
     </div>
 
-    <ul v-else class="reservation-list">
+    <TransitionGroup v-else tag="ul" name="rlist" class="reservation-list">
       <li
-        v-for="group in groupedReservations"
+        v-for="(group, i) in groupedReservations"
         :key="group.id"
-        class="reservation-card"
+        class="reservation-card stagger-item"
+        :style="{ '--i': i }"
         :class="{ 'reservation-card--expanded': expandedId === group.id }"
       >
         <!-- Summary row — always visible -->
-        <button class="reservation-card__summary" :aria-expanded="expandedId === group.id" @click="toggleExpand(group.id)">
+        <button class="reservation-card__summary press-feedback" :aria-expanded="expandedId === group.id" @click="toggleExpand(group.id)">
           <div class="reservation-card__info">
             <h3>{{ group.main.space?.name ?? group.main.space?.number ?? group.main.spaceId }}</h3>
             <p v-if="!group.isRecurrent">{{ dateLabel(group.main.date) }}</p>
@@ -320,7 +321,7 @@ const groupedReservations = computed<GroupedReservation[]>(() => {
 
         </div>
       </li>
-    </ul>
+    </TransitionGroup>
   </div>
 </template>
 
@@ -341,6 +342,23 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  position: relative; /* anchor for a leaving card's absolute position (FLIP) */
+}
+
+/* FLIP: when a card expands or one is removed, the others glide to their new
+   spot instead of snapping. Entrance is handled by `.stagger-item`. */
+.rlist-move {
+  transition: transform 300ms var(--ease-out-quart, ease);
+}
+.rlist-leave-active {
+  transition: opacity 200ms ease, transform 200ms ease;
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+.rlist-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
 }
 
 /* Card */

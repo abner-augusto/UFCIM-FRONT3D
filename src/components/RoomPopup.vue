@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 
 const props = defineProps<{
+  open?: boolean;
   space: Space;
   selectedDate: string;
   selectedStartTime: string;
@@ -266,12 +267,12 @@ function onReportSent() {
 </script>
 
 <template>
-  <component :is="isDesktop ? Dialog : Drawer" :open="true" @update:open="handleOpenChange">
+  <component :is="isDesktop ? Dialog : Drawer" :open="open ?? true" @update:open="handleOpenChange">
     <component
       :is="isDesktop ? DialogContent : DrawerContent"
       class="room-popup z-[var(--z-modal)]"
       :class="isDesktop
-        ? ''
+        ? 'top-auto! bottom-[7dvh]! translate-y-0! max-h-[86dvh]! overflow-y-auto'
         : 'overflow-y-auto rounded-xl mx-2 mb-[calc(0.5rem_+_var(--safe-bottom))] px-6 pt-2 pb-6'"
       overlay-class="supports-backdrop-filter:backdrop-blur-none"
       :show-close-button="false"
@@ -366,8 +367,9 @@ function onReportSent() {
         <span class="details-toggle__chevron" :class="{ rotated: detailsExpanded }">›</span>
       </button>
 
-      <Transition name="details-collapse">
-        <div v-if="detailsExpanded" class="room-popup__details">
+      <div class="details-collapse" :class="{ 'details-collapse--open': detailsExpanded }">
+        <div class="details-collapse__inner" :inert="!detailsExpanded">
+          <div class="room-popup__details">
           <!-- Key stats row -->
           <div class="room-popup__stats-grid">
             <div v-if="space.capacity != null" class="stat-card">
@@ -425,8 +427,9 @@ function onReportSent() {
               </li>
             </ul>
           </div>
+          </div>
         </div>
-      </Transition>
+      </div>
 
       <!-- Blocking reason -->
       <div v-if="blockingReason" class="room-popup__notice">
@@ -495,8 +498,18 @@ function onReportSent() {
   overflow-y: auto;
   box-shadow: 0 12px 40px rgb(var(--shadow-color) / 0.18);
   position: relative;
-  animation: popup-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
   padding-bottom: calc(1.5rem + var(--safe-bottom, 0px));
+}
+
+/* Desktop dialog entrance + exit, keyed to reka-ui's data-state so the popup
+   springs in AND eases out (reka keeps it mounted until the close animation
+   ends). The mobile drawer ignores these — vaul owns its slide — and the
+   global reduced-motion kill-switch collapses both to ~instant. */
+.room-popup[data-state="open"] {
+  animation: popup-in 0.34s var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+.room-popup[data-state="closed"] {
+  animation: popup-out 0.18s ease-in both;
 }
 
 .room-popup::before {
@@ -517,9 +530,18 @@ function onReportSent() {
    applied via global Tailwind utilities on the component in the template instead.
    vaul itself supplies the bottom anchor, slide-in, rounded top, and grab handle. */
 
+/* Desktop dialog is anchored near the bottom (see template class) so expanding
+   the details grows it upward instead of overflowing off-screen; it stays
+   horizontally centered via translateX(-50%), and the keyframes keep that -50%
+   so the spring can't shove the popup sideways while it rises/settles. The
+   mobile drawer never matches these (vaul owns its slide, no `data-state`). */
 @keyframes popup-in {
-  from { opacity: 0; transform: translateY(28px) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: translate(-50%, 28px) scale(0.96); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+@keyframes popup-out {
+  from { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  to { opacity: 0; transform: translate(-50%, 12px) scale(0.97); }
 }
 
 .room-popup__close {
@@ -582,20 +604,23 @@ function onReportSent() {
   display: flex;
   flex-direction: column;
 }
-.details-collapse-enter-active,
-.details-collapse-leave-active {
-  transition: opacity 0.2s ease, max-height 0.25s ease;
-  overflow: hidden;
-}
-.details-collapse-enter-from,
-.details-collapse-leave-to {
+/* Collapse via grid-template-rows 0fr→1fr: the panel reveals to its true content
+   height (no hardcoded max-height to clip tall rooms) and never animates layout
+   box height directly. The inner wrapper clips the overflow during the slide. */
+.details-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
   opacity: 0;
-  max-height: 0;
+  transition: grid-template-rows var(--duration-slow, 0.3s) var(--ease-out-quart, ease),
+              opacity var(--duration-med, 0.22s) ease;
 }
-.details-collapse-enter-to,
-.details-collapse-leave-from {
+.details-collapse--open {
+  grid-template-rows: 1fr;
   opacity: 1;
-  max-height: 500px;
+}
+.details-collapse__inner {
+  overflow: hidden;
+  min-height: 0;
 }
 
 .room-popup__schedule { margin-bottom: 1rem; }

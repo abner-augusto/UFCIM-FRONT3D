@@ -41,6 +41,10 @@ const {
 const viewerRef = ref<InstanceType<typeof ThreeViewer> | null>(null);
 const selectedSpace = ref<Space | null>(null);
 const showPopup = ref(false);
+// Keeps the RoomPopup mounted long enough to play its exit animation: closing
+// flips `showPopup` (drives the Dialog/Drawer `open`), and we only drop the
+// space data once the close transition has finished.
+let popupUnmountTimer: ReturnType<typeof setTimeout> | null = null;
 const { loading: availabilityLoading, fetchStatuses } = usePinAvailability();
 const popupReserveDisabled = ref(false);
 const popupReserveDisabledReason = ref<string | null>(null);
@@ -270,6 +274,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   mql.removeEventListener('change', onResize);
+  if (popupUnmountTimer) clearTimeout(popupUnmountTimer);
 });
 
 async function handlePinClick(detail: { pinId: string; displayName: string; building: string; floorLevel: number }) {
@@ -279,6 +284,7 @@ async function handlePinClick(detail: { pinId: string; displayName: string; buil
     return;
   }
   const seq = ++popupDetailSeq;
+  if (popupUnmountTimer) { clearTimeout(popupUnmountTimer); popupUnmountTimer = null; }
   selectedSpace.value = summarySpace;
   showPopup.value = true;
   searchSheetOpen.value = false;
@@ -310,7 +316,15 @@ function closePopup() {
   popupDetailSeq += 1;
   popupStateSeq += 1;
   showPopup.value = false;
-  selectedSpace.value = null;
+  // Let the Dialog/Drawer animate out before we unmount it (clearing the space
+  // removes the `v-if`). Must outlast the slowest exit: the mobile vaul drawer's
+  // 0.5s close slide (the desktop dialog's is ~0.18s). Cancelled if a new pin is
+  // opened in the meantime.
+  if (popupUnmountTimer) clearTimeout(popupUnmountTimer);
+  popupUnmountTimer = setTimeout(() => {
+    selectedSpace.value = null;
+    popupUnmountTimer = null;
+  }, 550);
   popupReserveDisabled.value = false;
   popupReserveDisabledReason.value = null;
   popupBlockingReason.value = null;
@@ -396,7 +410,8 @@ useViewerTestHarness({
     />
 
     <RoomPopup
-      v-if="showPopup && selectedSpace"
+      v-if="selectedSpace"
+      :open="showPopup"
       :space="selectedSpace"
       :selected-date="selectedDate"
       :selected-start-time="defaultStartTime"
