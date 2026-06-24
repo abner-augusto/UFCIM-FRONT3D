@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
@@ -8,6 +8,7 @@ import { usePermissions } from '@/composables/usePermissions';
 import { toLocalISODate } from '@/utils/date';
 import AppDateField from '@/components/AppDateField.vue';
 import { Button } from '@/components/ui/button';
+import StatefulActionButton, { type ActionStatus } from '@/components/StatefulActionButton.vue';
 import { Label } from '@/components/ui/label';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,11 +27,15 @@ const selectedDate = ref('');
 const selectedBlockType = ref<'maintenance' | 'administrative' | ''>('');
 const reason = ref('');
 
-const loading = ref(false);
+const submitStatus = ref<ActionStatus>('idle');
 const errorMsg = ref<string | null>(null);
-const successMsg = ref<string | null>(null);
+let redirectTimer: ReturnType<typeof setTimeout> | null = null;
 
 const today = toLocalISODate();
+
+onBeforeUnmount(() => {
+  if (redirectTimer) clearTimeout(redirectTimer);
+});
 
 // Hour selection mode
 type HourMode = 'full_day' | 'custom';
@@ -117,7 +122,8 @@ onMounted(async () => {
 async function handleSubmit() {
   if (!canSubmit.value || !selectedBlockType.value ||
       !resolvedStart.value || !resolvedEnd.value) return;
-  loading.value = true;
+  if (submitStatus.value === 'submitting' || submitStatus.value === 'success') return;
+  submitStatus.value = 'submitting';
   errorMsg.value = null;
   try {
     await api.createBlocking(auth.token, {
@@ -128,12 +134,11 @@ async function handleSubmit() {
       blockType: selectedBlockType.value,
       reason: reason.value.trim(),
     });
-    successMsg.value = 'Espaço bloqueado com sucesso.';
-    setTimeout(() => router.push({ name: 'my-blockings' }), 1500);
+    submitStatus.value = 'success';
+    redirectTimer = setTimeout(() => router.push({ name: 'my-blockings' }), 900);
   } catch (e) {
+    submitStatus.value = 'error';
     errorMsg.value = e instanceof Error ? e.message : 'Não foi possível criar o bloqueio.';
-  } finally {
-    loading.value = false;
   }
 }
 </script>
@@ -220,17 +225,18 @@ async function handleSubmit() {
         />
       </div>
 
-      <p v-if="successMsg" class="state-success">{{ successMsg }}</p>
-      <p v-if="errorMsg" class="state-error">{{ errorMsg }}</p>
+      <p v-if="errorMsg" class="state-error" role="alert" aria-live="polite">{{ errorMsg }}</p>
 
       <div class="form-actions">
-        <Button
-          class="submit-btn"
-          :disabled="!canSubmit || loading"
+        <StatefulActionButton
+          :status="submitStatus"
+          :disabled="!canSubmit"
+          idle-label="Bloquear Espaço"
+          submitting-label="Bloqueando..."
+          success-label="Espaço bloqueado com sucesso!"
+          error-label="Tentar novamente"
           @click="handleSubmit"
-        >
-          {{ loading ? 'Bloqueando...' : 'Bloquear Espaço' }}
-        </Button>
+        />
       </div>
     </div>
   </div>
@@ -352,15 +358,6 @@ async function handleSubmit() {
   }
 }
 
-.submit-btn {
-  width: 100%;
-  font-size: 1rem;
-  min-height: var(--tap-min, 44px);
-}
-.submit-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
 .state-msg {
   color: var(--muted-foreground);
   font-size: 0.9rem;
@@ -370,7 +367,4 @@ async function handleSubmit() {
   font-size: 0.9rem;
   margin-bottom: 0.75rem;
 }
-.state-success {
-  color: var(--primary);
-  font-size: 0.9rem; font-weight: 500; margin-bottom: 0.75rem; }
 </style>
