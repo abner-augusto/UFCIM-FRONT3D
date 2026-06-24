@@ -274,10 +274,15 @@ function onReportSent() {
       class="room-popup z-[var(--z-modal)]"
       :class="isDesktop
         ? 'top-auto! bottom-[7dvh]! translate-y-0! max-h-[86dvh]! overflow-y-auto'
-        : 'overflow-y-auto rounded-xl mx-2 mb-[calc(0.5rem_+_var(--safe-bottom))] px-6 pt-2 pb-6'"
+        : 'overflow-hidden rounded-xl mx-2 mb-[calc(0.5rem_+_var(--safe-bottom))]'"
       overlay-class="supports-backdrop-filter:backdrop-blur-none"
       :show-close-button="false"
     >
+      <!-- On mobile this is the scroll region; on the desktop dialog it's
+           layout-transparent (display:contents) so nothing about that path changes.
+           Keeping the scroller a child of the drawer (not its root) lets vaul tell
+           drag-to-dismiss apart from content scrolling. -->
+      <div class="room-popup__scroll" :class="{ 'room-popup__scroll--flat': isDesktop }">
       <button class="room-popup__close" @click="$emit('close')" aria-label="Fechar popup">&times;</button>
 
       <!-- Header -->
@@ -475,6 +480,7 @@ function onReportSent() {
           <BarChart3 :size="14" style="vertical-align: -2px" /> Ver relatório
         </Button>
       </div>
+      </div>
     </component>
 
     <EquipmentReportDialog
@@ -552,6 +558,22 @@ function onReportSent() {
 @keyframes popup-out {
   from { opacity: 1; transform: translate(-50%, 0) scale(1); }
   to { opacity: 0; transform: translate(-50%, 12px) scale(0.97); }
+}
+
+/* Mobile drawer body scroller. The vaul root stays a fixed-height, non-scrolling
+   drag surface (grab handle + clipped corners); this child owns the scroll. That
+   keeps tall expanded "Mais detalhes" content from being clipped by flex-shrink
+   and lets vaul distinguish drag-to-dismiss from scrolling. On desktop the wrapper
+   collapses to display:contents so the dialog path is unchanged. */
+.room-popup__scroll {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.5rem 1.5rem 1.5rem;
+}
+.room-popup__scroll--flat {
+  display: contents;
 }
 
 .room-popup__close {
