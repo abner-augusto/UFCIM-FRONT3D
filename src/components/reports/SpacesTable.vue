@@ -1,12 +1,33 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import type { SpaceReport } from '@/types/report';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 
-defineProps<{
+const props = defineProps<{
   spaces: SpaceReport[];
 }>();
 
 const router = useRouter();
+
+type SortKey = 'default' | 'reservas' | 'taxa' | 'capacidade';
+const sortBy = ref<SortKey>('default');
+
+// Sort a copy so the incoming order (número/bloco, from the backend) is the
+// 'default' baseline. Array.sort is stable, so ties keep that order.
+const sortedSpaces = computed(() => {
+  const list = [...props.spaces];
+  switch (sortBy.value) {
+    case 'reservas':
+      return list.sort((a, b) => b.reservas - a.reservas);
+    case 'taxa':
+      return list.sort((a, b) => b.taxaOcupacao - a.taxaOcupacao);
+    case 'capacidade':
+      return list.sort((a, b) => b.capacidade - a.capacidade);
+    default:
+      return list;
+  }
+});
 
 function goToReport(spaceId: string) {
   router.push({ name: 'space-report', params: { spaceId } });
@@ -21,7 +42,18 @@ function taxaClass(taxa: number): string {
 
 <template>
   <div class="table-container">
-    <h3 class="table-title">Detalhamento por Sala</h3>
+    <div class="table-head">
+      <h3 class="table-title">Detalhamento por Sala</h3>
+      <label class="sort-control">
+        <span class="sort-label">Ordenar por</span>
+        <NativeSelect v-model="sortBy" class="sort-select" aria-label="Ordenar salas por">
+          <NativeSelectOption value="default">Sala (padrão)</NativeSelectOption>
+          <NativeSelectOption value="reservas">Mais reservadas</NativeSelectOption>
+          <NativeSelectOption value="taxa">Maior ocupação</NativeSelectOption>
+          <NativeSelectOption value="capacidade">Maior capacidade</NativeSelectOption>
+        </NativeSelect>
+      </label>
+    </div>
     <div class="table-scroll">
       <table class="spaces-table">
         <thead>
@@ -36,7 +68,7 @@ function taxaClass(taxa: number): string {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="s in spaces" :key="s.id" class="space-row" @click="goToReport(s.id)">
+          <tr v-for="s in sortedSpaces" :key="s.id" class="space-row" @click="goToReport(s.id)">
             <td class="cell-name">{{ s.nome }}</td>
             <td>{{ s.numero }}</td>
             <td>{{ s.bloco }}</td>
@@ -66,11 +98,39 @@ function taxaClass(taxa: number): string {
   padding: 1.25rem;
 }
 
+.table-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+}
+
 .table-title {
-  margin: 0 0 1rem;
+  margin: 0;
   font-size: 1rem;
   font-weight: 600;
   color: var(--foreground);
+}
+
+.sort-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sort-label {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+.sort-select {
+  width: auto;
+  min-width: 150px;
+  height: 36px;
+  font-size: 0.8rem;
 }
 
 .table-scroll {
