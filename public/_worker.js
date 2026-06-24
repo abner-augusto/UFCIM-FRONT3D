@@ -20,6 +20,19 @@ export default {
     }
 
     // Otherwise, serve the static assets from the Pages project
-    return env.ASSETS.fetch(request);
+    const response = await env.ASSETS.fetch(request);
+
+    // The service worker, the HTML entry, and the web manifest gate PWA update
+    // detection: if any is served stale from the browser/edge cache, an installed
+    // app never sees a new build. Force them to always revalidate. (A `_headers`
+    // file can't do this — Cloudflare ignores it when a `_worker.js` is present.)
+    const p = url.pathname;
+    if (p === '/sw.js' || p === '/' || p.endsWith('.html') || p === '/manifest.webmanifest') {
+      const res = new Response(response.body, response); // copy → mutable headers
+      res.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      return res;
+    }
+
+    return response;
   },
 };

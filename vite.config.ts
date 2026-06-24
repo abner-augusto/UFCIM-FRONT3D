@@ -9,7 +9,7 @@ export default defineConfig({
     tailwindcss(),
     vue(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,glb,json}'],
         maximumFileSizeToCacheInBytes: 50 * 1024 * 1024,
