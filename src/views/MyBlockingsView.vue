@@ -7,6 +7,7 @@ import type { Blocking } from '@/types/reservation';
 import { BLOCK_TYPE_LABELS } from '@/types/reservation';
 import { usePermissions } from '@/composables/usePermissions';
 import { Button } from '@/components/ui/button';
+import ListItemSkeleton from '@/components/ListItemSkeleton.vue';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -87,7 +88,7 @@ const datetimeLabel = (iso: string) =>
       <h1>Meus Bloqueios</h1>
     </div>
 
-    <div v-if="loading" class="state-msg">Carregando bloqueios...</div>
+    <ListItemSkeleton v-if="loading" :count="4" label="Carregando bloqueios" />
     <div v-else-if="errorMsg" class="state-error">{{ errorMsg }}</div>
     <div v-else-if="blockings.length === 0" class="state-empty">
       <p>Você não tem bloqueios ativos.</p>

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const props = defineProps<{
   open: boolean;
@@ -131,7 +132,15 @@ watch(() => props.open, (val) => {
 
         <!-- Body -->
         <ScrollArea class="notif-panel__body" :class="{ 'notif-panel__body--scroll': !loading && notifications.length > 0 }">
-          <div v-if="loading" class="notif-panel__state">Carregando notificações...</div>
+          <ul v-if="loading" class="notif-panel__list" role="status" aria-label="Carregando notificações">
+            <li v-for="n in 4" :key="n" class="notif-panel__item">
+              <div class="notif-panel__item-content">
+                <Skeleton class="h-[0.85rem] w-32 rounded" />
+                <Skeleton class="mt-1.5 h-3 w-44 max-w-[85%] rounded" />
+                <Skeleton class="mt-1.5 h-2.5 w-20 rounded" />
+              </div>
+            </li>
+          </ul>
           <div v-else-if="errorMsg" class="notif-panel__state notif-panel__state--error">{{ errorMsg }}</div>
           <div v-else-if="notifications.length === 0" class="notif-panel__state notif-panel__state--empty">
             Nenhuma notificação.

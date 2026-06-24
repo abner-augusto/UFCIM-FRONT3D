@@ -7,6 +7,7 @@ import { TIME_SLOT_LABELS, TIME_SLOT_RANGES, STATUS_LABELS, PURPOSE_OPTIONS } fr
 import { SPACE_TYPE_LABELS } from '@/types/space';
 import type { TimeSlot } from '@/types/reservation';
 import { Button } from '@/components/ui/button';
+import ListItemSkeleton from '@/components/ListItemSkeleton.vue';
 
 const auth = useAuthStore();
 
@@ -157,7 +158,7 @@ const groupedReservations = computed<GroupedReservation[]>(() => {
   <div class="my-reservations-view">
     <h1>Minhas Reservas</h1>
 
-    <div v-if="loading" class="state-msg">Carregando reservas...</div>
+    <ListItemSkeleton v-if="loading" :count="4" label="Carregando reservas" />
     <div v-else-if="errorMsg" class="state-error">{{ errorMsg }}</div>
     <div v-else-if="groupedReservations.length === 0" class="state-empty">
       <p>Você ainda não tem nenhuma reserva.</p>

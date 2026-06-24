@@ -9,6 +9,7 @@ import { usePermissions } from '@/composables/usePermissions';
 import { campuses } from '@/data/campuses';
 import { MapPin } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -189,7 +190,18 @@ function viewerLink(report: EquipmentReport) {
       </Button>
     </div>
 
-    <div v-if="loading" class="state-msg">Carregando chamados...</div>
+    <ul v-if="loading" class="report-list" role="status" aria-label="Carregando chamados">
+      <li v-for="n in 4" :key="n" class="report-card">
+        <div class="report-card__head">
+          <Skeleton class="h-5 w-16 rounded-full" />
+          <Skeleton class="h-5 w-24 rounded-full" />
+        </div>
+        <Skeleton class="mt-2 h-4 w-40 rounded" />
+        <Skeleton class="mt-1.5 h-3 w-28 rounded" />
+        <Skeleton class="mt-2 h-3 w-full max-w-[92%] rounded" />
+        <Skeleton class="mt-1 h-3 w-2/3 rounded" />
+      </li>
+    </ul>
     <div v-else-if="errorMsg" class="state-error">{{ errorMsg }}</div>
     <div v-else-if="isEmpty" class="state-empty">
       <p>Nenhum chamado {{ REPORT_STATUS_LABELS[activeStatus].toLowerCase() }}.</p>

@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
 import type { Notification } from '@/types/reservation';
+import ListItemSkeleton from '@/components/ListItemSkeleton.vue';
 
 const auth = useAuthStore();
 
@@ -81,7 +82,7 @@ const hasUnread = () => notifications.value.some((n) => !n.read);
       </button>
     </div>
 
-    <div v-if="loading" class="state-msg">Carregando notificações...</div>
+    <ListItemSkeleton v-if="loading" :count="5" label="Carregando notificações" />
     <div v-else-if="errorMsg" class="state-error">{{ errorMsg }}</div>
     <div v-else-if="notifications.length === 0" class="state-empty">
       <p>Nenhuma notificação.</p>
