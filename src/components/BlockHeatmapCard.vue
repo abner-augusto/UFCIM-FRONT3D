@@ -3,6 +3,7 @@ import { ref, watch } from 'vue';
 import { ChevronDown, ChevronUp } from 'lucide-vue-next';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
+import { toLocalISODate } from '@/utils/date';
 import type { Space } from '@/types/space';
 import type { AvailabilitySlot } from '@/types/reservation';
 
@@ -44,7 +45,12 @@ async function loadHeatmap() {
     lastHour.value = String(endH - 1);
     midHour.value = String(Math.floor((startH + endH) / 2));
 
-    const hourData: Array<{ hour: string; occupiedCount: number; totalCount: number }> = [];
+    // Tint hours that have already elapsed — but only today (a past date is
+    // legitimate history and should stay full-colour; future dates have none).
+    const isToday = props.date === toLocalISODate();
+    const nowHour = new Date().getHours();
+
+    const hourData: Array<{ hour: string; occupiedCount: number; totalCount: number; past: boolean }> = [];
     for (let h = startH; h < endH; h++) {
       const key = `${String(h).padStart(2, '0')}:00`;
       let occupied = 0;
@@ -57,14 +63,20 @@ async function loadHeatmap() {
         total++;
         if (slot.status === 'reserved' || slot.status === 'blocked') occupied++;
       });
-      hourData.push({ hour: key, occupiedCount: occupied, totalCount: total });
+      hourData.push({ hour: key, occupiedCount: occupied, totalCount: total, past: isToday && h < nowHour });
     }
 
     hours.value = hourData.map(h => {
-      let cssClass = 'cell--green';
-      if (h.totalCount > 0 && h.occupiedCount === h.totalCount) cssClass = 'cell--red';
-      else if (h.occupiedCount > 0) cssClass = 'cell--amber';
-      return { ...h, cssClass, tooltip: `${h.occupiedCount}/${h.totalCount} ocupadas às ${h.hour}` };
+      // Colour by occupancy %, in 25% bands green → amber → orange → red.
+      const pct = h.totalCount > 0 ? h.occupiedCount / h.totalCount : 0;
+      let cssClass = 'cell--q1';
+      if (pct >= 0.75) cssClass = 'cell--q4';
+      else if (pct >= 0.5) cssClass = 'cell--q3';
+      else if (pct >= 0.25) cssClass = 'cell--q2';
+      if (h.past) cssClass += ' cell--past';
+      const pctLabel = Math.round(pct * 100);
+      const tooltip = `${h.occupiedCount}/${h.totalCount} ocupadas (${pctLabel}%) às ${h.hour}${h.past ? ' (encerrado)' : ''}`;
+      return { ...h, cssClass, tooltip };
     });
 
     // Stats
@@ -134,10 +146,16 @@ watch(() => [props.visible, props.date, props.spaces], loadHeatmap, { immediate:
 </template>
 
 <style scoped>
-/* Dynamic occupancy cell colors (class string built in JS) + entrance transition. */
-.cell--green { background: color-mix(in srgb, var(--avail-free) 50%, transparent); }
-.cell--amber { background: color-mix(in srgb, var(--avail-partial) 60%, transparent); }
-.cell--red   { background: color-mix(in srgb, var(--avail-reserved) 50%, transparent); }
+/* Occupancy bands in 25% steps, green → red (class string built in JS).
+   q1 0–25% · q2 25–50% · q3 50–75% · q4 75–100%. */
+.cell--q1 { background: color-mix(in srgb, var(--avail-free) 55%, transparent); }
+.cell--q2 { background: color-mix(in srgb, var(--avail-partial) 70%, transparent); }
+.cell--q3 { background: color-mix(in srgb, var(--avail-blocked) 60%, transparent); }
+.cell--q4 { background: color-mix(in srgb, var(--avail-reserved) 60%, transparent); }
+
+/* Elapsed hours (today only) recede but keep their band hue. Matches the
+   past-slot dimming in RoomPopup. */
+.cell--past { opacity: 0.4; }
 
 .heatmap-enter-active,
 .heatmap-leave-active {
