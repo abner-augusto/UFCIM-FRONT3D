@@ -22,7 +22,10 @@ const { isDark } = useDarkMode();
 const chartData = computed(() => {
   void isDark.value;
   const c = chartColors();
-  const palette = [c.chart1, c.chart3, c.chart2];
+  // morning / afternoon / night → teal (brand) / ochre / purple. Night is
+  // chart5 (purple) rather than chart2 (blue) so it reads clearly apart from
+  // the teal morning instead of blending into it.
+  const palette = [c.chart1, c.chart3, c.chart5];
   return {
     labels: props.turnoData.map((t) => t.turno),
     datasets: [
