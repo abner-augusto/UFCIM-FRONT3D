@@ -3,6 +3,7 @@ import { RouterView, useRoute } from 'vue-router';
 import AppHeader from './components/AppHeader.vue';
 import BottomTabBar from './components/BottomTabBar.vue';
 import RouteProgressBar from './components/RouteProgressBar.vue';
+import PwaUpdateToast from './components/PwaUpdateToast.vue';
 import { useAuthStore } from './stores/auth';
 import { api } from './services/api';
 import { onMounted, onUnmounted, watch } from 'vue';
@@ -58,6 +59,7 @@ onUnmounted(() => {
     </RouterView>
   </main>
   <BottomTabBar v-if="auth.isAuthenticated" />
+  <PwaUpdateToast />
 </template>
 
 <style scoped>
