@@ -206,6 +206,12 @@ export class App {
     }
 
     animate() {
+        // Bail if the engine has been disposed. The next frame is scheduled
+        // (line below) *before* the render call, so without this guard a single
+        // frame slipping through after dispose() nulls the renderer would
+        // reschedule itself and throw forever — a runaway error loop.
+        if (!this.renderer) return;
+
         this.devTools?.beginFrame?.();
 
         this._animationFrameId = requestAnimationFrame(this.animate);
