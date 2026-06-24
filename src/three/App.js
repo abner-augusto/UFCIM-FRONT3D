@@ -48,6 +48,11 @@ export class App {
         // Bind 'this' to methods
         this.animate = this.animate.bind(this);
         this._onResize = this._onResize.bind(this);
+
+        // Set by dispose(). init() is async (it awaits the model load); if the
+        // engine is torn down mid-load, this lets the resumed init() abort
+        // instead of attaching listeners / starting the loop on a dead instance.
+        this._disposed = false;
     }
 
     async init() {
@@ -55,13 +60,16 @@ export class App {
         this._setupEventListeners();
 
         const modelsLoaded = await this._loadModels();
+        if (this._disposed) return; // torn down while models were loading
         if (modelsLoaded) {
             await this._initializeUI();
+            if (this._disposed) return;
         }
 
         this.interactionManager.blockingMeshes = this.modelManager.getAllMeshes();
         if (import.meta.env.DEV) {
             const { installDebugTools } = await import('./debugTools.js');
+            if (this._disposed) return;
             installDebugTools(this);
         }
         window.addEventListener('resize', this._onResize);
@@ -199,6 +207,7 @@ export class App {
     }
 
     _onResize() {
+        if (!this.renderer) return; // disposed — ignore late resize events
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -229,6 +238,9 @@ export class App {
     }
 
     dispose() {
+        // Mark disposed first so an in-flight async init() bails on resume.
+        this._disposed = true;
+
         // Stop animation loop
         if (this._animationFrameId) {
             cancelAnimationFrame(this._animationFrameId);
