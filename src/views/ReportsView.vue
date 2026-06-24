@@ -11,6 +11,8 @@ import LineChart from '@/components/reports/LineChart.vue';
 import BarChart from '@/components/reports/BarChart.vue';
 import TurnoPie from '@/components/reports/TurnoPie.vue';
 import SpacesTable from '@/components/reports/SpacesTable.vue';
+import ChartCardSkeleton from '@/components/ChartCardSkeleton.vue';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const auth = useAuthStore();
 const { isDark } = useDarkMode();
@@ -83,7 +85,57 @@ onMounted(async () => {
 
     <ReportFilters @apply="handleApply" />
 
-    <div v-if="loading" class="text-muted-foreground p-8 text-center text-[0.95rem]">Carregando relatório...</div>
+    <div v-if="loading" class="flex flex-col gap-4" role="status" aria-label="Carregando relatório">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div
+          v-for="n in 3"
+          :key="n"
+          class="border-border bg-card flex items-center gap-4 rounded-[12px] border p-5"
+        >
+          <Skeleton class="size-10 shrink-0 rounded-xl" />
+          <div class="min-w-0 flex-1">
+            <div class="flex h-9 items-center">
+              <Skeleton class="h-5 rounded" :class="n === 1 ? 'w-20' : 'w-16'" />
+            </div>
+            <div class="mt-1 flex h-5 items-center">
+              <Skeleton class="h-3 w-24 rounded" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <ChartCardSkeleton title-width="w-32" />
+        <ChartCardSkeleton title-width="w-36" height-class="h-[260px]" />
+      </div>
+
+      <ChartCardSkeleton title-width="w-36" />
+
+      <div class="border-border bg-card rounded-[12px] border p-5" aria-hidden="true">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex h-6 items-center">
+            <Skeleton class="h-4 w-40 rounded" />
+          </div>
+          <div class="flex items-center gap-2">
+            <Skeleton class="h-3 w-16 rounded" />
+            <Skeleton class="h-9 w-36 rounded-lg" />
+          </div>
+        </div>
+        <div class="mt-4 overflow-hidden rounded-lg border border-border">
+          <div class="grid grid-cols-7 gap-0 border-b border-border bg-muted/40 px-3 py-3">
+            <Skeleton v-for="n in 7" :key="`head-${n}`" class="h-3 w-12 rounded" />
+          </div>
+          <div v-for="row in 5" :key="row" class="grid grid-cols-7 gap-0 border-b border-border px-3 py-3 last:border-b-0">
+            <Skeleton
+              v-for="col in 7"
+              :key="`${row}-${col}`"
+              class="h-3 rounded"
+              :class="col === 1 ? 'w-20' : 'w-10'"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
     <div v-else-if="errorMsg" class="text-destructive p-8 text-center text-[0.95rem]">{{ errorMsg }}</div>
     <template v-else-if="report">
       <OccupancySummary :summary="report.summary" />

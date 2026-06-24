@@ -13,6 +13,7 @@ import { useHourRangeSelection } from '@/composables/useHourRangeSelection';
 import RecurringReservationForm from '@/components/RecurringReservationForm.vue';
 import { toLocalISODate } from '@/utils/date';
 import AppDateField from '@/components/AppDateField.vue';
+import SpaceHeaderSkeleton from '@/components/SpaceHeaderSkeleton.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -188,7 +189,7 @@ function handleContinue() {
       <h1>Fazer Reserva</h1>
     </div>
 
-    <div v-if="loadingSpace" class="state-msg">Carregando espaço...</div>
+    <SpaceHeaderSkeleton v-if="loadingSpace" :meta-lines="2" role="status" aria-label="Carregando espaço" />
     <div v-else-if="errorMsg && !space" class="state-error">{{ errorMsg }}</div>
 
     <div v-else-if="space" class="reservation-form">

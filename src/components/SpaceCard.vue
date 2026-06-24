@@ -11,6 +11,7 @@ import { useEquipmentGroups, type EquipmentGroup } from '@/composables/useEquipm
 import { usePermissions } from '@/composables/usePermissions';
 import type { PeriodKey } from '@/utils/period';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const props = defineProps<{
   space: Space;
@@ -181,7 +182,21 @@ function handleToggle() {
 
     <!-- Detail panel -->
     <div v-if="expanded" class="space-card__detail">
-      <div v-if="detailLoading" class="detail-loading">Carregando detalhes...</div>
+      <div v-if="detailLoading" class="space-card__detail-skeleton" role="status" aria-label="Carregando detalhes do espaço">
+        <div class="stats-grid" aria-hidden="true">
+          <div v-for="n in 3" :key="n" class="stat-card">
+            <Skeleton class="mx-auto h-5 w-14 rounded" />
+            <Skeleton class="mx-auto mt-2 h-3 w-20 rounded" />
+          </div>
+        </div>
+
+        <ul class="info-list" aria-hidden="true">
+          <li v-for="n in 3" :key="n">
+            <Skeleton class="h-3 w-20 rounded" />
+            <Skeleton class="h-3 rounded" :class="n === 1 ? 'w-28' : 'w-24'" />
+          </li>
+        </ul>
+      </div>
 
       <template v-else>
         <!-- Stats grid -->
@@ -361,9 +376,10 @@ function handleToggle() {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.detail-loading {
-  color: var(--muted-foreground);
-  font-size: 0.85rem;
+.space-card__detail-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
 }
 
 /* Stats grid — .stat-card styles in detail-panel.css */

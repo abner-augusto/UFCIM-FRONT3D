@@ -11,6 +11,8 @@ import DailyOccupancyChart from '@/components/reports/DailyOccupancyChart.vue';
 import HourlyHeatmap from '@/components/reports/HourlyHeatmap.vue';
 import ReservationTimeline from '@/components/reports/ReservationTimeline.vue';
 import AppDateField from '@/components/AppDateField.vue';
+import ChartCardSkeleton from '@/components/ChartCardSkeleton.vue';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toLocalISODate } from '@/utils/date';
 
 const route = useRoute();
@@ -102,10 +104,58 @@ const todayStr = computed(() => toLocalISODate());
       </div>
     </section>
 
-    <p v-if="loading" class="state-msg">Carregando relatório...</p>
-    <p v-if="errorMsg" class="state-error">{{ errorMsg }}</p>
+    <div v-if="loading" class="report-skeleton" role="status" aria-label="Carregando relatório">
+      <div class="space-report-header" aria-hidden="true">
+        <div class="header-info flex-1">
+          <div class="flex h-8 items-center">
+            <Skeleton class="h-5 w-52 rounded" />
+          </div>
+          <div class="mt-1 flex h-5 items-center">
+            <Skeleton class="h-3 w-44 rounded" />
+          </div>
+        </div>
+        <div class="header-range" aria-hidden="true">
+          <Skeleton class="h-3 w-14 rounded" />
+          <Skeleton class="h-3 w-32 rounded" />
+          <Skeleton class="h-3 w-12 rounded" />
+        </div>
+      </div>
 
-    <template v-if="report && !loading">
+      <div class="summary-cards" aria-hidden="true">
+        <div v-for="n in 3" :key="n" class="card">
+          <Skeleton class="size-10 shrink-0 rounded-xl" />
+          <div class="card-body">
+            <Skeleton class="h-5 w-16 rounded" />
+            <Skeleton class="mt-2 h-3 w-24 rounded" />
+          </div>
+        </div>
+      </div>
+
+      <section class="report-section">
+        <ChartCardSkeleton title-width="w-32" />
+      </section>
+
+      <section class="report-section">
+        <ChartCardSkeleton title-width="w-40" height-class="h-[260px]" />
+      </section>
+
+      <section class="report-section">
+        <div class="border-border bg-card rounded-[12px] border p-5" aria-hidden="true">
+          <div class="flex h-6 items-center">
+            <Skeleton class="h-4 w-40 rounded" />
+          </div>
+          <div class="mt-4 space-y-3">
+            <div v-for="n in 5" :key="n" class="flex gap-3">
+              <Skeleton class="mt-1 h-3 w-20 shrink-0 rounded" />
+              <Skeleton class="h-14 flex-1 rounded-xl" />
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <p v-else-if="errorMsg" class="state-error">{{ errorMsg }}</p>
+
+    <template v-else-if="report">
       <OccupancySummary :summary="adaptedSummary" />
 
       <section class="report-section">
@@ -227,6 +277,34 @@ const todayStr = computed(() => toLocalISODate());
 
 .state-error {
   color: var(--destructive);
+}
+
+.report-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .report-section h2 {

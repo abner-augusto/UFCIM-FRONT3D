@@ -7,6 +7,7 @@ import { BLOCK_TYPE_LABELS } from '@/types/reservation';
 import { usePermissions } from '@/composables/usePermissions';
 import { toLocalISODate } from '@/utils/date';
 import AppDateField from '@/components/AppDateField.vue';
+import SpaceHeaderSkeleton from '@/components/SpaceHeaderSkeleton.vue';
 import { Button } from '@/components/ui/button';
 import StatefulActionButton, { type ActionStatus } from '@/components/StatefulActionButton.vue';
 import { Label } from '@/components/ui/label';
@@ -150,7 +151,7 @@ async function handleSubmit() {
       <h1>Bloquear Espaço</h1>
     </div>
 
-    <div v-if="loadingSpace" class="state-msg">Carregando...</div>
+    <SpaceHeaderSkeleton v-if="loadingSpace" role="status" aria-label="Carregando espaço" />
 
     <div v-else class="blocking-form">
       <div class="space-info">
