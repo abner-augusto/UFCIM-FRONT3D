@@ -12,6 +12,7 @@ import { Users, Lightbulb, Snowflake, Flag, Repeat, BarChart3 } from 'lucide-vue
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const props = defineProps<{
   open?: boolean;
@@ -298,7 +299,16 @@ function onReportSent() {
           <span>Disponibilidade · {{ formattedDate }}</span>
           <span class="schedule-hint">toque nas horas livres</span>
         </div>
-        <div v-if="loadingAvailability" class="schedule-loading">Carregando...</div>
+        <div v-if="loadingAvailability" class="schedule-skeleton" aria-busy="true" aria-label="Carregando disponibilidade">
+          <div class="hour-grid">
+            <Skeleton v-for="n in 12" :key="n" class="h-6 flex-1 rounded-[3px]" />
+          </div>
+          <div class="hour-axis">
+            <span v-for="n in 12" :key="n" class="flex justify-center">
+              <Skeleton class="h-2 w-2.5 rounded-[2px]" />
+            </span>
+          </div>
+        </div>
         <template v-else-if="visibleSlots.length">
           <!-- :key forces a remount on date change so the stagger re-plays -->
           <div class="hour-grid" :key="selectedDate">
@@ -626,17 +636,8 @@ function onReportSent() {
 .room-popup__schedule { margin-bottom: 1rem; }
 .schedule-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.06em; }
 .schedule-hint { font-weight: 400; text-transform: none; color: var(--muted-foreground); font-size: 0.62rem; }
-.schedule-loading {
-  font-size: 0.72rem;
-  color: var(--muted-foreground);
-  animation: pulse-text 1.2s ease-in-out infinite;
-}
 
-@keyframes pulse-text {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
+.schedule-skeleton { margin-bottom: 3px; }
 
 .hour-grid { display: flex; gap: 2px; margin-bottom: 3px; }
 

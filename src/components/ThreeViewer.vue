@@ -34,6 +34,7 @@ let threeApp: ThreeApp | null = null;
 const emit = defineEmits<{
   'pin-click': [detail: { pinId: string; displayName: string; building: string; floorLevel: number }];
   'ready': [];
+  'error': [];
 }>();
 
 function onPinClick(event: Event) {
@@ -44,12 +45,20 @@ function onPinClick(event: Event) {
 onMounted(async () => {
   if (!canvasRef.value) return;
 
-  // Dynamic import to code-split the heavy Three.js bundle
-  // @ts-expect-error — legacy JS module, no types
-  const { App } = await import('@/three/App.js');
-  const app: ThreeApp = new App(canvasRef.value);
-  threeApp = app;
-  await app.init();
+  try {
+    // Dynamic import to code-split the heavy Three.js bundle
+    // @ts-expect-error — legacy JS module, no types
+    const { App } = await import('@/three/App.js');
+    const app: ThreeApp = new App(canvasRef.value);
+    threeApp = app;
+    await app.init();
+  } catch (err) {
+    // The manifest or a GLB failed to load — surface it so the view can show a
+    // retry instead of leaving the loading overlay spinning forever.
+    console.error('[ThreeViewer] engine init failed', err);
+    emit('error');
+    return;
+  }
 
   window.addEventListener('ufcim:pin-click', onPinClick);
   emit('ready');

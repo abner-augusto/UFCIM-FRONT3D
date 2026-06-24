@@ -7,6 +7,7 @@ import { api } from '@/services/api';
 import type { Space } from '@/types/space';
 import { campuses } from '@/data/campuses';
 import ThreeViewer from '@/components/ThreeViewer.vue';
+import { Button } from '@/components/ui/button';
 import RoomPopup from '@/components/RoomPopup.vue';
 import PeriodSelector from '@/components/PeriodSelector.vue';
 import ViewerControlsRail from '@/components/ViewerControlsRail.vue';
@@ -65,6 +66,9 @@ const onResize = (e: MediaQueryListEvent | MediaQueryList) => {
 const spacesByModelId = new Map<string, Space>();
 let cachedStatusMap = new Map<string, { status: PinStatus; slots: Array<{ startTime: string; endTime: string; status: string }> }>();
 const viewerReady = ref(false);
+const viewerError = ref(false);
+// Bumped to force-remount ThreeViewer (re-running its init) on retry.
+const viewerKey = ref(0);
 const spacesLoaded = ref(false);
 let colorUpdateSeq = 0;
 let popupStateSeq = 0;
@@ -205,8 +209,19 @@ function handleDateChange(date: string) {
   setDate(date);
 }
 
+const handleViewerError = () => {
+  viewerError.value = true;
+};
+
+function retryViewer() {
+  viewerError.value = false;
+  viewerReady.value = false;
+  viewerKey.value++;
+}
+
 const handleViewerReady = () => {
   viewerReady.value = true;
+  viewerError.value = false;
   viewerRef.value?.setInteractive(!viewerOverlayOpen.value);
   viewerRef.value?.setThemeMode(isDark.value);
   if (spacesLoaded.value) {
@@ -354,7 +369,27 @@ useViewerTestHarness({
 
 <template>
   <div class="viewer-view" :class="{ 'viewer-view--fullscreen': fullscreen }">
-    <ThreeViewer ref="viewerRef" @ready="handleViewerReady" @pin-click="handlePinClick" />
+    <ThreeViewer
+      :key="viewerKey"
+      ref="viewerRef"
+      @ready="handleViewerReady"
+      @error="handleViewerError"
+      @pin-click="handlePinClick"
+    />
+
+    <!-- Maquette load state: covers the canvas until the 3D models finish
+         loading (the in-component half of MEL-012, after the route chunk). -->
+    <Transition name="viewer-loading-fade">
+      <div v-if="!viewerReady && !viewerError" class="viewer-loading" role="status" aria-live="polite">
+        <div class="viewer-loading__spinner" aria-hidden="true"></div>
+        <p class="viewer-loading__label">Carregando maquete 3D…</p>
+      </div>
+    </Transition>
+
+    <div v-if="viewerError" class="viewer-loading viewer-loading--error" role="alert">
+      <p class="viewer-loading__label">Não foi possível carregar a maquete 3D.</p>
+      <Button variant="outline" @click="retryViewer">Tentar novamente</Button>
+    </div>
 
     <!-- Top-left stack: date/period card with the block occupancy heatmap below it.
          On mobile the PeriodSelector is not rendered, so only the heatmap shows. -->
@@ -444,6 +479,63 @@ useViewerTestHarness({
 .viewer-view--fullscreen {
   height: 100vh;
   height: 100dvh;
+}
+
+/* Maquette loading / error overlay — sits above the canvas and chrome while
+   the 3D models load (or after a load failure). */
+.viewer-loading {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: var(--background);
+  color: var(--muted-foreground);
+  text-align: center;
+  padding: 1rem;
+}
+.viewer-loading__spinner {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 3px solid color-mix(in srgb, var(--primary) 20%, transparent);
+  border-top-color: var(--primary);
+  animation: viewer-spin 0.8s linear infinite;
+}
+.viewer-loading__label {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+@keyframes viewer-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* The crossfade out once the model is ready. */
+.viewer-loading-fade-leave-active {
+  transition: opacity 280ms var(--ease-out-quart, ease);
+}
+.viewer-loading-fade-leave-to {
+  opacity: 0;
+}
+
+/* Reduced motion: no spin, no transform. A gentle opacity pulse on the ring
+   still signals activity without vestibular-triggering movement. */
+@media (prefers-reduced-motion: reduce) {
+  .viewer-loading__spinner {
+    animation: viewer-pulse 1.4s ease-in-out infinite;
+    border-top-color: color-mix(in srgb, var(--primary) 20%, transparent);
+  }
+  .viewer-loading-fade-leave-active {
+    transition: none;
+  }
+}
+@keyframes viewer-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
 }
 
 /* Top-left overlay stack: PeriodSelector with the occupancy heatmap below it. */

@@ -2,6 +2,7 @@
 import { RouterView, useRoute } from 'vue-router';
 import AppHeader from './components/AppHeader.vue';
 import BottomTabBar from './components/BottomTabBar.vue';
+import RouteProgressBar from './components/RouteProgressBar.vue';
 import { useAuthStore } from './stores/auth';
 import { api } from './services/api';
 import { onMounted, onUnmounted, watch } from 'vue';
@@ -47,6 +48,7 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <RouteProgressBar />
   <AppHeader v-if="auth.isAuthenticated" />
   <main class="app-main bg-background text-foreground">
     <RouterView v-slot="{ Component }">

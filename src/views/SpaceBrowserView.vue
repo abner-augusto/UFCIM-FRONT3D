@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const route = useRoute();
 const router = useRouter();
@@ -162,7 +163,27 @@ onMounted(async () => {
     </div>
 
     <!-- States -->
-    <div v-if="loading" class="text-muted-foreground py-8 text-center text-sm">Carregando espaços...</div>
+    <div v-if="loading" class="flex flex-col gap-2" aria-busy="true" aria-label="Carregando espaços">
+      <div
+        v-for="n in 6"
+        :key="n"
+        class="border-border bg-card flex items-center gap-3 rounded-xl border px-4 py-[0.95rem]"
+      >
+        <Skeleton class="size-2.5 shrink-0 rounded-full" />
+        <div class="min-w-0 flex-1">
+          <!-- Line boxes track the real SpaceCard's h3/p (0.95rem & 0.8rem at
+               line-height 1.5), nudged up slightly so the row reads as tall as
+               the real card with its summary padding. -->
+          <div class="flex h-[1.55rem] items-center">
+            <Skeleton class="h-[0.75rem] rounded" :class="n % 2 ? 'w-40' : 'w-28'" />
+          </div>
+          <div class="mt-[0.15rem] flex h-[1.3rem] items-center">
+            <Skeleton class="h-[0.6rem] w-56 max-w-[80%] rounded" />
+          </div>
+        </div>
+        <Skeleton class="h-4 w-2 shrink-0 rounded" />
+      </div>
+    </div>
     <div v-else-if="error" class="text-destructive py-8 text-center text-sm">{{ error }}</div>
     <div v-else-if="filteredSpaces.length === 0" class="text-muted-foreground py-12 text-center text-sm">
       <p v-if="searchQuery || blockFilter || typeFilter || statusFilter">

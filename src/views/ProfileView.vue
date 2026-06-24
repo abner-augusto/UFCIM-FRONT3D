@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -52,7 +53,17 @@ function handleLogout() {
       <h1 class="m-0 text-xl font-semibold">Meu Perfil</h1>
     </div>
 
-    <div v-if="loading" class="text-muted-foreground text-sm">Carregando perfil...</div>
+    <Card v-if="loading" class="mb-6 gap-0 overflow-hidden py-0" aria-busy="true" aria-label="Carregando perfil">
+      <div
+        v-for="row in 4"
+        :key="row"
+        class="flex items-center justify-between px-5 py-3.5"
+        :class="{ 'border-b': row < 4 }"
+      >
+        <Skeleton class="h-4 w-20" />
+        <Skeleton class="h-4" :class="row % 2 ? 'w-40' : 'w-28'" />
+      </div>
+    </Card>
     <div v-else-if="errorMsg" class="text-destructive text-sm" role="alert">{{ errorMsg }}</div>
 
     <Card v-else-if="profile" class="mb-6 gap-0 overflow-hidden py-0">
