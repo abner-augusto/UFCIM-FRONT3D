@@ -46,15 +46,11 @@ watch(() => props.count, async (count, previousCount) => {
 
 <style scoped>
 .notif-badge {
-  --badge-slide-dur: 260ms;
   --badge-pop-dur: 500ms;
   --badge-pop-close-dur: 180ms;
   --badge-fade-dur: 400ms;
   --badge-fade-close-dur: 180ms;
   --badge-blur: 2px;
-  --badge-offset-x: -8.2px;
-  --badge-offset-y: 12.4px;
-  --badge-slide-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --badge-pop-ease: cubic-bezier(0.34, 1.36, 0.64, 1);
   --badge-close-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --digit-dur: 500ms;
@@ -66,14 +62,10 @@ watch(() => props.count, async (count, previousCount) => {
   --digit-dir-y: 1;
 
   position: absolute;
-  top: -6px;
-  right: -10px;
+  top: -18px;
+  right: -15px;
   pointer-events: none;
   will-change: transform;
-}
-
-.notif-badge[data-open='true'] {
-  animation: notif-badge-slide-in var(--badge-slide-dur) var(--badge-slide-ease);
 }
 
 .notif-badge__dot {
@@ -122,16 +114,6 @@ watch(() => props.count, async (count, previousCount) => {
 
 .notif-badge__digits.is-animating .notif-badge__digit {
   animation: notif-badge-digit-pop-in var(--digit-dur) var(--digit-ease) both;
-}
-
-@keyframes notif-badge-slide-in {
-  from {
-    transform: translate(var(--badge-offset-x), var(--badge-offset-y));
-  }
-
-  to {
-    transform: translate(0, 0);
-  }
 }
 
 @keyframes notif-badge-digit-pop-in {

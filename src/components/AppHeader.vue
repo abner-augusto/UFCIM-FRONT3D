@@ -86,8 +86,10 @@ function logout() {
             <Moon v-else :size="20" />
           </Button>
           <Button variant="ghost" size="icon" class="desktop-notif" aria-label="Abrir notificações" @click="notifOpen = !notifOpen">
-            <Bell :size="20" />
-            <NotificationBadge :count="authStore.unreadCount" />
+            <span class="notif-icon">
+              <Bell :size="20" />
+              <NotificationBadge :count="authStore.unreadCount" />
+            </span>
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger as-child>
@@ -116,8 +118,10 @@ function logout() {
             <Moon v-else :size="20" />
           </Button>
           <Button variant="ghost" size="icon" class="mobile-notif" aria-label="Abrir notificações" @click="notifOpen = !notifOpen">
-            <Bell :size="20" />
-            <NotificationBadge :count="authStore.unreadCount" />
+            <span class="notif-icon">
+              <Bell :size="20" />
+              <NotificationBadge :count="authStore.unreadCount" />
+            </span>
           </Button>
           <router-link to="/perfil" class="mobile-avatar">
             {{ authStore.user?.name?.[0] || 'U' }}
@@ -283,6 +287,14 @@ function logout() {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Wraps the bell + badge so the badge anchors to the 20px icon rather than the
+   larger tap-target button — keeps it pinned to the icon's top-right corner
+   identically on desktop and mobile. */
+.notif-icon {
+  position: relative;
+  display: inline-flex;
 }
 
 /* Responsive Tiers */
