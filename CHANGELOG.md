@@ -1,5 +1,45 @@
 # Changelog
 
+## [3.3.0](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v3.2.0...v3.3.0) (2026-06-25)
+
+
+### Features
+
+* add loading skeletons and viewer load indicators ([9609bb7](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/9609bb7d32d0fcc48816229224156025c5611c0a))
+* add natural motion across pages, popups, and lists ([85bb446](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/85bb44645bce98d82581b9a1c4307e3b4340f7d9))
+* add skeletons to report and detail surfaces ([084722c](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/084722c763d840c4434323359926cb8837d3aaf6))
+* add skeletons to reservation, blocking, notification and maintenance lists ([b311a79](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/b311a79ec775dff2932a7a816ffff2e985ab635d))
+* animate reservation and notification feedback ([1334ebb](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/1334ebba62ea44e7db416dcd028d78a4c855f6a3))
+* band block heatmap by occupancy and dim elapsed hours ([59f8084](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/59f8084f67328fb7e34ec6f1f34b96a7b2cfa1fd))
+* **brand:** adopt UFCIM logo teal as the brand color ([2eb08d2](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/2eb08d267d61141fa1f674ac4cfa1568ffffd474))
+* **brand:** adopt UFCIM logo teal as the brand color ([66b8307](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/66b8307bfc777a50ab8a8ef6a60106bd0274a24c))
+* **brand:** show UFCIM logo on login page; extract UfcimLogo component ([2553794](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/25537945e69431281d24e131e92fb877de6bc8fb))
+* lower password minimum to 8 chars to match UFC policy ([324273a](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/324273a6583ffaf8fe5ce4b88c6608d1591dad64))
+* prompt to reload PWA on new build instead of silent auto-update ([acffe8d](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/acffe8d4f4d925cb181b44ec40be8a9ea11a2445))
+* prompt to reload PWA on new build instead of silent auto-update ([b12c908](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/b12c908ee7b41a7a585f72964e95507aff54db21))
+* **reservations:** type recurring-reservation result to match backend ([b7bf696](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/b7bf696da2bced3f5c33daa21de8f51ffa716368))
+* sort occupancy report rooms by usage or capacity ([05fe58b](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/05fe58be83679dc1a9919a834bc2c45ce4c7c718))
+
+
+### Bug Fixes
+
+* distinguish night turno color from morning in reports ([4f4ce4e](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/4f4ce4e649c280a0b97409057a3eecb759875d19))
+* let mobile RoomPopup scroll when 'Mais detalhes' expands ([95fbf1d](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/95fbf1df1644951918b9d82c0c70cf9553541694))
+* **MEL-009:** drop backdrop blur behind RoomPopup so focused pin stays visible ([4947b5e](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/4947b5ef1fe65bbc64ea175abeb362564bd9a7f8))
+* **MEL-009:** float the mobile RoomPopup drawer off the screen edges ([45de119](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/45de1198ea47b11c38e5e3b1d27521d838298656))
+* **MEL-009:** float the mobile RoomPopup drawer off the screen edges ([9f57e14](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/9f57e1443a13b2299456dbfd0370d76e014fbbcf))
+* **MEL-009:** keep focused pin visible behind RoomPopup (drop backdrop blur) ([3848f53](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/3848f53c141c7c1e168301866ab3915b0295075b))
+* **MEL-009:** remove blank scroll space below mobile RoomPopup drawer ([25a15ee](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/25a15eea9472b1556839c029f3190a4964cfe165))
+* **MEL-009:** remove blank scroll space below mobile RoomPopup drawer ([5ae4bda](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/5ae4bdaab8f2ce089d88b6e2f767beb419abe546))
+* **MEL-009:** restore padding on mobile RoomPopup drawer ([5fe625c](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/5fe625c7ac49c125bf791067047c9904c80012d2))
+* **MEL-009:** restore padding on mobile RoomPopup drawer ([e8644f3](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/e8644f34312175c3268391ba5837295ee512c232))
+* **MEL-009:** RoomPopup mobile drawer bleeds off screen (100vw overflow) ([7b74355](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/7b74355bf47b0cdfa24e89ce06bb019906df5dc5))
+* **MEL-009:** stop ViewerView 100vw from overflowing the page on mobile ([f750a89](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/f750a8995ee66299b698e68287d01e9f9520afab))
+* pin notification badge to the bell icon ([2ea5778](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/2ea577864b7b4a2fb488762e3570bfa37bc15fcc))
+* refine report calendars and heatmap colors ([bc4253d](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/bc4253decaaf186bfefcd62d98d1cfe39747dc5c))
+* **viewer:** abort init when disposed during model load ([c652cab](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/c652cab717ac2a00fd4c40b0cf4491ca9a071ade))
+* **viewer:** stop animation loop after dispose ([be7656a](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/be7656a0a8e00479a06ceb786810003524f81b09))
+
 ## [3.2.0](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v3.1.0...v3.2.0) (2026-06-22)
 
 
