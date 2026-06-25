@@ -61,8 +61,8 @@ function validateForm(): boolean {
     return false;
   }
   const val = password.value;
-  if (val.length < 10) {
-    fieldErrors.value.password = 'A senha deve ter ao menos 10 caracteres.';
+  if (val.length < 8) {
+    fieldErrors.value.password = 'A senha deve ter ao menos 8 caracteres.';
     return false;
   }
   if (!/[a-zA-Z]/.test(val) || !/[0-9]/.test(val)) {
@@ -163,7 +163,7 @@ async function handleAccept() {
             :aria-invalid="!!fieldErrors.password"
             :aria-describedby="`invite-password-hint${fieldErrors.password ? ' err-password' : ''}`"
           />
-          <span id="invite-password-hint" class="text-muted-foreground text-[0.78rem]">≥10 caracteres, ao menos uma letra e um número</span>
+          <span id="invite-password-hint" class="text-muted-foreground text-[0.78rem]">≥8 caracteres, ao menos uma letra e um número</span>
           <span v-if="fieldErrors.password" id="err-password" class="text-destructive text-[0.8rem]" aria-live="polite">{{ fieldErrors.password }}</span>
         </div>
 
