@@ -30,6 +30,9 @@ const cancelStatus = ref<CancelReservationStatus>('idle');
 const cancelErrorMessage = ref<string | null>(null);
 let highlightTimer: ReturnType<typeof setTimeout> | null = null;
 let cancelSuccessTimer: ReturnType<typeof setTimeout> | null = null;
+// Bumped on every cancel-target change so a slow series-impact response can't
+// overwrite the count for a target the user has since switched away from.
+let impactRequestSeq = 0;
 
 interface CancelTarget {
   kind: 'single' | 'series';
@@ -83,6 +86,7 @@ function futureConfirmedOccurrences(items: Reservation[]): Reservation[] {
 }
 
 function openCancelDialog(reservation: Reservation) {
+  impactRequestSeq += 1;
   resetCancelState();
   cancelTarget.value = {
     kind: 'single',
@@ -93,6 +97,7 @@ function openCancelDialog(reservation: Reservation) {
 }
 
 function openCancelSeriesDialog(group: GroupedReservation) {
+  const requestSeq = (impactRequestSeq += 1);
   const futureOccurrences = futureConfirmedOccurrences(group.items);
   const firstFuture = futureOccurrences[0] ?? group.main;
   resetCancelState();
@@ -100,9 +105,26 @@ function openCancelSeriesDialog(group: GroupedReservation) {
     kind: 'series',
     id: group.id,
     summary: reservationSummary(firstFuture, `A partir de ${dateShort(firstFuture.date)}`),
+    // Client estimate shown instantly; refined below with the backend's count.
     futureOccurrencesCount: futureOccurrences.length,
   };
   cancelDialogOpen.value = true;
+  void refreshSeriesImpact(group.id, requestSeq);
+}
+
+// Fetch the backend's accurate future-occurrence count and apply it, unless a
+// newer cancel target has been opened in the meantime (stale-response guard).
+async function refreshSeriesImpact(recurrenceId: string, requestSeq: number) {
+  try {
+    const impact = await api.getSeriesImpact(auth.token, recurrenceId);
+    const target = cancelTarget.value;
+    if (requestSeq !== impactRequestSeq || !target || target.kind !== 'series' || target.id !== recurrenceId) {
+      return;
+    }
+    cancelTarget.value = { ...target, futureOccurrencesCount: impact.futureCount };
+  } catch {
+    // Silently keep the client estimate; never block or surface an error.
+  }
 }
 
 function closeCancelDialog() {
