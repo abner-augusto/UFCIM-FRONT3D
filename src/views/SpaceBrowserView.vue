@@ -1,18 +1,21 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { SlidersHorizontalIcon } from '@lucide/vue';
 import { useAuthStore } from '@/stores/auth';
 import { campuses } from '@/data/campuses';
 import { SPACE_TYPE_LABELS } from '@/types/space';
 import { useSpaceBrowser } from '@/composables/useSpaceBrowser';
 import { PERIOD_COLORS, type PinStatus } from '@/composables/usePinAvailability';
 import SpaceCard from '@/components/SpaceCard.vue';
+import SpaceFiltersSheet from '@/components/SpaceFiltersSheet.vue';
 import AppDateField from '@/components/AppDateField.vue';
 import type { PeriodKey } from '@/utils/period';
 import { toLocalISODate } from '@/utils/date';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -48,6 +51,7 @@ const {
 
 const expandedId = ref<string | null>(null);
 const today = toLocalISODate();
+const filtersOpen = ref(false);
 
 const STATUS_OPTIONS: { value: PinStatus; label: string }[] = [
   { value: 'available', label: 'Disponível' },
@@ -57,6 +61,22 @@ const STATUS_OPTIONS: { value: PinStatus; label: string }[] = [
   { value: 'closed', label: 'Fechado' },
   { value: 'not_reservable', label: 'Indisponível' },
 ];
+
+const PERIOD_OPTIONS: { value: PeriodKey; label: string }[] = [
+  { value: 'morning', label: 'Manhã (07h–12h)' },
+  { value: 'afternoon', label: 'Tarde (13h–18h)' },
+  { value: 'evening', label: 'Noite (19h–22h)' },
+];
+
+const activeFilterCount = computed(
+  () => [blockFilter.value, typeFilter.value, statusFilter.value].filter(Boolean).length,
+);
+
+function clearAllFilters() {
+  blockFilter.value = null;
+  typeFilter.value = null;
+  statusFilter.value = null;
+}
 
 function toggleExpand(id: string) {
   expandedId.value = expandedId.value === id ? null : id;
@@ -92,6 +112,17 @@ onMounted(async () => {
             <Label class="text-muted-foreground text-[0.72rem] font-semibold uppercase" for="browser-date">Data</Label>
             <AppDateField id="browser-date" v-model="selectedDate" :min="today" aria-label="Selecionar data" />
           </div>
+          <Button
+            variant="outline"
+            class="bg-background h-11 shrink-0 gap-2"
+            data-testid="open-space-filters"
+            aria-label="Abrir filtros"
+            @click="filtersOpen = true"
+          >
+            <SlidersHorizontalIcon class="size-4" />
+            Filtros
+            <Badge v-if="activeFilterCount" variant="secondary" class="ml-0.5">{{ activeFilterCount }}</Badge>
+          </Button>
         </div>
         <div class="flex flex-wrap gap-1.5 [&>*]:max-[480px]:flex-[1_1_calc(50%-0.25rem)] [&>*]:max-[480px]:min-w-0">
           <NativeSelect
@@ -214,6 +245,23 @@ onMounted(async () => {
         </div>
       </section>
     </div>
+
+    <SpaceFiltersSheet
+      v-model:open="filtersOpen"
+      v-model:block-filter="blockFilter"
+      v-model:type-filter="typeFilter"
+      v-model:status-filter="statusFilter"
+      :blocks="availableBlocks"
+      :types="availableTypes"
+      :status-options="STATUS_OPTIONS"
+      :period-options="PERIOD_OPTIONS"
+      :period="selectedPeriod"
+      :period-auto-detected="periodAutoDetected"
+      :availability-loading="availabilityLoading"
+      :active-count="activeFilterCount"
+      @update:period="setPeriod"
+      @clear="clearAllFilters"
+    />
   </div>
 </template>
 
