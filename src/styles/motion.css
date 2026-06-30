@@ -27,3 +27,34 @@
 .press-feedback:active:not(:disabled) {
   transform: scale(0.985);
 }
+
+/* Theme reveal: the origin is written by useDarkMode() from the clicked
+   light/dark toggle, so desktop and mobile buttons both expand from the real
+   tap location instead of from a fixed corner. */
+:root {
+  --theme-transition-x: 50vw;
+  --theme-transition-y: 50vh;
+  --theme-transition-radius: 150vmax;
+}
+
+::view-transition-group(root) {
+  animation-duration: var(--duration-slow, 350ms);
+  animation-timing-function: var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+::view-transition-new(root) {
+  animation: theme-circle-reveal var(--duration-slow, 350ms) var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
+  clip-path: circle(0 at var(--theme-transition-x) var(--theme-transition-y));
+}
+
+::view-transition-old(root),
+.dark::view-transition-old(root) {
+  animation: none;
+  z-index: -1;
+}
+
+@keyframes theme-circle-reveal {
+  to {
+    clip-path: circle(var(--theme-transition-radius) at var(--theme-transition-x) var(--theme-transition-y));
+  }
+}
