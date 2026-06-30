@@ -42,6 +42,38 @@
   animation: success-pop 0.42s var(--ease-out-quart, cubic-bezier(0.25, 1, 0.5, 1)) both;
 }
 
+/* Same-object reveal: an expandable region grows from nothing to its true
+   content height by transitioning grid-template-rows 0fr→1fr — never a
+   hardcoded max-height, so tall content is never clipped. The element stays
+   mounted in both states so the reveal plays on open AND collapse, reading as
+   the same card showing more of itself rather than new content snapping in.
+   This is the single source of truth for card/detail expansion (RoomPopup
+   details, SpaceCard, reservation/blocking list cards). Structure:
+
+     <div class="reveal-collapse" :class="{ 'reveal-collapse--open': open }">
+       <div class="reveal-collapse__inner" :inert="!open"> …content… </div>
+     </div>
+
+   The inner wrapper owns overflow:hidden + min-height:0 so the content slides
+   cleanly; `:inert` keeps the hidden content out of tab/AT order. The global
+   prefers-reduced-motion kill-switch in tokens.css collapses the transition to
+   an instant state change. */
+.reveal-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows var(--duration-slow, 0.35s) var(--ease-out-quart, ease),
+              opacity var(--duration-med, 0.22s) ease;
+}
+.reveal-collapse--open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.reveal-collapse__inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
 /* Theme reveal: the origin is written by useDarkMode() from the clicked
    light/dark toggle, so desktop and mobile buttons both expand from the real
    tap location instead of from a fixed corner. */

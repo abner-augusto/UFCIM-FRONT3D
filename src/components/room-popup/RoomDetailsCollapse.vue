@@ -26,8 +26,8 @@ const emit = defineEmits<{
     <span class="details-toggle__chevron" :class="{ rotated: detailsExpanded }">›</span>
   </button>
 
-  <div class="details-collapse" :class="{ 'details-collapse--open': detailsExpanded }">
-    <div class="details-collapse__inner" :inert="!detailsExpanded">
+  <div class="reveal-collapse" :class="{ 'reveal-collapse--open': detailsExpanded }">
+    <div class="reveal-collapse__inner" :inert="!detailsExpanded">
       <div class="room-popup__details">
       <!-- Key stats row -->
       <div class="room-popup__stats-grid">
@@ -117,24 +117,8 @@ const emit = defineEmits<{
   display: flex;
   flex-direction: column;
 }
-/* Collapse via grid-template-rows 0fr→1fr: the panel reveals to its true content
-   height (no hardcoded max-height to clip tall rooms) and never animates layout
-   box height directly. The inner wrapper clips the overflow during the slide. */
-.details-collapse {
-  display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  transition: grid-template-rows var(--duration-slow, 0.3s) var(--ease-out-quart, ease),
-              opacity var(--duration-med, 0.22s) ease;
-}
-.details-collapse--open {
-  grid-template-rows: 1fr;
-  opacity: 1;
-}
-.details-collapse__inner {
-  overflow: hidden;
-  min-height: 0;
-}
+/* Reveal motion lives in the shared `.reveal-collapse` utility (motion.css);
+   this component only styles its own content. */
 
 /* Stats grid — .stat-card styles in detail-panel.css */
 .room-popup__stats-grid { display: flex; gap: 0.6rem; margin-bottom: 1rem; }
