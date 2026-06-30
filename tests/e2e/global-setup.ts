@@ -1,6 +1,6 @@
 import { execSync } from 'child_process';
 import { createHmac } from 'crypto';
-import { writeFileSync, mkdirSync } from 'fs';
+import { writeFileSync, mkdirSync, readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -9,15 +9,27 @@ const BACKEND_DIR = path.resolve(__dirname, '..', '..', '..', 'ufcim-backend-pro
 const AUTH_DIR = path.resolve(__dirname, '.auth');
 const ROLES = ['student', 'professor', 'staff', 'maintenance'] as const;
 
-// Must match wrangler.toml [env.dev] JWT_ISSUER and .dev.vars JWT_SIGNING_SECRET.
+// Must match wrangler.toml [env.dev] JWT_ISSUER and the backend .dev.vars JWT_SIGNING_SECRET.
 const JWT_ISSUER = 'http://localhost:8787';
-const JWT_SIGNING_SECRET = 'dev-only-secret-not-for-production-use-do-not-leak';
+
+function readBackendDevVar(name: string): string {
+  const envPath = path.join(BACKEND_DIR, '.dev.vars');
+  const contents = readFileSync(envPath, 'utf8');
+  const line = contents
+    .split(/\r?\n/)
+    .find((entry) => entry.trim().startsWith(`${name}=`));
+  const value = line?.slice(line.indexOf('=') + 1).trim().replace(/^['"]|['"]$/g, '');
+  if (!value) throw new Error(`[e2e] Missing ${name} in ${envPath}`);
+  return value;
+}
+
+const JWT_SIGNING_SECRET = readBackendDevVar('JWT_SIGNING_SECRET');
 
 const SEED_USERS = {
-  student:     { sub: '00000000-0000-0000-0000-000000000001', name: 'João Silva',       email: 'joao.silva@alu.ufc.br',  registration: '2023001001', department: 'dc',  role: 'ufcim-student' },
-  professor:   { sub: '00000000-0000-0000-0000-000000000002', name: 'Dra. Maria Costa', email: 'maria.costa@ufc.br',      registration: '1998010001', department: 'dc',  role: 'ufcim-professor' },
-  staff:       { sub: '00000000-0000-0000-0000-000000000003', name: 'Carlos Oliveira',  email: 'carlos.oliveira@ufc.br', registration: '2010005001', department: 'adm', role: 'ufcim-staff' },
-  maintenance: { sub: '00000000-0000-0000-0000-000000000004', name: 'Pedro Santos',     email: 'pedro.santos@ufc.br',    registration: '2015002001', department: 'si',  role: 'ufcim-maintenance' },
+  student:     { sub: '00000000-0000-0000-0000-000000000001', name: 'João Silva',       email: 'joao.silva@alu.ufc.br',  registration: '2023001001', department: 'iaud', role: 'ufcim-student' },
+  professor:   { sub: '00000000-0000-0000-0000-000000000002', name: 'Dra. Maria Costa', email: 'maria.costa@ufc.br',      registration: '1998010001', department: 'iaud', role: 'ufcim-professor' },
+  staff:       { sub: '00000000-0000-0000-0000-000000000003', name: 'Carlos Oliveira',  email: 'carlos.oliveira@ufc.br', registration: '2010005001', department: 'iaud', role: 'ufcim-staff' },
+  maintenance: { sub: '00000000-0000-0000-0000-000000000004', name: 'Pedro Santos',     email: 'pedro.santos@ufc.br',    registration: '2015002001', department: 'iaud', role: 'ufcim-maintenance' },
 };
 
 function b64url(input: string | Buffer): string {

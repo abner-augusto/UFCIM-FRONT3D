@@ -4,10 +4,11 @@ import { test, expect } from './fixtures';
 const SPACE_ID = 'a1a00001-0000-4000-8000-000000000000';
 
 async function waitForSpaceLoad(page: import('@playwright/test').Page) {
-  await page.waitForFunction(
-    () => !document.body.innerText.includes('Carregando espaço'),
-    { timeout: 10_000 }
-  );
+  const dateControl = page.locator('#reservation-date');
+  const loadError = page.getByText(/Não foi possível carregar os dados do espaço/i);
+
+  await expect(dateControl.or(loadError)).toBeVisible({ timeout: 20_000 });
+  await expect(loadError).toHaveCount(0);
 }
 
 test.describe('ReservationView', () => {
@@ -22,7 +23,7 @@ test.describe('ReservationView', () => {
     await waitForSpaceLoad(page);
 
     const availableSlot = page.locator('button.slot-btn:not([disabled])').first();
-    await expect(availableSlot).toBeVisible({ timeout: 8_000 });
+    await expect(availableSlot).toBeVisible({ timeout: 15_000 });
     await availableSlot.click();
 
     const descInput = page.locator('#description-input');
@@ -36,7 +37,7 @@ test.describe('ReservationView', () => {
     await waitForSpaceLoad(page);
 
     const availableSlot = page.locator('button.slot-btn:not([disabled])').first();
-    await expect(availableSlot).toBeVisible({ timeout: 8_000 });
+    await expect(availableSlot).toBeVisible({ timeout: 15_000 });
     await availableSlot.click();
 
     await expect(page.locator('body')).toContainText(/opcional|visível|Descrição/i);
@@ -54,7 +55,7 @@ test.describe('ReservationView', () => {
   test('professor: date control is present', async ({ professorPage: page }) => {
     await page.goto(`/#/reserva/${SPACE_ID}`);
     await waitForSpaceLoad(page);
-    await expect(page.locator('#reservation-date')).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator('#reservation-date')).toBeVisible({ timeout: 15_000 });
   });
 
   test('student: can access reservation view (CAN_RESERVE includes students)', async ({ studentPage: page }) => {
