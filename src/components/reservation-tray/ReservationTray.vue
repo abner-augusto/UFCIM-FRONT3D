@@ -8,6 +8,9 @@ import ReservationPurposeStep from './ReservationPurposeStep.vue';
 import ReservationConfirmStep from './ReservationConfirmStep.vue';
 import ReservationSuccessStep from './ReservationSuccessStep.vue';
 import { useInteractionStore } from '@/stores/interaction';
+import { useAuthStore } from '@/stores/auth';
+import { api, ApiError } from '@/services/api';
+import type { ActionStatus } from '@/components/StatefulActionButton.vue';
 
 export type ReservationTrayStep = 'schedule' | 'purpose' | 'confirm' | 'success';
 
@@ -36,6 +39,7 @@ const emit = defineEmits<{
 
 const steps: ReservationTrayStep[] = ['schedule', 'purpose', 'confirm', 'success'];
 const interaction = useInteractionStore();
+const auth = useAuthStore();
 
 const stepTitles: Record<ReservationTrayStep, string> = {
   schedule: 'Escolher horário',
@@ -49,6 +53,9 @@ const mediaQuery = window.matchMedia('(min-width: 768px)');
 const currentStep = ref<ReservationTrayStep>('schedule');
 const selectedSchedule = ref<ReservationScheduleSelection | null>(null);
 const selectedPurpose = ref<ReservationPurposeSelection>({ purpose: '', description: '' });
+const confirmStatus = ref<ActionStatus>('idle');
+const confirmError = ref<string | null>(null);
+let successStepTimer: ReturnType<typeof window.setTimeout> | null = null;
 
 const currentStepIndex = computed(() => steps.indexOf(currentStep.value));
 const currentTitle = computed(() => stepTitles[currentStep.value]);
@@ -59,6 +66,7 @@ const canGoNext = computed(() => {
   if (currentStepIndex.value >= steps.length - 1) return false;
   if (currentStep.value === 'schedule') return scheduleIsValid.value;
   if (currentStep.value === 'purpose') return purposeIsValid.value;
+  if (currentStep.value === 'confirm') return false;
   return true;
 });
 const subjectLabel = computed(() => props.spaceName || props.modelId || props.spaceId);
@@ -67,6 +75,9 @@ const contextLabel = computed(() => `${subjectLabel.value} · campus ${props.cam
 watch(() => [props.campusId, props.spaceId], () => {
   selectedSchedule.value = null;
   selectedPurpose.value = { purpose: '', description: '' };
+  confirmStatus.value = 'idle';
+  confirmError.value = null;
+  if (successStepTimer) window.clearTimeout(successStepTimer);
   currentStep.value = 'schedule';
 });
 
@@ -80,6 +91,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   mediaQuery.removeEventListener('change', handleMediaChange);
+  if (successStepTimer) window.clearTimeout(successStepTimer);
 });
 
 function handleOpenChange(open: boolean) {
@@ -88,6 +100,10 @@ function handleOpenChange(open: boolean) {
 
 function next() {
   if (!canGoNext.value) return;
+  if (currentStep.value === 'purpose') {
+    confirmStatus.value = 'idle';
+    confirmError.value = null;
+  }
   currentStep.value = steps[currentStepIndex.value + 1];
 }
 
@@ -108,6 +124,37 @@ function handleScheduleChange(schedule: ReservationScheduleSelection | null) {
 
 function handlePurposeChange(selection: ReservationPurposeSelection) {
   selectedPurpose.value = selection;
+}
+
+async function handleConfirm() {
+  if (!selectedSchedule.value || confirmStatus.value === 'submitting' || confirmStatus.value === 'success') return;
+
+  confirmStatus.value = 'submitting';
+  confirmError.value = null;
+
+  try {
+    const reservation = await api.createReservation(auth.token, {
+      spaceId: props.spaceId,
+      date: selectedSchedule.value.date,
+      startTime: selectedSchedule.value.startTime,
+      endTime: selectedSchedule.value.endTime,
+      purpose: selectedPurpose.value.purpose ?? undefined,
+      description: selectedPurpose.value.description ?? undefined,
+    });
+
+    interaction.setReservation(reservation.id);
+    confirmStatus.value = 'success';
+    successStepTimer = window.setTimeout(() => {
+      currentStep.value = 'success';
+    }, 500);
+  } catch (e) {
+    confirmStatus.value = 'error';
+    if (e instanceof ApiError && e.message) {
+      confirmError.value = e.message;
+    } else {
+      confirmError.value = 'Não foi possível confirmar a reserva. Tente novamente.';
+    }
+  }
 }
 </script>
 
@@ -154,15 +201,29 @@ function handlePurposeChange(selection: ReservationPurposeSelection) {
           :initial-purpose="selectedPurpose"
           @purpose-change="handlePurposeChange"
         />
-        <ReservationConfirmStep v-else-if="currentStep === 'confirm'" />
+        <ReservationConfirmStep
+          v-else-if="currentStep === 'confirm' && selectedSchedule"
+          :space-name="spaceName"
+          :schedule="selectedSchedule"
+          :purpose="selectedPurpose"
+          :status="confirmStatus"
+          :error="confirmError"
+          @confirm="handleConfirm"
+        />
         <ReservationSuccessStep v-else />
 
-        <footer class="reservation-tray__actions">
-          <Button type="button" variant="outline" class="reservation-tray__button" :disabled="!canGoBack" @click="back">
+        <footer v-if="currentStep !== 'success'" class="reservation-tray__actions">
+          <Button
+            type="button"
+            variant="outline"
+            class="reservation-tray__button"
+            :disabled="!canGoBack || confirmStatus === 'submitting' || confirmStatus === 'success'"
+            @click="back"
+          >
             Voltar
           </Button>
-          <Button type="button" class="reservation-tray__button" :disabled="!canGoNext" @click="next">
-            {{ currentStep === 'confirm' ? 'Concluir' : 'Continuar' }}
+          <Button v-if="currentStep !== 'confirm'" type="button" class="reservation-tray__button" :disabled="!canGoNext" @click="next">
+            Continuar
           </Button>
         </footer>
       </div>
