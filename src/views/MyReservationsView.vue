@@ -9,6 +9,7 @@ import { SPACE_TYPE_LABELS } from '@/types/space';
 import type { TimeSlot } from '@/types/reservation';
 import { Button } from '@/components/ui/button';
 import ListItemSkeleton from '@/components/ListItemSkeleton.vue';
+import CancelReservationDialog, { type CancelReservationSummary } from '@/components/CancelReservationDialog.vue';
 
 const route = useRoute();
 const auth = useAuthStore();
@@ -20,7 +21,16 @@ const cancelling = ref<string | null>(null);
 const cancellingSeries = ref<string | null>(null);
 const expandedId = ref<string | null>(null);
 const activeHighlightId = ref<string | null>(null);
+const cancelDialogOpen = ref(false);
+const cancelTarget = ref<CancelTarget | null>(null);
 let highlightTimer: ReturnType<typeof setTimeout> | null = null;
+
+interface CancelTarget {
+  kind: 'single' | 'series';
+  id: string;
+  summary: CancelReservationSummary;
+  futureOccurrencesCount?: number;
+}
 
 const PURPOSE_LABELS = Object.fromEntries(PURPOSE_OPTIONS.map(o => [o.value, o.label]));
 
@@ -49,12 +59,65 @@ async function loadReservations() {
   }
 }
 
+function reservationSpaceName(reservation: Reservation): string {
+  return reservation.space?.name ?? reservation.space?.number ?? reservation.spaceId;
+}
+
+function reservationSummary(reservation: Reservation, date = dateShort(reservation.date)): CancelReservationSummary {
+  return {
+    spaceName: reservationSpaceName(reservation),
+    dateLabel: date,
+    timeLabel: `${reservation.startTime}–${reservation.endTime}`,
+  };
+}
+
+function futureConfirmedOccurrences(items: Reservation[]): Reservation[] {
+  return items.filter(r => r.status === 'confirmed' && !isCompleted(r));
+}
+
+function openCancelDialog(reservation: Reservation) {
+  cancelTarget.value = {
+    kind: 'single',
+    id: reservation.id,
+    summary: reservationSummary(reservation),
+  };
+  cancelDialogOpen.value = true;
+}
+
+function openCancelSeriesDialog(group: GroupedReservation) {
+  const futureOccurrences = futureConfirmedOccurrences(group.items);
+  const firstFuture = futureOccurrences[0] ?? group.main;
+  cancelTarget.value = {
+    kind: 'series',
+    id: group.id,
+    summary: reservationSummary(firstFuture, `A partir de ${dateShort(firstFuture.date)}`),
+    futureOccurrencesCount: futureOccurrences.length,
+  };
+  cancelDialogOpen.value = true;
+}
+
+function closeCancelDialog() {
+  if (cancelling.value || cancellingSeries.value) return;
+  cancelDialogOpen.value = false;
+}
+
+async function confirmCancellation() {
+  const target = cancelTarget.value;
+  if (!target) return;
+
+  if (target.kind === 'series') {
+    await handleCancelSeries(target.id);
+  } else {
+    await handleCancel(target.id);
+  }
+}
+
 async function handleCancel(id: string) {
-  if (!confirm('Tem certeza que deseja cancelar esta reserva?')) return;
   cancelling.value = id;
   try {
     await api.cancelReservation(auth.token, id);
     await loadReservations();
+    cancelDialogOpen.value = false;
   } catch {
     errorMsg.value = 'Não foi possível cancelar a reserva.';
   } finally {
@@ -63,11 +126,11 @@ async function handleCancel(id: string) {
 }
 
 async function handleCancelSeries(recurrenceId: string) {
-  if (!confirm('Tem certeza que deseja cancelar TODAS as reservas futuras desta série?')) return;
   cancellingSeries.value = recurrenceId;
   try {
     await api.cancelReservationSeries(auth.token, recurrenceId);
     await loadReservations();
+    cancelDialogOpen.value = false;
   } catch {
     errorMsg.value = 'Não foi possível cancelar a série de reservas.';
   } finally {
@@ -143,8 +206,10 @@ function isCompleted(r: Reservation): boolean {
 }
 
 function hasFutureOccurrences(items: Reservation[]): boolean {
-  return items.some(r => r.status === 'confirmed' && !isCompleted(r));
+  return futureConfirmedOccurrences(items).length > 0;
 }
+
+const cancelSubmitting = computed(() => !!cancelling.value || !!cancellingSeries.value);
 
 interface GroupedReservation {
   id: string; // recurrenceId if recurrent, else reservation id
@@ -339,7 +404,7 @@ function isGroupMatchingHighlight(group: GroupedReservation, reservationId: stri
                 <span v-else class="status-badge" :class="`status-badge--${r.status}`">
                   {{ STATUS_LABELS[r.status] }}
                 </span>
-                <Button v-if="r.status === 'confirmed' && !isCompleted(r)" variant="link" class="text-destructive h-auto p-0 text-xs" @click="handleCancel(r.id)" :disabled="cancelling === r.id || cancellingSeries === group.id">
+                <Button v-if="r.status === 'confirmed' && !isCompleted(r)" variant="link" class="text-destructive h-auto p-0 text-xs" @click="openCancelDialog(r)" :disabled="cancelling === r.id || cancellingSeries === group.id">
                   {{ cancelling === r.id ? '...' : 'Cancelar' }}
                 </Button>
               </div>
@@ -359,7 +424,7 @@ function isGroupMatchingHighlight(group: GroupedReservation, reservationId: stri
               variant="outline"
               class="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
               :disabled="cancelling === group.main.id"
-              @click="handleCancel(group.main.id)"
+              @click="openCancelDialog(group.main)"
             >
               {{ cancelling === group.main.id ? 'Cancelando...' : 'Cancelar reserva' }}
             </Button>
@@ -369,7 +434,7 @@ function isGroupMatchingHighlight(group: GroupedReservation, reservationId: stri
               variant="outline"
               class="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive w-full"
               :disabled="cancellingSeries === group.id"
-              @click="handleCancelSeries(group.id)"
+              @click="openCancelSeriesDialog(group)"
             >
               {{ cancellingSeries === group.id ? 'Cancelando...' : 'Cancelar todas as datas futuras' }}
             </Button>
@@ -378,6 +443,16 @@ function isGroupMatchingHighlight(group: GroupedReservation, reservationId: stri
         </div>
       </li>
     </TransitionGroup>
+
+    <CancelReservationDialog
+      :open="cancelDialogOpen"
+      :summary="cancelTarget?.summary ?? null"
+      :future-occurrences-count="cancelTarget?.futureOccurrencesCount ?? null"
+      :submitting="cancelSubmitting"
+      @update:open="cancelDialogOpen = $event"
+      @confirm="confirmCancellation"
+      @keep="closeCancelDialog"
+    />
   </div>
 </template>
 
