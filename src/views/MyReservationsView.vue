@@ -9,7 +9,10 @@ import { SPACE_TYPE_LABELS } from '@/types/space';
 import type { TimeSlot } from '@/types/reservation';
 import { Button } from '@/components/ui/button';
 import ListItemSkeleton from '@/components/ListItemSkeleton.vue';
-import CancelReservationDialog, { type CancelReservationSummary } from '@/components/CancelReservationDialog.vue';
+import CancelReservationDialog, {
+  type CancelReservationStatus,
+  type CancelReservationSummary,
+} from '@/components/CancelReservationDialog.vue';
 
 const route = useRoute();
 const auth = useAuthStore();
@@ -23,7 +26,10 @@ const expandedId = ref<string | null>(null);
 const activeHighlightId = ref<string | null>(null);
 const cancelDialogOpen = ref(false);
 const cancelTarget = ref<CancelTarget | null>(null);
+const cancelStatus = ref<CancelReservationStatus>('idle');
+const cancelErrorMessage = ref<string | null>(null);
 let highlightTimer: ReturnType<typeof setTimeout> | null = null;
+let cancelSuccessTimer: ReturnType<typeof setTimeout> | null = null;
 
 interface CancelTarget {
   kind: 'single' | 'series';
@@ -41,6 +47,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   clearHighlightTimer();
+  clearCancelSuccessTimer();
 });
 
 watch(() => route.query.highlight, () => {
@@ -76,6 +83,7 @@ function futureConfirmedOccurrences(items: Reservation[]): Reservation[] {
 }
 
 function openCancelDialog(reservation: Reservation) {
+  resetCancelState();
   cancelTarget.value = {
     kind: 'single',
     id: reservation.id,
@@ -87,6 +95,7 @@ function openCancelDialog(reservation: Reservation) {
 function openCancelSeriesDialog(group: GroupedReservation) {
   const futureOccurrences = futureConfirmedOccurrences(group.items);
   const firstFuture = futureOccurrences[0] ?? group.main;
+  resetCancelState();
   cancelTarget.value = {
     kind: 'series',
     id: group.id,
@@ -97,18 +106,45 @@ function openCancelSeriesDialog(group: GroupedReservation) {
 }
 
 function closeCancelDialog() {
-  if (cancelling.value || cancellingSeries.value) return;
+  if (cancelStatus.value === 'submitting' || cancelStatus.value === 'success') return;
   cancelDialogOpen.value = false;
+  cancelTarget.value = null;
+  resetCancelState();
+}
+
+function handleCancelDialogOpenChange(open: boolean) {
+  if (open) {
+    cancelDialogOpen.value = true;
+    return;
+  }
+  closeCancelDialog();
 }
 
 async function confirmCancellation() {
   const target = cancelTarget.value;
-  if (!target) return;
+  if (!target || cancelStatus.value === 'submitting' || cancelStatus.value === 'success') return;
 
-  if (target.kind === 'series') {
-    await handleCancelSeries(target.id);
-  } else {
-    await handleCancel(target.id);
+  cancelStatus.value = 'submitting';
+  cancelErrorMessage.value = null;
+
+  try {
+    if (target.kind === 'series') {
+      await handleCancelSeries(target.id);
+    } else {
+      await handleCancel(target.id);
+    }
+    cancelStatus.value = 'success';
+    cancelSuccessTimer = setTimeout(() => {
+      cancelDialogOpen.value = false;
+      cancelTarget.value = null;
+      resetCancelState();
+      void loadReservations();
+    }, 700);
+  } catch {
+    cancelStatus.value = 'error';
+    cancelErrorMessage.value = target.kind === 'series'
+      ? 'Não foi possível cancelar a série de reservas. Verifique sua conexão e tente novamente.'
+      : 'Não foi possível cancelar a reserva. Verifique sua conexão e tente novamente.';
   }
 }
 
@@ -116,10 +152,6 @@ async function handleCancel(id: string) {
   cancelling.value = id;
   try {
     await api.cancelReservation(auth.token, id);
-    await loadReservations();
-    cancelDialogOpen.value = false;
-  } catch {
-    errorMsg.value = 'Não foi possível cancelar a reserva.';
   } finally {
     cancelling.value = null;
   }
@@ -129,10 +161,6 @@ async function handleCancelSeries(recurrenceId: string) {
   cancellingSeries.value = recurrenceId;
   try {
     await api.cancelReservationSeries(auth.token, recurrenceId);
-    await loadReservations();
-    cancelDialogOpen.value = false;
-  } catch {
-    errorMsg.value = 'Não foi possível cancelar a série de reservas.';
   } finally {
     cancellingSeries.value = null;
   }
@@ -146,6 +174,18 @@ function clearHighlightTimer() {
   if (!highlightTimer) return;
   clearTimeout(highlightTimer);
   highlightTimer = null;
+}
+
+function clearCancelSuccessTimer() {
+  if (!cancelSuccessTimer) return;
+  clearTimeout(cancelSuccessTimer);
+  cancelSuccessTimer = null;
+}
+
+function resetCancelState() {
+  clearCancelSuccessTimer();
+  cancelStatus.value = 'idle';
+  cancelErrorMessage.value = null;
 }
 
 function getHighlightQuery(): string | null {
@@ -208,8 +248,6 @@ function isCompleted(r: Reservation): boolean {
 function hasFutureOccurrences(items: Reservation[]): boolean {
   return futureConfirmedOccurrences(items).length > 0;
 }
-
-const cancelSubmitting = computed(() => !!cancelling.value || !!cancellingSeries.value);
 
 interface GroupedReservation {
   id: string; // recurrenceId if recurrent, else reservation id
@@ -448,8 +486,9 @@ function isGroupMatchingHighlight(group: GroupedReservation, reservationId: stri
       :open="cancelDialogOpen"
       :summary="cancelTarget?.summary ?? null"
       :future-occurrences-count="cancelTarget?.futureOccurrencesCount ?? null"
-      :submitting="cancelSubmitting"
-      @update:open="cancelDialogOpen = $event"
+      :status="cancelStatus"
+      :error-message="cancelErrorMessage"
+      @update:open="handleCancelDialogOpenChange"
       @confirm="confirmCancellation"
       @keep="closeCancelDialog"
     />
