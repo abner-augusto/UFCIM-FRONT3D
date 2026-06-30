@@ -32,6 +32,11 @@ const props = defineProps<{
   spaceId: string;
   spaceName: string;
   modelId?: string | null;
+  // Optional pre-fill carried in from another surface (e.g. the maquete's
+  // RoomPopup), so the schedule step opens on the same date/range the user
+  // already picked. The schedule step self-corrects to null if the range is
+  // no longer bookable.
+  initialSchedule?: ReservationScheduleSelection | null;
 }>();
 
 const emit = defineEmits<{
@@ -87,7 +92,7 @@ const successSummary = computed(() => {
 });
 
 function resetFlow() {
-  selectedSchedule.value = null;
+  selectedSchedule.value = props.initialSchedule ?? null;
   selectedPurpose.value = { purpose: '', description: '' };
   reservationId.value = null;
   confirmStatus.value = 'idle';
