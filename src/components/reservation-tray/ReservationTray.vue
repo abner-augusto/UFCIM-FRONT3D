@@ -17,6 +17,11 @@ interface ReservationScheduleSelection {
   endTime: string;
 }
 
+interface ReservationPurposeSelection {
+  purpose: string;
+  description: string;
+}
+
 const props = defineProps<{
   open: boolean;
   campusId: string;
@@ -43,14 +48,17 @@ const isDesktop = ref(window.matchMedia('(min-width: 768px)').matches);
 const mediaQuery = window.matchMedia('(min-width: 768px)');
 const currentStep = ref<ReservationTrayStep>('schedule');
 const selectedSchedule = ref<ReservationScheduleSelection | null>(null);
+const selectedPurpose = ref<ReservationPurposeSelection>({ purpose: '', description: '' });
 
 const currentStepIndex = computed(() => steps.indexOf(currentStep.value));
 const currentTitle = computed(() => stepTitles[currentStep.value]);
 const canGoBack = computed(() => currentStepIndex.value > 0 && currentStep.value !== 'success');
 const scheduleIsValid = computed(() => !!selectedSchedule.value?.date && !!selectedSchedule.value?.startTime && !!selectedSchedule.value?.endTime);
+const purposeIsValid = computed(() => !!selectedPurpose.value.purpose);
 const canGoNext = computed(() => {
   if (currentStepIndex.value >= steps.length - 1) return false;
   if (currentStep.value === 'schedule') return scheduleIsValid.value;
+  if (currentStep.value === 'purpose') return purposeIsValid.value;
   return true;
 });
 const subjectLabel = computed(() => props.spaceName || props.modelId || props.spaceId);
@@ -58,6 +66,7 @@ const contextLabel = computed(() => `${subjectLabel.value} · campus ${props.cam
 
 watch(() => [props.campusId, props.spaceId], () => {
   selectedSchedule.value = null;
+  selectedPurpose.value = { purpose: '', description: '' };
   currentStep.value = 'schedule';
 });
 
@@ -95,6 +104,10 @@ function handleScheduleChange(schedule: ReservationScheduleSelection | null) {
   if (subject?.campusId === props.campusId && subject.spaceId === props.spaceId) {
     interaction.updateSchedule(schedule);
   }
+}
+
+function handlePurposeChange(selection: ReservationPurposeSelection) {
+  selectedPurpose.value = selection;
 }
 </script>
 
@@ -136,7 +149,11 @@ function handleScheduleChange(schedule: ReservationScheduleSelection | null) {
           :initial-schedule="selectedSchedule"
           @schedule-change="handleScheduleChange"
         />
-        <ReservationPurposeStep v-else-if="currentStep === 'purpose'" />
+        <ReservationPurposeStep
+          v-else-if="currentStep === 'purpose'"
+          :initial-purpose="selectedPurpose"
+          @purpose-change="handlePurposeChange"
+        />
         <ReservationConfirmStep v-else-if="currentStep === 'confirm'" />
         <ReservationSuccessStep v-else />
 
