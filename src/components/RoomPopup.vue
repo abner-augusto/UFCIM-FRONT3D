@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
+import { computed, ref, onMounted, onUnmounted, watch, toRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { SPACE_TYPE_LABELS, type Space, type Equipment } from '@/types/space';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
 import { usePermissions } from '@/composables/usePermissions';
-import { PURPOSE_LABELS, BLOCK_TYPE_LABELS, type AvailabilitySlot } from '@/types/reservation';
+import { PURPOSE_LABELS, BLOCK_TYPE_LABELS, type Availability } from '@/types/reservation';
 import EquipmentReportDialog from './EquipmentReportDialog.vue';
 import { useEquipmentGroups, type EquipmentGroup } from '@/composables/useEquipmentGroups';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -15,6 +15,7 @@ import RoomPopupActions from './room-popup/RoomPopupActions.vue';
 import RoomDetailsCollapse from './room-popup/RoomDetailsCollapse.vue';
 import RoomPopupHeader from './room-popup/RoomPopupHeader.vue';
 import RoomSlotDetail from './room-popup/RoomSlotDetail.vue';
+import { useAvailabilitySelection } from '@/composables/useAvailabilitySelection';
 
 const props = defineProps<{
   open?: boolean;
@@ -63,29 +64,36 @@ const { canReserve, canBlock, canViewReports } = usePermissions();
 const typeLabel = computed(() => SPACE_TYPE_LABELS[props.space.type] ?? props.space.type);
 
 // Availability data for schedule grid
-const availability = ref<AvailabilitySlot[] | null>(null);
+const availability = ref<Availability | null>(null);
 const loadingAvailability = ref(false);
-const selectedSlotIndex = ref<number | null>(null); // detail panel (reserved/blocked cell)
+const selectedDateRef = toRef(props, 'selectedDate');
+const defaultStartTime = computed(() => props.selectedStartTime);
+const defaultEndTime = computed(() => props.selectedEndTime);
 
-// Hour range selection (available cells): inclusive indices into `availability`
-const rangeStartIdx = ref<number | null>(null);
-const rangeEndIdx = ref<number | null>(null);
+const {
+  visibleSlots,
+  selectedSlot,
+  hasUserSelection,
+  reserveStartTime,
+  reserveEndTime,
+  reserveRangeBookable,
+  clearSelection,
+  resetSelection,
+  isPastSlot,
+  isInSelectedRange,
+  onCellClick,
+  getCellClass,
+} = useAvailabilitySelection({
+  availability,
+  selectedDate: selectedDateRef,
+  defaultStartTime,
+  defaultEndTime,
+});
 
-// Reference timestamp for "has this hour passed" — refreshed whenever the grid loads.
-const nowTs = ref(Date.now());
-
-// A slot is in the past once it has fully *ended* (its end time is at or before
-// now, in local/campus time). The currently in-progress hour stays bookable.
-// Works for any date: future days are never past, earlier days are always past.
-function isPastSlot(slot: AvailabilitySlot) {
-  return new Date(`${props.selectedDate}T${slot.endTime}:00`).getTime() <= nowTs.value;
-}
+const actionReserveRangeBookable = computed(() => loadingAvailability.value || reserveRangeBookable.value);
 
 async function loadAvailability() {
-  selectedSlotIndex.value = null;
-  rangeStartIdx.value = null;
-  rangeEndIdx.value = null;
-  nowTs.value = Date.now();
+  resetSelection();
   loadingAvailability.value = true;
   try {
     availability.value = await api.getAvailability(auth.token, props.space.id, props.selectedDate);
@@ -96,123 +104,6 @@ async function loadAvailability() {
 
 onMounted(loadAvailability);
 watch(() => [props.selectedDate, props.space.id], loadAvailability);
-
-// The backend returns all 24 hours (closed hours flagged `closed`). Show only
-// the room's operational hours so the strip stays a single row instead of
-// wrapping 24 cells into two rows of 12. All index-based selection below
-// operates on this filtered list.
-const visibleSlots = computed<AvailabilitySlot[]>(() =>
-  availability.value?.filter((s) => s.status !== 'closed') ?? [],
-);
-
-const selectedSlot = computed(() => {
-  if (selectedSlotIndex.value === null) return null;
-  return visibleSlots.value[selectedSlotIndex.value] ?? null;
-});
-
-const hasUserSelection = computed(() => rangeStartIdx.value !== null && rangeEndIdx.value !== null);
-
-// Selectable = available AND not already in the past.
-function isSelectableAt(idx: number) {
-  const s = visibleSlots.value[idx];
-  return !!s && s.status === 'available' && !isPastSlot(s);
-}
-
-function rangeAllAvailable(a: number, b: number) {
-  const lo = Math.min(a, b), hi = Math.max(a, b);
-  for (let i = lo; i <= hi; i++) if (!isSelectableAt(i)) return false;
-  return true;
-}
-
-function isInSelectedRange(idx: number) {
-  if (rangeStartIdx.value === null || rangeEndIdx.value === null) return false;
-  return idx >= rangeStartIdx.value && idx <= rangeEndIdx.value;
-}
-
-// Pick a contiguous run of available hours: 1st tap sets the start, a 2nd tap on
-// a later still-available hour extends the range; tapping the lone start again
-// clears it, and any other tap restarts at the new hour.
-function selectHour(idx: number) {
-  if (rangeStartIdx.value === null) {
-    rangeStartIdx.value = idx;
-    rangeEndIdx.value = idx;
-    return;
-  }
-  const single = rangeStartIdx.value === rangeEndIdx.value;
-  if (single && idx === rangeStartIdx.value) {
-    rangeStartIdx.value = null;
-    rangeEndIdx.value = null;
-    return;
-  }
-  if (single && idx !== rangeStartIdx.value && rangeAllAvailable(rangeStartIdx.value, idx)) {
-    const lo = Math.min(rangeStartIdx.value, idx);
-    const hi = Math.max(rangeStartIdx.value, idx);
-    rangeStartIdx.value = lo;
-    rangeEndIdx.value = hi;
-    return;
-  }
-  // restart selection at the tapped hour
-  rangeStartIdx.value = idx;
-  rangeEndIdx.value = idx;
-}
-
-function onCellClick(slot: AvailabilitySlot, idx: number) {
-  if (slot.status === 'reserved' || slot.status === 'blocked') {
-    selectedSlotIndex.value = selectedSlotIndex.value === idx ? null : idx;
-    return;
-  }
-  if (slot.status === 'available') {
-    if (isPastSlot(slot)) return; // hour already passed — not bookable
-    selectedSlotIndex.value = null; // close any open detail
-    selectHour(idx);
-  }
-  // closed / not_reservable: ignore
-}
-
-function getCellClass(slot: AvailabilitySlot, idx: number) {
-  const past = isPastSlot(slot);
-  const inUserRange = hasUserSelection.value && isInSelectedRange(idx);
-  const isInDefault = !hasUserSelection.value && !past
-    && slot.startTime >= props.selectedStartTime && slot.startTime < props.selectedEndTime;
-  return {
-    'hour-cell--green': slot.status === 'available',
-    'hour-cell--red': slot.status === 'reserved',
-    'hour-cell--amber': slot.status === 'blocked',
-    'hour-cell--past': past,
-    'hour-cell--selected': inUserRange && slot.status === 'available' && !past,
-    'hour-cell--default-selected': isInDefault && slot.status === 'available',
-    'hour-cell--clicked': selectedSlotIndex.value === idx,
-  };
-}
-
-// The range the reserve button will use: the user's pick, else the default period.
-const reserveStartTime = computed(() =>
-  hasUserSelection.value && visibleSlots.value[rangeStartIdx.value!]
-    ? visibleSlots.value[rangeStartIdx.value!].startTime
-    : props.selectedStartTime,
-);
-const reserveEndTime = computed(() =>
-  hasUserSelection.value && visibleSlots.value[rangeEndIdx.value!]
-    ? visibleSlots.value[rangeEndIdx.value!].endTime
-    : props.selectedEndTime,
-);
-
-// Whether the range the reserve button would actually book has a free, future
-// hour. A hand-picked range is always valid (selection is constrained to
-// available, non-past cells). With no pick we fall back to the default period,
-// which can be entirely in the past (e.g. morning viewed in the afternoon) even
-// though the backend pin status still reads "available" — so check it here.
-const reserveRangeBookable = computed(() => {
-  if (loadingAvailability.value) return true; // don't flag before slots load
-  if (hasUserSelection.value) return true;
-  return visibleSlots.value.some(
-    (s) =>
-      s.status === 'available' &&
-      !isPastSlot(s) &&
-      s.startTime >= props.selectedStartTime &&
-      s.startTime < props.selectedEndTime,
-  );
-});
 
 function emitReserve() {
   emit('reserve', { startTime: reserveStartTime.value, endTime: reserveEndTime.value });
@@ -295,7 +186,7 @@ function onReportSent() {
         :is-in-selected-range="isInSelectedRange"
         :get-cell-class="getCellClass"
         @cell-click="onCellClick"
-        @clear-selection="rangeStartIdx = null; rangeEndIdx = null"
+        @clear-selection="clearSelection"
       />
 
       <!-- Slot detail -->
@@ -329,7 +220,7 @@ function onReportSent() {
         :can-view-reports="canViewReports"
         :reserve-disabled="reserveDisabled"
         :loading-reservation-state="loadingReservationState"
-        :reserve-range-bookable="reserveRangeBookable"
+        :reserve-range-bookable="actionReserveRangeBookable"
         :reserve-start-time="reserveStartTime"
         :reserve-end-time="reserveEndTime"
         :reserve-disabled-reason="reserveDisabledReason"

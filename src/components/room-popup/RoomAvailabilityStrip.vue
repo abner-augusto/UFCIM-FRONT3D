@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AvailabilitySlot } from '@/types/reservation';
+import type { AvailabilityCellClass } from '@/composables/useAvailabilitySelection';
 import { Skeleton } from '@/components/ui/skeleton';
 
 defineProps<{
@@ -12,7 +13,7 @@ defineProps<{
   reserveEndTime: string;
   isPastSlot: (slot: AvailabilitySlot) => boolean;
   isInSelectedRange: (idx: number) => boolean;
-  getCellClass: (slot: AvailabilitySlot, idx: number) => Record<string, boolean>;
+  getCellClass: (slot: AvailabilitySlot, idx: number) => AvailabilityCellClass;
 }>();
 
 const emit = defineEmits<{
