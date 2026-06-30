@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useReservationStore } from '@/stores/reservation';
 import { useInteractionStore } from '@/stores/interaction';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
@@ -10,6 +9,7 @@ import { campuses } from '@/data/campuses';
 import ThreeViewer from '@/components/ThreeViewer.vue';
 import { Button } from '@/components/ui/button';
 import RoomPopup from '@/components/RoomPopup.vue';
+import ReservationTray from '@/components/reservation-tray/ReservationTray.vue';
 import PeriodSelector from '@/components/PeriodSelector.vue';
 import ViewerControlsRail from '@/components/ViewerControlsRail.vue';
 import ViewerDesktopControls from '@/components/ViewerDesktopControls.vue';
@@ -26,7 +26,6 @@ import { logger } from '@/utils/logger';
 
 const route = useRoute();
 const router = useRouter();
-const reservationStore = useReservationStore();
 const interaction = useInteractionStore();
 const auth = useAuthStore();
 const { isDark } = useDarkMode();
@@ -57,7 +56,21 @@ const popupReservationStateLoading = ref(false);
 const fullscreen = ref(false);
 const searchSheetOpen = ref(false);
 const isMobile = ref(window.matchMedia('(max-width: 480px)').matches);
-const viewerOverlayOpen = computed(() => showPopup.value || searchSheetOpen.value);
+
+// Contextual reservation tray: opened in-place from the RoomPopup's reserve
+// action so the user can reserve without leaving the maquete. The context is a
+// snapshot (not a live ref to selectedSpace) so it survives the popup unmounting
+// while the tray stays open.
+interface ReservationTrayContext {
+  spaceId: string;
+  spaceName: string;
+  modelId: string | null;
+  initialSchedule: { date: string; startTime: string; endTime: string } | null;
+}
+const reservationTrayOpen = ref(false);
+const reservationTrayContext = ref<ReservationTrayContext | null>(null);
+
+const viewerOverlayOpen = computed(() => showPopup.value || searchSheetOpen.value || reservationTrayOpen.value);
 
 const mql = window.matchMedia('(max-width: 480px)');
 const onResize = (e: MediaQueryListEvent | MediaQueryList) => {
@@ -328,11 +341,24 @@ async function handlePinClick(detail: { pinId: string; displayName: string; buil
   }
 }
 
+// From the viewer we open the contextual tray over the maquete instead of
+// navigating to the 'reservation' route (which other entry points still use).
+// The popup is closed so the tray overlays the room context, carrying the
+// user's chosen date + range so the schedule step opens pre-filled.
 function handleReserve(range: { startTime: string; endTime: string }) {
   if (!selectedSpace.value) return;
-  reservationStore.setSpace(selectedSpace.value.id, selectedSpace.value.name);
-  reservationStore.setCustomSchedule(selectedDate.value, range.startTime, range.endTime);
-  router.push({ name: 'reservation', params: { spaceId: selectedSpace.value.id } });
+  reservationTrayContext.value = {
+    spaceId: selectedSpace.value.id,
+    spaceName: selectedSpace.value.name,
+    modelId: selectedSpace.value.modelId ?? null,
+    initialSchedule: {
+      date: selectedDate.value,
+      startTime: range.startTime,
+      endTime: range.endTime,
+    },
+  };
+  reservationTrayOpen.value = true;
+  closePopup();
 }
 
 function handleBlock() {
@@ -472,6 +498,19 @@ useViewerTestHarness({
       @close="closePopup"
       @reserve="handleReserve"
       @block="handleBlock"
+    />
+
+    <!-- Contextual reservation flow, opened in-place from the RoomPopup's
+         reserve action so the user reserves without leaving the maquete.
+         Kept mounted once a context exists so its close animation can play. -->
+    <ReservationTray
+      v-if="reservationTrayContext"
+      v-model:open="reservationTrayOpen"
+      :campus-id="campusId"
+      :space-id="reservationTrayContext.spaceId"
+      :space-name="reservationTrayContext.spaceName"
+      :model-id="reservationTrayContext.modelId"
+      :initial-schedule="reservationTrayContext.initialSchedule"
     />
   </div>
 </template>
