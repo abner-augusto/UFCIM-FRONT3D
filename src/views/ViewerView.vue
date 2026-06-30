@@ -2,6 +2,7 @@
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useReservationStore } from '@/stores/reservation';
+import { useInteractionStore } from '@/stores/interaction';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
 import type { Space } from '@/types/space';
@@ -26,6 +27,7 @@ import { logger } from '@/utils/logger';
 const route = useRoute();
 const router = useRouter();
 const reservationStore = useReservationStore();
+const interaction = useInteractionStore();
 const auth = useAuthStore();
 const { isDark } = useDarkMode();
 
@@ -219,6 +221,16 @@ function retryViewer() {
   viewerKey.value++;
 }
 
+function recordViewerSubject(space: Space) {
+  interaction.setSubject({
+    campusId,
+    spaceId: space.id,
+    modelId: space.modelId ?? undefined,
+    spaceName: space.name,
+    origin: 'viewer',
+  });
+}
+
 const handleViewerReady = () => {
   viewerReady.value = true;
   viewerError.value = false;
@@ -301,6 +313,7 @@ async function handlePinClick(detail: { pinId: string; displayName: string; buil
   const seq = ++popupDetailSeq;
   if (popupUnmountTimer) { clearTimeout(popupUnmountTimer); popupUnmountTimer = null; }
   selectedSpace.value = summarySpace;
+  recordViewerSubject(summarySpace);
   showPopup.value = true;
   searchSheetOpen.value = false;
   try {
