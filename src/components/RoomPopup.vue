@@ -8,11 +8,10 @@ import { usePermissions } from '@/composables/usePermissions';
 import { PURPOSE_LABELS, BLOCK_TYPE_LABELS, type AvailabilitySlot } from '@/types/reservation';
 import EquipmentReportDialog from './EquipmentReportDialog.vue';
 import { useEquipmentGroups, type EquipmentGroup } from '@/composables/useEquipmentGroups';
-import { BarChart3 } from 'lucide-vue-next';
-import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import RoomAvailabilityStrip from './room-popup/RoomAvailabilityStrip.vue';
+import RoomPopupActions from './room-popup/RoomPopupActions.vue';
 import RoomDetailsCollapse from './room-popup/RoomDetailsCollapse.vue';
 import RoomPopupHeader from './room-popup/RoomPopupHeader.vue';
 import RoomSlotDetail from './room-popup/RoomSlotDetail.vue';
@@ -324,34 +323,21 @@ function onReportSent() {
         <p class="room-popup__notice-text">{{ blockingReason }}</p>
       </div>
 
-      <!-- Actions -->
-      <div class="room-popup__actions">
-        <Button
-          v-if="canReserve"
-          class="h-11 w-full"
-          :disabled="reserveDisabled || loadingReservationState || !reserveRangeBookable"
-          :aria-label="`Reservar das ${reserveStartTime} às ${reserveEndTime}`"
-          @click="emitReserve"
-        >
-          Reservar {{ reserveStartTime }}–{{ reserveEndTime }}
-        </Button>
-        <p v-if="loadingReservationState" class="action-hint">Verificando disponibilidade...</p>
-        <p v-else-if="reserveDisabledReason" class="action-hint action-hint--warn">{{ reserveDisabledReason }}</p>
-        <p v-else-if="!reserveRangeBookable" class="action-hint action-hint--warn">Todos os horários deste turno já passaram.</p>
-        <Button
-          v-if="canBlock"
-          variant="outline"
-          class="h-11 w-full"
-          :disabled="blockingAllowed === false"
-          aria-label="Bloquear espaço"
-          @click="$emit('block')"
-        >
-          Bloquear Espaço
-        </Button>
-        <Button v-if="canViewReports" variant="ghost" class="h-11 w-full" aria-label="Ver relatório de ocupação" @click="goToReport">
-          <BarChart3 :size="14" style="vertical-align: -2px" /> Ver relatório
-        </Button>
-      </div>
+      <RoomPopupActions
+        :can-reserve="canReserve"
+        :can-block="canBlock"
+        :can-view-reports="canViewReports"
+        :reserve-disabled="reserveDisabled"
+        :loading-reservation-state="loadingReservationState"
+        :reserve-range-bookable="reserveRangeBookable"
+        :reserve-start-time="reserveStartTime"
+        :reserve-end-time="reserveEndTime"
+        :reserve-disabled-reason="reserveDisabledReason"
+        :blocking-allowed="blockingAllowed"
+        @reserve="emitReserve"
+        @block="$emit('block')"
+        @report="goToReport"
+      />
       </div>
     </component>
 
@@ -453,8 +439,4 @@ function onReportSent() {
 .room-popup__notice-label { margin: 0 0 0.2rem; color: var(--warning); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
 .room-popup__notice-text { margin: 0; color: var(--warning); font-size: 0.82rem; }
 
-/* Actions */
-.room-popup__actions { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
-.action-hint { margin: 0; color: var(--muted-foreground); font-size: 0.78rem; text-align: center; }
-.action-hint--warn { color: var(--warning); }
 </style>
