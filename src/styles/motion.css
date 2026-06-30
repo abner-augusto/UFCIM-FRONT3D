@@ -3,6 +3,15 @@
    Easing/duration tokens live in tokens.css; this file holds the
    reusable entrance choreography. The global prefers-reduced-motion
    kill-switch in tokens.css neutralizes everything here.
+
+   MOTION RULE — continuity, not decoration.
+   Every animation here must explain an origin, a destination, or a state
+   change: where a thing came from, where it went, or that it changed. A
+   reveal grows the same object (`.reveal-collapse`); an entrance shows where
+   items arrive from (`.stagger-item`); a press confirms the tap landed
+   (`.press-feedback`); a success pop says "done" (`.success-pop`). If a motion
+   can't name which of those it serves, it's decoration — leave it out. All of
+   it stays subject to the prefers-reduced-motion kill-switch above.
    ============================================================ */
 
 /* List / card entrance: each item rises + fades, staggered by its index.
