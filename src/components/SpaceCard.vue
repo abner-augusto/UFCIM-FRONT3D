@@ -180,8 +180,10 @@ function handleToggle() {
       </div>
     </button>
 
-    <!-- Detail panel -->
-    <div v-if="expanded" class="space-card__detail">
+    <!-- Detail panel — same-object reveal (shared .reveal-collapse utility) -->
+    <div class="reveal-collapse" :class="{ 'reveal-collapse--open': expanded }">
+      <div class="reveal-collapse__inner" :inert="!expanded">
+        <div class="space-card__detail">
       <div v-if="detailLoading" class="space-card__detail-skeleton" role="status" aria-label="Carregando detalhes do espaço">
         <div class="stats-grid" aria-hidden="true">
           <div v-for="n in 3" :key="n" class="stat-card">
@@ -271,6 +273,8 @@ function handleToggle() {
           </Button>
         </div>
       </template>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -362,18 +366,13 @@ function handleToggle() {
   transform: rotate(-90deg);
 }
 
-/* Detail */
+/* Detail — reveal motion handled by the shared .reveal-collapse utility (motion.css) */
 .space-card__detail {
   border-top: 1px solid var(--border);
   padding: 1rem 1rem 1.1rem;
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
-  animation: detail-in 0.18s ease both;
-}
-@keyframes detail-in {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
 }
 
 .space-card__detail-skeleton {
