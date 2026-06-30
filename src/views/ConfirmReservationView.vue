@@ -15,6 +15,7 @@ const reservationStore = useReservationStore();
 
 const confirmStatus = ref<ActionStatus>('idle');
 const errorMsg = ref<string | null>(null);
+const createdReservationId = ref<string | null>(null);
 
 onMounted(() => {
   if (!reservationStore.isReady) {
@@ -46,7 +47,7 @@ async function handleConfirm() {
   confirmStatus.value = 'submitting';
   errorMsg.value = null;
   try {
-    await api.createReservation(auth.token, {
+    const reservation = await api.createReservation(auth.token, {
       spaceId: reservationStore.spaceId!,
       date: reservationStore.date!,
       startTime: reservationStore.startTime!,
@@ -54,6 +55,7 @@ async function handleConfirm() {
       purpose: reservationStore.purpose ?? undefined,
       description: reservationStore.description ?? undefined,
     });
+    createdReservationId.value = reservation.id;
     confirmStatus.value = 'success';
   } catch (e) {
     confirmStatus.value = 'error';
@@ -66,7 +68,11 @@ async function handleConfirm() {
 }
 
 function handleViewReservations() {
-  router.push({ name: 'my-reservations' });
+  const highlight = createdReservationId.value;
+  router.push({
+    name: 'my-reservations',
+    query: highlight ? { highlight } : undefined,
+  });
   reservationStore.reset();
 }
 
