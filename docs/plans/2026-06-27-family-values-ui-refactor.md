@@ -14,7 +14,7 @@
 
 Read `AGENTS.md` before executing. Key rules for this plan:
 
-- Branch for this work: `feat/family-values-interaction-ui`.
+- Branch for this work: `refactor-family-ui`.
 - UI copy in pt-BR; identifiers/types/route names in English.
 - Every Vue component uses `<script setup lang="ts">`.
 - Do not couple Vue state directly into `src/three/`; use `ThreeViewer.vue` public APIs/events.
@@ -88,7 +88,7 @@ Relevant repo files inspected:
 ```bash
 git switch main
 git pull --ff-only
-git switch -c feat/family-values-interaction-ui
+git switch -c refactor-family-ui
 ```
 
 **Step 2: Run baseline gates**
@@ -543,6 +543,32 @@ npx playwright test tests/e2e/viewer.spec.ts
 
 **Commit:** `docs(motion): registrar regra de continuidade`
 
+### Task 7.5: Uniform polish pass on low-traffic screens
+
+**Objective:** Apply the Delight value's "no dirty bathrooms" rule — a neglected rarely-used screen drags down the whole experience, so the obscure corners must match the hero flow's finish. This closes the one Delight gap in the plan: it is *baseline polish parity*, not added flourish, and stays within the decorative-animation restraint above.
+
+**Files (audit, modify only where below standard):**
+- `src/views/MyBlockingsView.vue`
+- `src/views/MyReservationsView.vue` (empty/error/loading states)
+- Any infrequently reached empty, error, or zero-result state surfaced while implementing Phases 1–6.
+
+**Implementation notes:**
+
+- Walk each low-traffic screen against the hero reservation flow: spacing, token usage, empty-state copy (pt-BR), loading/error feedback, and reduced-motion behavior.
+- Bring each to the same standard; do **not** add new flourish, easter eggs, or motion not tied to meaning (see Out of Scope).
+- Record any screen left intentionally untouched and why.
+
+**Validation:**
+
+```bash
+npm run lint
+npm run type-check
+npm test
+npm run build
+```
+
+**Commit:** `refactor(ui): nivelar acabamento de telas secundárias`
+
 **Validation:** gates for each commit; final build.
 
 ---
@@ -581,8 +607,8 @@ git commit -m "docs: registrar validação family values ui"
 **Open PR:**
 
 ```bash
-git push -u origin feat/family-values-interaction-ui
-gh pr create --base main --head feat/family-values-interaction-ui \
+git push -u origin refactor-family-ui
+gh pr create --base main --head refactor-family-ui \
   --title "feat: aplicar arquitetura de interação Family Values UI" \
   --body-file docs/plans/2026-06-27-family-values-ui-refactor.md
 ```
@@ -605,6 +631,7 @@ gh pr create --base main --head feat/family-values-interaction-ui \
 - Advanced filters no longer compete with search/date in `SpaceBrowserView`.
 - `MyReservationsView.vue` no longer uses `window.confirm()`.
 - Reservation success has explicit next actions.
+- Low-traffic screens (blockings, empty/error/loading states) match the hero flow's finish.
 - All added motion respects `prefers-reduced-motion` and explains continuity/causality/state.
 - Every code commit has lint, type-check, and unit-test evidence.
 - Final branch passes build and e2e before PR.
