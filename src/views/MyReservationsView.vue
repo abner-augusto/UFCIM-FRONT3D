@@ -376,8 +376,10 @@ function isGroupMatchingHighlight(group: GroupedReservation, reservationId: stri
           </div>
         </button>
 
-        <!-- Detail panel — visible when expanded -->
-        <div v-if="expandedId === group.id" class="reservation-detail">
+        <!-- Detail panel — same-object reveal (shared .reveal-collapse utility) -->
+        <div class="reveal-collapse" :class="{ 'reveal-collapse--open': expandedId === group.id }">
+          <div class="reveal-collapse__inner" :inert="expandedId !== group.id">
+            <div class="reservation-detail">
           <!-- Space info -->
           <section class="detail-section">
             <p class="detail-section__title">Espaço</p>
@@ -500,6 +502,8 @@ function isGroupMatchingHighlight(group: GroupedReservation, reservationId: stri
             </Button>
           </div>
 
+            </div>
+          </div>
         </div>
       </li>
     </TransitionGroup>
@@ -641,19 +645,13 @@ h1 {
 .status-badge--completed  { background: var(--muted); color: var(--muted-foreground); }
 .status-badge--recurrent  { background: var(--info-surface); color: var(--info); }
 
-/* Detail panel */
+/* Detail panel — reveal motion handled by the shared .reveal-collapse utility (motion.css) */
 .reservation-detail {
   border-top: 1px solid var(--border);
   padding: 1rem 1.25rem 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  animation: detail-in 0.18s ease both;
-}
-
-@keyframes detail-in {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
 }
 
 .detail-section__title {
