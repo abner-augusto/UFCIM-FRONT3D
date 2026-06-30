@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
@@ -40,6 +41,7 @@ const emit = defineEmits<{
 const steps: ReservationTrayStep[] = ['schedule', 'purpose', 'confirm', 'success'];
 const interaction = useInteractionStore();
 const auth = useAuthStore();
+const router = useRouter();
 
 const stepTitles: Record<ReservationTrayStep, string> = {
   schedule: 'Escolher horário',
@@ -53,6 +55,7 @@ const mediaQuery = window.matchMedia('(min-width: 768px)');
 const currentStep = ref<ReservationTrayStep>('schedule');
 const selectedSchedule = ref<ReservationScheduleSelection | null>(null);
 const selectedPurpose = ref<ReservationPurposeSelection>({ purpose: '', description: '' });
+const reservationId = ref<string | null>(null);
 const confirmStatus = ref<ActionStatus>('idle');
 const confirmError = ref<string | null>(null);
 let successStepTimer: ReturnType<typeof window.setTimeout> | null = null;
@@ -71,14 +74,37 @@ const canGoNext = computed(() => {
 });
 const subjectLabel = computed(() => props.spaceName || props.modelId || props.spaceId);
 const contextLabel = computed(() => `${subjectLabel.value} · campus ${props.campusId}`);
+const successSummary = computed(() => {
+  if (!selectedSchedule.value) return null;
 
-watch(() => [props.campusId, props.spaceId], () => {
+  return {
+    spaceName: props.spaceName,
+    date: selectedSchedule.value.date,
+    startTime: selectedSchedule.value.startTime,
+    endTime: selectedSchedule.value.endTime,
+    purpose: selectedPurpose.value.purpose,
+  };
+});
+
+function resetFlow() {
   selectedSchedule.value = null;
   selectedPurpose.value = { purpose: '', description: '' };
+  reservationId.value = null;
   confirmStatus.value = 'idle';
   confirmError.value = null;
-  if (successStepTimer) window.clearTimeout(successStepTimer);
+  if (successStepTimer) {
+    window.clearTimeout(successStepTimer);
+    successStepTimer = null;
+  }
   currentStep.value = 'schedule';
+}
+
+watch(() => [props.campusId, props.spaceId], () => {
+  resetFlow();
+});
+
+watch(() => props.open, (open, wasOpen) => {
+  if (open && wasOpen === false) resetFlow();
 });
 
 function handleMediaChange(event: MediaQueryListEvent | MediaQueryList) {
@@ -96,6 +122,10 @@ onUnmounted(() => {
 
 function handleOpenChange(open: boolean) {
   emit('update:open', open);
+}
+
+function closeTray() {
+  emit('update:open', false);
 }
 
 function next() {
@@ -143,6 +173,7 @@ async function handleConfirm() {
     });
 
     interaction.setReservation(reservation.id);
+    reservationId.value = reservation.id;
     confirmStatus.value = 'success';
     successStepTimer = window.setTimeout(() => {
       currentStep.value = 'success';
@@ -155,6 +186,15 @@ async function handleConfirm() {
       confirmError.value = 'Não foi possível confirmar a reserva. Tente novamente.';
     }
   }
+}
+
+function handleViewReservations(id: string) {
+  void router.push({ name: 'my-reservations', query: { highlight: id } });
+  closeTray();
+}
+
+function handleBackToMap() {
+  closeTray();
 }
 </script>
 
@@ -210,7 +250,13 @@ async function handleConfirm() {
           :error="confirmError"
           @confirm="handleConfirm"
         />
-        <ReservationSuccessStep v-else />
+        <ReservationSuccessStep
+          v-else-if="currentStep === 'success' && reservationId && successSummary"
+          :reservation-id="reservationId"
+          :summary="successSummary"
+          @view-reservations="handleViewReservations"
+          @back-to-map="handleBackToMap"
+        />
 
         <footer v-if="currentStep !== 'success'" class="reservation-tray__actions">
           <Button
