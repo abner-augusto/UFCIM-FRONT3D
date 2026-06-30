@@ -16,7 +16,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const route = useRoute();
@@ -166,56 +165,7 @@ onMounted(async () => {
             </button>
           </Badge>
         </div>
-        <div class="flex flex-wrap gap-1.5 [&>*]:max-[480px]:flex-[1_1_calc(50%-0.25rem)] [&>*]:max-[480px]:min-w-0">
-          <NativeSelect
-            class="flex-1"
-            :model-value="blockFilter ?? ''"
-            aria-label="Filtrar por bloco"
-            @update:model-value="blockFilter = String($event) || null"
-          >
-            <NativeSelectOption value="">Todos os blocos</NativeSelectOption>
-            <NativeSelectOption v-for="b in availableBlocks" :key="b" :value="b">{{ b }}</NativeSelectOption>
-          </NativeSelect>
-          <NativeSelect
-            class="flex-1"
-            :model-value="typeFilter ?? ''"
-            aria-label="Filtrar por tipo"
-            @update:model-value="typeFilter = String($event) || null"
-          >
-            <NativeSelectOption value="">Todos os tipos</NativeSelectOption>
-            <NativeSelectOption v-for="t in availableTypes" :key="t" :value="t">
-              {{ SPACE_TYPE_LABELS[t] ?? t }}
-            </NativeSelectOption>
-          </NativeSelect>
-          <NativeSelect
-            class="flex-1"
-            :model-value="statusFilter ?? ''"
-            aria-label="Filtrar por disponibilidade"
-            @update:model-value="statusFilter = (String($event) || null) as PinStatus | null"
-          >
-            <NativeSelectOption value="">Disponibilidade</NativeSelectOption>
-            <NativeSelectOption v-for="s in STATUS_OPTIONS" :key="s.value" :value="s.value">
-              {{ s.label }}
-            </NativeSelectOption>
-          </NativeSelect>
-        </div>
         <div class="flex flex-wrap items-center gap-3 max-[480px]:flex-col max-[480px]:items-stretch">
-          <div class="flex items-center gap-1.5">
-            <Label class="text-muted-foreground text-[0.72rem] font-semibold whitespace-nowrap uppercase" for="browser-period">
-              Turno
-              <span v-if="periodAutoDetected" class="bg-secondary text-secondary-foreground rounded px-1 py-px text-[0.62rem] font-medium">automático</span>
-            </Label>
-            <NativeSelect
-              id="browser-period"
-              :model-value="selectedPeriod"
-              :disabled="availabilityLoading"
-              @update:model-value="setPeriod(String($event) as PeriodKey)"
-            >
-              <NativeSelectOption value="morning">Manhã (07h–12h)</NativeSelectOption>
-              <NativeSelectOption value="afternoon">Tarde (13h–18h)</NativeSelectOption>
-              <NativeSelectOption value="evening">Noite (19h–22h)</NativeSelectOption>
-            </NativeSelect>
-          </div>
           <div class="flex gap-2.5">
             <span class="flex items-center gap-[3px] text-[0.72rem] text-muted-foreground">
               <span class="size-2 shrink-0 rounded-full" :style="{ background: PERIOD_COLORS.available }"></span>
