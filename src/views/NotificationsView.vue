@@ -85,14 +85,15 @@ const hasUnread = () => notifications.value.some((n) => !n.read);
     <ListItemSkeleton v-if="loading" :count="5" label="Carregando notificações" />
     <div v-else-if="errorMsg" class="state-error">{{ errorMsg }}</div>
     <div v-else-if="notifications.length === 0" class="state-empty">
-      <p>Nenhuma notificação.</p>
+      <p>Você não tem notificações.</p>
     </div>
 
     <ul v-else class="notification-list">
       <li
-        v-for="n in notifications"
+        v-for="(n, i) in notifications"
         :key="n.id"
-        class="notification-item"
+        class="notification-item stagger-item"
+        :style="{ '--i': i }"
         :class="{ 'notification-item--unread': !n.read }"
       >
         <div class="notification-item__content">
