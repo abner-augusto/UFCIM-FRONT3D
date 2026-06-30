@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onBeforeUnmount, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useReservationStore } from '@/stores/reservation';
@@ -15,16 +15,11 @@ const reservationStore = useReservationStore();
 
 const confirmStatus = ref<ActionStatus>('idle');
 const errorMsg = ref<string | null>(null);
-let redirectTimer: ReturnType<typeof setTimeout> | null = null;
 
 onMounted(() => {
   if (!reservationStore.isReady) {
     router.replace({ name: 'campus-select' });
   }
-});
-
-onBeforeUnmount(() => {
-  if (redirectTimer) window.clearTimeout(redirectTimer);
 });
 
 const purposeLabel = (value: string) =>
@@ -60,10 +55,6 @@ async function handleConfirm() {
       description: reservationStore.description ?? undefined,
     });
     confirmStatus.value = 'success';
-    redirectTimer = setTimeout(() => {
-      reservationStore.reset();
-      router.push({ name: 'my-reservations' });
-    }, 900);
   } catch (e) {
     confirmStatus.value = 'error';
     if (e instanceof ApiError && e.message) {
@@ -73,13 +64,25 @@ async function handleConfirm() {
     }
   }
 }
+
+function handleViewReservations() {
+  router.push({ name: 'my-reservations' });
+  reservationStore.reset();
+}
+
+function handleNewReservation() {
+  reservationStore.reset();
+  router.push({ name: 'campus-select' });
+}
 </script>
 
 <template>
   <div class="mx-auto max-w-[540px] px-4 py-6">
     <div class="mb-6 flex items-center gap-4">
-      <Button variant="ghost" class="text-primary px-0" @click="router.back()">← Voltar</Button>
-      <h1 class="m-0 text-xl font-semibold">Confirmar Reserva</h1>
+      <Button v-if="confirmStatus !== 'success'" variant="ghost" class="text-primary px-0" @click="router.back()">← Voltar</Button>
+      <h1 class="m-0 text-xl font-semibold">
+        {{ confirmStatus === 'success' ? 'Reserva confirmada' : 'Confirmar Reserva' }}
+      </h1>
     </div>
 
     <Card class="mb-6 gap-0 overflow-hidden py-0">
@@ -105,15 +108,83 @@ async function handleConfirm() {
       </div>
     </Card>
 
-    <p v-if="errorMsg" class="text-destructive mb-4 text-sm" role="alert" aria-live="polite">{{ errorMsg }}</p>
+    <template v-if="confirmStatus === 'success'">
+      <div class="confirm-success" role="status" aria-live="polite">
+        <span class="confirm-success__mark" aria-hidden="true">✓</span>
+        <div>
+          <h2 class="confirm-success__title">Reserva confirmada</h2>
+          <p class="confirm-success__text">Sua reserva foi criada e já aparece em Minhas reservas.</p>
+        </div>
+      </div>
 
-    <StatefulActionButton
-      :status="confirmStatus"
-      idle-label="Confirmar Reserva"
-      submitting-label="Enviando reserva..."
-      success-label="Reserva feita com sucesso!"
-      error-label="Tentar confirmar novamente"
-      @click="handleConfirm"
-    />
+      <div class="confirm-success__actions">
+        <Button class="confirm-success__button" @click="handleViewReservations">Ver minhas reservas</Button>
+        <Button variant="outline" class="confirm-success__button" @click="handleNewReservation">Nova reserva</Button>
+      </div>
+    </template>
+
+    <template v-else>
+      <p v-if="errorMsg" class="text-destructive mb-4 text-sm" role="alert" aria-live="polite">{{ errorMsg }}</p>
+
+      <StatefulActionButton
+        :status="confirmStatus"
+        idle-label="Confirmar Reserva"
+        submitting-label="Enviando reserva..."
+        success-label="Reserva feita com sucesso!"
+        error-label="Tentar confirmar novamente"
+        @click="handleConfirm"
+      />
+    </template>
   </div>
 </template>
+
+<style scoped>
+.confirm-success {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.confirm-success__mark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  background: var(--success-surface, color-mix(in srgb, var(--success, #16a34a) 14%, transparent));
+  color: var(--success, #16a34a);
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.confirm-success__title {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.confirm-success__text {
+  margin: 0.2rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.86rem;
+}
+
+.confirm-success__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.confirm-success__button {
+  flex: 1;
+}
+
+@media (max-width: 480px) {
+  .confirm-success__actions {
+    flex-direction: column;
+  }
+}
+</style>
