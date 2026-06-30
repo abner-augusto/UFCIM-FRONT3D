@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { SlidersHorizontalIcon } from '@lucide/vue';
+import { SlidersHorizontalIcon, XIcon } from '@lucide/vue';
 import { useAuthStore } from '@/stores/auth';
 import { campuses } from '@/data/campuses';
 import { SPACE_TYPE_LABELS } from '@/types/space';
@@ -72,6 +72,27 @@ const activeFilterCount = computed(
   () => [blockFilter.value, typeFilter.value, statusFilter.value].filter(Boolean).length,
 );
 
+type FilterKey = 'block' | 'type' | 'status';
+
+const activeChips = computed<{ key: FilterKey; label: string }[]>(() => {
+  const chips: { key: FilterKey; label: string }[] = [];
+  if (blockFilter.value) chips.push({ key: 'block', label: blockFilter.value });
+  if (typeFilter.value) {
+    chips.push({ key: 'type', label: SPACE_TYPE_LABELS[typeFilter.value] ?? typeFilter.value });
+  }
+  if (statusFilter.value) {
+    const opt = STATUS_OPTIONS.find((s) => s.value === statusFilter.value);
+    chips.push({ key: 'status', label: opt?.label ?? statusFilter.value });
+  }
+  return chips;
+});
+
+function clearFilter(key: FilterKey) {
+  if (key === 'block') blockFilter.value = null;
+  else if (key === 'type') typeFilter.value = null;
+  else statusFilter.value = null;
+}
+
 function clearAllFilters() {
   blockFilter.value = null;
   typeFilter.value = null;
@@ -123,6 +144,27 @@ onMounted(async () => {
             Filtros
             <Badge v-if="activeFilterCount" variant="secondary" class="ml-0.5">{{ activeFilterCount }}</Badge>
           </Button>
+        </div>
+
+        <!-- Active filter chips -->
+        <div v-if="activeChips.length" class="flex flex-wrap gap-1.5" aria-label="Filtros ativos">
+          <Badge
+            v-for="chip in activeChips"
+            :key="chip.key"
+            variant="secondary"
+            class="h-7 gap-1 pr-1 pl-2.5 text-[0.78rem]"
+            data-testid="active-filter-chip"
+          >
+            {{ chip.label }}
+            <button
+              type="button"
+              class="hover:bg-foreground/10 focus-visible:ring-ring -mr-0.5 inline-flex size-5 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
+              :aria-label="`Remover filtro: ${chip.label}`"
+              @click="clearFilter(chip.key)"
+            >
+              <XIcon class="size-3.5" />
+            </button>
+          </Badge>
         </div>
         <div class="flex flex-wrap gap-1.5 [&>*]:max-[480px]:flex-[1_1_calc(50%-0.25rem)] [&>*]:max-[480px]:min-w-0">
           <NativeSelect
