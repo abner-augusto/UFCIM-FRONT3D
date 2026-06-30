@@ -28,6 +28,20 @@
   transform: scale(0.985);
 }
 
+/* Success affirmation: one meaningful pop when an action completes — it
+   conveys "done", it is not decorative. Apply `.success-pop` to the success
+   mark. The global prefers-reduced-motion kill-switch in tokens.css neutralizes
+   the animation, leaving the static success mark fully legible. */
+@keyframes success-pop {
+  0%   { opacity: 0; transform: scale(0.6); }
+  60%  { transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.success-pop {
+  animation: success-pop 0.42s var(--ease-out-quart, cubic-bezier(0.25, 1, 0.5, 1)) both;
+}
+
 /* Theme reveal: the origin is written by useDarkMode() from the clicked
    light/dark toggle, so desktop and mobile buttons both expand from the real
    tap location instead of from a fixed corner. */

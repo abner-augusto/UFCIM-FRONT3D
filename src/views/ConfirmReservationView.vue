@@ -116,7 +116,7 @@ function handleNewReservation() {
 
     <template v-if="confirmStatus === 'success'">
       <div class="confirm-success" role="status" aria-live="polite">
-        <span class="confirm-success__mark" aria-hidden="true">✓</span>
+        <span class="confirm-success__mark success-pop" aria-hidden="true">✓</span>
         <div>
           <h2 class="confirm-success__title">Reserva confirmada</h2>
           <p class="confirm-success__text">Sua reserva foi criada e já aparece em Minhas reservas.</p>
