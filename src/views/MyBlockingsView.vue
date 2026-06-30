@@ -117,8 +117,10 @@ const datetimeLabel = (iso: string) =>
           </div>
         </button>
 
-        <!-- Detail panel -->
-        <div v-if="expandedId === b.id" class="blocking-detail">
+        <!-- Detail panel — same-object reveal (shared .reveal-collapse utility) -->
+        <div class="reveal-collapse" :class="{ 'reveal-collapse--open': expandedId === b.id }">
+          <div class="reveal-collapse__inner" :inert="expandedId !== b.id">
+            <div class="blocking-detail">
           <!-- Space section -->
           <section class="detail-section">
             <p class="detail-section__title">Espaço</p>
@@ -183,6 +185,8 @@ const datetimeLabel = (iso: string) =>
             >
               {{ removing === b.id ? 'Removendo...' : 'Remover bloqueio' }}
             </Button>
+          </div>
+            </div>
           </div>
         </div>
       </li>
@@ -312,19 +316,13 @@ const datetimeLabel = (iso: string) =>
 .type-badge--administrative { background: var(--info-surface); color: var(--info); }
 .type-badge--maintenance    { background: var(--warning-surface); color: var(--warning); }
 
-/* Detail panel */
+/* Detail panel — reveal motion handled by the shared .reveal-collapse utility (motion.css) */
 .blocking-detail {
   border-top: 1px solid var(--border);
   padding: 1rem 1.25rem 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  animation: detail-in 0.18s ease both;
-}
-
-@keyframes detail-in {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
 }
 
 .detail-section__title {
