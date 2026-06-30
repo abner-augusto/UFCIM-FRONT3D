@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+import StatefulActionButton, { type ActionStatus } from '@/components/StatefulActionButton.vue';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
+
+export type CancelReservationStatus = ActionStatus;
 
 export interface CancelReservationSummary {
   spaceName: string;
@@ -14,7 +17,8 @@ const props = defineProps<{
   open: boolean;
   summary: CancelReservationSummary | null;
   futureOccurrencesCount?: number | null;
-  submitting?: boolean;
+  status: CancelReservationStatus;
+  errorMessage?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -25,6 +29,13 @@ const emit = defineEmits<{
 
 const isDesktop = ref(window.matchMedia('(min-width: 768px)').matches);
 const mediaQuery = window.matchMedia('(min-width: 768px)');
+
+const isLocked = computed(() => props.status === 'submitting' || props.status === 'success');
+const statusMessage = computed(() => {
+  if (props.status === 'submitting') return 'Enviando cancelamento...';
+  if (props.status === 'success') return 'Reserva cancelada. Atualizando sua lista...';
+  return '';
+});
 
 function handleMediaChange(event: MediaQueryListEvent | MediaQueryList) {
   isDesktop.value = event.matches;
@@ -39,22 +50,22 @@ onUnmounted(() => {
 });
 
 function handleOpenChange(open: boolean) {
-  if (!open && props.submitting) {
+  if (!open && isLocked.value) {
     emit('update:open', true);
     return;
   }
   emit('update:open', open);
-  if (!open && !props.submitting) emit('keep');
+  if (!open && !isLocked.value) emit('keep');
 }
 
 function handleKeep() {
-  if (props.submitting) return;
+  if (isLocked.value) return;
   emit('update:open', false);
   emit('keep');
 }
 
 function handleConfirm() {
-  if (props.submitting) return;
+  if (isLocked.value) return;
   emit('confirm');
 }
 </script>
@@ -65,7 +76,7 @@ function handleConfirm() {
       :is="isDesktop ? DialogContent : DrawerContent"
       class="cancel-dialog z-[var(--z-modal)]"
       :class="isDesktop ? '' : 'mx-2 mb-[calc(0.5rem_+_var(--safe-bottom))]'"
-      :show-close-button="!submitting"
+      :show-close-button="!isLocked"
       overlay-class="supports-backdrop-filter:backdrop-blur-none"
     >
       <div class="cancel-dialog__body">
@@ -95,25 +106,39 @@ function handleConfirm() {
           Serão canceladas {{ futureOccurrencesCount }} ocorrências futuras desta série.
         </p>
 
+        <p
+          v-if="statusMessage"
+          class="cancel-dialog__status"
+          :class="`cancel-dialog__status--${status}`"
+          role="status"
+          aria-live="polite"
+        >
+          {{ statusMessage }}
+        </p>
+
+        <p v-if="status === 'error' && errorMessage" class="cancel-dialog__error" role="alert">
+          {{ errorMessage }}
+        </p>
+
         <div class="cancel-dialog__actions">
           <Button
             type="button"
             variant="outline"
             class="cancel-dialog__button"
-            :disabled="submitting"
+            :disabled="isLocked"
             @click="handleKeep"
           >
             Manter reserva
           </Button>
-          <Button
-            type="button"
-            variant="destructive"
+          <StatefulActionButton
             class="cancel-dialog__button"
-            :disabled="submitting"
+            :status="status"
+            idle-label="Cancelar reserva"
+            submitting-label="Cancelando..."
+            success-label="Reserva cancelada"
+            error-label="Tentar novamente"
             @click="handleConfirm"
-          >
-            {{ submitting ? 'Cancelando...' : 'Cancelar reserva' }}
-          </Button>
+          />
         </div>
       </div>
     </component>
@@ -214,6 +239,32 @@ function handleConfirm() {
   font-size: 0.85rem;
 }
 
+.cancel-dialog__status,
+.cancel-dialog__error {
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+}
+
+.cancel-dialog__status {
+  border: 1px solid var(--info-border, var(--border));
+  background: var(--info-surface);
+  color: var(--info);
+}
+
+.cancel-dialog__status--success {
+  border-color: var(--success-border, var(--border));
+  background: var(--success-surface);
+  color: var(--success);
+}
+
+.cancel-dialog__error {
+  border: 1px solid var(--danger-border);
+  background: var(--danger-surface);
+  color: var(--danger-fg);
+}
+
 .cancel-dialog__actions {
   display: flex;
   justify-content: flex-end;
@@ -222,6 +273,15 @@ function handleConfirm() {
 
 .cancel-dialog__button {
   min-width: 9rem;
+}
+
+.cancel-dialog__actions :deep(.stateful-action-button) {
+  width: auto;
+}
+
+.cancel-dialog__actions :deep(.stateful-action-button[data-state='idle']) {
+  --action-button-bg: var(--destructive);
+  --action-button-fg: var(--destructive-foreground);
 }
 
 @media (max-width: 480px) {
@@ -237,6 +297,17 @@ function handleConfirm() {
 
   .cancel-dialog__button {
     width: 100%;
+  }
+
+  .cancel-dialog__actions :deep(.stateful-action-button) {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cancel-dialog[data-state="open"],
+  .cancel-dialog[data-state="closed"] {
+    animation: none !important;
   }
 }
 
