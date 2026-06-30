@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, onBeforeUnmount, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
 import type { Reservation } from '@/types/reservation';
@@ -9,6 +10,7 @@ import type { TimeSlot } from '@/types/reservation';
 import { Button } from '@/components/ui/button';
 import ListItemSkeleton from '@/components/ListItemSkeleton.vue';
 
+const route = useRoute();
 const auth = useAuthStore();
 
 const reservations = ref<Reservation[]>([]);
@@ -17,11 +19,22 @@ const errorMsg = ref<string | null>(null);
 const cancelling = ref<string | null>(null);
 const cancellingSeries = ref<string | null>(null);
 const expandedId = ref<string | null>(null);
+const activeHighlightId = ref<string | null>(null);
+let highlightTimer: ReturnType<typeof setTimeout> | null = null;
 
 const PURPOSE_LABELS = Object.fromEntries(PURPOSE_OPTIONS.map(o => [o.value, o.label]));
 
 onMounted(async () => {
   await loadReservations();
+  armHighlightFromQuery();
+});
+
+onBeforeUnmount(() => {
+  clearHighlightTimer();
+});
+
+watch(() => route.query.highlight, () => {
+  armHighlightFromQuery();
 });
 
 async function loadReservations() {
@@ -64,6 +77,33 @@ async function handleCancelSeries(recurrenceId: string) {
 
 function toggleExpand(id: string) {
   expandedId.value = expandedId.value === id ? null : id;
+}
+
+function clearHighlightTimer() {
+  if (!highlightTimer) return;
+  clearTimeout(highlightTimer);
+  highlightTimer = null;
+}
+
+function getHighlightQuery(): string | null {
+  const value = route.query.highlight;
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function armHighlightFromQuery() {
+  const reservationId = getHighlightQuery();
+  clearHighlightTimer();
+
+  if (!reservationId || !hasHighlightedReservation(reservationId)) {
+    activeHighlightId.value = null;
+    return;
+  }
+
+  activeHighlightId.value = reservationId;
+  highlightTimer = setTimeout(() => {
+    activeHighlightId.value = null;
+    highlightTimer = null;
+  }, 2500);
 }
 
 const dateLabel = (iso: string) =>
@@ -152,6 +192,18 @@ const groupedReservations = computed<GroupedReservation[]>(() => {
   
   return result;
 });
+
+function hasHighlightedReservation(reservationId: string): boolean {
+  return groupedReservations.value.some(group => isGroupMatchingHighlight(group, reservationId));
+}
+
+function isGroupHighlighted(group: GroupedReservation): boolean {
+  return !!activeHighlightId.value && isGroupMatchingHighlight(group, activeHighlightId.value);
+}
+
+function isGroupMatchingHighlight(group: GroupedReservation, reservationId: string): boolean {
+  return group.id === reservationId || group.items.some(r => r.id === reservationId);
+}
 </script>
 
 <template>
@@ -170,7 +222,10 @@ const groupedReservations = computed<GroupedReservation[]>(() => {
         :key="group.id"
         class="reservation-card stagger-item"
         :style="{ '--i': i }"
-        :class="{ 'reservation-card--expanded': expandedId === group.id }"
+        :class="{
+          'reservation-card--expanded': expandedId === group.id,
+          'reservation-card--highlighted': isGroupHighlighted(group),
+        }"
       >
         <!-- Summary row — always visible -->
         <button class="reservation-card__summary press-feedback" :aria-expanded="expandedId === group.id" @click="toggleExpand(group.id)">
@@ -368,10 +423,15 @@ h1 {
   border-radius: 12px;
   background: var(--card);
   overflow: hidden;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, background-color var(--duration-med, 220ms) ease, box-shadow var(--duration-med, 220ms) ease;
 }
 .reservation-card--expanded {
   border-color: var(--primary);
+}
+.reservation-card--highlighted {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 9%, var(--card));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
 /* Summary row */
