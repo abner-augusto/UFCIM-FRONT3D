@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
@@ -7,8 +7,15 @@ import ReservationScheduleStep from './ReservationScheduleStep.vue';
 import ReservationPurposeStep from './ReservationPurposeStep.vue';
 import ReservationConfirmStep from './ReservationConfirmStep.vue';
 import ReservationSuccessStep from './ReservationSuccessStep.vue';
+import { useInteractionStore } from '@/stores/interaction';
 
 export type ReservationTrayStep = 'schedule' | 'purpose' | 'confirm' | 'success';
+
+interface ReservationScheduleSelection {
+  date: string;
+  startTime: string;
+  endTime: string;
+}
 
 const props = defineProps<{
   open: boolean;
@@ -23,6 +30,7 @@ const emit = defineEmits<{
 }>();
 
 const steps: ReservationTrayStep[] = ['schedule', 'purpose', 'confirm', 'success'];
+const interaction = useInteractionStore();
 
 const stepTitles: Record<ReservationTrayStep, string> = {
   schedule: 'Escolher horário',
@@ -31,24 +39,27 @@ const stepTitles: Record<ReservationTrayStep, string> = {
   success: 'Reserva concluída',
 };
 
-const stepComponents = {
-  schedule: ReservationScheduleStep,
-  purpose: ReservationPurposeStep,
-  confirm: ReservationConfirmStep,
-  success: ReservationSuccessStep,
-};
-
 const isDesktop = ref(window.matchMedia('(min-width: 768px)').matches);
 const mediaQuery = window.matchMedia('(min-width: 768px)');
 const currentStep = ref<ReservationTrayStep>('schedule');
+const selectedSchedule = ref<ReservationScheduleSelection | null>(null);
 
 const currentStepIndex = computed(() => steps.indexOf(currentStep.value));
 const currentTitle = computed(() => stepTitles[currentStep.value]);
-const currentComponent = computed(() => stepComponents[currentStep.value]);
 const canGoBack = computed(() => currentStepIndex.value > 0 && currentStep.value !== 'success');
-const canGoNext = computed(() => currentStepIndex.value < steps.length - 1);
+const scheduleIsValid = computed(() => !!selectedSchedule.value?.date && !!selectedSchedule.value?.startTime && !!selectedSchedule.value?.endTime);
+const canGoNext = computed(() => {
+  if (currentStepIndex.value >= steps.length - 1) return false;
+  if (currentStep.value === 'schedule') return scheduleIsValid.value;
+  return true;
+});
 const subjectLabel = computed(() => props.spaceName || props.modelId || props.spaceId);
 const contextLabel = computed(() => `${subjectLabel.value} · campus ${props.campusId}`);
+
+watch(() => [props.campusId, props.spaceId], () => {
+  selectedSchedule.value = null;
+  currentStep.value = 'schedule';
+});
 
 function handleMediaChange(event: MediaQueryListEvent | MediaQueryList) {
   isDesktop.value = event.matches;
@@ -74,6 +85,16 @@ function next() {
 function back() {
   if (!canGoBack.value) return;
   currentStep.value = steps[currentStepIndex.value - 1];
+}
+
+function handleScheduleChange(schedule: ReservationScheduleSelection | null) {
+  selectedSchedule.value = schedule;
+  if (!schedule) return;
+
+  const subject = interaction.subject;
+  if (subject?.campusId === props.campusId && subject.spaceId === props.spaceId) {
+    interaction.updateSchedule(schedule);
+  }
 }
 </script>
 
@@ -108,7 +129,16 @@ function back() {
           </span>
         </div>
 
-        <component :is="currentComponent" />
+        <ReservationScheduleStep
+          v-if="currentStep === 'schedule'"
+          :campus-id="campusId"
+          :space-id="spaceId"
+          :initial-schedule="selectedSchedule"
+          @schedule-change="handleScheduleChange"
+        />
+        <ReservationPurposeStep v-else-if="currentStep === 'purpose'" />
+        <ReservationConfirmStep v-else-if="currentStep === 'confirm'" />
+        <ReservationSuccessStep v-else />
 
         <footer class="reservation-tray__actions">
           <Button type="button" variant="outline" class="reservation-tray__button" :disabled="!canGoBack" @click="back">
