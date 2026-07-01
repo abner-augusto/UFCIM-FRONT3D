@@ -2,7 +2,6 @@
 import { ref, computed, watch, toRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { useReservationStore } from '@/stores/reservation';
 import { api } from '@/services/api';
 import type { Space } from '@/types/space';
 import { TIME_SLOT_RANGES, type Blocking, type Availability } from '@/types/reservation';
@@ -30,11 +29,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   toggle: [];
+  reserve: [range: { startTime: string; endTime: string }];
 }>();
 
 const router = useRouter();
 const auth = useAuthStore();
-const reservationStore = useReservationStore();
 
 const { canReserve, canBlock } = usePermissions();
 
@@ -167,9 +166,11 @@ async function onExpand() {
   if (!alreadyLoaded) detailLoading.value = false;
 }
 
+// Mirror the viewer: open the contextual reservation tray (hosted by the parent)
+// with the user's chosen range, instead of navigating to the full reservation
+// page. The tray's confirm step carries the stateful button + status messages.
 function handleReserve() {
-  reservationStore.setSpace(props.space.id, props.space.name);
-  router.push({ name: 'reservation', params: { spaceId: props.space.id } });
+  emit('reserve', { startTime: reserveStartTime.value, endTime: reserveEndTime.value });
 }
 
 function handleBlock() {

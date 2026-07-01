@@ -9,6 +9,8 @@ import { useSpaceBrowser } from '@/composables/useSpaceBrowser';
 import { PERIOD_COLORS, type PinStatus } from '@/composables/usePinAvailability';
 import SpaceCard from '@/components/SpaceCard.vue';
 import SpaceFiltersSheet from '@/components/SpaceFiltersSheet.vue';
+import ReservationTray from '@/components/reservation-tray/ReservationTray.vue';
+import type { Space } from '@/types/space';
 import AppDateField from '@/components/AppDateField.vue';
 import type { PeriodKey } from '@/utils/period';
 import { toLocalISODate } from '@/utils/date';
@@ -52,6 +54,31 @@ const {
 const expandedId = ref<string | null>(null);
 const today = toLocalISODate();
 const filtersOpen = ref(false);
+
+// Contextual reservation tray, opened from a card's reserve action — same flow
+// (and stateful confirm button) the viewer uses, instead of the full page route.
+interface ReservationTrayContext {
+  spaceId: string;
+  spaceName: string;
+  modelId: string | null;
+  initialSchedule: { date: string; startTime: string; endTime: string };
+}
+const reservationTrayOpen = ref(false);
+const reservationTrayContext = ref<ReservationTrayContext | null>(null);
+
+function openReservationTray(space: Space, range: { startTime: string; endTime: string }) {
+  reservationTrayContext.value = {
+    spaceId: space.id,
+    spaceName: space.name,
+    modelId: space.modelId ?? null,
+    initialSchedule: {
+      date: selectedDate.value,
+      startTime: range.startTime,
+      endTime: range.endTime,
+    },
+  };
+  reservationTrayOpen.value = true;
+}
 
 const STATUS_OPTIONS: { value: PinStatus; label: string }[] = [
   { value: 'available', label: 'Disponível' },
@@ -235,6 +262,7 @@ onMounted(async () => {
             :selected-period="selectedPeriod"
             :selected-date="selectedDate"
             @toggle="toggleExpand(space.id)"
+            @reserve="(range) => openReservationTray(space, range)"
           />
         </div>
       </section>
@@ -255,6 +283,19 @@ onMounted(async () => {
       :active-count="activeFilterCount"
       @update:period="setPeriod"
       @clear="clearAllFilters"
+    />
+
+    <!-- Contextual reservation flow, opened from a card's reserve action so the
+         accessible list reserves with the same tray + stateful confirm button as
+         the maquete. Kept mounted once a context exists so its close animation plays. -->
+    <ReservationTray
+      v-if="reservationTrayContext"
+      v-model:open="reservationTrayOpen"
+      :campus-id="campusId"
+      :space-id="reservationTrayContext.spaceId"
+      :space-name="reservationTrayContext.spaceName"
+      :model-id="reservationTrayContext.modelId"
+      :initial-schedule="reservationTrayContext.initialSchedule"
     />
   </div>
 </template>
