@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted, watch, toRef } from 'vue';
+import { computed, ref, onMounted, onUnmounted, toRef } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { SPACE_TYPE_LABELS, type Space, type Equipment } from '@/types/space';
-import { useAuthStore } from '@/stores/auth';
-import { api } from '@/services/api';
+import type { Space } from '@/types/space';
 import { usePermissions } from '@/composables/usePermissions';
-import { PURPOSE_LABELS, BLOCK_TYPE_LABELS, type Availability } from '@/types/reservation';
+import { useRoomDetail } from '@/composables/useRoomDetail';
 import EquipmentReportDialog from './EquipmentReportDialog.vue';
-import { useEquipmentGroups, type EquipmentGroup } from '@/composables/useEquipmentGroups';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import RoomAvailabilityStrip from './room-popup/RoomAvailabilityStrip.vue';
@@ -15,7 +12,6 @@ import RoomPopupActions from './room-popup/RoomPopupActions.vue';
 import RoomDetailsCollapse from './room-popup/RoomDetailsCollapse.vue';
 import RoomPopupHeader from './room-popup/RoomPopupHeader.vue';
 import RoomSlotDetail from './room-popup/RoomSlotDetail.vue';
-import { useAvailabilitySelection } from '@/composables/useAvailabilitySelection';
 
 const props = defineProps<{
   open?: boolean;
@@ -60,17 +56,10 @@ function handleOpenChange(open: boolean) {
   if (!open && overlayReady.value) emit('close');
 }
 
-const auth = useAuthStore();
 const { canReserve, canBlock, canViewReports } = usePermissions();
-const typeLabel = computed(() => SPACE_TYPE_LABELS[props.space.type] ?? props.space.type);
 
-// Availability data for schedule grid
-const availability = ref<Availability | null>(null);
-const loadingAvailability = ref(false);
-const selectedDateRef = toRef(props, 'selectedDate');
-const defaultStartTime = computed(() => props.selectedStartTime);
-const defaultEndTime = computed(() => props.selectedEndTime);
-
+// Shared room-detail wiring (also used by SpaceCard). RoomPopup fetches its own
+// availability (no `availability` passed → internal fetch on mount/date change).
 const {
   visibleSlots,
   selectedSlot,
@@ -79,43 +68,33 @@ const {
   reserveEndTime,
   reserveRangeBookable,
   clearSelection,
-  resetSelection,
   isPastSlot,
   isInSelectedRange,
   onCellClick,
   getCellClass,
-} = useAvailabilitySelection({
-  availability,
-  selectedDate: selectedDateRef,
-  defaultStartTime,
-  defaultEndTime,
+  loadingAvailability,
+  equipmentGroups,
+  groupStatusClass,
+  groupStatusLabel,
+  reportingEquipment,
+  canReport,
+  openReportFor,
+  onReportSent,
+  typeLabel,
+  purposeLabel,
+  blockTypeLabel,
+  formattedDate,
+} = useRoomDetail({
+  space: () => props.space,
+  selectedDate: toRef(props, 'selectedDate'),
+  defaultStartTime: () => props.selectedStartTime,
+  defaultEndTime: () => props.selectedEndTime,
 });
 
 const actionReserveRangeBookable = computed(() => loadingAvailability.value || reserveRangeBookable.value);
 
-async function loadAvailability() {
-  resetSelection();
-  loadingAvailability.value = true;
-  try {
-    availability.value = await api.getAvailability(auth.token, props.space.id, props.selectedDate);
-  } finally {
-    loadingAvailability.value = false;
-  }
-}
-
-onMounted(loadAvailability);
-watch(() => [props.selectedDate, props.space.id], loadAvailability);
-
 function emitReserve() {
   emit('reserve', { startTime: reserveStartTime.value, endTime: reserveEndTime.value });
-}
-
-function purposeLabel(p: string) {
-  return PURPOSE_LABELS[p] ?? p;
-}
-
-function blockTypeLabel(bt: string) {
-  return BLOCK_TYPE_LABELS[bt as keyof typeof BLOCK_TYPE_LABELS] ?? bt;
 }
 
 function goToReservation(reservationId: string) {
@@ -135,28 +114,6 @@ function goToReport() {
   });
 }
 
-const formattedDate = computed(() => {
-  const d = new Date(props.selectedDate + 'T00:00:00');
-  return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', weekday: 'short' });
-});
-
-// Equipment groups (shared with SpaceCard)
-const { equipmentGroups, groupSeverity, groupStatusLabel } = useEquipmentGroups(() => props.space);
-const groupStatusClass = (g: EquipmentGroup) => `eq-status--${groupSeverity(g)}`;
-
-// Equipment reporting
-const reportingEquipment = ref<Equipment | null>(null);
-const canReport = computed(() => !!auth.token);
-
-function openReportFor(group: EquipmentGroup) {
-  if (!props.space.equipment) return;
-  const item = props.space.equipment.find(e => e.name === group.name);
-  if (item) reportingEquipment.value = item;
-}
-
-function onReportSent() {
-  reportingEquipment.value = null;
-}
 </script>
 
 <template>
