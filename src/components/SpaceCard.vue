@@ -1,22 +1,28 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, toRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useReservationStore } from '@/stores/reservation';
 import { api } from '@/services/api';
-import { SPACE_TYPE_LABELS, type Space } from '@/types/space';
-import { BLOCK_TYPE_LABELS, TIME_SLOT_RANGES, type Blocking } from '@/types/reservation';
+import type { Space } from '@/types/space';
+import { TIME_SLOT_RANGES, type Blocking, type Availability } from '@/types/reservation';
 import { PERIOD_COLORS, type PinStatus } from '@/composables/usePinAvailability';
-import { useEquipmentGroups, type EquipmentGroup } from '@/composables/useEquipmentGroups';
 import { usePermissions } from '@/composables/usePermissions';
+import { useRoomDetail } from '@/composables/useRoomDetail';
 import type { PeriodKey } from '@/utils/period';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import EquipmentReportDialog from '@/components/EquipmentReportDialog.vue';
+import RoomAvailabilityStrip from '@/components/room-popup/RoomAvailabilityStrip.vue';
+import RoomSlotDetail from '@/components/room-popup/RoomSlotDetail.vue';
+import RoomDetailsCollapse from '@/components/room-popup/RoomDetailsCollapse.vue';
 
 const props = defineProps<{
   space: Space;
   status: PinStatus | undefined;
   statusLoaded: boolean;
+  /** Hourly slots for the selected date, reused from the SpaceBrowser cache (no refetch). */
+  availability: Availability | null;
   expanded: boolean;
   selectedPeriod: PeriodKey;
   selectedDate: string;
@@ -31,18 +37,49 @@ const auth = useAuthStore();
 const reservationStore = useReservationStore();
 
 const { canReserve, canBlock } = usePermissions();
-const typeLabel = computed(() => SPACE_TYPE_LABELS[props.space.type] ?? props.space.type);
 
-// Detail loading
+// Detail loading (full space fetched lazily on first expand; cached thereafter)
 const detailedSpace = ref<Space | null>(null);
 const detailLoading = ref(false);
 const blockingReason = ref<string | null>(null);
+const detailsExpanded = ref(false);
 
 const displaySpace = computed(() => detailedSpace.value ?? props.space);
 
-// Equipment grouping (shared with RoomPopup)
-const { equipmentGroups, groupSeverity, groupStatusLabel } = useEquipmentGroups(() => displaySpace.value);
-const groupStatusClass = (g: EquipmentGroup) => `eq-status--${groupSeverity(g)}`;
+// Shared room-detail wiring — identical to RoomPopup. Availability is reused from the
+// SpaceBrowser cache (external mode: no refetch); equipment/detail comes from the lazy
+// getSpace via `displaySpace`.
+const periodRange = computed(() => TIME_SLOT_RANGES[props.selectedPeriod]);
+const availabilityRef = computed<Availability | null>(() => props.availability);
+const {
+  visibleSlots,
+  selectedSlot,
+  hasUserSelection,
+  reserveStartTime,
+  reserveEndTime,
+  clearSelection,
+  isPastSlot,
+  isInSelectedRange,
+  onCellClick,
+  getCellClass,
+  equipmentGroups,
+  groupStatusClass,
+  groupStatusLabel,
+  reportingEquipment,
+  canReport,
+  openReportFor,
+  onReportSent,
+  typeLabel,
+  purposeLabel,
+  blockTypeLabel,
+  formattedDate,
+} = useRoomDetail({
+  space: () => displaySpace.value,
+  selectedDate: toRef(props, 'selectedDate'),
+  defaultStartTime: () => periodRange.value.startTime,
+  defaultEndTime: () => periodRange.value.endTime,
+  availability: availabilityRef,
+});
 
 // Status display
 const statusLabel = computed((): string => {
@@ -92,10 +129,10 @@ async function fetchBlockingReason() {
           b.endTime > range.startTime,
       );
       if (active) {
-        const typeLabel = BLOCK_TYPE_LABELS[active.blockType];
+        const label = blockTypeLabel(active.blockType);
         blockingReason.value = active.reason?.trim()
-          ? `${typeLabel}: ${active.reason}`
-          : typeLabel;
+          ? `${label}: ${active.reason}`
+          : label;
       } else {
         blockingReason.value = null;
       }
@@ -137,6 +174,10 @@ function handleReserve() {
 
 function handleBlock() {
   router.push({ name: 'blocking-create', params: { spaceId: props.space.id } });
+}
+
+function goToReservation(reservationId: string) {
+  router.push({ name: 'my-reservations', query: { highlight: reservationId } });
 }
 
 function handleToggle() {
@@ -201,49 +242,41 @@ function handleToggle() {
       </div>
 
       <template v-else>
-        <!-- Stats grid -->
-        <div class="stats-grid">
-          <div v-if="displaySpace.capacity != null" class="stat-card">
-            <span class="stat-card__value">{{ displaySpace.capacity }}</span>
-            <span class="stat-card__label">pessoas</span>
-          </div>
-          <div v-if="displaySpace.lighting" class="stat-card">
-            <span class="stat-card__value stat-card__value--sm">{{ displaySpace.lighting }}</span>
-            <span class="stat-card__label">iluminação</span>
-          </div>
-          <div v-if="displaySpace.hvac" class="stat-card">
-            <span class="stat-card__value stat-card__value--sm">{{ displaySpace.hvac }}</span>
-            <span class="stat-card__label">climatização</span>
-          </div>
-        </div>
+        <!-- Hourly availability (same strip as the 3D popup) -->
+        <RoomAvailabilityStrip
+          :formatted-date="formattedDate"
+          :loading="!availability"
+          :visible-slots="visibleSlots"
+          :selected-date="selectedDate"
+          :has-user-selection="hasUserSelection"
+          :reserve-start-time="reserveStartTime"
+          :reserve-end-time="reserveEndTime"
+          :is-past-slot="isPastSlot"
+          :is-in-selected-range="isInSelectedRange"
+          :get-cell-class="getCellClass"
+          @cell-click="onCellClick"
+          @clear-selection="clearSelection"
+        />
 
-        <!-- Info list -->
-        <ul v-if="displaySpace.furniture || displaySpace.multimedia" class="info-list">
-          <li v-if="displaySpace.furniture">
-            <span class="info-label">Mobiliário</span>
-            <span class="info-value">{{ displaySpace.furniture }}</span>
-          </li>
-          <li v-if="displaySpace.multimedia">
-            <span class="info-label">Multimídia</span>
-            <span class="info-value">{{ displaySpace.multimedia }}</span>
-          </li>
-        </ul>
+        <!-- Clicked-slot detail -->
+        <RoomSlotDetail
+          :selected-slot="selectedSlot"
+          :purpose-label="purposeLabel"
+          :block-type-label="blockTypeLabel"
+          @go-to-reservation="goToReservation"
+        />
 
-        <!-- Equipment -->
-        <div v-if="equipmentGroups.length" class="equipment-section">
-          <p class="detail-section-title">Equipamentos</p>
-          <ul class="equipment-list">
-            <li v-for="g in equipmentGroups" :key="g.name" class="equipment-item">
-              <span class="equipment-name">
-                {{ g.name }}
-                <span v-if="g.total > 1" class="equipment-count">({{ g.total }})</span>
-              </span>
-              <span class="equipment-badge" :class="groupStatusClass(g)">
-                {{ groupStatusLabel(g) }}
-              </span>
-            </li>
-          </ul>
-        </div>
+        <!-- Stats + equipment (with report) — shared with the popup -->
+        <RoomDetailsCollapse
+          :details-expanded="detailsExpanded"
+          :space="displaySpace"
+          :equipment-groups="equipmentGroups"
+          :can-report="canReport"
+          :group-status-class="groupStatusClass"
+          :group-status-label="groupStatusLabel"
+          @toggle="detailsExpanded = !detailsExpanded"
+          @report="openReportFor"
+        />
 
         <!-- Blocking notice -->
         <div v-if="blockingReason" class="blocking-notice">
@@ -276,6 +309,15 @@ function handleToggle() {
         </div>
       </div>
     </div>
+
+    <!-- Equipment report dialog (teleports to body; not clipped by the card) -->
+    <EquipmentReportDialog
+      v-if="reportingEquipment"
+      :equipment="reportingEquipment"
+      :space-name="space.name"
+      @close="reportingEquipment = null"
+      @reported="onReportSent"
+    />
   </div>
 </template>
 
@@ -381,13 +423,13 @@ function handleToggle() {
   gap: 0.85rem;
 }
 
-/* Stats grid — .stat-card styles in detail-panel.css */
+/* Stats grid — used by the loading skeleton; .stat-card styles in detail-panel.css */
 .stats-grid {
   display: flex;
   gap: 0.5rem;
 }
 
-/* Info list — .info-label/.info-value in detail-panel.css */
+/* Info list — used by the loading skeleton; .info-label/.info-value in detail-panel.css */
 .info-list {
   list-style: none;
   margin: 0;
@@ -403,8 +445,6 @@ function handleToggle() {
   border-bottom: 1px solid var(--border);
   padding-bottom: 0.25rem;
 }
-
-/* Equipment — styles in detail-panel.css */
 
 /* Blocking notice */
 .blocking-notice {

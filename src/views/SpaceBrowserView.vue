@@ -37,6 +37,7 @@ const {
   periodAutoDetected,
   selectedDate,
   statusMap,
+  availabilityCache,
   availabilityLoaded,
   availabilityLoading,
   availableBlocks,
@@ -229,6 +230,7 @@ onMounted(async () => {
             :space="space"
             :status="statusMap.get(space.id)"
             :status-loaded="availabilityLoaded.has(space.id)"
+            :availability="availabilityCache.get(space.id) ?? null"
             :expanded="expandedId === space.id"
             :selected-period="selectedPeriod"
             :selected-date="selectedDate"
