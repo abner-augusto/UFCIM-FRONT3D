@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch, toRef } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { SPACE_TYPE_LABELS, type Space, type Equipment } from '@/types/space';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
@@ -37,6 +37,7 @@ const emit = defineEmits<{
 }>();
 
 const router = useRouter();
+const route = useRoute();
 const overlayReady = ref(false);
 const detailsExpanded = ref(false);
 const isDesktop = ref(window.matchMedia('(min-width: 768px)').matches);
@@ -122,7 +123,16 @@ function goToReservation(reservationId: string) {
 }
 
 function goToReport() {
-  router.push({ name: 'space-report', params: { spaceId: props.space.id } });
+  // Carry the viewer context so the report's back button can return to this pin's
+  // popup (via ?space=<modelId>) instead of a generic viewer reload.
+  router.push({
+    name: 'space-report',
+    params: { spaceId: props.space.id },
+    query: {
+      fromCampus: route.params.campusId as string,
+      ...(props.space.modelId ? { fromModel: props.space.modelId } : {}),
+    },
+  });
 }
 
 const formattedDate = computed(() => {
