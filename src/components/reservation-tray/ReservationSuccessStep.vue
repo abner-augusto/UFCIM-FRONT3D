@@ -62,10 +62,6 @@ const purposeLabel = computed(() => PURPOSE_OPTIONS.find((option) => option.valu
         <dt>Finalidade</dt>
         <dd>{{ purposeLabel }}</dd>
       </div>
-      <div class="reservation-success-step__row">
-        <dt>ID</dt>
-        <dd class="reservation-success-step__id">{{ reservationId }}</dd>
-      </div>
     </dl>
 
     <div class="reservation-success-step__actions" aria-label="Próximas ações">
