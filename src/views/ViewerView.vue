@@ -472,7 +472,7 @@ useViewerTestHarness({
       v-if="!isMobile"
       :viewer-ref="viewerRef"
       :ready="viewerReady"
-      :visible="!showPopup"
+      :visible="!showPopup && !reservationTrayOpen"
       @open-search="searchSheetOpen = true"
     />
 
