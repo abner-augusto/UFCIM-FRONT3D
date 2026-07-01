@@ -14,6 +14,8 @@ interface ReservationSuccessSummary {
 const props = defineProps<{
   reservationId: string;
   summary: ReservationSuccessSummary;
+  /** Whether returning to the maquete is reachable (on the viewer, or the space has a 3D pin). */
+  canReturnToMap?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -68,7 +70,7 @@ const purposeLabel = computed(() => PURPOSE_OPTIONS.find((option) => option.valu
       <Button type="button" class="reservation-success-step__button" @click="emit('viewReservations', reservationId)">
         Ver minhas reservas
       </Button>
-      <Button type="button" variant="outline" class="reservation-success-step__button" @click="emit('backToMap')">
+      <Button v-if="canReturnToMap" type="button" variant="outline" class="reservation-success-step__button" @click="emit('backToMap')">
         Voltar para maquete
       </Button>
     </div>
