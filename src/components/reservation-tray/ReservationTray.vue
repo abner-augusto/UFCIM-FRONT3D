@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
@@ -47,6 +47,7 @@ const steps: ReservationTrayStep[] = ['schedule', 'purpose', 'confirm', 'success
 const interaction = useInteractionStore();
 const auth = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 
 const stepTitles: Record<ReservationTrayStep, string> = {
   schedule: 'Escolher horário',
@@ -78,6 +79,12 @@ const canGoNext = computed(() => {
   return true;
 });
 const subjectLabel = computed(() => props.spaceName || props.modelId || props.spaceId);
+// "Voltar para maquete" only makes sense when there's somewhere to go: either
+// we're already on the viewer (closing the tray lands back on the maquete), or
+// the space has a 3D pin we can deep-link to. A space with no `modelId` isn't on
+// the model, so we hide the button rather than dead-end the user.
+const onViewer = computed(() => route.name === 'viewer');
+const canReturnToMap = computed(() => onViewer.value || !!props.modelId);
 const contextLabel = computed(() => `${subjectLabel.value} · campus ${props.campusId}`);
 const successSummary = computed(() => {
   if (!selectedSchedule.value) return null;
@@ -201,6 +208,16 @@ function handleViewReservations(id: string) {
 }
 
 function handleBackToMap() {
+  // From the maquete the tray overlays the model, so closing is enough. From
+  // another surface (e.g. the space browser) deep-link into the viewer focused
+  // on this pin so the button actually reaches the maquete.
+  if (!onViewer.value && props.modelId) {
+    void router.push({
+      name: 'viewer',
+      params: { campusId: props.campusId },
+      query: { space: props.modelId },
+    });
+  }
   closeTray();
 }
 </script>
@@ -263,6 +280,7 @@ function handleBackToMap() {
           v-else-if="currentStep === 'success' && reservationId && successSummary"
           :reservation-id="reservationId"
           :summary="successSummary"
+          :can-return-to-map="canReturnToMap"
           @view-reservations="handleViewReservations"
           @back-to-map="handleBackToMap"
         />
