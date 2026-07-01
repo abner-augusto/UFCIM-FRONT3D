@@ -208,7 +208,9 @@ function handleBackToMap() {
     <component
       :is="isDesktop ? DialogContent : DrawerContent"
       class="reservation-tray z-[var(--z-modal)]"
-      :class="isDesktop ? '' : 'mx-2 mb-[calc(0.5rem_+_var(--safe-bottom))]'"
+      :class="isDesktop
+        ? 'top-auto! bottom-[7dvh]! translate-y-0! max-h-[86dvh]! overflow-y-auto'
+        : 'mx-2 mb-[calc(0.5rem_+_var(--safe-bottom))]'"
       :show-close-button="true"
       overlay-class="supports-backdrop-filter:backdrop-blur-none"
     >
@@ -293,7 +295,9 @@ function handleBackToMap() {
   border-radius: 20px;
   padding: 1.5rem;
   width: 100%;
-  max-width: 480px;
+  /* Match RoomPopup (420px) so the tray keeps the same footprint/anchoring as the
+     popup it opens from — the flow reads as one container morphing, not a jump. */
+  max-width: 420px;
   box-shadow: 0 12px 40px rgb(var(--shadow-color) / 0.18);
   position: relative;
   padding-bottom: calc(1.5rem + var(--safe-bottom, 0px));
