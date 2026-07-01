@@ -23,13 +23,13 @@ async function openContextualReservationTray(page: Page) {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify([
-        { startTime: '07:00', endTime: '08:00', status: 'available' },
-        { startTime: '08:00', endTime: '09:00', status: 'available' },
-        { startTime: '09:00', endTime: '10:00', status: 'available' },
-        { startTime: '10:00', endTime: '11:00', status: 'available' },
-        { startTime: '11:00', endTime: '12:00', status: 'available' },
-      ]),
+      body: JSON.stringify(
+        Array.from({ length: 15 }, (_, i) => {
+          const h = 7 + i; // 07:00–22:00, all available so a future slot exists at any run time
+          const pad = (n: number) => String(n).padStart(2, '0');
+          return { startTime: `${pad(h)}:00`, endTime: `${pad(h + 1)}:00`, status: 'available' };
+        }),
+      ),
     }),
   );
 
@@ -58,7 +58,12 @@ async function openContextualReservationTray(page: Page) {
 }
 
 async function selectFirstTraySlot(page: Page) {
-  const firstAvailableHour = page.getByRole('button', { name: /Disponível/ }).first();
+  // The tray correctly disables elapsed ("já passou") hours, so pick the first
+  // ENABLED available slot rather than .first() — deterministic at any run time.
+  const firstAvailableHour = page
+    .getByRole('button', { name: /Disponível/ })
+    .and(page.locator(':enabled'))
+    .first();
   await expect(firstAvailableHour).toBeVisible({ timeout: 30_000 });
   await firstAvailableHour.click();
   await expect(page.getByText(/Horário selecionado:/i)).toBeVisible({ timeout: 5_000 });
