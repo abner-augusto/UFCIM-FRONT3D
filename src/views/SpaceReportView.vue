@@ -20,6 +20,18 @@ const router = useRouter();
 const auth = useAuthStore();
 
 const spaceId = route.params.spaceId as string;
+
+// When opened from a viewer pin, return to that pin's popup instead of a generic
+// viewer reload (RoomPopup passes fromCampus + fromModel; see goToReport).
+function goBack() {
+  const fromCampus = route.query.fromCampus as string | undefined;
+  const fromModel = route.query.fromModel as string | undefined;
+  if (fromCampus && fromModel) {
+    router.push({ name: 'viewer', params: { campusId: fromCampus }, query: { space: fromModel } });
+    return;
+  }
+  router.back();
+}
 const report = ref<SpaceReportData | null>(null);
 const loading = ref(false);
 const errorMsg = ref<string | null>(null);
@@ -80,7 +92,7 @@ const todayStr = computed(() => toLocalISODate());
 <template>
   <div class="space-report-view">
     <header class="view-header">
-      <button class="back-btn" @click="router.back()">← Voltar</button>
+      <button class="back-btn" @click="goBack()">← Voltar</button>
       <h1>Relatório da Sala</h1>
     </header>
 
