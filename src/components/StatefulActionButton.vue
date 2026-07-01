@@ -107,9 +107,9 @@ function onClick() {
 }
 
 .stateful-action-button[data-state='success'] {
-  --action-button-bg: var(--success);
+  --action-button-bg: var(--success-solid);
   --action-button-fg: white;
-  --action-button-shadow: color-mix(in srgb, var(--success) 34%, transparent);
+  --action-button-shadow: color-mix(in srgb, var(--success-solid) 40%, transparent);
 
   box-shadow: 0 0 0 5px var(--action-button-shadow);
   transform: translateY(-1px);
