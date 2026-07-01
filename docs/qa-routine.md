@@ -65,8 +65,18 @@ O usuário `funcionario@teste.com` cobre `staff`/`CAN_ADMIN`.
 
 > Resultados e achados de cada rodada ficam registrados fora deste arquivo (relatório de QA).
 
+## Atalhos de QA / automação (dev local)
+
+- **Login dev não usa Turnstile** — dá para automatizar: preencher email/senha (`professor@teste.com` / `senha123456`) e clicar **Entrar** → `/campus`. O token fica em `sessionStorage`, então cada reinício da sessão/navegador desloga (relogar).
+- **Abrir o RoomPopup sem clicar na maquete 3D:** navegar para `/#/campus/<campusId>/viewer?space=<modelId>` — o ViewerView foca o pin e abre o popup (ex.: `?space=Sala de Leitura (Biblioteca)`). Do popup, "Reservar …" abre o ReservationTray contextual.
+- **Buscar Espaços (lista + filtros) fica em `/campus/:campusId/espacos`** — não `/espacos`. Rota indefinida agora redireciona para `/campus` (BUG-014).
+- **Slots passados aparecem desabilitados** ("horário já passou"); em QA/automação, escolher um horário habilitado/futuro.
+- **e2e é auto-contido:** `npm run test:e2e` sobe vite + wrangler sozinho (serial, `workers:1`); rodar em foreground (~2 min) — runs em background morrem em restart do Claude.
+- Quirks da ferramenta de browser (BrowserOS MCP: porta instável, primitivas confiáveis, `<select>` nativo via teclado) estão na memória de automação do agente.
+
 ## Rodadas recentes
 
+- 2026-07-01 — BrowserOS MCP, MEL-014 Family Values UI (branch `refactor-family-ui`): fluxo completo validado — reserva contextual pela maquete (tray schedule→purpose→confirm→success, reserva criada de verdade), cancelamento contextual (dialog + async), highlight, expansão de cards, filtros progressivos. Achados: **BUG-014** (rota indefinida em branco — corrigido, catch-all → `/campus`), **BUG-015** (nits adiados: campus cru no tray, UUID exposto, highlight sutil, copy `iaud`/"Campus do Benfica"). e2e 36 passou / 1 skip; corrigido o teste do slot no tray (`d8768d8`).
 - 2026-06-22 — BrowserOS MCP, MEL-009 Phase 7: `.claude/mel009-browseros-qa-2026-06-22.md`.
   - Bloqueia fechamento do MEL-009: aluno acessa `/espacos/:spaceId/relatorio` sem `CAN_VIEW_REPORTS`.
   - Follow-ups: CTA de reserva de período passado no `RoomPopup`, `RoomPopup` móvel como modal central em vez de drawer, confirmar `Escape` no drawer móvel.
