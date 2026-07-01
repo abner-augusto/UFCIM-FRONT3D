@@ -21,7 +21,8 @@ export function useSpaceBrowser() {
 
   let currentToken: string | null = null;
 
-  const availabilityCache = new Map<string, AvailabilitySlot[]>();
+  // Reactive so SpaceCard can reuse a room's already-fetched hourly slots (no refetch).
+  const availabilityCache = ref(new Map<string, AvailabilitySlot[]>());
   const statusMap = ref(new Map<string, PinStatus>());
   const availabilityLoaded = ref(new Set<string>());
   const availabilityLoading = ref(false);
@@ -35,7 +36,7 @@ export function useSpaceBrowser() {
     loading.value = true;
     error.value = null;
     allSpaces.value = [];
-    availabilityCache.clear();
+    availabilityCache.value = new Map();
     statusMap.value = new Map();
     availabilityLoaded.value = new Set();
 
@@ -59,7 +60,7 @@ export function useSpaceBrowser() {
   async function fetchAvailability(token: string | null, date: string) {
     const seq = ++fetchSeq;
     availabilityLoading.value = true;
-    availabilityCache.clear();
+    availabilityCache.value = new Map();
     availabilityLoaded.value = new Set();
     statusMap.value = new Map();
 
@@ -80,7 +81,7 @@ export function useSpaceBrowser() {
         const result = results[j];
         if (result.status !== 'fulfilled') continue;
         const space = chunk[j];
-        availabilityCache.set(space.id, result.value);
+        availabilityCache.value = new Map(availabilityCache.value).set(space.id, result.value);
         availabilityLoaded.value = new Set(availabilityLoaded.value).add(space.id);
         statusMap.value = new Map(statusMap.value).set(
           space.id,
@@ -98,7 +99,7 @@ export function useSpaceBrowser() {
 
   watch(selectedPeriod, () => {
     const newMap = new Map<string, PinStatus>();
-    for (const [spaceId, slots] of availabilityCache) {
+    for (const [spaceId, slots] of availabilityCache.value) {
       newMap.set(spaceId, derivePinStatus(slots, selectedPeriod.value));
     }
     statusMap.value = newMap;
@@ -175,6 +176,7 @@ export function useSpaceBrowser() {
     periodAutoDetected,
     selectedDate,
     statusMap,
+    availabilityCache,
     availabilityLoaded,
     availabilityLoading,
     availableBlocks,
