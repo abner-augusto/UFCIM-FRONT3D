@@ -112,6 +112,12 @@ const router = createRouter({
       component: () => import('@/views/RequestInviteView.vue'),
       meta: { guestOnly: true },
     },
+    {
+      // Catch-all: undefined routes (bad deep-links, stale URLs) redirect home
+      // instead of rendering a blank page. The guard then sends guests to /login.
+      path: '/:pathMatch(.*)*',
+      redirect: '/campus',
+    },
   ],
 });
 
