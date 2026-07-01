@@ -41,6 +41,7 @@
      Used by badges, slot details, notices, equipment status. Light values
      match the pre-token palette; .dark overrides keep contrast on dark cards. */
   --success:          #065f46;
+  --success-solid:    #15803d;  /* vivid green for solid success buttons — white text stays AA (~4.5:1) */
   --success-surface:  #d1fae5;
   --success-border:   #a7e8cf;
   --warning:          #92400e;
