@@ -180,9 +180,11 @@ async function handleConfirm() {
     interaction.setReservation(reservation.id);
     reservationId.value = reservation.id;
     confirmStatus.value = 'success';
+    // Hold on the confirm step long enough to read the button's success colour +
+    // "Reserva confirmada" label before the tray advances to the success step.
     successStepTimer = window.setTimeout(() => {
       currentStep.value = 'success';
-    }, 500);
+    }, 1200);
   } catch (e) {
     confirmStatus.value = 'error';
     if (e instanceof ApiError && e.message) {
