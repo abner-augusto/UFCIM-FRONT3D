@@ -327,6 +327,10 @@ function handleBackToMap() {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  /* Hold a consistent height across steps so the container doesn't shrink/grow
+     between schedule → purpose → confirm → success — shorter steps (success)
+     pad out to keep the bottom-anchored flow seamless. */
+  min-height: 26rem;
 }
 
 .reservation-tray__header {
