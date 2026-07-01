@@ -34,9 +34,9 @@ O usuário `funcionario@teste.com` cobre `staff`/`CAN_ADMIN`.
 - [ ] Acesso direto por URL a rota sem permissão → redireciona a `/campus`
 
 ## B. aluno (student)
-- [ ] Reservar a partir do popup (slot livre) → fluxo `/reserva` → confirmar
+- [ ] Reservar a partir do popup (slot livre) → **tray contextual** (horário→finalidade→confirmar→sucesso)
 - [ ] NÃO vê opção de recorrência
-- [ ] Espaços (`/espacos`): lista, filtros, busca, reservar pelo card
+- [ ] Espaços (`/espacos`): lista, filtros, busca, **reservar pelo card → mesmo tray contextual** (não a página `/reserva`); do sucesso, "Voltar para maquete" faz deep-link do pin
 - [ ] Minhas Reservas: lista, detalhe, cancelar
 - [ ] NÃO vê Bloqueios / Relatórios / Chamados
 
@@ -68,14 +68,19 @@ O usuário `funcionario@teste.com` cobre `staff`/`CAN_ADMIN`.
 ## Atalhos de QA / automação (dev local)
 
 - **Login dev não usa Turnstile** — dá para automatizar: preencher email/senha (`professor@teste.com` / `senha123456`) e clicar **Entrar** → `/campus`. O token fica em `sessionStorage`, então cada reinício da sessão/navegador desloga (relogar).
-- **Abrir o RoomPopup sem clicar na maquete 3D:** navegar para `/#/campus/<campusId>/viewer?space=<modelId>` — o ViewerView foca o pin e abre o popup (ex.: `?space=Sala de Leitura (Biblioteca)`). Do popup, "Reservar …" abre o ReservationTray contextual.
+- **Abrir o RoomPopup sem clicar na maquete 3D:** navegar para `/#/campus/<campusId>/viewer?space=<modelId>` — o ViewerView foca o pin e abre o popup (ex.: `?space=Sala de Leitura (Biblioteca)`). Do popup, "Reservar …" abre o ReservationTray contextual. **O card da busca (`/espacos`) abre o mesmo tray** — não navega mais para `/reserva/:id`.
 - **Buscar Espaços (lista + filtros) fica em `/campus/:campusId/espacos`** — não `/espacos`. Rota indefinida agora redireciona para `/campus` (BUG-014).
-- **Slots passados aparecem desabilitados** ("horário já passou"); em QA/automação, escolher um horário habilitado/futuro.
+- **Selecionar hora na strip de disponibilidade:** as células são pequenas (~22px) e **não respondem a clique por coordenada** na ferramenta de browser (RoomPopup, card e tray). Usar JS na página: `document.querySelector('button.hour-cell')` — escolher a primeira `--green` que **não** seja `--past` nem `disabled` e dar `.click()`. As `aria-label` trazem o estado ("Disponível", "Reservado", "horário já passou").
+- **Select de "Finalidade" (reka Select):** clique por coordenada na opção falha; abrir o gatilho e usar teclado (`ArrowDown` + `Enter`).
+- **Slots passados aparecem desabilitados** ("horário já passou"); no fim do dia **todas** as horas de hoje ficam vencidas — para exercitar reserva/tray, **trocar para uma data futura** no campo de data (o calendário abre; clicar um dia futuro).
+- **Limpar o teto de reservas ativas** entre rodadas: `PATCH /api/v1/reservations/:id/cancel` com o token de `sessionStorage.getItem('ufcim_token')` (listar em `/api/v1/reservations/mine?limit=50`). Evita o erro "Limite de N reservas ativas atingido" ao repetir o fluxo.
+- **Após editar componentes, recarregar de verdade** (navegar/reload) antes de validar: um HMR parcial pode deixar pai/filho dessincronizados (ex.: prop nova do tray não chega ao passo de sucesso) e mascarar que o fix já está no disco.
 - **e2e é auto-contido:** `npm run test:e2e` sobe vite + wrangler sozinho (serial, `workers:1`); rodar em foreground (~2 min) — runs em background morrem em restart do Claude.
-- Quirks da ferramenta de browser (BrowserOS MCP: porta instável, primitivas confiáveis, `<select>` nativo via teclado) estão na memória de automação do agente.
+- Quirks da ferramenta de browser (BrowserOS MCP: porta instável, primitivas confiáveis, `<select>` nativo via teclado, `snapshot` costuma vir vazio → usar `screenshot`) estão na memória de automação do agente.
 
 ## Rodadas recentes
 
+- 2026-07-01 (seguimento) — BrowserOS MCP, MEL-014 paridade `useRoomDetail` (branch `refactor-family-ui`): **RoomPopup sem regressão** (strip, detalhes, equipamentos, dialog de reportar) e **SpaceCard com paridade total** ao vivo (strip horária, stats/mobiliário, equipamentos + reportar, reusando o cache de disponibilidade). **Reserva pela busca agora abre o mesmo tray contextual** (visto o `StatefulActionButton` no estado de erro "Limite de N reservas ativas" — cores/mensagens iguais às do fluxo da maquete) e o **"Voltar para maquete" corrigido** (deep-link do pin; some sem pin 3D) — verificado ponta a ponta. Achados: **BUG-016** (zoom excessivo no deep-link do pin), **BUG-017** (pré-seleção de horário do tray auto-corrige quando o intervalo tem hora vencida — confirmar em data futura). Gates verdes; e2e 17/17 nas superfícies tocadas.
 - 2026-07-01 — BrowserOS MCP, MEL-014 Family Values UI (branch `refactor-family-ui`): fluxo completo validado — reserva contextual pela maquete (tray schedule→purpose→confirm→success, reserva criada de verdade), cancelamento contextual (dialog + async), highlight, expansão de cards, filtros progressivos. Achados: **BUG-014** (rota indefinida em branco — corrigido, catch-all → `/campus`), **BUG-015** (nits adiados: campus cru no tray, UUID exposto, highlight sutil, copy `iaud`/"Campus do Benfica"). e2e 36 passou / 1 skip; corrigido o teste do slot no tray (`d8768d8`).
 - 2026-06-22 — BrowserOS MCP, MEL-009 Phase 7: `.claude/mel009-browseros-qa-2026-06-22.md`.
   - Bloqueia fechamento do MEL-009: aluno acessa `/espacos/:spaceId/relatorio` sem `CAN_VIEW_REPORTS`.
