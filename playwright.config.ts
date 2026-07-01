@@ -25,18 +25,18 @@ export default defineConfig({
 
   webServer: [
     {
-      command: 'node_modules\\.bin\\vite.cmd --port 5173 --host 0.0.0.0',
+      command: 'npm run dev -- --port 5173 --host 0.0.0.0',
       url: 'http://localhost:5173',
       reuseExistingServer: true,
-      timeout: 30_000,
+      timeout: 60_000,
     },
     {
       // Start the local wrangler backend so API calls resolve without mocking.
       // Uses the D1 database seeded by globalSetup.
-      command: 'powershell -Command "Set-Location ..\\ufcim-backend-proto; npx wrangler dev --env dev --port 8787"',
+      command: 'cd ../ufcim-backend-proto && npx wrangler dev --env dev --port 8787',
       url: 'http://localhost:8787/dev/jwks',
       reuseExistingServer: true,
-      timeout: 90_000,
+      timeout: 120_000,
     },
   ],
 });
