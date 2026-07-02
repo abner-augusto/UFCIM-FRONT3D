@@ -13,3 +13,36 @@ export function toLocalISODate(d: Date = new Date()): string {
   const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+
+/** Date-only ISO (`YYYY-MM-DD`) → "02 de julho de 2026". Anchors to local noon. */
+export function formatDateLong(iso: string): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+/** Date-only ISO → "02/07/2026" or "qui., 02/07/2026" with weekday. Anchors to local noon. */
+export function formatDateShort(iso: string, opts: { weekday?: boolean } = {}): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString('pt-BR', {
+    ...(opts.weekday ? { weekday: 'short' as const } : {}),
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
+/** Full timestamp (ISO or `YYYY-MM-DD HH:mm`) → "02/07/2026, 14:30". */
+export function formatDateTime(iso: string): string {
+  const normalized = iso ? iso.replace(' ', 'T') : '';
+  const d = new Date(normalized);
+  if (!normalized || isNaN(d.getTime())) return '—';
+  return d.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}

@@ -10,6 +10,7 @@ import { campuses } from '@/data/campuses';
 import { MapPin } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatDateTime } from '@/utils/date';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -111,14 +112,7 @@ async function handleDismiss(report: EquipmentReport) {
 
 const isEmpty = computed(() => !loading.value && !errorMsg.value && reports.value.length === 0);
 
-const datetimeLabel = (iso: string) =>
-  new Date(iso).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+const datetimeLabel = formatDateTime;
 
 // Full location line, e.g. "Sala 03 · Bloco 2 · Instituto de Arquitetura, Urbanismo e Design".
 // Built defensively so it degrades gracefully when parts are missing — multiple blocks and
