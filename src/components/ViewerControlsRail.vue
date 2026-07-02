@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useViewerSync } from '@/composables/useViewerSync';
 import { PERIOD_LABELS, type PeriodKey } from '@/utils/period';
+import { TIME_SLOT_RANGES } from '@/types/reservation';
 import { formatShortDate, createDateChips } from '@/composables/useDateTimeFilter';
 import { toLocalISODate } from '@/utils/date';
 import { Building2, Search, Maximize, Calendar } from '@lucide/vue';
@@ -53,10 +54,12 @@ const { activeBuildingId, activeFloorLevel, buildings, floors } = useViewerSync(
 const dateTimePopoverOpen = ref(false);
 const buildingPopoverOpen = ref(false);
 
+const rangeOf = (key: PeriodKey) => `${TIME_SLOT_RANGES[key].startTime.slice(0, 2)}h–${TIME_SLOT_RANGES[key].endTime.slice(0, 2)}h`;
+
 const PERIODS: { key: PeriodKey; label: string; range: string }[] = [
-  { key: 'morning', label: 'Manhã', range: '07h–12h' },
-  { key: 'afternoon', label: 'Tarde', range: '13h–18h' },
-  { key: 'evening', label: 'Noite', range: '19h–22h' },
+  { key: 'morning', label: PERIOD_LABELS.morning, range: rangeOf('morning') },
+  { key: 'afternoon', label: PERIOD_LABELS.afternoon, range: rangeOf('afternoon') },
+  { key: 'evening', label: PERIOD_LABELS.evening, range: rangeOf('evening') },
 ];
 
 const floorsReversed = computed(() => {
