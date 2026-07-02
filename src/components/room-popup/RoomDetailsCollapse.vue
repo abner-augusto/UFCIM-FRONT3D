@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Space } from '@/types/space';
 import type { EquipmentGroup } from '@/composables/useEquipmentGroups';
-import { Users, Lightbulb, Snowflake, Flag } from 'lucide-vue-next';
+import { Users, Lightbulb, Snowflake, Flag } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 
 defineProps<{

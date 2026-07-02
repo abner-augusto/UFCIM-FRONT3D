@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { PURPOSE_LABELS } from '@/types/reservation';
 import { STATUS_LABELS } from '@/types/reservation';
-import { Repeat, Ban } from 'lucide-vue-next';
+import { Repeat, Ban } from '@lucide/vue';
 
 interface ReservationItem {
   id: string;

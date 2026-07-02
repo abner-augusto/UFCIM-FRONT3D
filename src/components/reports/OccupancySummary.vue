@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Summary } from '@/types/report';
-import { BarChart3, Calendar, DoorOpen } from 'lucide-vue-next';
+import { BarChart3, Calendar, DoorOpen } from '@lucide/vue';
 
 defineProps<{
   summary: Summary;

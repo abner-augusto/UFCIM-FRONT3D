@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BarChart3 } from 'lucide-vue-next';
+import { BarChart3 } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 
 defineProps<{

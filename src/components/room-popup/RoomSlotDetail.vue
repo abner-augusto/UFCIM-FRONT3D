@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { AvailabilitySlot } from '@/types/reservation';
-import { Repeat } from 'lucide-vue-next';
+import { Repeat } from '@lucide/vue';
 
 defineProps<{
   selectedSlot: AvailabilitySlot | null;

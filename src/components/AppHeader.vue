@@ -9,7 +9,7 @@ import NavDrawer from './NavDrawer.vue';
 import NotificationBadge from './NotificationBadge.vue';
 import NotificationsPanel from './NotificationsPanel.vue';
 import UfcimLogo from './UfcimLogo.vue';
-import { Menu, Bell, Moon, Sun } from 'lucide-vue-next';
+import { Menu, Bell, Moon, Sun } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,

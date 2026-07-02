@@ -4,7 +4,7 @@ import { useViewerSync } from '@/composables/useViewerSync';
 import { PERIOD_LABELS, type PeriodKey } from '@/utils/period';
 import { formatShortDate, createDateChips } from '@/composables/useDateTimeFilter';
 import { toLocalISODate } from '@/utils/date';
-import { Building2, Search, Maximize, Calendar } from 'lucide-vue-next';
+import { Building2, Search, Maximize, Calendar } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 
 interface Building {
