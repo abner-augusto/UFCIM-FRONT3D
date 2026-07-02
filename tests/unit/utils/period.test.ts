@@ -8,48 +8,38 @@ function mockHour(hour: number) {
 afterEach(() => vi.restoreAllMocks());
 
 describe('getCurrentPeriod', () => {
-  it('returns morning for hour 7', () => {
-    mockHour(7);
+  it.each([0, 6])('returns morning for hour %i before opening', (hour) => {
+    mockHour(hour);
     expect(getCurrentPeriod()).toBe('morning');
   });
 
-  it('returns morning for hour 12', () => {
+  it.each([7, 11])('returns morning for hour %i inside the morning window', (hour) => {
+    mockHour(hour);
+    expect(getCurrentPeriod()).toBe('morning');
+  });
+
+  it('returns afternoon at hour 12 because the morning window is closed', () => {
     mockHour(12);
-    expect(getCurrentPeriod()).toBe('morning');
-  });
-
-  it('returns afternoon for hour 13', () => {
-    mockHour(13);
     expect(getCurrentPeriod()).toBe('afternoon');
   });
 
-  it('returns afternoon for hour 18', () => {
+  it.each([13, 17])('returns afternoon for hour %i inside the afternoon window', (hour) => {
+    mockHour(hour);
+    expect(getCurrentPeriod()).toBe('afternoon');
+  });
+
+  it('returns evening at hour 18 because the afternoon window is closed', () => {
     mockHour(18);
-    expect(getCurrentPeriod()).toBe('afternoon');
-  });
-
-  it('returns evening for hour 19', () => {
-    mockHour(19);
     expect(getCurrentPeriod()).toBe('evening');
   });
 
-  it('returns evening for hour 22', () => {
-    mockHour(22);
+  it.each([19, 21])('returns evening for hour %i inside the evening window', (hour) => {
+    mockHour(hour);
     expect(getCurrentPeriod()).toBe('evening');
   });
 
-  it('returns morning for hour 0 (midnight)', () => {
-    mockHour(0);
-    expect(getCurrentPeriod()).toBe('morning');
-  });
-
-  it('returns morning for hour 6 (before opening)', () => {
-    mockHour(6);
-    expect(getCurrentPeriod()).toBe('morning');
-  });
-
-  it('returns morning for hour 23 (after closing)', () => {
-    mockHour(23);
+  it.each([22, 23])('returns morning at hour %i because the evening window is closed', (hour) => {
+    mockHour(hour);
     expect(getCurrentPeriod()).toBe('morning');
   });
 });

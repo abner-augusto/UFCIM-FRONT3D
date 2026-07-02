@@ -1,21 +1,17 @@
-export type PeriodKey = 'morning' | 'afternoon' | 'evening';
+import { TIME_SLOT_LABELS, TIME_SLOT_RANGES, type TimeSlot } from '@/types/reservation';
 
-export const PERIOD_HOURS: Record<PeriodKey, { start: number; end: number }> = {
-  morning: { start: 7, end: 13 },
-  afternoon: { start: 13, end: 19 },
-  evening: { start: 19, end: 23 },
-};
+export type PeriodKey = TimeSlot;
 
-export const PERIOD_LABELS: Record<PeriodKey, string> = {
-  morning: 'Manhã',
-  afternoon: 'Tarde',
-  evening: 'Noite',
-};
+export const PERIOD_LABELS = TIME_SLOT_LABELS;
+
+const PERIOD_ORDER: PeriodKey[] = ['morning', 'afternoon', 'evening'];
+
+const hourOf = (time: string) => Number(time.slice(0, 2));
 
 export function getCurrentPeriod(): PeriodKey {
   const hour = new Date().getHours();
-  if (hour >= PERIOD_HOURS.morning.start && hour < PERIOD_HOURS.morning.end) return 'morning';
-  if (hour >= PERIOD_HOURS.afternoon.start && hour < PERIOD_HOURS.afternoon.end) return 'afternoon';
-  if (hour >= PERIOD_HOURS.evening.start && hour < PERIOD_HOURS.evening.end) return 'evening';
+  for (const period of PERIOD_ORDER) {
+    if (hour < hourOf(TIME_SLOT_RANGES[period].endTime)) return period;
+  }
   return 'morning';
 }
