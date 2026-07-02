@@ -13,6 +13,7 @@ import CancelReservationDialog, {
   type CancelReservationStatus,
   type CancelReservationSummary,
 } from '@/components/CancelReservationDialog.vue';
+import { formatDateLong, formatDateShort, formatDateTime } from '@/utils/date';
 
 const route = useRoute();
 const auth = useAuthStore();
@@ -231,29 +232,9 @@ function armHighlightFromQuery() {
   }, 2500);
 }
 
-const dateLabel = (iso: string) =>
-  new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  });
-
-const dateShort = (iso: string) =>
-  new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR', {
-    weekday: 'short',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-
-const datetimeLabel = (iso: string) =>
-  new Date(iso).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+const dateLabel = formatDateLong;
+const dateShort = (iso: string) => formatDateShort(iso, { weekday: true });
+const datetimeLabel = formatDateTime;
 
 function periodLabel(startTime: string, endTime: string): string {
   const namedSlot = (Object.entries(TIME_SLOT_RANGES) as [TimeSlot, { startTime: string; endTime: string }][])

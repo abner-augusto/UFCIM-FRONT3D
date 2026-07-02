@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useMediaQuery } from '@vueuse/core';
-import { CalendarDate, parseDate, getLocalTimeZone } from '@internationalized/date';
+import { CalendarDate, parseDate } from '@internationalized/date';
 import type { DateValue } from 'reka-ui';
 import { CalendarIcon } from '@lucide/vue';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { formatDateLong } from '@/utils/date';
 
 /**
  * Responsive date field (hybrid per MEL-009 Phase 3):
@@ -55,11 +56,7 @@ const maxValue = computed(() => toDateValue(props.max));
 const triggerLabel = computed(() => {
   const d = toDateValue(props.modelValue);
   if (!d) return 'Selecionar data';
-  return d.toDate(getLocalTimeZone()).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  });
+  return formatDateLong(props.modelValue);
 });
 
 function onNativeInput(e: Event) {

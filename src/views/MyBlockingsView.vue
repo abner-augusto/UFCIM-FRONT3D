@@ -8,6 +8,7 @@ import { BLOCK_TYPE_LABELS } from '@/types/reservation';
 import { usePermissions } from '@/composables/usePermissions';
 import { Button } from '@/components/ui/button';
 import ListItemSkeleton from '@/components/ListItemSkeleton.vue';
+import { formatDateLong, formatDateShort, formatDateTime } from '@/utils/date';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -56,29 +57,9 @@ function toggleExpand(id: string) {
   expandedId.value = expandedId.value === id ? null : id;
 }
 
-const dateShort = (iso: string) =>
-  new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR', {
-    weekday: 'short',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-
-const dateLong = (iso: string) =>
-  new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  });
-
-const datetimeLabel = (iso: string) =>
-  new Date(iso).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+const dateShort = (iso: string) => formatDateShort(iso, { weekday: true });
+const dateLong = formatDateLong;
+const datetimeLabel = formatDateTime;
 </script>
 
 <template>
