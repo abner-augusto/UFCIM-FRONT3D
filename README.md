@@ -84,7 +84,7 @@ src/
     └── base.css          # Reset e estilos globais
 ```
 
-> **Sem framework CSS.** Todo o estilo usa tokens CSS customizados definidos em `src/styles/tokens.css`.  
+> **Estilo:** Tailwind v4 + shadcn-vue por padrão; tokens de design em `src/styles/tokens.css`.  
 > **Sem localStorage.** Tokens de sessão são armazenados em `sessionStorage`.
 
 ---
@@ -270,7 +270,7 @@ npm run build
 ### Typecheck
 
 ```bash
-npm run typecheck
+npm run type-check
 ```
 
 ---
@@ -280,7 +280,7 @@ npm run typecheck
 - **Idioma da UI:** Português brasileiro (pt-BR) em todo texto visível ao usuário.
 - **Idioma do código:** Inglês — nomes de variáveis, funções, nomes de rotas, tipos.
 - **Caminhos de rota:** Português (`/minhas-reservas`); nomes programáticos: inglês (`my-reservations`).
-- **Sem CSS frameworks:** Usar tokens CSS em `src/styles/tokens.css`.
+- **Estilo:** Tailwind v4 + shadcn-vue por padrão; tokens de design em `src/styles/tokens.css`.
 - **Sem localStorage:** Usar `sessionStorage` para tokens de sessão.
 - **Componentes Vue:** Sempre `<script setup>` com TypeScript.
 
@@ -290,7 +290,7 @@ npm run typecheck
 
 - [ ] Integração com Keycloak JWT em produção (substituir `devAuthMiddleware`)
 - [ ] Visibilidade de espaços por escopo de departamento
-- [ ] Exibição de equipamentos no `RoomPopup`
-- [ ] Página de perfil do usuário (`ProfileView`)
+- [x] Exibição de equipamentos no `RoomPopup` ✅
+- [x] Página de perfil do usuário (`ProfileView`) ✅
 - [ ] Expansão para outros campi além do IAUD/Benfica
 - [ ] Integração com monitoramento ambiental IoT
