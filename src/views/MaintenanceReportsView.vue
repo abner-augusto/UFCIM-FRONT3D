@@ -11,6 +11,7 @@ import { MapPin } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDateTime } from '@/utils/date';
+import StatusBadge, { type StatusBadgeVariant } from '@/components/StatusBadge.vue';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -29,6 +30,19 @@ const SEVERITY_SHORT: Record<EquipmentReport['severity'], string> = {
   minor: 'Leve',
   major: 'Importante',
   blocking: 'Crítico',
+};
+
+const STATUS_VARIANT: Record<EquipmentReport['status'], StatusBadgeVariant> = {
+  pending: 'warning',
+  acknowledged: 'info',
+  resolved: 'success',
+  dismissed: 'muted',
+};
+
+const SEVERITY_VARIANT: Record<EquipmentReport['severity'], StatusBadgeVariant> = {
+  minor: 'warning',
+  major: 'danger',
+  blocking: 'destructive',
 };
 
 const activeStatus = ref<StatusFilter>('pending');
@@ -204,12 +218,12 @@ function viewerLink(report: EquipmentReport) {
     <ul v-else class="report-list">
       <li v-for="(r, i) in reports" :key="r.id" class="report-card stagger-item" :style="{ '--i': i }">
         <div class="report-card__head">
-          <span class="severity-badge" :class="`severity-badge--${r.severity}`">
+          <StatusBadge :variant="SEVERITY_VARIANT[r.severity]">
             {{ SEVERITY_SHORT[r.severity] }}
-          </span>
-          <span class="status-badge" :class="`status-badge--${r.status}`">
+          </StatusBadge>
+          <StatusBadge :variant="STATUS_VARIANT[r.status]">
             {{ REPORT_STATUS_LABELS[r.status] }}
-          </span>
+          </StatusBadge>
         </div>
 
         <h3 class="report-card__title">{{ r.equipment?.name ?? 'Equipamento' }}</h3>
@@ -316,23 +330,6 @@ function viewerLink(report: EquipmentReport) {
   gap: 0.5rem;
   margin-bottom: 0.6rem;
 }
-
-.severity-badge,
-.status-badge {
-  font-size: 0.72rem;
-  padding: 0.18rem 0.6rem;
-  border-radius: 999px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.severity-badge--minor { background: var(--warning-surface); color: var(--warning); }
-.severity-badge--major { background: var(--danger-surface); color: var(--danger-fg); }
-.severity-badge--blocking { background: color-mix(in srgb, var(--destructive) 15%, transparent); color: var(--destructive); }
-
-.status-badge--pending { background: var(--warning-surface); color: var(--warning); }
-.status-badge--acknowledged { background: var(--info-surface); color: var(--info); }
-.status-badge--resolved { background: var(--success-surface); color: var(--success); }
-.status-badge--dismissed { background: var(--muted); color: var(--muted-foreground); }
 
 .report-card__title {
   margin: 0 0 0.35rem;
