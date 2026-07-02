@@ -290,12 +290,6 @@ export const api = {
       method: 'POST', body: JSON.stringify(body),
     }),
 
-  listEquipmentReports: (token: string | null, equipmentId: string) =>
-    request<EquipmentReport[]>(`/equipment/${equipmentId}/reports`, token),
-
-  listMyEquipmentReports: (token: string | null) =>
-    request<EquipmentReport[]>('/equipment/reports/mine', token),
-
   listPendingEquipmentReports: (token: string | null, filters?: { spaceId?: string; status?: string }) =>
     request<EquipmentReport[]>(`/equipment/reports/pending${qs(filters)}`, token),
 

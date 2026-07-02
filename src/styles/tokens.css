@@ -35,7 +35,6 @@
   /* ── Semantic ────────────────────────────────────────── */
   --color-link:    #185FA5;
   --color-danger:  #c0392b;
-  --color-muted:   #999;
 
   /* ── Status families: on-surface text + tinted surface + border ──
      Used by badges, slot details, notices, equipment status. Light values
@@ -99,7 +98,6 @@
   --rail-gap: 8px;
 
   /* ── Layering ────────────────────────────────────────── */
-  --z-canvas: 10;
   --z-chrome: 40;
   --z-overlay: 50;
   --z-modal: 60;

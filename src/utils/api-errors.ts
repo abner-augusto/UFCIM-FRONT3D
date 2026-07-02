@@ -23,13 +23,6 @@ export function mapAcceptError(e: unknown): string {
   return 'Erro ao criar conta. Tente novamente.';
 }
 
-export function mapGenericError(e: unknown): string {
-  if (!(e instanceof ApiError)) return 'Não foi possível conectar ao servidor.';
-  if (e.code === 'RATE_LIMITED') return 'Muitas requisições. Aguarde um momento.';
-  if (e.status >= 500) return 'Erro no servidor. Tente novamente em instantes.';
-  return e.message || 'Erro inesperado.';
-}
-
 export function mapRequestInviteError(e: unknown): string {
   if (!(e instanceof ApiError)) return 'Não foi possível conectar ao servidor.';
   if (e.code === 'RATE_LIMITED') return 'Muitas solicitações. Aguarde um momento.';

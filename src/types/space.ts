@@ -10,13 +10,6 @@ export interface Equipment {
   updatedAt: string;
 }
 
-export const EQUIPMENT_STATUS_LABELS: Record<Equipment['status'], string> = {
-  working: 'Funcionando',
-  broken: 'Com defeito',
-  under_repair: 'Em manutenção',
-  replacement_scheduled: 'Substituição agendada',
-};
-
 export interface Space {
   id: string;
   name: string;
