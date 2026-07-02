@@ -9,6 +9,7 @@ import { SPACE_TYPE_LABELS } from '@/types/space';
 import type { TimeSlot } from '@/types/reservation';
 import { Button } from '@/components/ui/button';
 import ListItemSkeleton from '@/components/ListItemSkeleton.vue';
+import StatusBadge, { type StatusBadgeVariant } from '@/components/StatusBadge.vue';
 import CancelReservationDialog, {
   type CancelReservationStatus,
   type CancelReservationSummary,
@@ -17,6 +18,15 @@ import { formatDateLong, formatDateShort, formatDateTime } from '@/utils/date';
 
 const route = useRoute();
 const auth = useAuthStore();
+
+const STATUS_VARIANT: Record<Reservation['status'] | 'completed' | 'recurrent', StatusBadgeVariant> = {
+  confirmed: 'success',
+  canceled: 'danger',
+  modified: 'warning',
+  overridden: 'violet',
+  completed: 'muted',
+  recurrent: 'info',
+};
 
 const reservations = ref<Reservation[]>([]);
 const loading = ref(true);
@@ -343,15 +353,15 @@ function isGroupMatchingHighlight(group: GroupedReservation, reservationId: stri
           </div>
           <div class="reservation-card__right">
             <template v-if="!group.isRecurrent">
-              <span v-if="isCompleted(group.main) && group.main.status === 'confirmed'" class="status-badge status-badge--completed">
+              <StatusBadge v-if="isCompleted(group.main) && group.main.status === 'confirmed'" :variant="STATUS_VARIANT.completed">
                 Concluída
-              </span>
-              <span v-else class="status-badge" :class="`status-badge--${group.main.status}`">
+              </StatusBadge>
+              <StatusBadge v-else :variant="STATUS_VARIANT[group.main.status]">
                 {{ STATUS_LABELS[group.main.status] }}
-              </span>
+              </StatusBadge>
             </template>
             <template v-else>
-               <span class="status-badge status-badge--recurrent">Série</span>
+               <StatusBadge :variant="STATUS_VARIANT.recurrent">Série</StatusBadge>
             </template>
             <span class="expand-chevron" :class="{ rotated: expandedId === group.id }">›</span>
           </div>
@@ -441,12 +451,12 @@ function isGroupMatchingHighlight(group: GroupedReservation, reservationId: stri
             <div v-for="r in group.items" :key="r.id" class="recurrence-item">
               <span class="recurrence-date">{{ dateShort(r.date) }}</span>
               <div class="recurrence-actions">
-                <span v-if="isCompleted(r) && r.status === 'confirmed'" class="status-badge status-badge--completed">
+                <StatusBadge v-if="isCompleted(r) && r.status === 'confirmed'" :variant="STATUS_VARIANT.completed">
                   Concluída
-                </span>
-                <span v-else class="status-badge" :class="`status-badge--${r.status}`">
+                </StatusBadge>
+                <StatusBadge v-else :variant="STATUS_VARIANT[r.status]">
                   {{ STATUS_LABELS[r.status] }}
-                </span>
+                </StatusBadge>
                 <Button v-if="r.status === 'confirmed' && !isCompleted(r)" variant="link" class="text-destructive h-auto p-0 text-xs" @click="openCancelDialog(r)" :disabled="cancelling === r.id || cancellingSeries === group.id">
                   {{ cancelling === r.id ? '...' : 'Cancelar' }}
                 </Button>
@@ -612,20 +622,6 @@ h1 {
 }
 
 /* Status badges */
-.status-badge {
-  font-size: 0.75rem;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.status-badge--confirmed  { background: var(--success-surface); color: var(--success); }
-.status-badge--canceled   { background: var(--danger-surface); color: var(--danger-fg); }
-.status-badge--modified   { background: var(--warning-surface); color: var(--warning); }
-.status-badge--overridden { background: var(--violet-surface); color: var(--violet); }
-.status-badge--completed  { background: var(--muted); color: var(--muted-foreground); }
-.status-badge--recurrent  { background: var(--info-surface); color: var(--info); }
-
 /* Detail panel — reveal motion handled by the shared .reveal-collapse utility (motion.css) */
 .reservation-detail {
   border-top: 1px solid var(--border);
