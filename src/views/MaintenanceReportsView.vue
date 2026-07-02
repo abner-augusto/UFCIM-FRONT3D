@@ -7,7 +7,7 @@ import type { EquipmentReport } from '@/types/equipment-report';
 import { REPORT_STATUS_LABELS } from '@/types/equipment-report';
 import { usePermissions } from '@/composables/usePermissions';
 import { campuses } from '@/data/campuses';
-import { MapPin } from 'lucide-vue-next';
+import { MapPin } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 

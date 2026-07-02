@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import { SEVERITY_LABELS } from '@/types/equipment-report';
 import { api, ApiError } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
-import { Check } from 'lucide-vue-next';
+import { Check } from '@lucide/vue';
 import type { Equipment } from '@/types/space';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';

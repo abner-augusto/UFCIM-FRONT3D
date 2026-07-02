@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { ChevronDown, ChevronUp } from 'lucide-vue-next';
+import { ChevronDown, ChevronUp } from '@lucide/vue';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
 import { toLocalISODate } from '@/utils/date';

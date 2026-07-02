@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router';
 import { useCampusStore } from '@/stores/campus';
 import { usePermissions } from '@/composables/usePermissions';
-import { Building2, Search, Calendar, Ban, BarChart3, Wrench, User } from 'lucide-vue-next';
+import { Building2, Search, Calendar, Ban, BarChart3, Wrench, User } from '@lucide/vue';
 
 const campus = useCampusStore();
 const route = useRoute();
