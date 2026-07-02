@@ -11,6 +11,7 @@ export interface PublicUser {
   email: string;
   registration: string | null;
   role: string;
+  department: string;
   isMasterAdmin: boolean;
   unreadCount?: number;
 }
@@ -164,7 +165,7 @@ export const api = {
 
   // Users
   getMe: (token: string | null) =>
-    request<{ id: string; name: string; email: string; registration: string | null; role: string; department?: string; unreadCount: number; isMasterAdmin: boolean }>(
+    request<PublicUser>(
       '/users/me', token
     ),
 

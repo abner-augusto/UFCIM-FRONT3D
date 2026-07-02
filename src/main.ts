@@ -24,6 +24,7 @@ if (auth.token && !auth.user) {
       email: me.email,
       registration: me.registration,
       role: me.role as UserRole,
+      department: me.department,
       isMasterAdmin: me.isMasterAdmin ?? false,
     }, me.unreadCount ?? 0))
     .catch(() => auth.logout()) // token is invalid/expired — clear it

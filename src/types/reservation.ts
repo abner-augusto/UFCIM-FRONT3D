@@ -86,7 +86,6 @@ export interface Notification {
   type: string;
   read: boolean;
   createdAt: string;
-  updatedAt: string;
 }
 
 export interface Blocking {

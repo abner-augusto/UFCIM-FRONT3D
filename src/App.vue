@@ -23,7 +23,7 @@ async function refreshUnreadCount() {
   if (!auth.token) return;
   try {
     const me = await api.getMe(auth.token);
-    auth.setUnreadCount(me.unreadCount);
+    auth.setUnreadCount(me.unreadCount ?? 0);
   } catch {
     // Silently fail — the refresh token flow handles 401s
   }
