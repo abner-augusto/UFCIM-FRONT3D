@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "src/three/App.js",
+    "tools/*.js",
+    "public/_worker.js"
+  ],
+  "project": ["src/**/*.{ts,vue,js,css}", "tools/**/*.js"],
+  "ignoreExportsUsedInFile": true,
+  "ignoreDependencies": []
+}
