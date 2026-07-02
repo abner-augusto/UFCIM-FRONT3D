@@ -1,16 +1,12 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { api, setUnauthorizedHandler } from '@/services/api';
+import type { PublicUser } from '@/services/api';
 
 export type UserRole = 'student' | 'professor' | 'staff' | 'maintenance';
 
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  registration: string | null;
+export interface User extends Omit<PublicUser, 'role' | 'unreadCount'> {
   role: UserRole;
-  isMasterAdmin: boolean;
 }
 
 export const useAuthStore = defineStore('auth', () => {

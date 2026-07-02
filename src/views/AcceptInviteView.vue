@@ -91,6 +91,7 @@ async function handleAccept() {
       email: user.email,
       registration: user.registration,
       role: user.role as UserRole,
+      department: user.department,
       isMasterAdmin: user.isMasterAdmin,
     }, user.unreadCount ?? 0);
     router.push({ name: 'campus-select' });
