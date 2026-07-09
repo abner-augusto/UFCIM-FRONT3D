@@ -12,6 +12,7 @@ import { useInteractionStore } from '@/stores/interaction';
 import { useAuthStore } from '@/stores/auth';
 import { api, ApiError } from '@/services/api';
 import type { ActionStatus } from '@/components/StatefulActionButton.vue';
+import { campusLabel } from '@/utils/space-labels';
 
 export type ReservationTrayStep = 'schedule' | 'purpose' | 'confirm' | 'success';
 
@@ -85,7 +86,7 @@ const subjectLabel = computed(() => props.spaceName || props.modelId || props.sp
 // the model, so we hide the button rather than dead-end the user.
 const onViewer = computed(() => route.name === 'viewer');
 const canReturnToMap = computed(() => onViewer.value || !!props.modelId);
-const contextLabel = computed(() => `${subjectLabel.value} · campus ${props.campusId}`);
+const contextLabel = computed(() => `${subjectLabel.value} · ${campusLabel(props.campusId)}`);
 const successSummary = computed(() => {
   if (!selectedSchedule.value) return null;
 

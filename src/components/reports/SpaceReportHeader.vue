@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { blockLabel } from '@/utils/space-labels';
+import { SPACE_TYPE_LABELS } from '@/types/space';
+
 defineProps<{
   space: {
     id: string;
@@ -22,9 +25,9 @@ defineProps<{
     <div class="header-info">
       <h2 class="header-name">{{ space.name }} <span class="header-number">{{ space.number }}</span></h2>
       <p class="header-meta">
-        <span>{{ space.block.startsWith('Bloco') ? space.block : `Bloco ${space.block}` }}</span>
+        <span>{{ blockLabel(space.block) }}</span>
         <span class="meta-sep">·</span>
-        <span>{{ space.type }}</span>
+        <span>{{ SPACE_TYPE_LABELS[space.type] ?? space.type }}</span>
         <span v-if="space.capacity != null" class="meta-sep">·</span>
         <span v-if="space.capacity != null">{{ space.capacity }} pessoas</span>
       </p>

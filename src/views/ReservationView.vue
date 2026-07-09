@@ -13,6 +13,7 @@ import { useHourRangeSelection } from '@/composables/useHourRangeSelection';
 import RecurringReservationForm from '@/components/RecurringReservationForm.vue';
 import { toLocalISODate } from '@/utils/date';
 import AppDateField from '@/components/AppDateField.vue';
+import { blockLabel, departmentLabel } from '@/utils/space-labels';
 import SpaceHeaderSkeleton from '@/components/SpaceHeaderSkeleton.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -195,9 +196,9 @@ function handleContinue() {
     <div v-else-if="space" class="reservation-form">
       <div class="space-info">
         <h2>{{ space.name }}</h2>
-        <p>Bloco {{ space.block }} · {{ space.campus }}</p>
+        <p>{{ blockLabel(space.block) }} · {{ space.campus }}</p>
         <p v-if="space.capacity" class="space-capacity">Capacidade: {{ space.capacity }} pessoas</p>
-        <p v-if="space.department" class="space-meta">{{ space.department }}</p>
+        <p v-if="space.department" class="space-meta">{{ departmentLabel(space.department) }}</p>
         <p v-if="space.hvac" class="space-meta"><Thermometer :size="14" style="vertical-align: -2px" /> {{ space.hvac }}</p>
         <p v-if="reservationStatusMessage" class="space-warning">{{ reservationStatusMessage }}</p>
       </div>

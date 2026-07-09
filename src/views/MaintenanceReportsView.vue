@@ -11,6 +11,7 @@ import { MapPin } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDateTime } from '@/utils/date';
+import { roomLabel, blockLabel } from '@/utils/space-labels';
 import StatusBadge, { type StatusBadgeVariant } from '@/components/StatusBadge.vue';
 
 const router = useRouter();
@@ -131,23 +132,6 @@ const datetimeLabel = formatDateTime;
 // Full location line, e.g. "Sala 03 · Bloco 2 · Instituto de Arquitetura, Urbanismo e Design".
 // Built defensively so it degrades gracefully when parts are missing — multiple blocks and
 // departments may share the same maintenance team, so the department matters for triage.
-
-// Room number often encodes the block as a prefix (e.g. "B2-03"); strip it so the
-// block isn't repeated, since it already has its own segment.
-function roomLabel(space: { name: string; number: string }): string {
-  const n = (space.number ?? '').trim();
-  if (!n) return space.name;
-  const dash = n.lastIndexOf('-');
-  const room = dash >= 0 ? n.slice(dash + 1).trim() : n;
-  return `Sala ${room}`;
-}
-
-// Block values may or may not already include the word "Bloco" — avoid "Bloco Bloco 2".
-function blockLabel(block?: string): string | null {
-  const b = (block ?? '').trim();
-  if (!b) return null;
-  return /^bloco\b/i.test(b) ? b : `Bloco ${b}`;
-}
 
 function spaceLabel(report: EquipmentReport): string {
   const space = report.equipment?.space;

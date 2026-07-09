@@ -15,6 +15,7 @@ import CancelReservationDialog, {
   type CancelReservationSummary,
 } from '@/components/CancelReservationDialog.vue';
 import { formatDateLong, formatDateShort, formatDateTime } from '@/utils/date';
+import { blockValue, departmentLabel } from '@/utils/space-labels';
 
 const route = useRoute();
 const auth = useAuthStore();
@@ -385,7 +386,7 @@ function isGroupMatchingHighlight(group: GroupedReservation, reservationId: stri
               </div>
               <div v-if="group.main.space?.block" class="detail-item">
                 <span class="detail-label">Bloco</span>
-                <span class="detail-value">{{ group.main.space.block }}</span>
+                <span class="detail-value">{{ blockValue(group.main.space.block) }}</span>
               </div>
               <div v-if="group.main.space?.campus" class="detail-item">
                 <span class="detail-label">Campus</span>
@@ -401,7 +402,7 @@ function isGroupMatchingHighlight(group: GroupedReservation, reservationId: stri
               </div>
               <div v-if="group.main.space?.department" class="detail-item">
                 <span class="detail-label">Departamento</span>
-                <span class="detail-value">{{ group.main.space.department }}</span>
+                <span class="detail-value">{{ departmentLabel(group.main.space.department) }}</span>
               </div>
             </div>
           </section>

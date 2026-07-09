@@ -21,7 +21,7 @@ export interface Campus {
 export const campuses: Campus[] = [
   {
     id: 'benfica',
-    name: 'Campus do Benfica',
+    name: 'Campus Benfica',
     shortName: 'Benfica',
     city: 'Fortaleza',
     neighborhood: 'Benfica',

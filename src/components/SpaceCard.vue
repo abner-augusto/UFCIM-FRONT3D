@@ -15,6 +15,7 @@ import EquipmentReportDialog from '@/components/EquipmentReportDialog.vue';
 import RoomAvailabilityStrip from '@/components/room-popup/RoomAvailabilityStrip.vue';
 import RoomSlotDetail from '@/components/room-popup/RoomSlotDetail.vue';
 import RoomDetailsCollapse from '@/components/room-popup/RoomDetailsCollapse.vue';
+import { blockLabel } from '@/utils/space-labels';
 
 const props = defineProps<{
   space: Space;
@@ -209,7 +210,7 @@ function handleToggle() {
           <span class="sep">·</span>
           {{ typeLabel }}
           <span class="sep">·</span>
-          {{ space.block }}
+          {{ blockLabel(space.block) }}
           <span v-if="space.capacity != null" class="sep">·</span>
           <span v-if="space.capacity != null">{{ space.capacity }} pessoas</span>
         </p>

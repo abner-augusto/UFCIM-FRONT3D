@@ -9,6 +9,7 @@ import { usePermissions } from '@/composables/usePermissions';
 import { Button } from '@/components/ui/button';
 import ListItemSkeleton from '@/components/ListItemSkeleton.vue';
 import { formatDateLong, formatDateShort, formatDateTime } from '@/utils/date';
+import { blockValue } from '@/utils/space-labels';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -116,7 +117,7 @@ const datetimeLabel = formatDateTime;
               </div>
               <div v-if="b.space?.block" class="detail-item">
                 <span class="detail-label">Bloco</span>
-                <span class="detail-value">{{ b.space.block }}</span>
+                <span class="detail-value">{{ blockValue(b.space.block) }}</span>
               </div>
               <div v-if="b.space?.campus" class="detail-item">
                 <span class="detail-label">Campus</span>

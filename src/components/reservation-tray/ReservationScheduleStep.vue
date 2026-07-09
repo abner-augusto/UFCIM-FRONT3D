@@ -8,6 +8,7 @@ import AppDateField from '@/components/AppDateField.vue';
 import { Label } from '@/components/ui/label';
 import RoomAvailabilityStrip from '@/components/room-popup/RoomAvailabilityStrip.vue';
 import { useAvailabilitySelection } from '@/composables/useAvailabilitySelection';
+import { campusLabel } from '@/utils/space-labels';
 
 interface ReservationScheduleSelection {
   date: string;
@@ -153,7 +154,7 @@ watch([startTime, endTime], emitSchedule);
       />
     </div>
 
-    <p class="reservation-schedule-step__campus">Campus {{ campusId }}</p>
+    <p class="reservation-schedule-step__campus">Campus {{ campusLabel(campusId) }}</p>
 
     <RoomAvailabilityStrip
       :formatted-date="formattedDate"

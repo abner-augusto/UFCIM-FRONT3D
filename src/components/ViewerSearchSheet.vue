@@ -2,6 +2,7 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import type { Space } from '@/types/space';
 import { SPACE_TYPE_LABELS } from '@/types/space';
+import { blockLabel } from '@/utils/space-labels';
 
 const props = defineProps<{
   open: boolean;
@@ -89,7 +90,7 @@ function clear() {
               >
                 <span class="result-name">{{ s.name }}</span>
                 <span class="result-meta">
-                  {{ s.block }}
+                  {{ blockLabel(s.block) }}
                   <span class="result-type">· {{ SPACE_TYPE_LABELS[s.type] ?? s.type }}</span>
                   <span v-if="!s.reservable" class="result-badge">indisponível</span>
                 </span>

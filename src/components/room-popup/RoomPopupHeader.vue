@@ -2,6 +2,7 @@
 import type { Space } from '@/types/space';
 import { DialogTitle } from '@/components/ui/dialog';
 import { DrawerTitle } from '@/components/ui/drawer';
+import { blockLabel, departmentLabel } from '@/utils/space-labels';
 
 defineProps<{
   space: Space;
@@ -24,9 +25,9 @@ const emit = defineEmits<{
   <p class="room-popup__meta">
     <span>{{ typeLabel }}</span>
     <span class="meta-sep">·</span>
-    <span>{{ space.block.startsWith('Bloco') ? space.block : `Bloco ${space.block}` }}</span>
+    <span>{{ blockLabel(space.block) }}</span>
     <span v-if="space.department" class="meta-sep">·</span>
-    <span v-if="space.department">{{ space.department }}</span>
+    <span v-if="space.department">{{ departmentLabel(space.department) }}</span>
   </p>
 </template>
 
