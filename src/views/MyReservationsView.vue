@@ -562,8 +562,8 @@ h1 {
 }
 .reservation-card--highlighted {
   border-color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 9%, var(--card));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+  background: color-mix(in srgb, var(--primary) 18%, var(--card));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent);
 }
 
 /* Summary row */
