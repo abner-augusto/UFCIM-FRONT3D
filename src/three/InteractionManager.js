@@ -19,6 +19,7 @@ export class InteractionManager extends THREE.EventDispatcher {
         this.pinGroups = new Map();
         this.activeFloorByBuilding = new Map();
         this._interactionsEnabled = true;
+        this._disposed = false;
 
         this._onPointerDown = this._onPointerDown.bind(this);
     }
@@ -63,6 +64,7 @@ export class InteractionManager extends THREE.EventDispatcher {
     }
 
     addPins(pins) {
+        if (this._disposed) return;
         if (!Array.isArray(pins) || pins.length === 0) return;
 
         pins.forEach((pinData) => {
@@ -293,6 +295,7 @@ export class InteractionManager extends THREE.EventDispatcher {
     }
 
     dispose() {
+        this._disposed = true;
         this.canvas.removeEventListener('pointerdown', this._onPointerDown);
         [...this.labelSprites, ...this.clickTargets].forEach((sprite) => {
             sprite.material?.map?.dispose();

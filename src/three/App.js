@@ -254,6 +254,7 @@ export class App {
         this.popupManager?.dispose();
         this.interactionManager?.dispose();
         this.uiManager?.dispose?.();
+        this.modelManager?.dispose();
 
         this.devTools?.dispose?.();
         this.devTools = null;

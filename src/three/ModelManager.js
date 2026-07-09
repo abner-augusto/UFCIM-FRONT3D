@@ -29,6 +29,16 @@ export class ModelManager {
 
     this.onPinsLoaded = null;
     this.onPinsVisibilityChange = null;
+
+    this._disposed = false;
+  }
+
+  _disposeGltfScene(root) {
+    root.traverse((child) => {
+      child.geometry?.dispose?.();
+      const mats = Array.isArray(child.material) ? child.material : (child.material ? [child.material] : []);
+      mats.forEach((m) => { m.map?.dispose?.(); m.dispose?.(); });
+    });
   }
 
   async initFromManifest() {
@@ -178,6 +188,10 @@ export class ModelManager {
 
     entry.loadingPromise = (async () => {
       const gltf = await this.loader.loadAsync(entry.path);
+      if (this._disposed) {
+        this._disposeGltfScene(gltf.scene);
+        return;
+      }
       entry.object = gltf.scene;
 
       const yOffset = 0.5;
@@ -286,6 +300,15 @@ export class ModelManager {
       this.onPinsLoaded(payload);
     }
     entry.pinsLoaded = true;
+  }
+
+  dispose() {
+    this._disposed = true;
+    this.onPinsLoaded = null;
+    this.onPinsVisibilityChange = null;
+    this.entries.clear();
+    this.blockBBoxCache.clear();
+    this.visibleMeshes = [];
   }
 
   _applyVisibility(interactionManager = null) {
