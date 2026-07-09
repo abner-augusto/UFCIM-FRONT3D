@@ -23,7 +23,7 @@ export interface InvitationPreview {
 }
 
 /** Shape of the backend's /reports/occupancy payload, mapped to OccupancyReport. */
-interface RawOccupancyReport {
+export interface RawOccupancyReport {
   totalOccupancyRate?: number;
   spaces?: Array<{
     id?: string;
@@ -120,6 +120,39 @@ async function request<T>(
   const text = await res.text();
   if (!text) return undefined as unknown as T;
   return JSON.parse(text) as T;
+}
+
+/** Maps the backend /reports/occupancy payload; exported for unit tests. */
+export function mapOccupancyReport(raw: RawOccupancyReport): OccupancyReport {
+  const totalReservas = raw.spaces?.reduce((sum, s) => sum + (s.totalReservations ?? 0), 0) ?? 0;
+  return {
+    summary: {
+      ocupacaoMedia: raw.totalOccupancyRate ?? 0,
+      totalReservas,
+      // "Salas Usadas": rooms that actually had reservations in the period,
+      // not the total rooms in the report (BUG-008).
+      salasUsadas: raw.spaces?.filter((s) => (s.totalReservations ?? 0) > 0).length ?? 0,
+    },
+    daily: (raw.daily ?? []).map((d) => ({
+      date: d.date,
+      ocupacao: d.occupancyRate ?? 0,
+      reservas: d.reservations ?? 0,
+    })),
+    turnos: (raw.byTurno ?? []).map((t) => ({
+      turno: t.turno,
+      reservas: t.reservations ?? 0,
+    })),
+    spaces: (raw.spaces ?? []).map((s) => ({
+      id: s.id ?? '',
+      nome: s.name ?? '',
+      numero: s.number ?? '',
+      bloco: s.block ?? '',
+      tipo: s.type ?? '',
+      capacidade: s.capacity ?? 0,
+      reservas: s.totalReservations ?? 0,
+      taxaOcupacao: s.occupancyRate ?? 0,
+    })),
+  };
 }
 
 // --- Endpoints ---
@@ -250,35 +283,7 @@ export const api = {
   // Reports
   getOccupancyReport: async (token: string | null, params?: { startDate?: string; endDate?: string; campus?: string; department?: string }): Promise<OccupancyReport> => {
     const raw = await request<RawOccupancyReport>(`/reports/occupancy${qs(params)}`, token);
-
-    const totalReservas = raw.spaces?.reduce((sum, s) => sum + (s.totalReservations ?? 0), 0) ?? 0;
-
-    return {
-      summary: {
-        ocupacaoMedia: raw.totalOccupancyRate ?? 0,
-        totalReservas,
-        salasUsadas: raw.spaces?.length ?? 0,
-      },
-      daily: (raw.daily ?? []).map((d) => ({
-        date: d.date,
-        ocupacao: d.occupancyRate ?? 0,
-        reservas: d.reservations ?? 0,
-      })),
-      turnos: (raw.byTurno ?? []).map((t) => ({
-        turno: t.turno,
-        reservas: t.reservations ?? 0,
-      })),
-      spaces: (raw.spaces ?? []).map((s) => ({
-        id: s.id ?? '',
-        nome: s.name ?? '',
-        numero: s.number ?? '',
-        bloco: s.block ?? '',
-        tipo: s.type ?? '',
-        capacidade: s.capacity ?? 0,
-        reservas: s.totalReservations ?? 0,
-        taxaOcupacao: s.occupancyRate ?? 0,
-      })),
-    };
+    return mapOccupancyReport(raw);
   },
 
   // MEL-005: Individual space report
