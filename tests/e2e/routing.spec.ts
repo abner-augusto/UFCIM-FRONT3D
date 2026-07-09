@@ -80,4 +80,19 @@ test.describe('Authenticated routing', () => {
     await page.goto('/#/espacos/00000000-0000-0000-0000-000000000011/relatorio');
     await expect(page).toHaveURL(/#\/espacos\/.*\/relatorio/);
   });
+
+  test('cold deep-link: student → /manutencao/chamados redirects to /campus', async ({ studentPage: page }) => {
+    await page.goto('/#/manutencao/chamados');
+    await expect(page).toHaveURL(/#\/campus/, { timeout: 10000 });
+  });
+
+  test('cold deep-link: student → /meus-bloqueios redirects to /campus', async ({ studentPage: page }) => {
+    await page.goto('/#/meus-bloqueios');
+    await expect(page).toHaveURL(/#\/campus/, { timeout: 10000 });
+  });
+
+  test('cold deep-link: student → /relatorios redirects to /campus', async ({ studentPage: page }) => {
+    await page.goto('/#/relatorios');
+    await expect(page).toHaveURL(/#\/campus/, { timeout: 10000 });
+  });
 });

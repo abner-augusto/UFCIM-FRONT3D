@@ -12,13 +12,15 @@ import { api } from './services/api';
 const pinia = createPinia();
 const app = createApp(App);
 app.use(pinia);
-app.use(router);
 
-// Restore user from stored token before first navigation
 const auth = useAuthStore();
-if (auth.token && !auth.user) {
-  api.getMe(auth.token)
-    .then(me => auth.setAuth(auth.token!, auth.refreshToken ?? 'dev', {
+
+/** Rehydrate the user from the stored token. Never rejects. */
+async function restoreSession(): Promise<void> {
+  if (!auth.token || auth.user) return;
+  try {
+    const me = await api.getMe(auth.token);
+    auth.setAuth(auth.token!, auth.refreshToken ?? 'dev', {
       id: me.id,
       name: me.name,
       email: me.email,
@@ -26,9 +28,13 @@ if (auth.token && !auth.user) {
       role: me.role as UserRole,
       department: me.department,
       isMasterAdmin: me.isMasterAdmin ?? false,
-    }, me.unreadCount ?? 0))
-    .catch(() => auth.logout()) // token is invalid/expired — clear it
-    .finally(() => app.mount('#app'));
-} else {
-  app.mount('#app');
+    }, me.unreadCount ?? 0);
+  } catch {
+    auth.logout(); // token is invalid/expired — clear it
+  }
 }
+
+restoreSession().then(() => {
+  app.use(router);
+  app.mount('#app');
+});

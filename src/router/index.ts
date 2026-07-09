@@ -1,7 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
-import { hasRole, CAN_VIEW_REPORTS, CAN_MANAGE_EQUIPMENT } from '@/utils/roles';
-import type { UserRole } from '@/stores/auth';
+import { authGuard } from './guards';
+import { CAN_VIEW_REPORTS, CAN_MANAGE_EQUIPMENT, CAN_BLOCK } from '@/utils/roles';
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -74,13 +73,13 @@ const router = createRouter({
       path: '/espacos/:spaceId/bloquear',
       name: 'blocking-create',
       component: () => import('@/views/BlockingCreateView.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, roles: CAN_BLOCK },
     },
     {
       path: '/meus-bloqueios',
       name: 'my-blockings',
       component: () => import('@/views/MyBlockingsView.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, roles: CAN_BLOCK },
     },
     {
       path: '/perfil',
@@ -121,20 +120,6 @@ const router = createRouter({
   ],
 });
 
-router.beforeEach((to) => {
-  const auth = useAuthStore();
-
-  if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return { name: 'login' };
-  }
-
-  if (to.meta.guestOnly && auth.isAuthenticated) {
-    return { name: 'campus-select' };
-  }
-
-  if (to.meta.roles && auth.userRole && !hasRole(auth.userRole, to.meta.roles as UserRole[])) {
-    return { name: 'campus-select' };
-  }
-});
+router.beforeEach(authGuard);
 
 export default router;
