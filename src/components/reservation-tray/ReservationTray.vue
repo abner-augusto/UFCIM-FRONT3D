@@ -35,8 +35,8 @@ const props = defineProps<{
   modelId?: string | null;
   // Optional pre-fill carried in from another surface (e.g. the maquete's
   // RoomPopup), so the schedule step opens on the same date/range the user
-  // already picked. The schedule step self-corrects to null if the range is
-  // no longer bookable.
+  // already picked. The schedule step trims the range to what is still
+  // bookable, and self-corrects to null when nothing in it is.
   initialSchedule?: ReservationScheduleSelection | null;
 }>();
 

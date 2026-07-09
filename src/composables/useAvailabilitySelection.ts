@@ -23,6 +23,31 @@ export function availabilityHourLabel(time: string): string {
   return time.replace(':00', 'h');
 }
 
+/**
+ * Maps a requested schedule range onto the slot grid, trimming to the first
+ * contiguous run of bookable slots inside [startTime, endTime). Returns null
+ * when nothing in the range is bookable. A slot is bookable when its status
+ * is 'available' and it is not past (in-progress hours count as bookable —
+ * same rule as manual selection).
+ */
+export function findBookableSubRange(
+  slots: AvailabilitySlot[],
+  range: { startTime: string; endTime: string },
+  isPast: (slot: AvailabilitySlot) => boolean,
+): { startIdx: number; endIdx: number } | null {
+  let startIdx = -1;
+  let endIdx = -1;
+  for (let i = 0; i < slots.length; i += 1) {
+    const slot = slots[i];
+    const inRange = slot.startTime >= range.startTime && slot.endTime <= range.endTime;
+    const bookable = inRange && slot.status === 'available' && !isPast(slot);
+    if (bookable && startIdx === -1) startIdx = i;
+    if (bookable && startIdx !== -1) endIdx = i;
+    if (!bookable && startIdx !== -1) break; // first contiguous run only
+  }
+  return startIdx === -1 ? null : { startIdx, endIdx };
+}
+
 export function useAvailabilitySelection(options: AvailabilitySelectionOptions) {
   const { availability, selectedDate, defaultStartTime, defaultEndTime } = options;
 

@@ -7,7 +7,7 @@ import type { Availability } from '@/types/reservation';
 import AppDateField from '@/components/AppDateField.vue';
 import { Label } from '@/components/ui/label';
 import RoomAvailabilityStrip from '@/components/room-popup/RoomAvailabilityStrip.vue';
-import { useAvailabilitySelection } from '@/composables/useAvailabilitySelection';
+import { useAvailabilitySelection, findBookableSubRange } from '@/composables/useAvailabilitySelection';
 import { campusLabel } from '@/utils/space-labels';
 
 interface ReservationScheduleSelection {
@@ -81,22 +81,11 @@ function applyInitialSchedule() {
   const schedule = props.initialSchedule;
   if (!schedule || schedule.date !== selectedDate.value) return;
 
-  const startIdx = visibleSlots.value.findIndex(
-    (slot) => slot.startTime === schedule.startTime && slot.status === 'available' && !isPastSlot(slot),
-  );
-  const endIdx = visibleSlots.value.findIndex(
-    (slot) => slot.endTime === schedule.endTime && slot.status === 'available' && !isPastSlot(slot),
-  );
+  const range = findBookableSubRange(visibleSlots.value, schedule, isPastSlot);
+  if (!range) return; // nothing in the requested range is bookable anymore
 
-  if (startIdx === -1 || endIdx === -1 || endIdx < startIdx) return;
-
-  for (let i = startIdx; i <= endIdx; i += 1) {
-    const slot = visibleSlots.value[i];
-    if (!slot || slot.status !== 'available' || isPastSlot(slot)) return;
-  }
-
-  rangeStartIdx.value = startIdx;
-  rangeEndIdx.value = endIdx;
+  rangeStartIdx.value = range.startIdx;
+  rangeEndIdx.value = range.endIdx;
 }
 
 async function loadAvailability(date: string) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { computed, ref } from 'vue';
-import { useAvailabilitySelection } from '@/composables/useAvailabilitySelection';
+import { useAvailabilitySelection, findBookableSubRange } from '@/composables/useAvailabilitySelection';
 import type { AvailabilitySlot } from '@/types/reservation';
 
 function makeSlot(startTime: string, status: AvailabilitySlot['status'] = 'available'): AvailabilitySlot {
@@ -98,5 +98,59 @@ describe('useAvailabilitySelection', () => {
     const { reserveRangeBookable } = setup(makeAvailability(['07:00', 'reserved'], ['08:00', 'blocked']));
 
     expect(reserveRangeBookable.value).toBe(false);
+  });
+});
+
+describe('findBookableSubRange', () => {
+  it('BUG-017 regression: trims past slots from the start, returns remaining bookable sub-range', () => {
+    // Slots 19-20, 20-21, 21-22; isPast only for the 19-20 slot
+    const slots = makeAvailability(['19:00'], ['20:00'], ['21:00']);
+    const isPast = (slot: AvailabilitySlot) => slot.startTime === '19:00';
+    const range = { startTime: '19:00', endTime: '22:00' };
+
+    const result = findBookableSubRange(slots, range, isPast);
+
+    expect(result).toEqual({ startIdx: 1, endIdx: 2 }); // 20:00–22:00
+  });
+
+  it('future date with full range free returns the entire range', () => {
+    const slots = makeAvailability(['19:00'], ['20:00'], ['21:00']);
+    const isPast = () => false;
+    const range = { startTime: '19:00', endTime: '22:00' };
+
+    const result = findBookableSubRange(slots, range, isPast);
+
+    expect(result).toEqual({ startIdx: 0, endIdx: 2 });
+  });
+
+  it('returns null when nothing is bookable', () => {
+    const slots = makeAvailability(['19:00', 'reserved'], ['20:00', 'reserved'], ['21:00', 'reserved']);
+    const isPast = () => false;
+    const range = { startTime: '19:00', endTime: '22:00' };
+
+    const result = findBookableSubRange(slots, range, isPast);
+
+    expect(result).toBeNull();
+  });
+
+  it('stops at first hole in the middle, returns only the first contiguous run', () => {
+    const slots = makeAvailability(['19:00'], ['20:00', 'reserved'], ['21:00']);
+    const isPast = () => false;
+    const range = { startTime: '19:00', endTime: '22:00' };
+
+    const result = findBookableSubRange(slots, range, isPast);
+
+    expect(result).toEqual({ startIdx: 0, endIdx: 0 }); // only 19-20
+  });
+
+  it('respects range boundaries — slots outside [startTime, endTime) are not included', () => {
+    // 18-19, 19-20, 20-21, 21-22, 22-23; range is 19:00–22:00
+    const slots = makeAvailability(['18:00'], ['19:00'], ['20:00'], ['21:00'], ['22:00']);
+    const isPast = () => false;
+    const range = { startTime: '19:00', endTime: '22:00' };
+
+    const result = findBookableSubRange(slots, range, isPast);
+
+    expect(result).toEqual({ startIdx: 1, endIdx: 3 }); // indices 1,2,3 (19-20, 20-21, 21-22)
   });
 });
