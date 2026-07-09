@@ -131,6 +131,13 @@ export class UIManager {
 
     this.modelManager.focusBuilding(building);
 
+    this.cameraManager?.applyBlockFocusZoomLimits?.();
+
+    const blockBox = this.modelManager.getBlockBoundingBox(building);
+    if (!blockBox.isEmpty()) {
+      this.cameraManager.fitCameraToBox(blockBox);
+    }
+
     this._activeBuildingId = building;
     this._activeFloorLevel = floorLevel;
 
