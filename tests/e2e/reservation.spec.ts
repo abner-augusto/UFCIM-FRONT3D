@@ -53,20 +53,10 @@ async function openContextualReservationTray(page: Page) {
     return true;
   }, MODEL_ID);
 
-  await page.getByRole('button', { name: /Reservar das/i }).click({ timeout: 20_000 });
+  const reserveButton = page.locator('button[aria-label^="Reservar das"]:enabled').first();
+  await expect(reserveButton).toBeVisible({ timeout: 20_000 });
+  await reserveButton.evaluate((button) => (button as HTMLButtonElement).click());
   await expect(page.getByRole('dialog', { name: /Fazer reserva/i })).toBeVisible({ timeout: 10_000 });
-}
-
-async function selectFirstTraySlot(page: Page) {
-  // The tray correctly disables elapsed ("já passou") hours, so pick the first
-  // ENABLED available slot rather than .first() — deterministic at any run time.
-  const firstAvailableHour = page
-    .getByRole('button', { name: /Disponível/ })
-    .and(page.locator(':enabled'))
-    .first();
-  await expect(firstAvailableHour).toBeVisible({ timeout: 30_000 });
-  await firstAvailableHour.click();
-  await expect(page.getByText(/Horário selecionado:/i)).toBeVisible({ timeout: 5_000 });
 }
 
 test.describe('ReservationView fallback route', () => {
@@ -128,6 +118,58 @@ test.describe('ReservationTray contextual flow', () => {
     await expect(page.getByRole('button', { name: /Disponível/ }).first()).toBeVisible({ timeout: 30_000 });
   });
 
+  test('professor: contextual tray exposes recurring reservation form', async ({ professorPage: page }) => {
+    await openContextualReservationTray(page);
+
+    await expect(page.getByRole('button', { name: /^Reserva recorrente$/i })).toBeVisible();
+    await page.getByRole('button', { name: /^Reserva recorrente$/i }).click();
+
+    await expect(page.getByLabel('Data de início')).toBeVisible();
+    await expect(page.getByLabel('Data de fim')).toBeVisible();
+    await expect(page.getByLabel('Dia da semana')).toBeVisible();
+    await expect(page.getByText('Agendar Reservas Recorrentes')).toBeVisible();
+  });
+
+  test('student: contextual tray does not expose recurring reservation mode', async ({ studentPage: page }) => {
+    await openContextualReservationTray(page);
+
+    await expect(page.getByRole('button', { name: /^Reserva recorrente$/i })).toHaveCount(0);
+  });
+
+  test('professor: contextual recurring form submits the recurring reservation payload', async ({ professorPage: page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openContextualReservationTray(page);
+    await page.getByRole('button', { name: /^Reserva recorrente$/i }).click();
+
+    let requestBody: Record<string, unknown> | undefined;
+    await page.route('**/api/v1/reservations/recurring', async (route) => {
+      requestBody = route.request().postDataJSON() as Record<string, unknown>;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ recurrenceId: 'recurrence-e2e', created: [], skipped: [] }),
+      });
+    });
+
+    await page.getByLabel('Data de início').fill('2099-04-06');
+    await page.getByLabel('Data de fim').fill('2099-04-27');
+    await page.getByLabel('Dia da semana').selectOption('1');
+    await page.getByRole('button', { name: /Manhã \(07:00[–-]12:00\)/i }).click();
+    await page.getByLabel('Descrição da recorrência').fill('Aula semanal de teste');
+    await page.getByRole('button', { name: 'Agendar Reservas Recorrentes' }).click();
+
+    await expect(page.getByRole('status')).toContainText('0 reservas criadas');
+    expect(requestBody).toEqual({
+      spaceId: SPACE_ID,
+      startDate: '2099-04-06',
+      endDate: '2099-04-27',
+      dayOfWeek: 1,
+      startTime: '07:00',
+      endTime: '12:00',
+      description: 'Aula semanal de teste',
+    });
+  });
+
   test('professor: viewer schedule remains preselected after tray availability loads', async ({ professorPage: page }) => {
     // Keep the auto-detected morning range stable across local and CI runs.
     await page.clock.setFixedTime(new Date('2026-09-02T10:30:00'));
@@ -139,10 +181,13 @@ test.describe('ReservationTray contextual flow', () => {
   });
 
   test('professor: schedule selection advances to purpose and confirmation structure', async ({ professorPage: page }) => {
+    await page.clock.setFixedTime(new Date('2026-09-02T10:30:00'));
     await openContextualReservationTray(page);
-    await selectFirstTraySlot(page);
 
-    await page.getByRole('button', { name: /^Continuar$/i }).click();
+    const tray = page.getByRole('dialog', { name: /Fazer reserva/i });
+    await expect(tray.getByText(/Horário selecionado: 10:00–12:00/i)).toBeVisible({ timeout: 10_000 });
+
+    await tray.getByRole('button', { name: /^Continuar$/i }).click();
     await expect(page.getByRole('heading', { name: 'Informar finalidade' })).toBeVisible({ timeout: 5_000 });
 
     const purposeSelect = page.locator('#tray-reservation-purpose');

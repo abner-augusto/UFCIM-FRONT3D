@@ -65,6 +65,7 @@ interface ReservationTrayContext {
   spaceId: string;
   spaceName: string;
   modelId: string | null;
+  reservable: boolean;
   initialSchedule: { date: string; startTime: string; endTime: string } | null;
 }
 const reservationTrayOpen = ref(false);
@@ -351,6 +352,7 @@ function handleReserve(range: { startTime: string; endTime: string }) {
     spaceId: selectedSpace.value.id,
     spaceName: selectedSpace.value.name,
     modelId: selectedSpace.value.modelId ?? null,
+    reservable: selectedSpace.value.reservable !== false,
     initialSchedule: {
       date: selectedDate.value,
       startTime: range.startTime,
@@ -510,6 +512,7 @@ useViewerTestHarness({
       :space-id="reservationTrayContext.spaceId"
       :space-name="reservationTrayContext.spaceName"
       :model-id="reservationTrayContext.modelId"
+      :reservable="reservationTrayContext.reservable"
       :initial-schedule="reservationTrayContext.initialSchedule"
     />
   </div>

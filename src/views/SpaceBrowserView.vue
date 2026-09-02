@@ -61,6 +61,7 @@ interface ReservationTrayContext {
   spaceId: string;
   spaceName: string;
   modelId: string | null;
+  reservable: boolean;
   initialSchedule: { date: string; startTime: string; endTime: string };
 }
 const reservationTrayOpen = ref(false);
@@ -71,6 +72,7 @@ function openReservationTray(space: Space, range: { startTime: string; endTime: 
     spaceId: space.id,
     spaceName: space.name,
     modelId: space.modelId ?? null,
+    reservable: space.reservable !== false,
     initialSchedule: {
       date: selectedDate.value,
       startTime: range.startTime,
@@ -295,6 +297,7 @@ onMounted(async () => {
       :space-id="reservationTrayContext.spaceId"
       :space-name="reservationTrayContext.spaceName"
       :model-id="reservationTrayContext.modelId"
+      :reservable="reservationTrayContext.reservable"
       :initial-schedule="reservationTrayContext.initialSchedule"
     />
   </div>

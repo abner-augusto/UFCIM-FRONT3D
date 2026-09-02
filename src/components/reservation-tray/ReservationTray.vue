@@ -8,11 +8,13 @@ import ReservationScheduleStep from './ReservationScheduleStep.vue';
 import ReservationPurposeStep from './ReservationPurposeStep.vue';
 import ReservationConfirmStep from './ReservationConfirmStep.vue';
 import ReservationSuccessStep from './ReservationSuccessStep.vue';
+import RecurringReservationForm from '@/components/RecurringReservationForm.vue';
 import { useInteractionStore } from '@/stores/interaction';
 import { useAuthStore } from '@/stores/auth';
 import { api, ApiError } from '@/services/api';
 import type { ActionStatus } from '@/components/StatefulActionButton.vue';
 import { campusLabel } from '@/utils/space-labels';
+import { usePermissions } from '@/composables/usePermissions';
 
 export type ReservationTrayStep = 'schedule' | 'purpose' | 'confirm' | 'success';
 
@@ -33,6 +35,7 @@ const props = defineProps<{
   spaceId: string;
   spaceName: string;
   modelId?: string | null;
+  reservable?: boolean;
   // Optional pre-fill carried in from another surface (e.g. the maquete's
   // RoomPopup), so the schedule step opens on the same date/range the user
   // already picked. The schedule step trims the range to what is still
@@ -47,6 +50,7 @@ const emit = defineEmits<{
 const steps: ReservationTrayStep[] = ['schedule', 'purpose', 'confirm', 'success'];
 const interaction = useInteractionStore();
 const auth = useAuthStore();
+const { canCreateRecurring } = usePermissions();
 const router = useRouter();
 const route = useRoute();
 
@@ -60,6 +64,7 @@ const stepTitles: Record<ReservationTrayStep, string> = {
 const isDesktop = ref(window.matchMedia('(min-width: 768px)').matches);
 const mediaQuery = window.matchMedia('(min-width: 768px)');
 const currentStep = ref<ReservationTrayStep>('schedule');
+const reservationMode = ref<'single' | 'recurring'>('single');
 const selectedSchedule = ref<ReservationScheduleSelection | null>(null);
 const selectedPurpose = ref<ReservationPurposeSelection>({ purpose: '', description: '' });
 const reservationId = ref<string | null>(null);
@@ -68,7 +73,7 @@ const confirmError = ref<string | null>(null);
 let successStepTimer: ReturnType<typeof window.setTimeout> | null = null;
 
 const currentStepIndex = computed(() => steps.indexOf(currentStep.value));
-const currentTitle = computed(() => stepTitles[currentStep.value]);
+const currentTitle = computed(() => reservationMode.value === 'recurring' ? 'Configurar recorrência' : stepTitles[currentStep.value]);
 const canGoBack = computed(() => currentStepIndex.value > 0 && currentStep.value !== 'success');
 const scheduleIsValid = computed(() => !!selectedSchedule.value?.date && !!selectedSchedule.value?.startTime && !!selectedSchedule.value?.endTime);
 const purposeIsValid = computed(() => !!selectedPurpose.value.purpose);
@@ -100,6 +105,7 @@ const successSummary = computed(() => {
 });
 
 function resetFlow() {
+  reservationMode.value = 'single';
   selectedSchedule.value = null;
   selectedPurpose.value = { purpose: '', description: '' };
   reservationId.value = null;
@@ -110,6 +116,12 @@ function resetFlow() {
     successStepTimer = null;
   }
   currentStep.value = 'schedule';
+}
+
+function setReservationMode(mode: 'single' | 'recurring') {
+  if (mode === 'recurring' && !canCreateRecurring.value) return;
+  reservationMode.value = mode;
+  if (mode === 'single') currentStep.value = 'schedule';
 }
 
 watch(() => [props.campusId, props.spaceId], () => {
@@ -245,7 +257,30 @@ function handleBackToMap() {
           </component>
         </header>
 
-        <div class="reservation-tray__steps" aria-label="Etapas da reserva">
+        <div v-if="canCreateRecurring" class="reservation-tray__mode-toggle" role="group" aria-label="Tipo de reserva">
+          <Button
+            type="button"
+            variant="outline"
+            class="reservation-tray__mode-button"
+            :class="{ 'reservation-tray__mode-button--active': reservationMode === 'single' }"
+            :aria-pressed="reservationMode === 'single'"
+            @click="setReservationMode('single')"
+          >
+            Reserva única
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            class="reservation-tray__mode-button"
+            :class="{ 'reservation-tray__mode-button--active': reservationMode === 'recurring' }"
+            :aria-pressed="reservationMode === 'recurring'"
+            @click="setReservationMode('recurring')"
+          >
+            Reserva recorrente
+          </Button>
+        </div>
+
+        <div v-if="reservationMode === 'single'" class="reservation-tray__steps" aria-label="Etapas da reserva">
           <span
             v-for="step in steps"
             :key="step"
@@ -258,19 +293,19 @@ function handleBackToMap() {
         </div>
 
         <ReservationScheduleStep
-          v-if="currentStep === 'schedule'"
+          v-if="reservationMode === 'single' && currentStep === 'schedule'"
           :campus-id="campusId"
           :space-id="spaceId"
           :initial-schedule="initialSchedule"
           @schedule-change="handleScheduleChange"
         />
         <ReservationPurposeStep
-          v-else-if="currentStep === 'purpose'"
+          v-else-if="reservationMode === 'single' && currentStep === 'purpose'"
           :initial-purpose="selectedPurpose"
           @purpose-change="handlePurposeChange"
         />
         <ReservationConfirmStep
-          v-else-if="currentStep === 'confirm' && selectedSchedule"
+          v-else-if="reservationMode === 'single' && currentStep === 'confirm' && selectedSchedule"
           :space-name="spaceName"
           :schedule="selectedSchedule"
           :purpose="selectedPurpose"
@@ -279,7 +314,7 @@ function handleBackToMap() {
           @confirm="handleConfirm"
         />
         <ReservationSuccessStep
-          v-else-if="currentStep === 'success' && reservationId && successSummary"
+          v-else-if="reservationMode === 'single' && currentStep === 'success' && reservationId && successSummary"
           :reservation-id="reservationId"
           :summary="successSummary"
           :can-return-to-map="canReturnToMap"
@@ -287,7 +322,13 @@ function handleBackToMap() {
           @back-to-map="handleBackToMap"
         />
 
-        <footer v-if="currentStep !== 'success'" class="reservation-tray__actions">
+        <RecurringReservationForm
+          v-else-if="reservationMode === 'recurring'"
+          :space-id="spaceId"
+          :reservable="reservable"
+        />
+
+        <footer v-if="reservationMode === 'single' && currentStep !== 'success'" class="reservation-tray__actions">
           <Button
             type="button"
             variant="outline"
@@ -378,6 +419,24 @@ function handleBackToMap() {
   gap: 0.4rem;
 }
 
+.reservation-tray__mode-toggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.reservation-tray__mode-button {
+  flex: 1;
+  min-height: var(--tap-min, 44px);
+  font-size: 0.82rem;
+}
+
+.reservation-tray__mode-button--active {
+  border-color: var(--primary);
+  background: var(--secondary);
+  color: var(--primary);
+  font-weight: 600;
+}
+
 .reservation-tray__step-dot {
   min-height: 0.35rem;
   overflow: hidden;
@@ -410,6 +469,10 @@ function handleBackToMap() {
 
   .reservation-tray__actions {
     flex-direction: column-reverse;
+  }
+
+  .reservation-tray__mode-toggle {
+    flex-direction: column;
   }
 
   .reservation-tray__button {
