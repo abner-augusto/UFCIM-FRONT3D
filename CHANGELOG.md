@@ -1,5 +1,29 @@
 # Changelog
 
+## [3.4.0](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v3.3.0...v3.4.0) (2026-09-02)
+
+
+### Features
+
+* move blocking flow into contextual tray ([30658e8](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/30658e8920a4439c9f10463390425b0d1edc8687))
+* refresh pins after reservation return ([9242b43](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/9242b4356b49b7756816d8577017788dc9131afa))
+* **reservation:** restore recurring bookings in contextual tray ([43c5da3](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/43c5da37cd559461e954639801f87f1e75ef8321))
+* **viewer:** show next available pin availability ([3fea95d](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/3fea95d169b9df3c12ed829edd5975c18aa59bae))
+
+
+### Bug Fixes
+
+* concluir correções do lote de QA ([09dba50](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/09dba500c4a2c70588cf70533c83e837f64c92ce))
+* **my-reservations:** reforçar o destaque da reserva recém-criada ([ed428aa](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/ed428aad184336211b4a4147857e88e5f5396516))
+* **period:** unificar limites com TIME_SLOT_RANGES ([941e833](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/941e833056e37853ae9f9b2cafb2e01760ec0831))
+* **reports:** contar apenas salas com reservas em "Salas Usadas" ([ca5a5eb](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/ca5a5eb9e7c0b36b12ff5e12bac729a546bf8dc5))
+* **reservation-tray:** pré-selecionar o trecho ainda reservável do intervalo ([2ccbcda](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/2ccbcdafb8fdc7504529ebef8524de7a772b25fa))
+* **router:** aplicar guard de papéis após restaurar a sessão e proteger rotas de bloqueio ([3620645](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/3620645b19486e4a977fe5bf4cb31f7d0d409e50))
+* **types:** sincronizar contrato de usuário e notificações ([93da97d](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/93da97d55bc0118dbfb3dc8fbc7081e7c76f65bc))
+* **ui:** centralizar rótulos de localização ([dc3a1f1](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/dc3a1f15b1d69ff8c21d69ac3e0c4a57c68a7065))
+* **viewer:** descartar cargas de GLB que resolvem após o dispose ([6a9d6c2](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/6a9d6c2b1c480e673de1b6d2581fe8779034aa5c))
+* **viewer:** igualar enquadramento do deep-link ao clique no pin ([1603ee3](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/1603ee339087d1f444a36ccac1f85790a8563da2))
+
 ## [3.3.0](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v3.2.0...v3.3.0) (2026-07-02)
 
 
