@@ -366,6 +366,12 @@ function handleReserve(range: { startTime: string; endTime: string }) {
   closePopup();
 }
 
+function handleReservationBackToMap() {
+  // The reservation was created while this viewer stayed mounted. Revalidate
+  // availability so the affected pin reflects the new reservation immediately.
+  void applyPinColors();
+}
+
 function handleBlock() {
   if (!selectedSpace.value) return;
   router.push({ name: 'blocking-create', params: { spaceId: selectedSpace.value.id } });
@@ -517,6 +523,7 @@ useViewerTestHarness({
       :model-id="reservationTrayContext.modelId"
       :reservable="reservationTrayContext.reservable"
       :initial-schedule="reservationTrayContext.initialSchedule"
+      @back-to-map="handleReservationBackToMap"
     />
   </div>
 </template>

@@ -45,6 +45,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:open': [open: boolean];
+  'back-to-map': [];
 }>();
 
 const steps: ReservationTrayStep[] = ['schedule', 'purpose', 'confirm', 'success'];
@@ -222,6 +223,7 @@ function handleViewReservations(id: string) {
 }
 
 function handleBackToMap() {
+  emit('back-to-map');
   // From the maquete the tray overlays the model, so closing is enough. From
   // another surface (e.g. the space browser) deep-link into the viewer focused
   // on this pin so the button actually reaches the maquete.

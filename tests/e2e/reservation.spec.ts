@@ -205,4 +205,36 @@ test.describe('ReservationTray contextual flow', () => {
     await expect(page.getByRole('button', { name: /^Confirmar reserva$/i })).toBeVisible();
     await expect(page.locator('body')).toContainText(/Sala de Leitura|Finalidade|Modelagem Tridimensional/i);
   });
+
+  test('professor: returning to the viewer refreshes pin availability after reservation', async ({ professorPage: page }) => {
+    await page.clock.setFixedTime(new Date('2026-09-02T10:30:00'));
+    let availabilityRequestCount = 0;
+    page.on('request', (request) => {
+      if (request.url().includes('/api/v1/spaces/') && request.url().includes('/availability?')) {
+        availabilityRequestCount += 1;
+      }
+    });
+
+    await openContextualReservationTray(page);
+    await expect(page.locator('.hour-cell--selected')).toHaveCount(2, { timeout: 10_000 });
+    await page.getByRole('button', { name: /^Continuar$/i }).click();
+    await page.locator('#tray-reservation-purpose').selectOption({ index: 1 });
+    await page.getByRole('button', { name: /^Continuar$/i }).click();
+    await expect(page.getByRole('button', { name: /^Confirmar reserva$/i })).toBeVisible();
+
+    await page.route('**/api/v1/reservations', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ id: 'reservation-refresh-e2e' }),
+      }),
+    );
+
+    await page.getByRole('button', { name: /^Confirmar reserva$/i }).click();
+    await expect(page.getByText('Reserva concluída')).toBeVisible({ timeout: 10_000 });
+    const requestsBeforeReturn = availabilityRequestCount;
+
+    await page.getByRole('button', { name: 'Voltar para maquete' }).click();
+    await expect.poll(() => availabilityRequestCount).toBeGreaterThan(requestsBeforeReturn);
+  });
 });
