@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { useInteractionStore } from '@/stores/interaction';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
@@ -10,6 +10,7 @@ import ThreeViewer from '@/components/ThreeViewer.vue';
 import { Button } from '@/components/ui/button';
 import RoomPopup from '@/components/RoomPopup.vue';
 import ReservationTray from '@/components/reservation-tray/ReservationTray.vue';
+import BlockingTray from '@/components/BlockingTray.vue';
 import PeriodSelector from '@/components/PeriodSelector.vue';
 import ViewerControlsRail from '@/components/ViewerControlsRail.vue';
 import ViewerDesktopControls from '@/components/ViewerDesktopControls.vue';
@@ -25,7 +26,6 @@ import { BLOCK_TYPE_LABELS, TIME_SLOT_RANGES, type Blocking } from '@/types/rese
 import { logger } from '@/utils/logger';
 
 const route = useRoute();
-const router = useRouter();
 const interaction = useInteractionStore();
 const auth = useAuthStore();
 const { isDark } = useDarkMode();
@@ -71,7 +71,16 @@ interface ReservationTrayContext {
 const reservationTrayOpen = ref(false);
 const reservationTrayContext = ref<ReservationTrayContext | null>(null);
 
-const viewerOverlayOpen = computed(() => showPopup.value || searchSheetOpen.value || reservationTrayOpen.value);
+interface BlockingTrayContext {
+  spaceId: string;
+  spaceName: string;
+  modelId: string | null;
+  initialDate: string;
+}
+const blockingTrayOpen = ref(false);
+const blockingTrayContext = ref<BlockingTrayContext | null>(null);
+
+const viewerOverlayOpen = computed(() => showPopup.value || searchSheetOpen.value || reservationTrayOpen.value || blockingTrayOpen.value);
 
 const mql = window.matchMedia('(max-width: 480px)');
 const onResize = (e: MediaQueryListEvent | MediaQueryList) => {
@@ -374,7 +383,18 @@ function handleReservationBackToMap() {
 
 function handleBlock() {
   if (!selectedSpace.value) return;
-  router.push({ name: 'blocking-create', params: { spaceId: selectedSpace.value.id } });
+  blockingTrayContext.value = {
+    spaceId: selectedSpace.value.id,
+    spaceName: selectedSpace.value.name,
+    modelId: selectedSpace.value.modelId ?? null,
+    initialDate: selectedDate.value,
+  };
+  blockingTrayOpen.value = true;
+  closePopup();
+}
+
+function handleBlockingBackToMap() {
+  void applyPinColors();
 }
 
 function closePopup() {
@@ -524,6 +544,17 @@ useViewerTestHarness({
       :reservable="reservationTrayContext.reservable"
       :initial-schedule="reservationTrayContext.initialSchedule"
       @back-to-map="handleReservationBackToMap"
+    />
+
+    <BlockingTray
+      v-if="blockingTrayContext"
+      v-model:open="blockingTrayOpen"
+      :campus-id="campusId"
+      :space-id="blockingTrayContext.spaceId"
+      :space-name="blockingTrayContext.spaceName"
+      :model-id="blockingTrayContext.modelId"
+      :initial-date="blockingTrayContext.initialDate"
+      @back-to-map="handleBlockingBackToMap"
     />
   </div>
 </template>

@@ -1,109 +1,34 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { useCampusStore } from '@/stores/campus';
 import { api } from '@/services/api';
-import { BLOCK_TYPE_LABELS } from '@/types/reservation';
 import { usePermissions } from '@/composables/usePermissions';
-import { toLocalISODate } from '@/utils/date';
-import AppDateField from '@/components/AppDateField.vue';
+import { campuses } from '@/data/campuses';
 import SpaceHeaderSkeleton from '@/components/SpaceHeaderSkeleton.vue';
 import { Button } from '@/components/ui/button';
-import StatefulActionButton, { type ActionStatus } from '@/components/StatefulActionButton.vue';
-import { Label } from '@/components/ui/label';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { Textarea } from '@/components/ui/textarea';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import BlockingForm, { type BlockingPayload } from '@/components/BlockingForm.vue';
 
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
+const campusStore = useCampusStore();
 const { canBlock } = usePermissions();
 
 const spaceId = route.params.spaceId as string;
 const spaceName = ref<string | null>(null);
+const spaceModelId = ref<string | null>(null);
+const spaceCampus = ref<string | null>(null);
 const loadingSpace = ref(true);
 
-const selectedDate = ref('');
-const selectedBlockType = ref<'maintenance' | 'administrative' | ''>('');
-const reason = ref('');
-
-const submitStatus = ref<ActionStatus>('idle');
+const submitStatus = ref<'idle' | 'submitting' | 'success' | 'error'>('idle');
 const errorMsg = ref<string | null>(null);
-let redirectTimer: ReturnType<typeof setTimeout> | null = null;
 
-const today = toLocalISODate();
-
-onBeforeUnmount(() => {
-  if (redirectTimer) clearTimeout(redirectTimer);
-});
-
-// Hour selection mode
-type HourMode = 'full_day' | 'custom';
-const hourMode = ref<HourMode>('full_day');
-
-const pickedStart = ref<string | null>(null);
-const pickedEnd = ref<string | null>(null);
-
-const ALL_HOURS = Array.from({ length: 24 }, (_, i) => {
-  const h = String(i).padStart(2, '0');
-  return { startTime: `${h}:00`, endTime: `${String(i + 1).padStart(2, '0')}:00` };
-});
-
-const resolvedStart = computed(() => {
-  if (hourMode.value === 'full_day') return '00:00';
-  return pickedStart.value;
-});
-
-const resolvedEnd = computed(() => {
-  if (hourMode.value === 'full_day') return '24:00';
-  if (pickedEnd.value) {
-    const slot = ALL_HOURS.find(h => h.startTime === pickedEnd.value);
-    return slot?.endTime ?? pickedEnd.value;
-  }
-  if (pickedStart.value) {
-    const slot = ALL_HOURS.find(h => h.startTime === pickedStart.value);
-    return slot?.endTime ?? null;
-  }
-  return null;
-});
-
-const canSubmit = computed(() =>
-  selectedDate.value &&
-  selectedBlockType.value &&
-  resolvedStart.value !== null &&
-  resolvedEnd.value !== null &&
-  resolvedStart.value < resolvedEnd.value
+const viewerCampusId = computed(() =>
+  campuses.find((campus) => campus.shortName === spaceCampus.value)?.id ?? campusStore.selectedCampusId,
 );
-
-function handleHourClick(h: string) {
-  if (!pickedStart.value) {
-    pickedStart.value = h;
-    pickedEnd.value = null;
-    return;
-  }
-  if (h === pickedStart.value && !pickedEnd.value) {
-    pickedStart.value = null;
-    return;
-  }
-  if (pickedEnd.value) {
-    pickedStart.value = h;
-    pickedEnd.value = null;
-    return;
-  }
-  const [lo, hi] = h > pickedStart.value
-    ? [pickedStart.value, h]
-    : [h, pickedStart.value];
-  pickedStart.value = lo;
-  pickedEnd.value = hi;
-}
-
-function getHourState(h: string): 'available' | 'selected' | 'endpoint' {
-  if (!pickedStart.value) return 'available';
-  if (h === pickedStart.value || h === pickedEnd.value) return 'endpoint';
-  if (pickedEnd.value && h > pickedStart.value && h < pickedEnd.value) return 'selected';
-  return 'available';
-}
+const canReturnToMap = computed(() => !!spaceModelId.value && !!viewerCampusId.value);
 
 onMounted(async () => {
   if (!canBlock.value) {
@@ -113,6 +38,8 @@ onMounted(async () => {
   try {
     const space = await api.getSpace(auth.token, spaceId);
     spaceName.value = space.name;
+    spaceModelId.value = space.modelId;
+    spaceCampus.value = space.campus;
   } catch {
     spaceName.value = 'Espaço';
   } finally {
@@ -120,27 +47,33 @@ onMounted(async () => {
   }
 });
 
-async function handleSubmit() {
-  if (!canSubmit.value || !selectedBlockType.value ||
-      !resolvedStart.value || !resolvedEnd.value) return;
+async function handleSubmit(payload: BlockingPayload) {
   if (submitStatus.value === 'submitting' || submitStatus.value === 'success') return;
   submitStatus.value = 'submitting';
   errorMsg.value = null;
   try {
     await api.createBlocking(auth.token, {
       spaceId,
-      date: selectedDate.value,
-      startTime: resolvedStart.value,
-      endTime: resolvedEnd.value,
-      blockType: selectedBlockType.value,
-      reason: reason.value.trim(),
+      ...payload,
     });
     submitStatus.value = 'success';
-    redirectTimer = setTimeout(() => router.push({ name: 'my-blockings' }), 900);
   } catch (e) {
     submitStatus.value = 'error';
     errorMsg.value = e instanceof Error ? e.message : 'Não foi possível criar o bloqueio.';
   }
+}
+
+function handleViewBlockings() {
+  void router.push({ name: 'my-blockings' });
+}
+
+function handleBackToMap() {
+  if (!viewerCampusId.value) return;
+  void router.push({
+    name: 'viewer',
+    params: { campusId: viewerCampusId.value },
+    query: spaceModelId.value ? { space: spaceModelId.value } : undefined,
+  });
 }
 </script>
 
@@ -153,92 +86,32 @@ async function handleSubmit() {
 
     <SpaceHeaderSkeleton v-if="loadingSpace" role="status" aria-label="Carregando espaço" />
 
-    <div v-else class="blocking-form">
+    <div v-else>
       <div class="space-info">
         <h2>{{ spaceName }}</h2>
       </div>
 
-      <div class="form-section">
-        <Label class="form-label" for="blocking-date">Data</Label>
-        <AppDateField id="blocking-date" v-model="selectedDate" :min="today" aria-label="Data do bloqueio" />
-      </div>
+      <BlockingForm
+        v-if="submitStatus !== 'success'"
+        :status="submitStatus"
+        :error="errorMsg"
+        @submit="handleSubmit"
+      />
 
-      <div class="form-section">
-        <Label class="form-label">Período</Label>
-
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          class="hour-mode-toggle"
-          :model-value="hourMode"
-          @update:model-value="(value) => { hourMode = ((value || 'full_day') as HourMode); if (hourMode === 'full_day') { pickedStart = null; pickedEnd = null; } }"
-        >
-          <ToggleGroupItem value="full_day" class="mode-btn">
-            Dia inteiro
-          </ToggleGroupItem>
-          <ToggleGroupItem value="custom" class="mode-btn">
-            Horário personalizado
-          </ToggleGroupItem>
-        </ToggleGroup>
-
-        <div v-if="hourMode === 'custom'" class="hour-grid">
-          <Button
-            v-for="slot in ALL_HOURS"
-            :key="slot.startTime"
-            type="button"
-            variant="outline"
-            class="hour-btn"
-            :class="{
-              'hour-btn--endpoint': getHourState(slot.startTime) === 'endpoint',
-              'hour-btn--selected': getHourState(slot.startTime) === 'selected',
-            }"
-            @click="handleHourClick(slot.startTime)"
-          >
-            {{ slot.startTime.replace(':00', 'h') }}
-          </Button>
+      <template v-if="submitStatus === 'success'">
+        <div class="blocking-success" role="status" aria-live="polite">
+          <span class="blocking-success__mark" aria-hidden="true">✓</span>
+          <div>
+            <h2 class="blocking-success__title">Espaço bloqueado</h2>
+            <p class="blocking-success__text">O bloqueio foi criado com sucesso.</p>
+          </div>
         </div>
 
-        <p v-if="resolvedStart && resolvedEnd" class="period-summary">
-          {{ hourMode === 'full_day'
-              ? 'Bloqueio para o dia inteiro (00:00 – 24:00)'
-              : `${resolvedStart} – ${resolvedEnd}` }}
-        </p>
-      </div>
-
-      <div class="form-section">
-        <Label class="form-label" for="blocking-type">Tipo de bloqueio</Label>
-        <NativeSelect id="blocking-type" v-model="selectedBlockType" class="form-input">
-          <NativeSelectOption value="" disabled>Selecione um tipo</NativeSelectOption>
-          <NativeSelectOption v-for="(label, type) in BLOCK_TYPE_LABELS" :key="type" :value="type">
-            {{ label }}
-          </NativeSelectOption>
-        </NativeSelect>
-      </div>
-
-      <div class="form-section">
-        <Label class="form-label" for="blocking-reason">Motivo <span class="optional">(opcional)</span></Label>
-        <Textarea
-          id="blocking-reason"
-          class="form-input form-textarea"
-          v-model="reason"
-          placeholder="Descreva o motivo do bloqueio..."
-          rows="3"
-        />
-      </div>
-
-      <p v-if="errorMsg" class="state-error" role="alert" aria-live="polite">{{ errorMsg }}</p>
-
-      <div class="form-actions">
-        <StatefulActionButton
-          :status="submitStatus"
-          :disabled="!canSubmit"
-          idle-label="Bloquear Espaço"
-          submitting-label="Bloqueando..."
-          success-label="Espaço bloqueado com sucesso!"
-          error-label="Tentar novamente"
-          @click="handleSubmit"
-        />
-      </div>
+        <div class="blocking-success__actions">
+          <Button @click="handleViewBlockings">Ver meus bloqueios</Button>
+          <Button v-if="canReturnToMap" variant="outline" @click="handleBackToMap">Voltar para maquete</Button>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -272,100 +145,48 @@ async function handleSubmit() {
   margin: 0;
   font-size: 1.1rem;
 }
-.form-section {
-  margin-bottom: 1.25rem;
-}
-.form-label {
-  display: block;
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: var(--foreground);
-}
-.optional {
-  font-weight: 400;
-  color: var(--muted-foreground);
-}
-.form-input {
-  width: 100%;
-  min-height: var(--tap-min, 44px);
-}
-.form-textarea {
-  resize: vertical;
-  font-family: inherit;
-  min-height: var(--tap-min, 44px);
-}
-.hour-mode-toggle {
+.blocking-success {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-  width: 100%;
-}
-.mode-btn {
-  min-height: var(--tap-min, 44px);
-  flex: 1;
-}
-.hour-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.4rem;
-  margin-bottom: 0.75rem;
-}
-
-@media (min-width: 481px) {
-  .hour-grid {
-    grid-template-columns: repeat(6, 1fr);
-  }
-}
-
-.hour-btn {
-  font-size: 0.8rem;
-  text-align: center;
-  min-height: var(--tap-min, 44px);
-}
-.hour-btn:hover { border-color: var(--primary); }
-.hour-btn--endpoint {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: var(--primary-foreground);
-  font-weight: 600;
-}
-.hour-btn--selected {
-  background: var(--secondary);
-  border-color: var(--primary);
-}
-.period-summary {
-  font-size: 0.85rem;
-  color: var(--muted-foreground);
-  margin: 0.25rem 0 0;
-}
-
-.form-actions {
+  align-items: flex-start;
+  gap: 0.75rem;
   margin-top: 1rem;
 }
-
-@media (max-width: 767px) {
-  .form-actions {
-    position: sticky;
-    bottom: calc(var(--bottom-bar-h, 0px) + var(--safe-bottom, 0px));
-    background: var(--background);
-    padding: 0.75rem 0 calc(0.5rem + var(--safe-bottom, 0px));
-    z-index: 5;
-    box-shadow: 0 -4px 12px rgb(var(--shadow-color) / 0.06);
-    margin-left: -1rem;
-    margin-right: -1rem;
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
+.blocking-success__mark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--success, #16a34a) 14%, transparent);
+  color: var(--success, #16a34a);
+  font-size: 1.05rem;
+  font-weight: 800;
 }
-
-.state-msg {
+.blocking-success__title {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 1rem;
+  font-weight: 700;
+}
+.blocking-success__text {
+  margin: 0.2rem 0 0;
   color: var(--muted-foreground);
-  font-size: 0.9rem;
+  font-size: 0.86rem;
 }
-.state-error {
-  color: var(--destructive);
-  font-size: 0.9rem;
-  margin-bottom: 0.75rem;
+.blocking-success__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+.blocking-success__actions button {
+  flex: 1;
+}
+
+@media (max-width: 480px) {
+  .blocking-success__actions {
+    flex-direction: column;
+  }
 }
 </style>

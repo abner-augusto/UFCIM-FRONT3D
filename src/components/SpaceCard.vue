@@ -31,6 +31,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   toggle: [];
   reserve: [range: { startTime: string; endTime: string }];
+  block: [];
 }>();
 
 const router = useRouter();
@@ -175,7 +176,7 @@ function handleReserve() {
 }
 
 function handleBlock() {
-  router.push({ name: 'blocking-create', params: { spaceId: props.space.id } });
+  emit('block');
 }
 
 function goToReservation(reservationId: string) {

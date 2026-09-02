@@ -10,6 +10,7 @@ import { PERIOD_COLORS, type PinStatus } from '@/composables/usePinAvailability'
 import SpaceCard from '@/components/SpaceCard.vue';
 import SpaceFiltersSheet from '@/components/SpaceFiltersSheet.vue';
 import ReservationTray from '@/components/reservation-tray/ReservationTray.vue';
+import BlockingTray from '@/components/BlockingTray.vue';
 import type { Space } from '@/types/space';
 import AppDateField from '@/components/AppDateField.vue';
 import type { PeriodKey } from '@/utils/period';
@@ -67,6 +68,15 @@ interface ReservationTrayContext {
 const reservationTrayOpen = ref(false);
 const reservationTrayContext = ref<ReservationTrayContext | null>(null);
 
+interface BlockingTrayContext {
+  spaceId: string;
+  spaceName: string;
+  modelId: string | null;
+  initialDate: string;
+}
+const blockingTrayOpen = ref(false);
+const blockingTrayContext = ref<BlockingTrayContext | null>(null);
+
 function openReservationTray(space: Space, range: { startTime: string; endTime: string }) {
   reservationTrayContext.value = {
     spaceId: space.id,
@@ -80,6 +90,16 @@ function openReservationTray(space: Space, range: { startTime: string; endTime: 
     },
   };
   reservationTrayOpen.value = true;
+}
+
+function openBlockingTray(space: Space) {
+  blockingTrayContext.value = {
+    spaceId: space.id,
+    spaceName: space.name,
+    modelId: space.modelId ?? null,
+    initialDate: selectedDate.value,
+  };
+  blockingTrayOpen.value = true;
 }
 
 const STATUS_OPTIONS: { value: PinStatus; label: string }[] = [
@@ -265,6 +285,7 @@ onMounted(async () => {
             :selected-date="selectedDate"
             @toggle="toggleExpand(space.id)"
             @reserve="(range) => openReservationTray(space, range)"
+            @block="openBlockingTray(space)"
           />
         </div>
       </section>
@@ -299,6 +320,16 @@ onMounted(async () => {
       :model-id="reservationTrayContext.modelId"
       :reservable="reservationTrayContext.reservable"
       :initial-schedule="reservationTrayContext.initialSchedule"
+    />
+
+    <BlockingTray
+      v-if="blockingTrayContext"
+      v-model:open="blockingTrayOpen"
+      :campus-id="campusId"
+      :space-id="blockingTrayContext.spaceId"
+      :space-name="blockingTrayContext.spaceName"
+      :model-id="blockingTrayContext.modelId"
+      :initial-date="blockingTrayContext.initialDate"
     />
   </div>
 </template>
