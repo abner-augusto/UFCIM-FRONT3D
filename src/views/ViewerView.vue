@@ -16,11 +16,11 @@ import ViewerDesktopControls from '@/components/ViewerDesktopControls.vue';
 import ViewerSearchSheet from '@/components/ViewerSearchSheet.vue';
 import BlockHeatmapCard from '@/components/BlockHeatmapCard.vue';
 import { useDateTimeFilter, formatShortDate } from '@/composables/useDateTimeFilter';
-import { usePinAvailability, PERIOD_COLORS } from '@/composables/usePinAvailability';
+import { usePinAvailability, PERIOD_COLORS, type PinAvailabilityData } from '@/composables/usePinAvailability';
 import { buildPinStatusLabel } from '@/composables/usePinStatusLabel';
 import { useDarkMode } from '@/composables/useDarkMode';
 import { useViewerTestHarness } from '@/composables/useViewerTestHarness';
-import type { PeriodKey, PinStatus } from '@/composables/usePinAvailability';
+import type { PeriodKey } from '@/composables/usePinAvailability';
 import { BLOCK_TYPE_LABELS, TIME_SLOT_RANGES, type Blocking } from '@/types/reservation';
 import { logger } from '@/utils/logger';
 
@@ -80,7 +80,7 @@ const onResize = (e: MediaQueryListEvent | MediaQueryList) => {
 
 // Map<modelId, Space> — built on mount, used for O(1) pin lookup
 const spacesByModelId = new Map<string, Space>();
-let cachedStatusMap = new Map<string, { status: PinStatus; slots: Array<{ startTime: string; endTime: string; status: string }> }>();
+let cachedStatusMap = new Map<string, PinAvailabilityData>();
 const viewerReady = ref(false);
 const viewerError = ref(false);
 // Bumped to force-remount ThreeViewer (re-running its init) on retry.
@@ -211,8 +211,11 @@ async function applyPinColors() {
 
 function updatePinLabels() {
   if (!viewerRef.value?.updatePinLabelStatus) return;
-  cachedStatusMap.forEach(({ status, slots }, modelId) => {
-    const labelInfo = buildPinStatusLabel(status, slots, periodRange.value);
+  cachedStatusMap.forEach(({ status, slots, nextAvailableDate }, modelId) => {
+    const labelInfo = buildPinStatusLabel(status, slots, periodRange.value, {
+      selectedDate: selectedDate.value,
+      nextAvailableDate,
+    });
     viewerRef.value!.updatePinLabelStatus!(modelId, labelInfo.statusText, labelInfo.statusColor);
   });
 }

@@ -1,4 +1,5 @@
 import type { PinStatus } from '@/composables/usePinAvailability';
+import { addLocalDays } from '@/utils/date';
 
 export interface PinLabelInfo {
   statusText: string | null;
@@ -21,7 +22,12 @@ function resolvedColor(status: keyof typeof COLOR_TOKENS): string {
 }
 
 function formatHourLabel(time: string): string {
-  return time.split(':')[0] + 'h';
+  return `${time.slice(0, 2)}h`;
+}
+
+function formatDateLabel(date: string, selectedDate?: string): string {
+  if (selectedDate && date === addLocalDays(selectedDate, 1)) return 'amanhã';
+  return `${date.slice(8, 10)}/${date.slice(5, 7)}`;
 }
 
 /**
@@ -29,13 +35,14 @@ function formatHourLabel(time: string): string {
  * for the pin label. Examples:
  *   - "Livre" (available all period)
  *   - "Livre 14h" (became available mid-period at 14h)
- *   - "até 16h" (occupied until 16h)
+ *   - "até 16h" (next free slot starts at 16h)
  *   - "Ocupada" (occupied all period)
  */
 export function buildPinStatusLabel(
   status: PinStatus,
   slots: Array<{ startTime: string; endTime: string; status: string }>,
   period: { startTime: string; endTime: string },
+  options: { selectedDate?: string; nextAvailableDate?: string } = {},
 ): PinLabelInfo {
   if (status === 'not_reservable' || status === 'closed') {
     return { statusText: null, statusColor: null };
@@ -50,6 +57,18 @@ export function buildPinStatusLabel(
   }
 
   if (status === 'reserved') {
+    const nextAvailableSlot = slots
+      .filter(s => s.startTime >= period.endTime && s.status === 'available')
+      .sort((a, b) => a.startTime.localeCompare(b.startTime))[0];
+    if (nextAvailableSlot) {
+      return { statusText: `até ${formatHourLabel(nextAvailableSlot.startTime)}`, statusColor: resolvedColor('reserved') };
+    }
+    if (options.nextAvailableDate) {
+      return {
+        statusText: `até ${formatDateLabel(options.nextAvailableDate, options.selectedDate)}`,
+        statusColor: resolvedColor('reserved'),
+      };
+    }
     return { statusText: 'Ocupada', statusColor: resolvedColor('reserved') };
   }
 
@@ -71,10 +90,21 @@ export function buildPinStatusLabel(
   if (firstSlot?.status === 'reserved' && lastSlot?.status === 'available' && firstAvailable) {
     return { statusText: `Livre ${formatHourLabel(firstAvailable)}`, statusColor: resolvedColor('partial') };
   }
-  if (firstSlot?.status === 'available' && lastSlot?.status === 'reserved') {
-    const transitionSlot = periodSlots.find(s => s.status === 'reserved');
-    if (transitionSlot) {
-      return { statusText: `até ${formatHourLabel(transitionSlot.startTime)}`, statusColor: resolvedColor('partial') };
+  if (firstSlot?.status === 'available') {
+    const firstReservedAfterAvailable = periodSlots.findIndex((slot, index) =>
+      slot.status === 'reserved' && periodSlots.slice(0, index).some(s => s.status === 'available'),
+    );
+    if (firstReservedAfterAvailable >= 0) {
+      const reservedBlock = [];
+      for (let index = firstReservedAfterAvailable; index < periodSlots.length; index++) {
+        const slot = periodSlots[index];
+        if (slot.status !== 'reserved') break;
+        reservedBlock.push(slot);
+      }
+      if (reservedBlock.every(s => s.status === 'reserved')) {
+        const nextAvailableTime = reservedBlock[reservedBlock.length - 1].endTime;
+        return { statusText: `até ${formatHourLabel(nextAvailableTime)}`, statusColor: resolvedColor('partial') };
+      }
     }
   }
 

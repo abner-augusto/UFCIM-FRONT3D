@@ -14,6 +14,13 @@ export function toLocalISODate(d: Date = new Date()): string {
   return `${year}-${month}-${day}`;
 }
 
+/** Add calendar days to a date-only ISO value without converting through UTC. */
+export function addLocalDays(iso: string, days: number): string {
+  const date = new Date(`${iso}T12:00:00`);
+  date.setDate(date.getDate() + days);
+  return toLocalISODate(date);
+}
+
 /** Date-only ISO (`YYYY-MM-DD`) → "02 de julho de 2026". Anchors to local noon. */
 export function formatDateLong(iso: string): string {
   return new Date(`${iso}T12:00:00`).toLocaleDateString('pt-BR', {

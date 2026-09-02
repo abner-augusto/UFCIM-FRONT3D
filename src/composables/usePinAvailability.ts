@@ -4,10 +4,17 @@ import { logger } from '@/utils/logger';
 import { TIME_SLOT_RANGES } from '@/types/reservation';
 import type { Space } from '@/types/space';
 import type { PeriodKey } from '@/utils/period';
+import { addLocalDays } from '@/utils/date';
 
 export type { PeriodKey } from '@/utils/period';
 
 export type PinStatus = 'available' | 'partial' | 'reserved' | 'blocked' | 'closed' | 'not_reservable';
+
+export type PinAvailabilityData = {
+  status: PinStatus;
+  slots: Array<{ startTime: string; endTime: string; status: string }>;
+  nextAvailableDate?: string;
+};
 
 export const PERIOD_COLORS: Record<PinStatus, string> = {
   available: '#00b050',
@@ -45,6 +52,25 @@ export function derivePinStatus(
   return 'partial';
 }
 
+function isDayFullyReserved(slots: Array<{ status: string }>): boolean {
+  const openSlots = slots.filter((slot) => slot.status !== 'closed' && slot.status !== 'not_reservable');
+  return openSlots.length > 0 && openSlots.every((slot) => slot.status === 'reserved');
+}
+
+async function findNextAvailableDate(
+  token: string | null,
+  spaceId: string,
+  date: string,
+): Promise<string | undefined> {
+  for (let offset = 1; offset <= 31; offset++) {
+    const candidateDate = addLocalDays(date, offset);
+    const slots = await api.getAvailability(token, spaceId, candidateDate);
+    const hasAvailableSlot = slots.some((slot) => slot.status === 'available');
+    if (hasAvailableSlot) return candidateDate;
+  }
+  return undefined;
+}
+
 export function usePinAvailability() {
   const loading = ref(false);
   const error = ref<string | null>(null);
@@ -54,7 +80,7 @@ export function usePinAvailability() {
     token: string | null,
     date: string,
     period: PeriodKey,
-  ): Promise<Map<string, { status: PinStatus; slots: Array<{ startTime: string; endTime: string; status: string }> }>> {
+  ): Promise<Map<string, PinAvailabilityData>> {
     loading.value = true;
     error.value = null;
 
@@ -64,7 +90,7 @@ export function usePinAvailability() {
         entries.map(([, space]) => api.getAvailability(token, space.id, date)),
       );
 
-      const statusMap = new Map<string, { status: PinStatus; slots: Array<{ startTime: string; endTime: string; status: string }> }>();
+      const statusMap = new Map<string, PinAvailabilityData>();
 
       results.forEach((result, index) => {
         if (result.status !== 'fulfilled') {
@@ -73,11 +99,30 @@ export function usePinAvailability() {
           return;
         }
         const [modelId] = entries[index];
-        statusMap.set(modelId, {
-          status: derivePinStatus(result.value, period),
-          slots: result.value,
-        });
+        const slots = result.value;
+        const status = derivePinStatus(slots, period);
+        statusMap.set(modelId, { status, slots });
       });
+
+      const needsNextDate = [...statusMap.entries()].filter(([, data]) =>
+        data.status === 'reserved' && isDayFullyReserved(data.slots),
+      );
+      const nextDates = await Promise.all(
+        needsNextDate.map(async ([modelId]) => {
+          const space = spaces.get(modelId);
+          if (!space) return [modelId, undefined] as const;
+          try {
+            return [modelId, await findNextAvailableDate(token, space.id, date)] as const;
+          } catch (reason) {
+            logger.warn(`[Availability] Failed to find next available date for space "${modelId}":`, reason);
+            return [modelId, undefined] as const;
+          }
+        }),
+      );
+      for (const [modelId, nextAvailableDate] of nextDates) {
+        const data = statusMap.get(modelId);
+        if (data && nextAvailableDate) data.nextAvailableDate = nextAvailableDate;
+      }
 
       return statusMap;
     } catch {
