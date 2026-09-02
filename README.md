@@ -1,296 +1,115 @@
-# ufcim-front3d
+# UFCIM Front 3D
 
-SPA de gerenciamento de espaços para os campi da UFC, com visualizador 3D interativo e fluxo completo de reservas. Construído com **Vue 3**, **Three.js** e **Vite**.
+SPA para localizar, consultar e reservar espaços da Universidade Federal do Ceará por meio de uma maquete 3D interativa. O escopo implantado é o MVP do IAUD, no campus Benfica.
 
-> **Escopo atual:** MVP focado no departamento IAUD, campus Benfica.
+## Funcionalidades
 
----
+- Navegação por campus, departamento, prédio e andar em uma maquete Three.js.
+- Disponibilidade por data e período, com seleção de faixa horária.
+- Reservas simples e recorrentes, cancelamento e histórico do usuário.
+- Busca e filtros de espaços fora da maquete.
+- Bloqueios de salas conforme o papel do usuário.
+- Notificações, chamados de equipamentos e relatórios de ocupação.
+- PWA responsiva com temas claro e escuro.
 
-## Stack Tecnológica
+## Stack
 
 | Camada | Tecnologia |
 |---|---|
-| Framework | Vue 3 (Composition API, `<script setup>`) |
-| 3D Engine | Three.js (r168+) com GLTFLoader + DRACOLoader |
-| Estado global | Pinia |
-| Roteamento | Vue Router 4 (hash mode) |
-| Build | Vite |
-| PWA | vite-plugin-pwa |
-| Tipagem | TypeScript |
-| Deploy | Cloudflare Pages + `_worker.js` proxy |
+| Interface | Vue 3.5, TypeScript e Pinia |
+| Componentes | Tailwind CSS 4, shadcn-vue e Reka UI |
+| Visualização 3D | Three.js r184, GLTFLoader e DRACOLoader |
+| Rotas | Vue Router 5 com hash history |
+| Build e PWA | Vite 7 e vite-plugin-pwa |
+| Testes | Vitest e Playwright |
+| Hospedagem | Cloudflare Pages com proxy em `_worker.js` |
 
----
+As versões exatas ficam em `package.json` e `package-lock.json`.
 
 ## Arquitetura
 
-```
-src/
-├── main.ts               # Bootstrap: Pinia, Vue Router, restauração de sessão via token
-├── App.vue               # Root component — layout shell + NavDrawer
-│
-├── router/
-│   └── index.ts          # Rotas com hash history; guards requiresAuth / guestOnly
-│
-├── views/                # Componentes de página (lazy-loaded)
-│   ├── LoginView.vue
-│   ├── AcceptInviteView.vue
-│   ├── CampusSelectView.vue
-│   ├── DepartmentSelectView.vue
-│   ├── ViewerView.vue         # ★ Visualizador 3D — orquestra ThreeViewer + popups + cores de pins
-│   ├── SpaceBrowserView.vue   # Listagem filtrada de espaços com disponibilidade
-│   ├── ReservationView.vue    # Seleção de horário para reserva
-│   ├── ConfirmReservationView.vue
-│   ├── MyReservationsView.vue
-│   ├── BlockingCreateView.vue
-│   ├── MyBlockingsView.vue
-│   ├── NotificationsView.vue
-│   └── ProfileView.vue
-│
-├── components/           # Componentes reutilizáveis
-│   ├── ThreeViewer.vue        # ★ Encapsulamento do Three.js — monta/desmonta com dispose de GPU
-│   ├── RoomPopup.vue          # Popup de detalhes do espaço ao clicar no pin
-│   ├── PeriodSelector.vue     # Seletor manhã/tarde/noite
-│   ├── ViewerControlsRail.vue # Controles mobile do viewer
-│   ├── ViewerSearchSheet.vue  # Sheet de busca por espaço no viewer
-│   ├── SpaceCard.vue          # Card de espaço na listagem
-│   └── NavDrawer.vue          # Menu lateral com links role-gated
-│
-├── stores/               # Pinia stores
-│   ├── auth.ts           # Token, user info, unreadCount, logout
-│   ├── campus.ts         # Campus selecionado
-│   └── reservation.ts    # Dados temporários do fluxo de reserva
-│
-├── composables/          # Lógica reativa reutilizável
-│   ├── usePinAvailability.ts  # Busca disponibilidade por período e mapeia cores para os pins
-│   └── useSpaceBrowser.ts     # Estado e filtros do SpaceBrowserView
-│
-├── services/
-│   └── api.ts            # Cliente HTTP tipado — todas as chamadas ao backend
-│
-├── utils/
-│   ├── roles.ts          # hasRole(), constantes CAN_BLOCK, CAN_MANAGE, etc.
-│   ├── period.ts         # getCurrentPeriod(), mapeamento de períodos para ranges horários
-│   └── logger.ts         # Wrapper de console com nível de log
-│
-├── types/
-│   ├── space.ts          # Space, SpaceType, SPACE_TYPE_LABELS
-│   └── reservation.ts    # Reservation, Blocking, TIME_SLOT_RANGES, BLOCK_TYPE_LABELS
-│
-├── data/
-│   └── campuses.ts       # Lista estática de campi com id, shortName e nome exibido
-│
-└── styles/
-    ├── tokens.css        # Design tokens CSS (variáveis de cor, tipografia, espaçamento)
-    └── base.css          # Reset e estilos globais
+O frontend Vue e o motor 3D são deliberadamente separados:
+
+```text
+src/views/ViewerView.vue
+  -> src/components/ThreeViewer.vue
+    -> src/three/App.js
+      -> ModelManager / InteractionManager / CameraManager / PinFactory
 ```
 
-> **Estilo:** Tailwind v4 + shadcn-vue por padrão; tokens de design em `src/styles/tokens.css`.  
-> **Sem localStorage.** Tokens de sessão são armazenados em `sessionStorage`.
+`ThreeViewer.vue` cria o motor no `onMounted` e chama `dispose()` no `onUnmounted`. Todo recurso de GPU, listener e animation frame criado em `src/three/` deve ser liberado durante esse teardown.
 
----
+Os demais limites principais são:
 
-## Visualizador 3D
+- `src/router/index.ts`: rotas lazy, autenticação e restrições por papel.
+- `src/services/api.ts`: cliente tipado usado por todas as chamadas ao backend.
+- `src/stores/`: autenticação, campus, reserva e contexto de interação.
+- `src/composables/`: disponibilidade, detalhes de sala e lógica reutilizável de UI.
+- `src/styles/tokens.css`: tokens dos temas, status, layout e movimento.
+- `src/components/ui/`: primitivas shadcn-vue.
 
-O viewer é intencionalmente desacoplado do Vue para garantir performance e controle fino do ciclo de vida dos recursos de GPU.
+Os caminhos visíveis ficam em português e os nomes programáticos das rotas ficam em inglês. O router usa `createWebHashHistory`, portanto uma URL publicada tem a forma `/#/campus/...`.
 
-### Fluxo de dados
+### Pins e disponibilidade
 
-```
-manifest.json
-    │
-    ▼
-ModelManager          — carrega GLBs por prédio/andar via GLTFLoader + DRACO
-    │  onPinsLoaded()
-    ▼
-InteractionManager    — cria sprites de pin (PinFactory), raycasting no pointerdown
-    │  evento "pin-click"
-    ▼
-ThreeViewer.vue       — expõe API imperativa via defineExpose()
-    │  emit("pin-click", { pinId, displayName, ... })
-    ▼
-ViewerView.vue        — busca Space no Map<modelId, Space>, exibe RoomPopup
-```
+O manifesto em `public/assets/models/IAUD/manifest.json` associa prédios, andares, GLBs e pins. O `id` de cada pin deve ser igual ao `modelId` do espaço no backend.
 
-### Módulos Three.js (`src/three/`)
+`usePinAvailability.ts` consulta a disponibilidade e envia ao motor 3D os estados visuais de livre, parcial, reservado, bloqueado, fechado ou não reservável. A interface também apresenta texto ou ícone; cor não é o único sinal.
 
-| Arquivo | Responsabilidade |
-|---|---|
-| `App.js` | Renderer WebGL, scene, animation loop, câmera, OrbitControls |
-| `ModelManager.js` | Carrega `manifest.json`, gerencia GLBs por prédio/andar, extrai pins de nós do modelo (`Pin_<id>`), controla visibilidade por andar |
-| `InteractionManager.js` | Gerencia sprites de pins, raycasting, hover/click, visibilidade por andar ativo |
-| `PinFactory.js` | Fábrica de sprites de pin (canvas 2D → texture Three.js) |
-| `CameraManager.js` | Transições suaves de câmera, foco em prédio/espaço |
+### Estado e acesso
 
-### Ciclo de vida e memória
+Tokens, refresh tokens e campus selecionado usam `sessionStorage`. Apenas preferências não sensíveis, como o tema, usam `localStorage`.
 
-`ThreeViewer.vue` monta o engine Three.js no `onMounted` e chama `dispose()` em todos os recursos de GPU no `onUnmounted`. Isso é uma decisão deliberada de performance: ao navegar para outra view e voltar, o viewer reinicia do zero em vez de acumular vazamentos de memória.
+As permissões de interface ficam em `src/utils/roles.ts`. Elas controlam navegação e ações visíveis, mas o backend continua sendo a autoridade de autorização.
 
-### Cores de disponibilidade dos pins
-
-Os pins exibem cores em tempo real conforme a disponibilidade do espaço no período selecionado (manhã/tarde/noite), calculadas pelo composable `usePinAvailability.ts`:
-
-| Status | Cor |
-|---|---|
-| `available` | Verde |
-| `partial` | Amarelo |
-| `reserved` | Vermelho |
-| `blocked` | Cinza |
-| `closed` | Cinza escuro |
-| `not_reservable` | Cinza claro |
-
----
-
-## Roteamento
-
-O router usa **hash history** (`createWebHashHistory`) para compatibilidade com Cloudflare Pages sem configuração de redirects.
-
-| Nome da rota | Caminho | Descrição |
-|---|---|---|
-| `login` | `/login` | — |
-| `accept-invite` | `/convite/:token` | — |
-| `campus-select` | `/campus` | — |
-| `department-select` | `/campus/:campusId/departamento` | — |
-| `viewer` | `/campus/:campusId/viewer` | Visualizador 3D |
-| `space-browser` | `/campus/:campusId/espacos` | Listagem de espaços |
-| `reservation` | `/reserva/:spaceId` | Formulário de reserva |
-| `reservation-confirm` | `/reserva/confirmar` | Confirmação |
-| `my-reservations` | `/minhas-reservas` | — |
-| `my-blockings` | `/meus-bloqueios` | — |
-| `notifications` | `/notificacoes` | — |
-| `blocking-create` | `/espacos/:spaceId/bloquear` | Criar bloqueio |
-| `profile` | `/perfil` | — |
-
-**Convenção:** Caminhos em português (pt-BR); nomes de rota em inglês.
-
----
-
-## Estado Global (Pinia)
-
-### `useAuthStore`
-- Token JWT (sessionStorage), dados do usuário, `unreadCount` de notificações.
-- `setAuth()`, `logout()`, getter `isAuthenticated`, `userRole`.
-
-### `useCampusStore`
-- `selectedCampusId` — persiste a navegação entre views.
-
-### `useReservationStore`
-- Armazena `spaceId` e `spaceName` para o fluxo de reserva entre `ReservationView` → `ConfirmReservationView`.
-
----
-
-## Controle de Acesso no Frontend
-
-Permissões de UI são centralizadas em `src/utils/roles.ts`:
-
-```ts
-// Exemplo
-export const CAN_BLOCK = ['coordinator', 'staff', 'maintenance'];
-export function hasRole(userRole: string, allowedRoles: string[]): boolean
-```
-
-Componentes como `NavDrawer.vue` usam `hasRole()` para exibir ou ocultar links. O backend é a fonte de verdade — as verificações de frontend são apenas UX.
-
----
-
-## Assets 3D
-
-Os modelos GLB ficam em `public/assets/models/IAUD/` e são referenciados por um manifesto JSON gerado automaticamente.
-
-### `manifest.json`
-
-Estrutura por prédio → andares → pins:
-
-```json
-{
-  "bloco1": {
-    "name": "Bloco 1",
-    "bbox": { "min": [...], "max": [...] },
-    "floors": [
-      {
-        "file": "floor0.glb",
-        "name": "Térreo",
-        "level": 0,
-        "pins": [
-          { "id": "Sala 01", "position": [x, y, z], "opensPopup": true }
-        ]
-      }
-    ]
-  }
-}
-```
-
-O `id` do pin deve corresponder ao campo `modelId` do espaço cadastrado no backend.
-
-### Comandos de preparação de assets
-
-```bash
-npm run build:manifest   # Regenera manifest.json a partir dos GLBs
-npm run build:pins       # Converte data/qt.Ativos.xlsx → public/assets/pins_db_popup.json
-```
-
----
-
-## Deploy
-
-O frontend é hospedado no **Cloudflare Pages**. O arquivo `public/_worker.js` funciona como proxy reverso: requisições para `/api/v1/*` e `/auth/*` são repassadas ao backend Worker; demais requisições servem os assets estáticos.
-
-```js
-// public/_worker.js (resumo)
-if (url.pathname.startsWith('/api/v1/') || url.pathname.startsWith('/auth/')) {
-  return fetch(new Request(BACKEND_URL + pathname, request));
-}
-return env.ASSETS.fetch(request);
-```
-
----
-
-## Como rodar localmente
+## Desenvolvimento local
 
 ### Pré-requisitos
-- Node.js 18+
 
-### Instalação
-
-```bash
-npm install
-```
-
-### Desenvolvimento
+- Node.js `^20.19.0`, `>=22.12.0` ou uma versão mais nova compatível.
+- npm.
+- O backend em `../ufcim-backend-proto` para fluxos integrados e testes E2E.
 
 ```bash
+npm ci
 npm run dev
 ```
 
-### Build de produção
+O Vite atende em `http://localhost:5173` e encaminha `/api/v1` e `/auth` para `http://localhost:8787`.
 
-```bash
-npm run build
-```
+### Comandos
 
-### Typecheck
+| Comando | Finalidade |
+|---|---|
+| `npm run dev` | Inicia o servidor Vite |
+| `npm run build` | Regenera o manifesto, verifica tipos e cria `dist/` |
+| `npm run type-check` | Executa `vue-tsc --noEmit` |
+| `npm run lint` | Executa ESLint |
+| `npm test` | Executa os testes unitários |
+| `npm run test:e2e` | Executa Playwright com frontend e backend locais |
+| `npm run dead-code` | Audita código e dependências com Knip |
+| `npm run build:manifest` | Regenera o manifesto dos modelos GLB |
+| `npm run build:pins` | Converte a planilha de ativos para JSON |
 
-```bash
-npm run type-check
-```
+Os testes E2E usam o backend real do repositório irmão, sem mocks, e rodam com um worker porque compartilham o banco D1 local semeado pelo `globalSetup`.
 
----
+## Deploy
+
+O build é publicado no Cloudflare Pages. `public/_worker.js` encaminha `/api/v1/*` e `/auth/*` ao Worker do backend e entrega os demais arquivos estáticos.
+
+A PWA usa atualização por confirmação: quando há uma nova versão, a interface pede ao usuário para recarregar. Consultas de disponibilidade usam estratégia `NetworkFirst` com validade de 60 segundos; as demais consultas de API têm cache de até cinco minutos.
 
 ## Convenções
 
-- **Idioma da UI:** Português brasileiro (pt-BR) em todo texto visível ao usuário.
-- **Idioma do código:** Inglês — nomes de variáveis, funções, nomes de rotas, tipos.
-- **Caminhos de rota:** Português (`/minhas-reservas`); nomes programáticos: inglês (`my-reservations`).
-- **Estilo:** Tailwind v4 + shadcn-vue por padrão; tokens de design em `src/styles/tokens.css`.
-- **Sem localStorage:** Usar `sessionStorage` para tokens de sessão.
-- **Componentes Vue:** Sempre `<script setup>` com TypeScript.
+- Texto da interface em português brasileiro; identificadores e tipos em inglês.
+- Componentes Vue com `<script setup lang="ts">`.
+- Tailwind e primitivas de `src/components/ui/` por padrão.
+- CSS manual apenas quando tokens e utilitários não expressam bem o comportamento.
+- Caminhos internos por `@/`, apontando para `src/`.
 
----
+## Documentação
 
-## Roadmap
-
-- [ ] Integração com Keycloak JWT em produção (substituir `devAuthMiddleware`)
-- [ ] Visibilidade de espaços por escopo de departamento
-- [x] Exibição de equipamentos no `RoomPopup` ✅
-- [x] Página de perfil do usuário (`ProfileView`) ✅
-- [ ] Expansão para outros campi além do IAUD/Benfica
-- [ ] Integração com monitoramento ambiental IoT
+- `PRODUCT.md`: público, propósito e princípios do produto.
+- `DESIGN.md`: linguagem visual e regras de interface.
+- `docs/qa-routine.md`: roteiro manual por papel.
+- `CHANGELOG.md`: histórico gerado pelo release-please.

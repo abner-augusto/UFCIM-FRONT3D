@@ -1,8 +1,18 @@
-# LLM/internal docs
-CLAUDE.md
-AGENTS.md
-opencode.json
-.*/*
+# Local agent and editor configuration
+/AGENTS.md
+/CLAUDE.md
+/opencode.json
+/.agents/
+/.claude/
+/.codex/
+/.impeccable/
+/.opencode/
+/.idea/
+/.vscode/
+/graphify-out/
+
+# Temporary backups
+*.bak
 
 # Local-only design mockups (static style explorations, not shipped)
 /mockups/

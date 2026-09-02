@@ -88,7 +88,9 @@ UFCIM is the way the UFC community finds and books a room without leaving the ma
 
 The personality is trustworthy and official with a human, approachable edge. This is the university's real system of record, so it has to read as credible and dependable, but it carries the warmth of a good front desk: plain Brazilian-Portuguese labels, reassuring empty and error states, nothing that intimidates a first-year student. It explicitly rejects two looks. It is **not generic SaaS** (no purple-to-blue gradients, no Inter-for-everything, no hero-metric dashboards, no endless identical card grids). And it is **not a bureaucratic government portal** (no dense gray tables, no tiny text, no flat hierarchy, no intimidating multi-field forms).
 
-The system is mobile-first by conviction, not by breakpoint: students book on phones between classes, so thumb reach, 44px tap targets, and one-handed flows come before any desktop nicety. A single brand teal — drawn from the UFCIM logo — carries the identity across a clean white-and-near-neutral canvas; color is spent deliberately, mostly on the one thing the user came to learn — is this room free.
+The system is mobile-first by conviction, not by breakpoint: students book on phones between classes, so thumb reach, 44px tap targets, and one-handed flows come before any desktop nicety. A single brand teal — drawn from the UFCIM logo — carries the identity across restrained light and dark themes; color is spent deliberately, mostly on the one thing the user came to learn — is this room free.
+
+`src/styles/tokens.css` is the implementation source of truth for both themes. This document defines intent and usage; when a literal value differs, update this document from the token file rather than copying values into components.
 
 **Key Characteristics:**
 - Map-first: the 3D campus and the room are the hero; forms are a short follow-through.
@@ -125,7 +127,7 @@ Equipment-status pills reuse the same semantics with soft tints: working (`#D1FA
 - **Ink** (`#111111`): primary text, headings.
 - **Ink Soft** (`#666666`): secondary text, supporting copy.
 - **Muted** (`#999999`): meta, captions, axis labels. Floor at this lightness for text on white — never lighter for body copy.
-- **Canvas** (`#FFFFFF`): app background.
+- **Canvas** (`#FFFFFF`): app background in the light theme. The dark theme uses the semantic `--background`, `--card`, and `--popover` tokens rather than direct hex values.
 - **Surface** (`#F7F9F8`) / **Surface Alt** (`#F5F5F5`): stat cards, toolbars, resting tinted panels.
 - **Border** (`#DDDDDD`) with lighter hairlines (`#EEEEEE`, `#F0F0F0`) for dividers.
 
@@ -216,7 +218,7 @@ The defining surface. A full-bleed Three.js campus canvas with floating chrome l
 ### Don't:
 - **Don't** drift toward **generic SaaS**: no purple-to-blue gradients, no Inter, no hero-metric dashboard template, no endless identical card grids, no rounded-icon tile above every heading.
 - **Don't** drift toward a **bureaucratic government portal**: no dense gray tables, no sub-12px body text, no flat hierarchy, no intimidating multi-field forms.
-- **Don't** use `border-left` / `border-right` greater than 1px as a colored accent stripe on cards, notices, or list items. (Existing instances in `NotificationsPanel.vue` and the RoomPopup blocking notice should be reworked to a full border or background tint.)
+- **Don't** use `border-left` / `border-right` greater than 1px as a colored accent stripe on cards, notices, or list items. Use a full border or background tint.
 - **Don't** mix brand and availability: brand teal `#00697D` is never a status, availability green `#00B050` is never UI chrome.
 - **Don't** use gradient text, decorative glassmorphism, or shadows on static in-flow sections.
 - **Don't** nest a card inside a card.
