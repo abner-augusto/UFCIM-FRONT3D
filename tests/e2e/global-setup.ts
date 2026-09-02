@@ -48,17 +48,16 @@ function makeHS256JWT(payload: Record<string, unknown>): string {
 export default async function globalSetup() {
   mkdirSync(AUTH_DIR, { recursive: true });
 
-  // Seed the local D1 database (INSERT OR IGNORE — safe to run multiple times)
-  try {
+  // Seed the local D1 database with the baseline IAUD spaces and the dev-only
+  // fixtures that this Playwright suite relies on. Both SQL files are
+  // INSERT OR IGNORE, so reruns are safe.
+  for (const seedFile of ['scripts/seed.sql', 'scripts/seed_dev.sql']) {
     execSync(
-      'npx wrangler d1 execute DB --local --env dev --file=scripts/seed.sql',
+      `npx wrangler d1 execute DB --local --env dev --file=${seedFile}`,
       { cwd: BACKEND_DIR, stdio: 'pipe' }
     );
-    console.log('[e2e] DB seeded');
-  } catch (e) {
-    const stderr = (e as { stderr?: { toString(): string } }).stderr;
-    console.warn('[e2e] DB seed warning (may already exist):', stderr?.toString().slice(0, 200));
   }
+  console.log('[e2e] DB seeded');
 
   // Generate HS256 dev JWTs (same algorithm as signAccessToken in the backend).
   const now = Math.floor(Date.now() / 1000);

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onUnmounted, ref, watch } from 'vue';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
 import { toLocalISODate } from '@/utils/date';
@@ -77,8 +77,7 @@ function emitSchedule() {
   });
 }
 
-function applyInitialSchedule() {
-  const schedule = props.initialSchedule;
+function applyInitialSchedule(schedule: ReservationScheduleSelection | null | undefined) {
   if (!schedule || schedule.date !== selectedDate.value) return;
 
   const range = findBookableSubRange(visibleSlots.value, schedule, isPastSlot);
@@ -90,6 +89,7 @@ function applyInitialSchedule() {
 
 async function loadAvailability(date: string) {
   const seq = ++loadSeq;
+  const initialSchedule = props.initialSchedule;
   errorMsg.value = null;
   resetSelection();
   loadingAvailability.value = true;
@@ -98,7 +98,7 @@ async function loadAvailability(date: string) {
     const result = await api.getAvailability(auth.token, props.spaceId, date);
     if (seq !== loadSeq) return;
     availability.value = result;
-    applyInitialSchedule();
+    applyInitialSchedule(initialSchedule);
     emitSchedule();
   } catch {
     if (seq !== loadSeq) return;
@@ -119,11 +119,20 @@ watch(selectedDate, (date) => {
   void loadAvailability(date);
 }, { immediate: true });
 
-watch(() => props.spaceId, () => {
-  void loadAvailability(selectedDate.value);
+watch([() => props.spaceId, () => props.initialSchedule], () => {
+  const initialDate = props.initialSchedule?.date ?? today;
+  if (selectedDate.value === initialDate) {
+    void loadAvailability(initialDate);
+  } else {
+    selectedDate.value = initialDate;
+  }
 });
 
 watch([startTime, endTime], emitSchedule);
+
+onUnmounted(() => {
+  loadSeq += 1;
+});
 </script>
 
 <template>

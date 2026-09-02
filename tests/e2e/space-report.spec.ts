@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures';
 
-// Sala A101 from seed.sql
-const SPACE_ID = '00000000-0000-0000-0000-000000000011';
+// Sala de Leitura from the backend dev seed.sql
+const SPACE_ID = 'a1a00001-0000-4000-8000-000000000000';
 
 test.describe('SpaceReportView', () => {
   test('route /espacos/:id/relatorio resolves', async ({ professorPage: page }) => {
@@ -19,17 +19,17 @@ test.describe('SpaceReportView', () => {
     await page.goto(`/#/espacos/${SPACE_ID}/relatorio`);
     await page.waitForTimeout(1000);
 
-    await expect(page.getByText(/7 dias/i)).toBeVisible();
-    await expect(page.getByText(/30 dias/i)).toBeVisible();
-    await expect(page.getByText(/90 dias/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: '7 dias' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '30 dias' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '90 dias' })).toBeVisible();
   });
 
   test('clicking a preset chip updates the date range', async ({ professorPage: page }) => {
     await page.goto(`/#/espacos/${SPACE_ID}/relatorio`);
     await page.waitForTimeout(1000);
 
-    const sevenDaysChip = page.getByText(/7 dias/i);
-    const ninetyDaysChip = page.getByText(/90 dias/i);
+    const sevenDaysChip = page.getByRole('button', { name: '7 dias' });
+    const ninetyDaysChip = page.getByRole('button', { name: '90 dias' });
 
     await expect(sevenDaysChip).toBeVisible();
 

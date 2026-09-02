@@ -1,6 +1,8 @@
 import { test as base, expect } from '@playwright/test';
 import { test } from './fixtures';
 
+const REPORT_SPACE_ID = 'a1a00001-0000-4000-8000-000000000000';
+
 // ── Auth guards ──────────────────────────────────────────────────────────────
 
 base.describe('Auth routing guards', () => {
@@ -15,7 +17,7 @@ base.describe('Auth routing guards', () => {
   });
 
   base.test('unauthenticated /espacos/:id/relatorio → redirects to /login', async ({ page }) => {
-    await page.goto('/#/espacos/00000000-0000-0000-0000-000000000011/relatorio');
+    await page.goto(`/#/espacos/${REPORT_SPACE_ID}/relatorio`);
     await expect(page).toHaveURL(/#\/login/);
   });
 
@@ -61,7 +63,7 @@ test.describe('Authenticated routing', () => {
     await page.goto('/#/campus');
     await page.waitForURL(/#\/campus/, { timeout: 5000 });
     // Per-space report is gated by CAN_VIEW_REPORTS — students are redirected
-    await page.goto('/#/espacos/00000000-0000-0000-0000-000000000011/relatorio');
+    await page.goto(`/#/espacos/${REPORT_SPACE_ID}/relatorio`);
     await expect(page).toHaveURL(/#\/campus/, { timeout: 5000 });
   });
 
@@ -77,7 +79,7 @@ test.describe('Authenticated routing', () => {
   });
 
   test('new router type augmentation: /espacos/:id/relatorio route exists', async ({ professorPage: page }) => {
-    await page.goto('/#/espacos/00000000-0000-0000-0000-000000000011/relatorio');
+    await page.goto(`/#/espacos/${REPORT_SPACE_ID}/relatorio`);
     await expect(page).toHaveURL(/#\/espacos\/.*\/relatorio/);
   });
 

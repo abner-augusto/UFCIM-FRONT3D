@@ -42,7 +42,10 @@ export function findBookableSubRange(
     const inRange = slot.startTime >= range.startTime && slot.endTime <= range.endTime;
     const bookable = inRange && slot.status === 'available' && !isPast(slot);
     if (bookable && startIdx === -1) startIdx = i;
-    if (bookable && startIdx !== -1) endIdx = i;
+    if (bookable && startIdx !== -1) {
+      if (endIdx !== -1 && slots[endIdx].endTime !== slot.startTime) break;
+      endIdx = i;
+    }
     if (!bookable && startIdx !== -1) break; // first contiguous run only
   }
   return startIdx === -1 ? null : { startIdx, endIdx };
@@ -102,6 +105,7 @@ export function useAvailabilitySelection(options: AvailabilitySelectionOptions) 
     const hi = Math.max(a, b);
     for (let i = lo; i <= hi; i += 1) {
       if (!isSelectableAt(i)) return false;
+      if (i > lo && visibleSlots.value[i - 1].endTime !== visibleSlots.value[i].startTime) return false;
     }
     return true;
   }

@@ -100,7 +100,7 @@ const successSummary = computed(() => {
 });
 
 function resetFlow() {
-  selectedSchedule.value = props.initialSchedule ?? null;
+  selectedSchedule.value = null;
   selectedPurpose.value = { purpose: '', description: '' };
   reservationId.value = null;
   confirmStatus.value = 'idle';
@@ -156,6 +156,7 @@ function back() {
 }
 
 function handleScheduleChange(schedule: ReservationScheduleSelection | null) {
+  if (!props.open) return;
   selectedSchedule.value = schedule;
   if (!schedule) return;
 
@@ -260,7 +261,7 @@ function handleBackToMap() {
           v-if="currentStep === 'schedule'"
           :campus-id="campusId"
           :space-id="spaceId"
-          :initial-schedule="selectedSchedule"
+          :initial-schedule="initialSchedule"
           @schedule-change="handleScheduleChange"
         />
         <ReservationPurposeStep

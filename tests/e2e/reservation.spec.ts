@@ -124,8 +124,18 @@ test.describe('ReservationTray contextual flow', () => {
 
     await expect(page.locator('#tray-reservation-date')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('heading', { name: 'Escolher horário' })).toBeVisible();
-    await expect(page.getByText('Campus benfica', { exact: true })).toBeVisible();
+    await expect(page.getByText('Campus Benfica', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /Disponível/ }).first()).toBeVisible({ timeout: 30_000 });
+  });
+
+  test('professor: viewer schedule remains preselected after tray availability loads', async ({ professorPage: page }) => {
+    // Keep the auto-detected morning range stable across local and CI runs.
+    await page.clock.setFixedTime(new Date('2026-09-02T10:30:00'));
+    await openContextualReservationTray(page);
+
+    await expect(page.locator('.hour-cell--selected')).toHaveCount(2, { timeout: 10_000 });
+    await expect(page.getByText(/Horário selecionado: 10:00–12:00/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Continuar$/i })).toBeEnabled();
   });
 
   test('professor: schedule selection advances to purpose and confirmation structure', async ({ professorPage: page }) => {

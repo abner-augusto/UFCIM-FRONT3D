@@ -74,6 +74,18 @@ describe('useAvailabilitySelection', () => {
     expect([0, 1, 2].map(isInSelectedRange)).toEqual([false, false, true]);
   });
 
+  it('does not extend across a closed gap hidden from the strip', () => {
+    const { visibleSlots, onCellClick, startTime, endTime } = setup(
+      makeAvailability(['07:00'], ['08:00', 'closed'], ['09:00']),
+    );
+
+    onCellClick(visibleSlots.value[0], 0);
+    onCellClick(visibleSlots.value[1], 1);
+
+    expect(startTime.value).toBe('09:00');
+    expect(endTime.value).toBe('10:00');
+  });
+
   it('opens reserved or blocked detail without changing the selected range', () => {
     const { visibleSlots, onCellClick, selectedSlot, startTime, endTime } = setup(
       makeAvailability(['07:00'], ['08:00', 'reserved']),
@@ -133,6 +145,14 @@ describe('findBookableSubRange', () => {
     expect(result).toBeNull();
   });
 
+  it('returns null when every available slot in the range has elapsed', () => {
+    const slots = makeAvailability(['19:00'], ['20:00'], ['21:00']);
+
+    const result = findBookableSubRange(slots, { startTime: '19:00', endTime: '22:00' }, () => true);
+
+    expect(result).toBeNull();
+  });
+
   it('stops at first hole in the middle, returns only the first contiguous run', () => {
     const slots = makeAvailability(['19:00'], ['20:00', 'reserved'], ['21:00']);
     const isPast = () => false;
@@ -141,6 +161,15 @@ describe('findBookableSubRange', () => {
     const result = findBookableSubRange(slots, range, isPast);
 
     expect(result).toEqual({ startIdx: 0, endIdx: 0 }); // only 19-20
+  });
+
+  it('stops at a closed gap omitted from the visible slots', () => {
+    const slots = makeAvailability(['19:00'], ['21:00']);
+    const isPast = () => false;
+
+    const result = findBookableSubRange(slots, { startTime: '19:00', endTime: '22:00' }, isPast);
+
+    expect(result).toEqual({ startIdx: 0, endIdx: 0 });
   });
 
   it('respects range boundaries — slots outside [startTime, endTime) are not included', () => {

@@ -27,6 +27,10 @@ export class InteractionManager extends THREE.EventDispatcher {
     async init() {
         this.pinFactory = new PinFactory();
         await this.pinFactory.loadAssets(); // Pre-load assets
+        if (this._disposed) {
+            this.pinFactory.pinTexture?.dispose();
+            return;
+        }
         this.canvas.addEventListener('pointerdown', this._onPointerDown);
     }
 
@@ -305,6 +309,7 @@ export class InteractionManager extends THREE.EventDispatcher {
         this.labelSprites = [];
         this.clickTargets = [];
         this.pinGroups.clear();
+        this.pinFactory?.pinTexture?.dispose();
     }
 
     setInteractionsEnabled(enabled) {

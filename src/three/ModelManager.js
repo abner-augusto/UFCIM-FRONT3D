@@ -44,7 +44,9 @@ export class ModelManager {
   async initFromManifest() {
     const res = await fetch(MANIFEST_URL, { cache: 'default' });
     if (!res.ok) throw new Error(`Failed to fetch manifest: ${res.status}`);
-    this.manifest = await res.json();
+    const manifest = await res.json();
+    if (this._disposed) return;
+    this.manifest = manifest;
 
     Object.entries(this.manifest).forEach(([buildingID, buildingData]) => {
       const floorsMap = new Map();
@@ -134,6 +136,7 @@ export class ModelManager {
   }
 
   async showAllBlocks() {
+    if (this._disposed) return;
     // 1. Prepare visibility state first so floors appear immediately upon loading
     for (const [building, floorsMap] of this.entries.entries()) {
       this.enabledBuildings.add(building);

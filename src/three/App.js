@@ -89,6 +89,7 @@ export class App {
             this.interactionManager.init(),
             this.modelManager.initFromManifest()
         ]);
+        if (this._disposed) return false;
 
         this.modelManager.onPinsLoaded = (pins) => {
             this.interactionManager.addPins(pins);
