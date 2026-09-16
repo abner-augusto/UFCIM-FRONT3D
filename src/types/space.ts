@@ -5,6 +5,8 @@ export interface Equipment {
   name: string;
   type: string;
   status: 'working' | 'broken' | 'under_repair' | 'replacement_scheduled';
+  /** MEL-015: open maintenance report for this equipment, when any. */
+  openReportStatus?: 'pending' | 'acknowledged' | null;
   notes: string | null;
   updatedBy: string | null;
   updatedAt: string;
