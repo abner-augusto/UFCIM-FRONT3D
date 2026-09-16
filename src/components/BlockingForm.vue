@@ -33,8 +33,12 @@ const props = withDefaults(
      * backend enforces the same rule.
      */
     forcedBlockType?: BlockType | null;
+    /** Pre-fills the free-text reason (e.g. started from a maintenance ticket). */
+    initialReason?: string;
+    /** Pre-selects the type when the caller has context for it. */
+    initialBlockType?: BlockType | '';
   }>(),
-  { error: null, initialDate: '', forcedBlockType: null },
+  { error: null, initialDate: '', forcedBlockType: null, initialReason: '', initialBlockType: '' },
 );
 
 const emit = defineEmits<{
@@ -42,11 +46,11 @@ const emit = defineEmits<{
 }>();
 
 const selectedDate = ref(props.initialDate);
-const selectedBlockType = ref<BlockType | ''>('');
+const selectedBlockType = ref<BlockType | ''>(props.initialBlockType);
 const effectiveBlockType = computed<BlockType | ''>(
   () => props.forcedBlockType ?? selectedBlockType.value,
 );
-const reason = ref('');
+const reason = ref(props.initialReason);
 const hourMode = ref<HourMode>('full_day');
 const pickedStart = ref<string | null>(null);
 const pickedEnd = ref<string | null>(null);

@@ -17,6 +17,10 @@ const props = defineProps<{
   spaceName: string;
   modelId?: string | null;
   initialDate?: string;
+  /** Pre-fills the free-text reason (e.g. started from a maintenance ticket). */
+  initialReason?: string;
+  /** Pre-selects the type when the caller has context for it. */
+  initialBlockType?: 'maintenance' | 'administrative' | '';
 }>();
 
 const emit = defineEmits<{
@@ -121,6 +125,8 @@ function handleBackToMap() {
           :status="submitStatus"
           :error="errorMsg"
           :initial-date="initialDate"
+          :initial-reason="initialReason"
+          :initial-block-type="initialBlockType"
           :forced-block-type="forcedBlockType"
           @submit="handleSubmit"
         />

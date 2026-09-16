@@ -7,10 +7,12 @@ import type { EquipmentReport } from '@/types/equipment-report';
 import { REPORT_STATUS_LABELS } from '@/types/equipment-report';
 import { usePermissions } from '@/composables/usePermissions';
 import { campuses } from '@/data/campuses';
-import { MapPin } from '@lucide/vue';
+import { MapPin, Lock } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatDateTime } from '@/utils/date';
+import BlockingTray from '@/components/BlockingTray.vue';
+import { formatDateTime, toLocalISODate } from '@/utils/date';
+import { buildBlockingReasonFromReport } from '@/utils/blockings';
 import { roomLabel, blockLabel } from '@/utils/space-labels';
 import StatusBadge, { type StatusBadgeVariant } from '@/components/StatusBadge.vue';
 
@@ -51,6 +53,8 @@ const reports = ref<EquipmentReport[]>([]);
 const loading = ref(true);
 const errorMsg = ref<string | null>(null);
 const acting = ref<string | null>(null);
+const blockingReport = ref<EquipmentReport | null>(null);
+const today = toLocalISODate();
 
 onMounted(async () => {
   if (!canManageEquipment.value) {
@@ -148,15 +152,53 @@ function spaceLabel(report: EquipmentReport): string {
 // Requires the space to have a modelId (a pin in the GLB) and a known campus.
 function viewerLink(report: EquipmentReport) {
   const space = report.equipment?.space;
-  if (!space?.modelId || !space.campus) return null;
-  const campus = campuses.find((c) => c.shortName === space.campus || c.id === space.campus);
-  if (!campus) return null;
+  const campus = campusFor(report);
+  if (!space?.modelId || !campus) return null;
   return {
     name: 'viewer',
     params: { campusId: campus.id },
     query: { space: space.modelId },
   };
 }
+
+// Resolves the campus record for a report's space (same key strategy as the viewer deep link).
+function campusFor(report: EquipmentReport) {
+  const campusKey = report.equipment?.space?.campus;
+  if (!campusKey) return null;
+  return campuses.find((c) => c.shortName === campusKey || c.id === campusKey) ?? null;
+}
+
+// Blocking from a ticket only makes sense while the ticket is open and the
+// equipment is attached to a space (the blocking target).
+function canBlockReport(report: EquipmentReport): boolean {
+  return (
+    (report.status === 'pending' || report.status === 'acknowledged') &&
+    !!report.equipment?.space
+  );
+}
+
+function openBlocking(report: EquipmentReport) {
+  blockingReport.value = report;
+}
+
+function handleBlockingOpen(open: boolean) {
+  if (!open) blockingReport.value = null;
+}
+
+const blockingSpace = computed(() => blockingReport.value?.equipment?.space ?? null);
+const blockingCampusId = computed(() =>
+  (blockingReport.value ? campusFor(blockingReport.value)?.id : '') ?? '',
+);
+const blockingModelId = computed(() => blockingSpace.value?.modelId ?? null);
+const blockingSpaceName = computed(() => {
+  const space = blockingSpace.value;
+  if (!space) return 'Espaço';
+  const parts = [roomLabel(space), blockLabel(space.block)].filter(Boolean);
+  return parts.length ? parts.join(' · ') : space.name;
+});
+const blockingReason = computed(() =>
+  blockingReport.value ? buildBlockingReasonFromReport(blockingReport.value) : '',
+);
 </script>
 
 <template>
@@ -260,9 +302,33 @@ function viewerLink(report: EquipmentReport) {
           >
             Descartar
           </Button>
+          <Button
+            v-if="canBlockReport(r)"
+            variant="outline"
+            size="sm"
+            class="ml-auto border-primary text-primary hover:bg-primary/10 hover:text-primary"
+            :disabled="acting === r.id"
+            @click="openBlocking(r)"
+          >
+            <Lock :size="14" />
+            Bloquear sala
+          </Button>
         </div>
       </li>
     </ul>
+
+    <!-- Kept mounted so the Dialog/Drawer exit animation can play; data clears on close. -->
+    <BlockingTray
+      :open="!!blockingReport"
+      :campus-id="blockingCampusId"
+      :space-id="blockingSpace?.id ?? ''"
+      :space-name="blockingSpaceName"
+      :model-id="blockingModelId"
+      :initial-date="today"
+      :initial-reason="blockingReason"
+      initial-block-type="maintenance"
+      @update:open="handleBlockingOpen"
+    />
   </div>
 </template>
 
