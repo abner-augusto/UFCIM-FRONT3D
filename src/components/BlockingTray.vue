@@ -7,6 +7,7 @@ import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/compone
 import BlockingForm, { type BlockingPayload } from '@/components/BlockingForm.vue';
 import { api, ApiError } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
+import { forcedBlockTypeFor } from '@/utils/roles';
 import type { ActionStatus } from '@/components/StatefulActionButton.vue';
 
 const props = defineProps<{
@@ -30,6 +31,7 @@ const isDesktop = ref(window.matchMedia('(min-width: 768px)').matches);
 const mediaQuery = window.matchMedia('(min-width: 768px)');
 const submitStatus = ref<ActionStatus>('idle');
 const errorMsg = ref<string | null>(null);
+const forcedBlockType = computed(() => forcedBlockTypeFor(auth.userRole));
 
 const onViewer = computed(() => route.name === 'viewer');
 const canReturnToMap = computed(() => onViewer.value || !!props.modelId);
@@ -119,6 +121,7 @@ function handleBackToMap() {
           :status="submitStatus"
           :error="errorMsg"
           :initial-date="initialDate"
+          :forced-block-type="forcedBlockType"
           @submit="handleSubmit"
         />
 

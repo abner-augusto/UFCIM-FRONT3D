@@ -13,3 +13,12 @@ export function hasRole(userRole: UserRole | null, allowed: UserRole[]): boolean
   if (!userRole) return false;
   return allowed.includes(userRole);
 }
+
+/**
+ * Blocking type a role is required to use. The maintenance team only creates
+ * maintenance blockings; every other role chooses freely (null = free choice).
+ * Mirrors the backend rule in `BlockingService.create`.
+ */
+export function forcedBlockTypeFor(userRole: UserRole | null): 'maintenance' | null {
+  return userRole === 'maintenance' ? 'maintenance' : null;
+}
