@@ -27,8 +27,14 @@ const props = withDefaults(
     status: ActionStatus;
     error?: string | null;
     initialDate?: string;
+    /**
+     * When set, the type selector is hidden and this value is used for submit.
+     * The maintenance profile always blocks as 'maintenance' (MEL-016); the
+     * backend enforces the same rule.
+     */
+    forcedBlockType?: BlockType | null;
   }>(),
-  { error: null, initialDate: '' },
+  { error: null, initialDate: '', forcedBlockType: null },
 );
 
 const emit = defineEmits<{
@@ -37,6 +43,9 @@ const emit = defineEmits<{
 
 const selectedDate = ref(props.initialDate);
 const selectedBlockType = ref<BlockType | ''>('');
+const effectiveBlockType = computed<BlockType | ''>(
+  () => props.forcedBlockType ?? selectedBlockType.value,
+);
 const reason = ref('');
 const hourMode = ref<HourMode>('full_day');
 const pickedStart = ref<string | null>(null);
@@ -52,7 +61,6 @@ const resolvedStart = computed(() => {
   if (hourMode.value === 'full_day') return '00:00';
   return pickedStart.value;
 });
-
 const resolvedEnd = computed(() => {
   if (hourMode.value === 'full_day') return '24:00';
   if (pickedEnd.value) {
@@ -68,7 +76,7 @@ const resolvedEnd = computed(() => {
 
 const canSubmit = computed(() =>
   !!selectedDate.value &&
-  !!selectedBlockType.value &&
+  !!effectiveBlockType.value &&
   resolvedStart.value !== null &&
   resolvedEnd.value !== null &&
   resolvedStart.value < resolvedEnd.value,
@@ -112,12 +120,12 @@ function handleModeChange(value: unknown) {
 }
 
 function handleSubmit() {
-  if (!canSubmit.value || !selectedBlockType.value || !resolvedStart.value || !resolvedEnd.value) return;
+  if (!canSubmit.value || !effectiveBlockType.value || !resolvedStart.value || !resolvedEnd.value) return;
   emit('submit', {
     date: selectedDate.value,
     startTime: resolvedStart.value,
     endTime: resolvedEnd.value,
-    blockType: selectedBlockType.value,
+    blockType: effectiveBlockType.value,
     reason: reason.value.trim(),
   });
 }
@@ -169,7 +177,8 @@ function handleSubmit() {
 
     <div class="form-section">
       <Label class="form-label" for="blocking-type">Tipo de bloqueio</Label>
-      <NativeSelect id="blocking-type" v-model="selectedBlockType" class="form-input">
+      <p v-if="forcedBlockType" class="form-static-value">Manutenção</p>
+      <NativeSelect v-else id="blocking-type" v-model="selectedBlockType" class="form-input">
         <NativeSelectOption value="" disabled>Selecione um tipo</NativeSelectOption>
         <NativeSelectOption v-for="(label, type) in BLOCK_TYPE_LABELS" :key="type" :value="type">
           {{ label }}
@@ -215,6 +224,18 @@ function handleSubmit() {
 }
 .optional { color: var(--muted-foreground); font-weight: 400; }
 .form-input { width: 100%; min-height: var(--tap-min, 44px); }
+.form-static-value {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0 0.75rem;
+  min-height: var(--tap-min, 44px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--muted);
+  color: var(--foreground);
+  font-size: 0.9rem;
+}
 .form-textarea { min-height: var(--tap-min, 44px); resize: vertical; font-family: inherit; }
 .hour-mode-toggle { display: flex; gap: 0.5rem; width: 100%; margin-bottom: 0.75rem; }
 .mode-btn { flex: 1; min-height: var(--tap-min, 44px); }

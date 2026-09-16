@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
 import { api } from '@/services/api';
+import { forcedBlockTypeFor } from '@/utils/roles';
 import { usePermissions } from '@/composables/usePermissions';
 import { campuses } from '@/data/campuses';
 import SpaceHeaderSkeleton from '@/components/SpaceHeaderSkeleton.vue';
@@ -24,6 +25,7 @@ const loadingSpace = ref(true);
 
 const submitStatus = ref<'idle' | 'submitting' | 'success' | 'error'>('idle');
 const errorMsg = ref<string | null>(null);
+const forcedBlockType = computed(() => forcedBlockTypeFor(auth.userRole));
 
 const viewerCampusId = computed(() =>
   campuses.find((campus) => campus.shortName === spaceCampus.value)?.id ?? campusStore.selectedCampusId,
@@ -95,6 +97,7 @@ function handleBackToMap() {
         v-if="submitStatus !== 'success'"
         :status="submitStatus"
         :error="errorMsg"
+        :forced-block-type="forcedBlockType"
         @submit="handleSubmit"
       />
 
