@@ -105,7 +105,16 @@ export interface Blocking {
   blockType: 'maintenance' | 'administrative';
   reason: string | null;
   status: 'active' | 'removed';
+  /** Shared by every day created in a single multi-day operation (MEL-017). */
+  batchId?: string | null;
   createdAt: string;
+}
+
+/** Response of POST /blockings after MEL-017 (one row per day). */
+export interface BlockingBatchResult {
+  blockings: Blocking[];
+  created: number;
+  overriddenReservations: number;
 }
 
 export const BLOCK_TYPE_LABELS: Record<Blocking['blockType'], string> = {

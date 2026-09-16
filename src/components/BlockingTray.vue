@@ -35,6 +35,7 @@ const isDesktop = ref(window.matchMedia('(min-width: 768px)').matches);
 const mediaQuery = window.matchMedia('(min-width: 768px)');
 const submitStatus = ref<ActionStatus>('idle');
 const errorMsg = ref<string | null>(null);
+const createdDays = ref(0);
 const forcedBlockType = computed(() => forcedBlockTypeFor(auth.userRole));
 
 const onViewer = computed(() => route.name === 'viewer');
@@ -43,6 +44,7 @@ const canReturnToMap = computed(() => onViewer.value || !!props.modelId);
 function resetFlow() {
   submitStatus.value = 'idle';
   errorMsg.value = null;
+  createdDays.value = 0;
 }
 
 watch(() => [props.campusId, props.spaceId], resetFlow);
@@ -71,7 +73,8 @@ async function handleSubmit(payload: BlockingPayload) {
   errorMsg.value = null;
 
   try {
-    await api.createBlocking(auth.token, { spaceId: props.spaceId, ...payload });
+    const result = await api.createBlocking(auth.token, { spaceId: props.spaceId, ...payload });
+    createdDays.value = result.created;
     submitStatus.value = 'success';
   } catch (error) {
     submitStatus.value = 'error';
@@ -136,7 +139,7 @@ function handleBackToMap() {
             <span class="blocking-tray__success-mark" aria-hidden="true">✓</span>
             <div>
               <h2>Espaço bloqueado</h2>
-              <p>O bloqueio foi criado com sucesso.</p>
+              <p>{{ createdDays > 1 ? `${createdDays} dias bloqueados.` : 'O bloqueio foi criado com sucesso.' }}</p>
             </div>
           </div>
           <div class="blocking-tray__success-actions">

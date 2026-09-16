@@ -25,6 +25,7 @@ const loadingSpace = ref(true);
 
 const submitStatus = ref<'idle' | 'submitting' | 'success' | 'error'>('idle');
 const errorMsg = ref<string | null>(null);
+const createdDays = ref(0);
 const forcedBlockType = computed(() => forcedBlockTypeFor(auth.userRole));
 
 const viewerCampusId = computed(() =>
@@ -54,10 +55,11 @@ async function handleSubmit(payload: BlockingPayload) {
   submitStatus.value = 'submitting';
   errorMsg.value = null;
   try {
-    await api.createBlocking(auth.token, {
+    const result = await api.createBlocking(auth.token, {
       spaceId,
       ...payload,
     });
+    createdDays.value = result.created;
     submitStatus.value = 'success';
   } catch (e) {
     submitStatus.value = 'error';
@@ -106,7 +108,9 @@ function handleBackToMap() {
           <span class="blocking-success__mark" aria-hidden="true">✓</span>
           <div>
             <h2 class="blocking-success__title">Espaço bloqueado</h2>
-            <p class="blocking-success__text">O bloqueio foi criado com sucesso.</p>
+            <p class="blocking-success__text">
+              {{ createdDays > 1 ? `${createdDays} dias bloqueados.` : 'O bloqueio foi criado com sucesso.' }}
+            </p>
           </div>
         </div>
 

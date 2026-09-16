@@ -53,20 +53,20 @@ test.describe('BlockingCreateView', () => {
     });
 
     await page.goto(`/#/espacos/${SPACE_ID}/bloquear`);
-    await expect(page.locator('#blocking-date')).toBeVisible({ timeout: 15_000 });
-    await page.locator('#blocking-date').fill('2099-04-06');
-    await page.locator('#blocking-type').selectOption({ index: 1 });
+    await expect(page.locator('#blocking-date-from')).toBeVisible({ timeout: 15_000 });
+    await page.locator('#blocking-date-from').fill('2099-04-06');
+    await page.locator('#blocking-date-to').fill('2099-04-08');
 
     await page.route('**/api/v1/blockings', (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ id: 'blocking-refresh-e2e' }),
+        body: JSON.stringify({ blockings: [], created: 3, overriddenReservations: 0 }),
       }),
     );
 
     await page.getByRole('button', { name: /^Bloquear Espaço$/i }).click();
-    await expect(page.getByRole('status')).toContainText('Espaço bloqueado', { timeout: 10_000 });
+    await expect(page.getByRole('status')).toContainText('3 dias bloqueados', { timeout: 10_000 });
     await expect(page.getByRole('button', { name: 'Voltar para maquete' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Voltar para maquete' }).click();
@@ -82,14 +82,23 @@ test.describe('BlockingCreateView', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ id: 'blocking-tray-e2e' }),
+        body: JSON.stringify({ blockings: [], created: 1, overriddenReservations: 0 }),
       }),
     );
 
-    await page.locator('#blocking-type').selectOption({ index: 1 });
+    // The maintenance profile has no type selector — the backend forces 'maintenance'.
+    await expect(page.locator('#blocking-type')).toHaveCount(0);
+    await expect(page.getByText('Manutenção', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: /^Bloquear Espaço$/i }).click();
     await expect(page.getByRole('status')).toContainText('Espaço bloqueado', { timeout: 10_000 });
     await expect(page).toHaveURL(/#\/campus\/benfica\/viewer$/);
     await expect(page.getByRole('button', { name: 'Voltar para maquete' })).toBeVisible();
+  });
+
+  test('staff: still chooses the blocking type explicitly (MEL-016)', async ({ staffPage: page }) => {
+    await page.goto(`/#/espacos/${SPACE_ID}/bloquear`);
+
+    await expect(page.locator('#blocking-date-from')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('#blocking-type')).toBeVisible();
   });
 });
