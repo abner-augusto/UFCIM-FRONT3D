@@ -59,7 +59,9 @@ async function submitReport() {
   } catch (e) {
     if (e instanceof ApiError) {
       if (e.status === 409) {
-        error.value = 'Você já reportou este equipamento nas últimas 24h';
+        // The API distinguishes "already reported in the last 24h" from
+        // "an open report already exists" (MEL-015) — show its message.
+        error.value = e.message || 'Você já reportou este equipamento nas últimas 24h';
       } else {
         error.value = e.message || 'Erro ao enviar';
       }

@@ -8,9 +8,13 @@ export interface EquipmentGroup {
   broken: number;
   underRepair: number;
   replacementScheduled: number;
+  /** MEL-015: open maintenance reports within the group. */
+  openPending: number;
+  openAcknowledged: number;
 }
 
 export type EquipmentSeverity = 'working' | 'warning' | 'broken';
+export type EquipmentReportState = 'none' | 'pending' | 'acknowledged';
 
 /**
  * Groups a space's equipment by name and derives a per-group status.
@@ -27,7 +31,16 @@ export function useEquipmentGroups(space: () => Space | null | undefined) {
     const map = new Map<string, EquipmentGroup>();
     for (const item of equip) {
       if (!map.has(item.name)) {
-        map.set(item.name, { name: item.name, total: 0, working: 0, broken: 0, underRepair: 0, replacementScheduled: 0 });
+        map.set(item.name, {
+          name: item.name,
+          total: 0,
+          working: 0,
+          broken: 0,
+          underRepair: 0,
+          replacementScheduled: 0,
+          openPending: 0,
+          openAcknowledged: 0,
+        });
       }
       const g = map.get(item.name)!;
       g.total++;
@@ -35,6 +48,8 @@ export function useEquipmentGroups(space: () => Space | null | undefined) {
       else if (item.status === 'broken') g.broken++;
       else if (item.status === 'under_repair') g.underRepair++;
       else if (item.status === 'replacement_scheduled') g.replacementScheduled++;
+      if (item.openReportStatus === 'pending') g.openPending++;
+      else if (item.openReportStatus === 'acknowledged') g.openAcknowledged++;
     }
     return Array.from(map.values());
   });
@@ -52,5 +67,19 @@ export function useEquipmentGroups(space: () => Space | null | undefined) {
     return 'Funcionando';
   }
 
-  return { equipmentGroups, groupSeverity, groupStatusLabel };
+  /** Open-report state of the group — `acknowledged` is the strongest signal. */
+  function groupReportState(g: EquipmentGroup): EquipmentReportState {
+    if (g.openAcknowledged > 0) return 'acknowledged';
+    if (g.openPending > 0) return 'pending';
+    return 'none';
+  }
+
+  function reportStatusLabel(g: EquipmentGroup): string | null {
+    const state = groupReportState(g);
+    if (state === 'acknowledged') return 'Em análise';
+    if (state === 'pending') return 'Reportado';
+    return null;
+  }
+
+  return { equipmentGroups, groupSeverity, groupStatusLabel, groupReportState, reportStatusLabel };
 }

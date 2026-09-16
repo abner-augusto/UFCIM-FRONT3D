@@ -80,3 +80,7 @@
 .eq-status--working  { background: var(--success-surface); color: var(--success); }
 .eq-status--broken   { background: var(--danger-surface); color: var(--danger-fg); }
 .eq-status--warning  { background: var(--warning-surface); color: var(--warning); }
+
+/* MEL-015: open maintenance report badge */
+.eq-report--pending      { background: var(--warning-surface); color: var(--warning); }
+.eq-report--acknowledged { background: var(--info-surface); color: var(--info); }

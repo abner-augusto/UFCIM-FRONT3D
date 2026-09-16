@@ -66,6 +66,8 @@ const {
   equipmentGroups,
   groupStatusClass,
   groupStatusLabel,
+  groupReportState,
+  reportStatusLabel,
   reportingEquipment,
   canReport,
   openReportFor,
@@ -277,6 +279,8 @@ function handleToggle() {
           :can-report="canReport"
           :group-status-class="groupStatusClass"
           :group-status-label="groupStatusLabel"
+          :group-report-state="groupReportState"
+          :report-status-label="reportStatusLabel"
           @toggle="detailsExpanded = !detailsExpanded"
           @report="openReportFor"
         />

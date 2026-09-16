@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Space } from '@/types/space';
-import type { EquipmentGroup } from '@/composables/useEquipmentGroups';
+import type { EquipmentGroup, EquipmentReportState } from '@/composables/useEquipmentGroups';
 import { Users, Lightbulb, Snowflake, Flag } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 
@@ -11,6 +11,8 @@ defineProps<{
   canReport: boolean;
   groupStatusClass: (group: EquipmentGroup) => string;
   groupStatusLabel: (group: EquipmentGroup) => string;
+  groupReportState: (group: EquipmentGroup) => EquipmentReportState;
+  reportStatusLabel: (group: EquipmentGroup) => string | null;
 }>();
 
 const emit = defineEmits<{
@@ -69,20 +71,29 @@ const emit = defineEmits<{
               {{ g.name }}
               <span v-if="g.total > 1" class="equipment-count">({{ g.total }})</span>
             </span>
-            <span class="equipment-badge" :class="groupStatusClass(g)">
-              {{ groupStatusLabel(g) }}
-            </span>
-        <Button
-          v-if="canReport"
-          type="button"
-          variant="outline"
-          class="equipment-report-btn"
-          :aria-label="`Reportar problema em ${g.name}`"
-          @click="emit('report', g)"
-            >
-          <span aria-hidden="true"><Flag :size="12" /></span>
-          <span>Reportar</span>
-        </Button>
+            <div class="equipment-item__right">
+              <span class="equipment-badge" :class="groupStatusClass(g)">
+                {{ groupStatusLabel(g) }}
+              </span>
+              <span
+                v-if="groupReportState(g) !== 'none'"
+                class="equipment-badge"
+                :class="`eq-report--${groupReportState(g)}`"
+              >
+                {{ reportStatusLabel(g) }}
+              </span>
+              <Button
+                v-if="canReport && groupReportState(g) === 'none'"
+                type="button"
+                variant="outline"
+                class="equipment-report-btn"
+                :aria-label="`Reportar problema em ${g.name}`"
+                @click="emit('report', g)"
+              >
+                <span aria-hidden="true"><Flag :size="12" /></span>
+                <span>Reportar</span>
+              </Button>
+            </div>
           </li>
         </ul>
       </div>
@@ -132,6 +143,12 @@ const emit = defineEmits<{
 .room-popup__section { margin-bottom: 0.75rem; }
 
 /* Equipment report button */
+.equipment-item__right {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
 .equipment-report-btn {
   display: inline-flex;
   align-items: center;

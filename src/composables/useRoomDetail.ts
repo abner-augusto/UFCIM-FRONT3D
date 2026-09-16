@@ -62,18 +62,48 @@ export function useRoomDetail(options: UseRoomDetailOptions) {
     watch(() => [options.selectedDate.value, space.value.id], reload);
   }
 
-  // Equipment grouping + status helpers
-  const { equipmentGroups, groupSeverity, groupStatusLabel } = useEquipmentGroups(() => space.value);
+  // Equipment grouping + status helpers.
+  // Optimistic overlay: the API only re-exposes openReportStatus on the next
+  // space fetch, so a just-sent report is reflected locally (MEL-015).
+  const overlayOpenReports = ref(new Map<string, 'pending'>());
+  const spaceWithOverlay = computed<Space | null>(() => {
+    const current = space.value;
+    if (!overlayOpenReports.value.size || !current?.equipment?.length) return current;
+    return {
+      ...current,
+      equipment: current.equipment.map((item) => ({
+        ...item,
+        openReportStatus: overlayOpenReports.value.get(item.id) ?? item.openReportStatus ?? null,
+      })),
+    };
+  });
+
+  const {
+    equipmentGroups,
+    groupSeverity,
+    groupStatusLabel,
+    groupReportState,
+    reportStatusLabel,
+  } = useEquipmentGroups(() => spaceWithOverlay.value);
   const groupStatusClass = (g: EquipmentGroup) => `eq-status--${groupSeverity(g)}`;
 
   // Equipment reporting
   const reportingEquipment = ref<Equipment | null>(null);
   const canReport = computed(() => !!auth.token);
   function openReportFor(group: EquipmentGroup) {
-    const item = space.value.equipment?.find((e) => e.name === group.name);
+    // First item of the group that still has no open report (group-level guard).
+    const item = spaceWithOverlay.value?.equipment?.find(
+      (equipment) => equipment.name === group.name && !equipment.openReportStatus,
+    );
     if (item) reportingEquipment.value = item;
   }
   function onReportSent() {
+    const item = reportingEquipment.value;
+    if (item) {
+      const next = new Map(overlayOpenReports.value);
+      next.set(item.id, 'pending');
+      overlayOpenReports.value = next;
+    }
     reportingEquipment.value = null;
   }
 
@@ -96,6 +126,8 @@ export function useRoomDetail(options: UseRoomDetailOptions) {
     equipmentGroups,
     groupStatusClass,
     groupStatusLabel,
+    groupReportState,
+    reportStatusLabel,
     // report
     reportingEquipment,
     canReport,
