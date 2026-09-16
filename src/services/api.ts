@@ -1,5 +1,5 @@
 import type { Space } from '@/types/space';
-import type { Availability, Reservation, Notification, Blocking, RecurringReservationResult } from '@/types/reservation';
+import type { Availability, Reservation, Notification, Blocking, BlockingBatchResult, RecurringReservationResult } from '@/types/reservation';
 import type { OccupancyReport, SpaceReportData } from '@/types/report';
 import type { EquipmentReport } from '@/types/equipment-report';
 
@@ -264,8 +264,8 @@ export const api = {
 
   createBlocking: (
     token: string | null,
-    body: { spaceId: string; date: string; startTime: string; endTime: string; blockType: string; reason?: string }
-  ) => request<Blocking>('/blockings', token, { method: 'POST', body: JSON.stringify(body) }),
+    body: { spaceId: string; dateFrom: string; dateTo: string; startTime: string; endTime: string; blockType: string; reason?: string }
+  ) => request<BlockingBatchResult>('/blockings', token, { method: 'POST', body: JSON.stringify(body) }),
 
   removeBlocking: (token: string | null, id: string) =>
     request<Blocking>(`/blockings/${id}/remove`, token, { method: 'PATCH' }),

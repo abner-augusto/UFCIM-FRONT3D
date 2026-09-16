@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { BLOCK_TYPE_LABELS } from '@/types/reservation';
 import type { ActionStatus } from '@/components/StatefulActionButton.vue';
 import AppDateField from '@/components/AppDateField.vue';
@@ -9,13 +9,15 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
-import { toLocalISODate } from '@/utils/date';
+import { addLocalDays, formatDateShort, toLocalISODate } from '@/utils/date';
 
 type BlockType = 'maintenance' | 'administrative';
 type HourMode = 'full_day' | 'custom';
 
 export interface BlockingPayload {
-  date: string;
+  /** Inclusive date range (MEL-017); single-day blocks use dateFrom === dateTo. */
+  dateFrom: string;
+  dateTo: string;
   startTime: string;
   endTime: string;
   blockType: BlockType;
@@ -26,6 +28,7 @@ const props = withDefaults(
   defineProps<{
     status: ActionStatus;
     error?: string | null;
+    /** Default for the "De" field; "Até" starts on the same day. */
     initialDate?: string;
     /**
      * When set, the type selector is hidden and this value is used for submit.
@@ -45,7 +48,8 @@ const emit = defineEmits<{
   submit: [payload: BlockingPayload];
 }>();
 
-const selectedDate = ref(props.initialDate);
+const selectedDateFrom = ref(props.initialDate);
+const selectedDateTo = ref(props.initialDate);
 const selectedBlockType = ref<BlockType | ''>(props.initialBlockType);
 const effectiveBlockType = computed<BlockType | ''>(
   () => props.forcedBlockType ?? selectedBlockType.value,
@@ -56,6 +60,23 @@ const pickedStart = ref<string | null>(null);
 const pickedEnd = ref<string | null>(null);
 
 const today = toLocalISODate();
+/** Backend caps a single operation at 60 inclusive days (MEL-017). */
+const MAX_RANGE_DAYS = 60;
+const maxDateTo = computed(() =>
+  selectedDateFrom.value ? addLocalDays(selectedDateFrom.value, MAX_RANGE_DAYS - 1) : undefined,
+);
+const rangeDays = computed(() => {
+  if (!selectedDateFrom.value || !selectedDateTo.value) return 0;
+  const from = Date.parse(`${selectedDateFrom.value}T00:00:00Z`);
+  const to = Date.parse(`${selectedDateTo.value}T00:00:00Z`);
+  if (Number.isNaN(from) || Number.isNaN(to) || to < from) return 0;
+  return Math.round((to - from) / 86_400_000) + 1;
+});
+const rangeSummary = computed(() => {
+  if (rangeDays.value === 0) return '';
+  if (rangeDays.value === 1) return formatDateShort(selectedDateFrom.value);
+  return `${rangeDays.value} dias (${formatDateShort(selectedDateFrom.value)} – ${formatDateShort(selectedDateTo.value)})`;
+});
 const ALL_HOURS = Array.from({ length: 24 }, (_, i) => {
   const h = String(i).padStart(2, '0');
   return { startTime: `${h}:00`, endTime: `${String(i + 1).padStart(2, '0')}:00` };
@@ -79,12 +100,17 @@ const resolvedEnd = computed(() => {
 });
 
 const canSubmit = computed(() =>
-  !!selectedDate.value &&
+  rangeDays.value > 0 &&
   !!effectiveBlockType.value &&
   resolvedStart.value !== null &&
   resolvedEnd.value !== null &&
   resolvedStart.value < resolvedEnd.value,
 );
+
+// Keep "Até" coherent with "De": never before it, never empty.
+watch(selectedDateFrom, (from) => {
+  if (!selectedDateTo.value || selectedDateTo.value < from) selectedDateTo.value = from;
+});
 
 function handleHourClick(hour: string) {
   if (!pickedStart.value) {
@@ -126,7 +152,8 @@ function handleModeChange(value: unknown) {
 function handleSubmit() {
   if (!canSubmit.value || !effectiveBlockType.value || !resolvedStart.value || !resolvedEnd.value) return;
   emit('submit', {
-    date: selectedDate.value,
+    dateFrom: selectedDateFrom.value,
+    dateTo: selectedDateTo.value,
     startTime: resolvedStart.value,
     endTime: resolvedEnd.value,
     blockType: effectiveBlockType.value,
@@ -138,8 +165,28 @@ function handleSubmit() {
 <template>
   <div class="blocking-form">
     <div class="form-section">
-      <Label class="form-label" for="blocking-date">Data</Label>
-      <AppDateField id="blocking-date" v-model="selectedDate" :min="today" aria-label="Data do bloqueio" />
+      <div class="date-range">
+        <div>
+          <Label class="form-label" for="blocking-date-from">De</Label>
+          <AppDateField
+            id="blocking-date-from"
+            v-model="selectedDateFrom"
+            :min="today"
+            aria-label="Data inicial do bloqueio"
+          />
+        </div>
+        <div>
+          <Label class="form-label" for="blocking-date-to">Até</Label>
+          <AppDateField
+            id="blocking-date-to"
+            v-model="selectedDateTo"
+            :min="selectedDateFrom || today"
+            :max="maxDateTo"
+            aria-label="Data final do bloqueio"
+          />
+        </div>
+      </div>
+      <p v-if="rangeDays > 1" class="period-summary">{{ rangeSummary }}</p>
     </div>
 
     <div class="form-section">
@@ -219,6 +266,7 @@ function handleSubmit() {
 
 <style scoped>
 .form-section { margin-bottom: 1.25rem; }
+.date-range { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
 .form-label {
   display: block;
   margin-bottom: 0.5rem;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
@@ -10,12 +10,14 @@ import { Button } from '@/components/ui/button';
 import ListItemSkeleton from '@/components/ListItemSkeleton.vue';
 import { formatDateLong, formatDateShort, formatDateTime } from '@/utils/date';
 import { blockValue } from '@/utils/space-labels';
+import { groupBlockings, type BlockingGroup } from '@/utils/blockings';
 
 const router = useRouter();
 const auth = useAuthStore();
 const { canBlock } = usePermissions();
 
 const blockings = ref<Blocking[]>([]);
+const groups = computed(() => groupBlockings(blockings.value));
 const loading = ref(true);
 const errorMsg = ref<string | null>(null);
 const removing = ref<string | null>(null);
@@ -59,8 +61,13 @@ function toggleExpand(id: string) {
 }
 
 const dateShort = (iso: string) => formatDateShort(iso, { weekday: true });
+const datePlain = (iso: string) => formatDateShort(iso);
 const dateLong = formatDateLong;
 const datetimeLabel = formatDateTime;
+
+function spaceOf(g: BlockingGroup) {
+  return g.blockings[0].space;
+}
 </script>
 
 <template>
@@ -78,50 +85,51 @@ const datetimeLabel = formatDateTime;
 
     <TransitionGroup v-else tag="ul" name="blist" class="blocking-list">
       <li
-        v-for="(b, i) in blockings"
-        :key="b.id"
+        v-for="(g, i) in groups"
+        :key="g.id"
         class="blocking-card stagger-item"
         :style="{ '--i': i }"
-        :class="{ 'blocking-card--expanded': expandedId === b.id }"
+        :class="{ 'blocking-card--expanded': expandedId === g.id }"
       >
         <!-- Summary row -->
-        <button class="blocking-card__summary press-feedback" :aria-expanded="expandedId === b.id" @click="toggleExpand(b.id)">
+        <button class="blocking-card__summary press-feedback" :aria-expanded="expandedId === g.id" @click="toggleExpand(g.id)">
           <div class="blocking-card__info">
-            <h3>{{ b.space?.name ?? b.space?.number ?? b.spaceId }}</h3>
-            <p>{{ dateLong(b.date) }}</p>
-            <p>{{ b.startTime }}–{{ b.endTime }} · {{ BLOCK_TYPE_LABELS[b.blockType] }}</p>
+            <h3>{{ spaceOf(g)?.name ?? spaceOf(g)?.number ?? g.blockings[0].spaceId }}</h3>
+            <p v-if="g.multiDay">{{ datePlain(g.dateFrom) }} – {{ datePlain(g.dateTo) }} · {{ g.days }} dias</p>
+            <p v-else>{{ dateLong(g.dateFrom) }}</p>
+            <p>{{ g.startTime }}–{{ g.endTime }} · {{ BLOCK_TYPE_LABELS[g.blockType] }}</p>
           </div>
           <div class="blocking-card__right">
-            <span class="type-badge" :class="`type-badge--${b.blockType}`">
-              {{ BLOCK_TYPE_LABELS[b.blockType] }}
+            <span class="type-badge" :class="`type-badge--${g.blockType}`">
+              {{ BLOCK_TYPE_LABELS[g.blockType] }}
             </span>
-            <span class="expand-chevron" :class="{ rotated: expandedId === b.id }">›</span>
+            <span class="expand-chevron" :class="{ rotated: expandedId === g.id }">›</span>
           </div>
         </button>
 
         <!-- Detail panel — same-object reveal (shared .reveal-collapse utility) -->
-        <div class="reveal-collapse" :class="{ 'reveal-collapse--open': expandedId === b.id }">
-          <div class="reveal-collapse__inner" :inert="expandedId !== b.id">
+        <div class="reveal-collapse" :class="{ 'reveal-collapse--open': expandedId === g.id }">
+          <div class="reveal-collapse__inner" :inert="expandedId !== g.id">
             <div class="blocking-detail">
           <!-- Space section -->
           <section class="detail-section">
             <p class="detail-section__title">Espaço</p>
             <div class="detail-grid">
-              <div v-if="b.space?.name" class="detail-item">
+              <div v-if="spaceOf(g)?.name" class="detail-item">
                 <span class="detail-label">Nome</span>
-                <span class="detail-value">{{ b.space.name }}</span>
+                <span class="detail-value">{{ spaceOf(g)?.name }}</span>
               </div>
-              <div v-if="b.space?.number" class="detail-item">
+              <div v-if="spaceOf(g)?.number" class="detail-item">
                 <span class="detail-label">Número</span>
-                <span class="detail-value">{{ b.space.number }}</span>
+                <span class="detail-value">{{ spaceOf(g)?.number }}</span>
               </div>
-              <div v-if="b.space?.block" class="detail-item">
+              <div v-if="spaceOf(g)?.block" class="detail-item">
                 <span class="detail-label">Bloco</span>
-                <span class="detail-value">{{ blockValue(b.space.block) }}</span>
+                <span class="detail-value">{{ blockValue(spaceOf(g)!.block) }}</span>
               </div>
-              <div v-if="b.space?.campus" class="detail-item">
+              <div v-if="spaceOf(g)?.campus" class="detail-item">
                 <span class="detail-label">Campus</span>
-                <span class="detail-value">{{ b.space.campus }}</span>
+                <span class="detail-value">{{ spaceOf(g)?.campus }}</span>
               </div>
             </div>
           </section>
@@ -130,44 +138,57 @@ const datetimeLabel = formatDateTime;
           <section class="detail-section">
             <p class="detail-section__title">Bloqueio</p>
             <div class="detail-grid">
-              <div class="detail-item">
+              <div v-if="g.multiDay" class="detail-item">
+                <span class="detail-label">Período</span>
+                <span class="detail-value">{{ datePlain(g.dateFrom) }} – {{ datePlain(g.dateTo) }}</span>
+              </div>
+              <div v-else class="detail-item">
                 <span class="detail-label">Data</span>
-                <span class="detail-value">{{ dateShort(b.date) }}</span>
+                <span class="detail-value">{{ dateShort(g.dateFrom) }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">Horário</span>
-                <span class="detail-value">{{ b.startTime }}–{{ b.endTime }}</span>
+                <span class="detail-value">{{ g.startTime }}–{{ g.endTime }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">Tipo</span>
-                <span class="detail-value">{{ BLOCK_TYPE_LABELS[b.blockType] }}</span>
+                <span class="detail-value">{{ BLOCK_TYPE_LABELS[g.blockType] }}</span>
               </div>
-              <div v-if="b.reason" class="detail-item">
+              <div v-if="g.reason" class="detail-item">
                 <span class="detail-label">Motivo</span>
-                <span class="detail-value">{{ b.reason }}</span>
+                <span class="detail-value">{{ g.reason }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">Criado em</span>
-                <span class="detail-value">{{ datetimeLabel(b.createdAt) }}</span>
+                <span class="detail-value">{{ datetimeLabel(g.createdAt) }}</span>
               </div>
-              <div class="detail-item">
+              <div v-if="!g.multiDay" class="detail-item">
                 <span class="detail-label">ID</span>
-                <span class="detail-value detail-value--mono">{{ b.id }}</span>
+                <span class="detail-value detail-value--mono">{{ g.blockings[0].id }}</span>
               </div>
             </div>
           </section>
 
-          <!-- Remove action -->
-          <div class="detail-actions">
-            <Button
-              variant="outline"
-              class="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
-              :disabled="removing === b.id"
-              @click="handleRemove(b.id)"
-            >
-              {{ removing === b.id ? 'Removendo...' : 'Remover bloqueio' }}
-            </Button>
-          </div>
+          <!-- Days / remove actions -->
+          <section class="detail-section">
+            <p class="detail-section__title">
+              {{ g.multiDay ? `Dias bloqueados (${g.days})` : 'Ações' }}
+            </p>
+            <ul class="day-list">
+              <li v-for="day in g.blockings" :key="day.id" class="day-item">
+                <span class="day-item__label">{{ dateShort(day.date) }}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  class="day-item__remove"
+                  :disabled="removing === day.id"
+                  @click="handleRemove(day.id)"
+                >
+                  {{ removing === day.id ? 'Removendo...' : 'Remover' }}
+                </Button>
+              </li>
+            </ul>
+          </section>
             </div>
           </div>
         </div>
@@ -368,9 +389,33 @@ const datetimeLabel = formatDateTime;
   color: var(--muted-foreground);
 }
 
-/* Actions */
-.detail-actions {
-  padding-top: 0.25rem;
+/* Days / remove actions */
+.day-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.day-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.25rem;
+}
+.day-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.day-item__label {
+  font-size: 0.84rem;
+  color: var(--foreground);
+}
+.day-item__remove {
+  color: var(--destructive);
 }
 
 /* States */
