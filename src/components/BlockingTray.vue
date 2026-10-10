@@ -113,7 +113,10 @@ function handleBackToMap() {
       :show-close-button="true"
       overlay-class="supports-backdrop-filter:backdrop-blur-none"
     >
-      <div class="blocking-tray__body">
+      <!-- On mobile the body is the drawer's scroll region (the drawer caps at
+           80vh), as in ReservationTray: a tall form scrolls instead of pushing
+           "Bloquear Espaço" off-screen on small phones. -->
+      <div class="blocking-tray__body" :class="{ 'blocking-tray__body--scroll': !isDesktop }">
         <header class="blocking-tray__header">
           <component :is="isDesktop ? DialogTitle : DrawerTitle" class="blocking-tray__title">
             Bloquear espaço
@@ -178,6 +181,20 @@ function handleBackToMap() {
   background: var(--border);
 }
 .blocking-tray__body { display: flex; flex-direction: column; gap: 1rem; }
+.blocking-tray__body--scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* The submit action stays reachable at the bottom of the scroll region. */
+.blocking-tray__body--scroll :deep(.form-actions) {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding: 0.75rem 0 calc(0.75rem + var(--safe-bottom, 0px));
+  background: var(--popover);
+}
 .blocking-tray__header { display: flex; flex-direction: column; gap: 0.25rem; }
 .blocking-tray__title { margin: 0; color: var(--foreground); font-size: 1.1rem; font-weight: 700; }
 .blocking-tray__description { margin: 0; color: var(--muted-foreground); font-size: 0.85rem; }
