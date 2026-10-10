@@ -134,7 +134,7 @@ test.describe('ReservationTray contextual flow', () => {
 
     await expect(page.getByLabel('Data de início')).toBeVisible();
     await expect(page.getByLabel('Data de fim')).toBeVisible();
-    await expect(page.getByLabel('Dia da semana')).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Dias da semana' })).toBeVisible();
     await expect(page.getByText('Agendar Reservas Recorrentes')).toBeVisible();
   });
 
@@ -161,7 +161,12 @@ test.describe('ReservationTray contextual flow', () => {
 
     await page.getByLabel('Data de início').fill('2099-04-06');
     await page.getByLabel('Data de fim').fill('2099-04-27');
-    await page.getByLabel('Dia da semana').selectOption('1');
+    const weekdays = page.getByRole('group', { name: 'Dias da semana' });
+    await weekdays.getByRole('button', { name: 'Segunda-feira' }).click();
+    await weekdays.getByRole('button', { name: 'Quarta-feira' }).click();
+    await weekdays.getByRole('button', { name: 'Sexta-feira' }).click();
+    // Three days is the cap: the rest lock until one is cleared.
+    await expect(weekdays.getByRole('button', { name: 'Terça-feira' })).toBeDisabled();
     await page.locator('#rec-time-start').selectOption('07:00');
     await expect(page.locator('#rec-time-end')).toHaveValue('08:00'); // pre-filled with start + 1 hour
     await page.locator('#rec-time-end').selectOption('12:00');
@@ -173,7 +178,7 @@ test.describe('ReservationTray contextual flow', () => {
       spaceId: SPACE_ID,
       startDate: '2099-04-06',
       endDate: '2099-04-27',
-      dayOfWeek: 1,
+      daysOfWeek: [1, 3, 5],
       startTime: '07:00',
       endTime: '12:00',
       description: 'Aula semanal de teste',

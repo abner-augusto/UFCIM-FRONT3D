@@ -7,11 +7,12 @@ import { toLocalISODate } from '@/utils/date';
 import { openingSlots } from '@/utils/slots';
 import AppDateField from '@/components/AppDateField.vue';
 import TimeRangeFields from '@/components/schedule/TimeRangeFields.vue';
+import WeekdayPicker from '@/components/schedule/WeekdayPicker.vue';
 import { useTimeRangePicker } from '@/composables/useTimeRangePicker';
+import { countRecurringDates } from '@/utils/recurrence';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import ReserveOnBehalfFields from '@/components/reservation-tray/ReserveOnBehalfFields.vue';
 import { usePermissions } from '@/composables/usePermissions';
 import { emptyRequester, requesterPayload, type RequesterSelection } from '@/utils/reservation-requester';
@@ -33,7 +34,9 @@ const requester = ref<RequesterSelection>(emptyRequester());
 
 const startDate = ref('');
 const endDate = ref('');
-const dayOfWeek = ref<number | null>(null);
+// Up to MAX_WEEKDAYS days in one series, e.g. a class on Monday and Wednesday.
+const MAX_WEEKDAYS = 3;
+const daysOfWeek = ref<number[]>([]);
 const description = ref('');
 // "Início" / "Término" in 30-minute steps within opening hours, at least 1 hour
 // (MEL-024). Conflicts are checked per occurrence by the backend, which skips them.
@@ -58,13 +61,17 @@ const minEndDate = computed(() => {
   return toLocalISODate(d);
 });
 
+const occurrenceCount = computed(() =>
+  endDate.value > startDate.value ? countRecurringDates(startDate.value, endDate.value, daysOfWeek.value) : 0
+);
+
 function canSubmit() {
   return (
     props.reservable !== false &&
     startDate.value &&
     endDate.value &&
     endDate.value > startDate.value &&
-    dayOfWeek.value !== null &&
+    occurrenceCount.value > 0 &&
     seriesRange.value &&
     description.value.trim()
   );
@@ -81,7 +88,7 @@ async function handleSubmit() {
       spaceId: props.spaceId,
       startDate: startDate.value,
       endDate: endDate.value,
-      dayOfWeek: dayOfWeek.value!,
+      daysOfWeek: daysOfWeek.value,
       startTime,
       endTime,
       description: description.value.trim() || undefined,
@@ -110,22 +117,16 @@ async function handleSubmit() {
     </div>
 
     <div class="mb-5">
-      <Label class="mb-2 block text-sm font-semibold" for="rec-dow">Dia da semana</Label>
-      <NativeSelect
-        id="rec-dow"
-        class="h-11 w-full"
-        :model-value="dayOfWeek ?? ''"
-        @update:model-value="dayOfWeek = $event === '' ? null : Number($event)"
-      >
-        <NativeSelectOption value="" disabled>Selecione um dia</NativeSelectOption>
-        <NativeSelectOption value="1">Segunda-feira</NativeSelectOption>
-        <NativeSelectOption value="2">Terça-feira</NativeSelectOption>
-        <NativeSelectOption value="3">Quarta-feira</NativeSelectOption>
-        <NativeSelectOption value="4">Quinta-feira</NativeSelectOption>
-        <NativeSelectOption value="5">Sexta-feira</NativeSelectOption>
-        <NativeSelectOption value="6">Sábado</NativeSelectOption>
-        <NativeSelectOption value="0">Domingo</NativeSelectOption>
-      </NativeSelect>
+      <p id="rec-dow-label" class="mb-2 text-sm font-semibold">Dias da semana</p>
+      <WeekdayPicker v-model="daysOfWeek" :max="MAX_WEEKDAYS" aria-labelledby="rec-dow-label" />
+      <p class="text-muted-foreground mt-2 text-xs" aria-live="polite">
+        {{ daysOfWeek.length < MAX_WEEKDAYS
+          ? `Escolha até ${MAX_WEEKDAYS} dias.`
+          : `Limite de ${MAX_WEEKDAYS} dias atingido. Desmarque um para trocar.` }}
+        <template v-if="occurrenceCount > 0">
+          {{ occurrenceCount === 1 ? ' 1 data no período.' : ` ${occurrenceCount} datas no período.` }}
+        </template>
+      </p>
     </div>
 
     <fieldset class="mb-5">

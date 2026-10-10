@@ -383,7 +383,7 @@ export const api = {
       spaceId: string;
       startDate: string;
       endDate: string;
-      dayOfWeek: number; // 0 = Sunday, 6 = Saturday
+      daysOfWeek: number[]; // up to 3; 0 = Sunday, 6 = Saturday
       startTime: string;
       endTime: string;
       description?: string;
