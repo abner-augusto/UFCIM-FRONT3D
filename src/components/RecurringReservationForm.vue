@@ -126,7 +126,7 @@ async function handleSubmit() {
       <TimeRangeFields
         v-model:start="seriesStart"
         v-model:end="seriesEnd"
-        id-prefix="rec"
+        id-prefix="rec-time"
         :start-options="startOptions"
         :end-options="endOptions"
       />

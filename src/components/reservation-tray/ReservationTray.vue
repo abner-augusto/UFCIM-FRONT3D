@@ -249,7 +249,11 @@ function handleBackToMap() {
       :show-close-button="true"
       overlay-class="supports-backdrop-filter:backdrop-blur-none"
     >
-      <div class="reservation-tray__body">
+      <!-- On mobile the body is the drawer's scroll region (the drawer caps at
+           80vh): taller steps scroll instead of pushing the actions off-screen.
+           Keeping the scroller a child of the drawer lets vaul tell drag-to-dismiss
+           apart from content scrolling (same pattern as RoomPopup). -->
+      <div class="reservation-tray__body" :class="{ 'reservation-tray__body--scroll': !isDesktop }">
         <header class="reservation-tray__header">
           <component :is="isDesktop ? DialogTitle : DrawerTitle" class="reservation-tray__title">
             Fazer reserva
@@ -394,6 +398,25 @@ function handleBackToMap() {
      between schedule → purpose → confirm → success — shorter steps (success)
      pad out to keep the bottom-anchored flow seamless. */
   min-height: 26rem;
+}
+
+.reservation-tray__body--scroll {
+  flex: 1 1 auto;
+  /* Keep the steady height while it fits; below that, shrink and scroll. */
+  min-height: min(26rem, calc(80vh - 5rem));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* The step actions stay reachable at the bottom of the scroll region. */
+.reservation-tray__body--scroll .reservation-tray__actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin-top: auto;
+  /* The vaul root doesn't get this component's scoped padding: pad here. */
+  padding: 0.75rem 0 calc(0.75rem + var(--safe-bottom, 0px));
+  background: var(--popover);
 }
 
 .reservation-tray__header {
