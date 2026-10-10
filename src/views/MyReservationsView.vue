@@ -34,6 +34,7 @@ import {
   type ReservationGroup,
   type ReservationStatusFilter,
 } from '@/utils/my-reservations';
+import { reservationRequesterNote } from '@/utils/reservation-requester';
 
 const route = useRoute();
 const auth = useAuthStore();
@@ -552,6 +553,13 @@ function isGroupMatchingHighlight(group: ReservationGroup, reservationId: string
           <div class="reservation-card__info">
             <h3>{{ group.main.space?.name ?? group.main.space?.number ?? group.main.spaceId }}</h3>
             <p v-if="groupDescription(group)" class="reservation-card__description">{{ groupDescription(group) }}</p>
+            <p
+              v-if="reservationRequesterNote(group.main)"
+              class="reservation-card__requester"
+              data-testid="reservation-requester-note"
+            >
+              {{ reservationRequesterNote(group.main)!.text }}
+            </p>
             <p v-if="!group.isRecurrent">{{ dateLabel(group.main.date) }}</p>
             <p v-else>
               Recorrente: {{ group.items.length }} {{ group.items.length === 1 ? 'ocorrência' : 'ocorrências' }}
@@ -633,6 +641,18 @@ function isGroupMatchingHighlight(group: ReservationGroup, reservationId: string
               <div v-if="group.main.purpose" class="detail-item">
                 <span class="detail-label">Finalidade</span>
                 <span class="detail-value">{{ PURPOSE_LABELS[group.main.purpose] ?? group.main.purpose }}</span>
+              </div>
+              <div v-if="group.main.onBehalfOfMe && group.main.registeredBy" class="detail-item">
+                <span class="detail-label">Registrada por</span>
+                <span class="detail-value">{{ group.main.registeredBy.name }}</span>
+              </div>
+              <div v-else-if="group.main.requester" class="detail-item">
+                <span class="detail-label">Solicitante</span>
+                <span class="detail-value" data-testid="reservation-requester-name">{{ group.main.requester.name }}</span>
+              </div>
+              <div v-if="!group.main.onBehalfOfMe && group.main.requesterContact" class="detail-item">
+                <span class="detail-label">Contato</span>
+                <span class="detail-value" data-testid="reservation-requester-contact">{{ group.main.requesterContact }}</span>
               </div>
               <div v-if="group.isRecurrent" class="detail-item">
                 <span class="detail-label">Recorrência ID</span>
@@ -936,6 +956,12 @@ h1 {
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
+  overflow-wrap: anywhere;
+}
+/* Who the booking is for, or who booked it for me (MEL-025). */
+.reservation-card__info p.reservation-card__requester {
+  color: var(--foreground);
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 .reservation-card__right {

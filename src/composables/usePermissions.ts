@@ -9,6 +9,7 @@ import {
   CAN_ADMIN,
   CAN_VIEW_REPORTS,
   CAN_VIEW_MAINTENANCE_HISTORY,
+  CAN_RESERVE_ON_BEHALF,
   canCancelReservation as canCancelReservationFor,
   canEditReservation as canEditReservationFor,
   type ReservationActor,
@@ -30,8 +31,10 @@ export function usePermissions() {
   const canAdmin = computed(() => hasRole(auth.userRole, CAN_ADMIN));
   const canViewReports = computed(() => hasRole(auth.userRole, CAN_VIEW_REPORTS));
   const canViewMaintenanceHistory = computed(() => hasRole(auth.userRole, CAN_VIEW_MAINTENANCE_HISTORY));
+  const canReserveOnBehalf = computed(() => hasRole(auth.userRole, CAN_RESERVE_ON_BEHALF));
 
-  // Per-reservation checks (MEL-023): owner or staff, and the reservation's state.
+  // Per-reservation checks: owner or staff (MEL-023), the registered requester
+  // may cancel only (MEL-025), and the reservation's state.
   const actor = computed<ReservationActor | null>(() =>
     auth.user ? { id: auth.user.id, role: auth.user.role } : null,
   );
@@ -50,5 +53,6 @@ export function usePermissions() {
     canAdmin,
     canViewReports,
     canViewMaintenanceHistory,
+    canReserveOnBehalf,
   };
 }

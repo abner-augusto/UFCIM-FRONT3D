@@ -12,6 +12,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import ReserveOnBehalfFields from '@/components/reservation-tray/ReserveOnBehalfFields.vue';
+import { usePermissions } from '@/composables/usePermissions';
+import { emptyRequester, requesterPayload, type RequesterSelection } from '@/utils/reservation-requester';
 
 const props = defineProps<{
   spaceId: string;
@@ -23,7 +26,10 @@ const props = defineProps<{
 
 const router = useRouter();
 const auth = useAuthStore();
+const { canReserveOnBehalf } = usePermissions();
 const today = toLocalISODate();
+// Staff only (MEL-025): who the series is for, e.g. a professor's semester class.
+const requester = ref<RequesterSelection>(emptyRequester());
 
 const startDate = ref('');
 const endDate = ref('');
@@ -79,6 +85,7 @@ async function handleSubmit() {
       startTime,
       endTime,
       description: description.value.trim() || undefined,
+      ...requesterPayload(canReserveOnBehalf.value ? requester.value : null),
     });
     successMsg.value = `${result.created.length} reservas criadas, ${result.skipped.length} conflitos ignorados.`;
     setTimeout(() => router.push({ name: 'my-reservations' }), 2000);
@@ -143,6 +150,13 @@ async function handleSubmit() {
         placeholder="Ex: Aula de Algoritmos — Semestre 2026.1"
       />
     </div>
+
+    <ReserveOnBehalfFields
+      v-if="canReserveOnBehalf"
+      v-model="requester"
+      id-prefix="rec-requester"
+      class="mb-5"
+    />
 
     <p v-if="successMsg" class="text-primary mb-3 text-sm font-medium" role="status" aria-live="polite">{{ successMsg }}</p>
     <p v-if="errorMsg" class="text-destructive mb-3 text-sm" role="alert" aria-live="polite">{{ errorMsg }}</p>

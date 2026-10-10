@@ -13,6 +13,8 @@ export const CAN_ADMIN: UserRole[] = ['staff'];
 export const CAN_VIEW_REPORTS: UserRole[] = ['professor', 'staff', 'maintenance'];
 /** Equipment maintenance history (MEL-013); mirrors the backend RBAC. */
 export const CAN_VIEW_MAINTENANCE_HISTORY: UserRole[] = ['staff', 'maintenance'];
+/** Reserve on behalf of another person (MEL-025); mirrors the backend 403. */
+export const CAN_RESERVE_ON_BEHALF: UserRole[] = ['staff'];
 
 export function hasRole(userRole: UserRole | null, allowed: UserRole[]): boolean {
   if (!userRole) return false;
@@ -24,29 +26,34 @@ export interface ReservationActor {
   role: UserRole;
 }
 
+export type ReservationAction = 'edit' | 'cancel';
+
 /**
- * Who may edit or cancel a reservation (MEL-023): the owner and staff;
- * maintenance never. Mirrors the backend `canManageReservation`, which stays
- * authoritative.
+ * Who may edit or cancel a reservation: the owner and staff, maintenance never
+ * (MEL-023); the registered requester of a reservation made on their behalf
+ * may cancel it but not edit it (MEL-025). Mirrors the backend
+ * `canManageReservation`, which stays authoritative.
  */
 export function canManageReservation(
   actor: ReservationActor | null,
-  reservation: Pick<Reservation, 'userId'>,
+  reservation: Pick<Reservation, 'userId' | 'requesterUserId'>,
+  action: ReservationAction,
 ): boolean {
   if (!actor || actor.role === 'maintenance') return false;
-  return actor.role === 'staff' || reservation.userId === actor.id;
+  if (actor.role === 'staff' || reservation.userId === actor.id) return true;
+  return action === 'cancel' && !!reservation.requesterUserId && reservation.requesterUserId === actor.id;
 }
 
 /** Editable: manageable, confirmed and not started yet. */
 export function canEditReservation(actor: ReservationActor | null, reservation: Reservation, now: Date): boolean {
-  return canManageReservation(actor, reservation)
+  return canManageReservation(actor, reservation, 'edit')
     && reservation.status === 'confirmed'
     && !hasReservationStarted(reservation, now);
 }
 
 /** Cancelable: manageable, confirmed and not over yet. */
 export function canCancelReservation(actor: ReservationActor | null, reservation: Reservation, now: Date): boolean {
-  return canManageReservation(actor, reservation)
+  return canManageReservation(actor, reservation, 'cancel')
     && reservation.status === 'confirmed'
     && !isReservationPast(reservation, now);
 }

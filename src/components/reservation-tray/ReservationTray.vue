@@ -17,6 +17,12 @@ import { campusLabel } from '@/utils/space-labels';
 import { usePermissions } from '@/composables/usePermissions';
 import type { Reservation } from '@/types/reservation';
 import { buildReservationUpdate, reservationEditDraft } from '@/utils/reservation-edit';
+import {
+  emptyRequester,
+  requesterLabel,
+  requesterPayload,
+  type RequesterSelection,
+} from '@/utils/reservation-requester';
 
 export type ReservationTrayStep = 'schedule' | 'purpose' | 'confirm' | 'success';
 
@@ -61,7 +67,7 @@ const steps = computed(() => (isEditing.value ? EDIT_STEPS : CREATE_STEPS));
 const editDraft = computed(() => (props.editingReservation ? reservationEditDraft(props.editingReservation) : null));
 const interaction = useInteractionStore();
 const auth = useAuthStore();
-const { canCreateRecurring } = usePermissions();
+const { canCreateRecurring, canReserveOnBehalf } = usePermissions();
 const router = useRouter();
 const route = useRoute();
 
@@ -92,6 +98,15 @@ function initialPurpose(): ReservationPurposeSelection {
 }
 
 const selectedPurpose = ref<ReservationPurposeSelection>(initialPurpose());
+// Staff only (MEL-025): who the new reservation is for. Not editable afterwards.
+const selectedRequester = ref<RequesterSelection>(emptyRequester());
+const offersRequester = computed(() => canReserveOnBehalf.value && !isEditing.value);
+const confirmRequester = computed(() => {
+  if (!offersRequester.value) return null;
+  const name = requesterLabel(selectedRequester.value);
+  if (!name) return null;
+  return { name, contact: selectedRequester.value.contact.trim() || null };
+});
 const reservationId = ref<string | null>(null);
 const confirmStatus = ref<ActionStatus>('idle');
 const confirmError = ref<string | null>(null);
@@ -144,6 +159,7 @@ function resetFlow() {
   reservationMode.value = 'single';
   selectedSchedule.value = null;
   selectedPurpose.value = initialPurpose();
+  selectedRequester.value = emptyRequester();
   reservationId.value = null;
   confirmStatus.value = 'idle';
   confirmError.value = null;
@@ -265,6 +281,7 @@ async function handleConfirm() {
       endTime: selectedSchedule.value.endTime,
       purpose: selectedPurpose.value.purpose ?? undefined,
       description: selectedPurpose.value.description ?? undefined,
+      ...requesterPayload(offersRequester.value ? selectedRequester.value : null),
     });
 
     interaction.setReservation(reservation.id);
@@ -381,9 +398,11 @@ function handleBackToMap() {
         />
         <ReservationPurposeStep
           v-else-if="reservationMode === 'single' && currentStep === 'purpose'"
+          :requester="offersRequester ? selectedRequester : null"
           :initial-purpose="selectedPurpose"
           :description-only="isEditing"
           @purpose-change="handlePurposeChange"
+          @update:requester="selectedRequester = $event"
         />
         <ReservationConfirmStep
           v-else-if="reservationMode === 'single' && currentStep === 'confirm' && selectedSchedule"
@@ -393,6 +412,7 @@ function handleBackToMap() {
           :status="confirmStatus"
           :error="confirmError"
           :previous="editDraft?.schedule ?? null"
+          :requester="confirmRequester"
           @confirm="handleConfirm"
         />
         <ReservationSuccessStep

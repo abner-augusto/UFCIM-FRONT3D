@@ -4,6 +4,8 @@ import { PURPOSE_OPTIONS } from '@/types/reservation';
 import { Label } from '@/components/ui/label';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
+import ReserveOnBehalfFields from './ReserveOnBehalfFields.vue';
+import type { RequesterSelection } from '@/utils/reservation-requester';
 
 interface ReservationPurposeSelection {
   purpose: string;
@@ -14,10 +16,13 @@ const props = defineProps<{
   initialPurpose?: ReservationPurposeSelection | null;
   /** Edit mode (MEL-023): the purpose is fixed, only the description changes. */
   descriptionOnly?: boolean;
+  /** Staff only (MEL-025): who the reservation is for; omit to hide the block. */
+  requester?: RequesterSelection | null;
 }>();
 
 const emit = defineEmits<{
   purposeChange: [selection: ReservationPurposeSelection];
+  'update:requester': [selection: RequesterSelection];
 }>();
 
 const selectedPurpose = ref(props.initialPurpose?.purpose ?? '');
@@ -71,6 +76,13 @@ watch([selectedPurpose, descriptionInput], () => {
         opcional · visível a professores · ex: Modelagem Tridimensional
       </p>
     </div>
+
+    <ReserveOnBehalfFields
+      v-if="requester && !descriptionOnly"
+      :model-value="requester"
+      id-prefix="tray-requester"
+      @update:model-value="emit('update:requester', $event)"
+    />
   </section>
 </template>
 

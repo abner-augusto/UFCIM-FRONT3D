@@ -22,6 +22,8 @@ const props = defineProps<{
   error?: string | null;
   /** Edit mode (MEL-023): the schedule before the change, shown for comparison. */
   previous?: ReservationScheduleSelection | null;
+  /** Who the reservation is for, when staff book on someone's behalf (MEL-025). */
+  requester?: { name: string; contact: string | null } | null;
 }>();
 
 const isEditing = computed(() => !!props.previous);
@@ -86,6 +88,14 @@ const description = computed(() => props.purpose.description.trim());
       <div v-if="description" class="reservation-confirm-step__row reservation-confirm-step__row--stacked">
         <dt>Descrição</dt>
         <dd>{{ description }}</dd>
+      </div>
+      <div v-if="requester" class="reservation-confirm-step__row" data-testid="reservation-confirm-requester">
+        <dt>Solicitante</dt>
+        <dd>{{ requester.name }}</dd>
+      </div>
+      <div v-if="requester?.contact" class="reservation-confirm-step__row">
+        <dt>Contato</dt>
+        <dd>{{ requester.contact }}</dd>
       </div>
     </dl>
 

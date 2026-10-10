@@ -17,7 +17,10 @@ export interface AvailabilitySlot {
     description: string | null;
     isRecurring: boolean;
     isSelf: boolean;
+    /** The person who asked for it: the requester when staff booked on their behalf (MEL-025). */
     author: { displayName: string; role: string };
+    /** Requester contact (MEL-025); the backend sends it to staff only. */
+    requesterContact?: string;
   };
   blocking?: {
     id: string;
@@ -63,9 +66,46 @@ export interface Reservation {
   purpose?: string | null;
   /** Free text the user typed when booking (backend caps it at 100 chars). */
   description?: string | null;
+  // ─── Reserving on someone's behalf (MEL-025) ───
+  // `userId` stays the owner: the staff member who registered the reservation.
+  /** Who registered it (equals `userId`). */
+  createdBy?: string;
+  /** Registered requester, when staff booked for a user with an account. */
+  requesterUserId?: string | null;
+  /** Free-text requester, when staff booked for someone without an account. */
+  requesterName?: string | null;
+  /** Requester contact; the backend sends it to staff only. */
+  requesterContact?: string | null;
+  /** GET /reservations/mine: who asked for it (registered user or free text). */
+  requester?: RequesterRef | null;
+  /** GET /reservations/mine: the staff member who registered it. */
+  registeredBy?: { id: string; name: string } | null;
+  /** GET /reservations/mine: true when I only see it as the registered requester. */
+  onBehalfOfMe?: boolean;
   createdAt: string;
   updatedAt: string;
   space?: { id: string; number: string; name: string; block?: string; campus?: string; type?: string; capacity?: number; department?: string; [key: string]: unknown };
+}
+
+/** The person a reservation was made for (MEL-025); `userId` is null for free text. */
+export interface RequesterRef {
+  userId: string | null;
+  name: string;
+}
+
+/** A row of GET /users/search (MEL-025, staff only). */
+export interface RequesterCandidate {
+  id: string;
+  name: string;
+  role: string;
+  department: string;
+}
+
+/** Requester fields accepted by the create endpoints (staff only, MEL-025). */
+export interface RequesterPayload {
+  requesterUserId?: string;
+  requesterName?: string;
+  requesterContact?: string;
 }
 
 export interface RecurringReservationSkipped {

@@ -1,5 +1,14 @@
 import type { Space } from '@/types/space';
-import type { Availability, Reservation, Notification, Blocking, BlockingBatchResult, RecurringReservationResult } from '@/types/reservation';
+import type {
+  Availability,
+  Reservation,
+  Notification,
+  Blocking,
+  BlockingBatchResult,
+  RecurringReservationResult,
+  RequesterCandidate,
+  RequesterPayload,
+} from '@/types/reservation';
 import type { OccupancyReport, SpaceReportData } from '@/types/report';
 import type { EquipmentReport, MaintenanceCategory } from '@/types/equipment-report';
 import { collectAllPages } from '@/utils/pagination';
@@ -342,6 +351,11 @@ export const api = {
       '/users/me', token
     ),
 
+  // MEL-025 (staff only): active users matching name or e-mail, at most 10,
+  // to pick the person a reservation is made for.
+  searchUsers: (token: string | null, q: string, init?: { signal?: AbortSignal }) =>
+    request<RequesterCandidate[]>(`/users/search${qs({ q })}`, token, { signal: init?.signal }),
+
   // Departments
   listDepartments: (token: string | null) =>
     request<Array<{ id: string; name: string; campus: string }>>('/departments', token),
@@ -356,10 +370,11 @@ export const api = {
   getAvailability: (token: string | null, spaceId: string, date: string) =>
     request<Availability>(`/spaces/${spaceId}/availability?date=${date}`, token),
 
-  // Reservations — GET /reservations/mine returns array directly
+  // Reservations — GET /reservations/mine returns array directly. The requester
+  // fields (MEL-025) are staff only; the backend answers 403 for other roles.
   createReservation: (
     token: string | null,
-    body: { spaceId: string; date: string; startTime: string; endTime: string; purpose?: string; description?: string }
+    body: { spaceId: string; date: string; startTime: string; endTime: string; purpose?: string; description?: string } & RequesterPayload
   ) => request<Reservation>('/reservations', token, { method: 'POST', body: JSON.stringify(body) }),
 
   createRecurringReservation: (
@@ -372,7 +387,7 @@ export const api = {
       startTime: string;
       endTime: string;
       description?: string;
-    }
+    } & RequesterPayload
   ) => request<RecurringReservationResult>(
     '/reservations/recurring', token, { method: 'POST', body: JSON.stringify(body) }
   ),

@@ -34,6 +34,10 @@ const emit = defineEmits<{
           Reservada por <strong>{{ selectedSlot.reservation.author.displayName }}</strong>
         </template>
       </div>
+      <!-- Requester contact (MEL-025): the backend sends it to staff only. -->
+      <div v-if="selectedSlot.reservation.requesterContact" class="slot-author" data-testid="slot-requester-contact">
+        Contato: {{ selectedSlot.reservation.requesterContact }}
+      </div>
     </template>
 
     <template v-else-if="selectedSlot.blocking">
