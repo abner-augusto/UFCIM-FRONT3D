@@ -1,11 +1,12 @@
 import type { Component } from 'vue';
-import { BarChart3, CalendarCheck, Lock, Repeat, ShieldCheck, Wrench } from '@lucide/vue';
+import { BarChart3, CalendarCheck, History, Lock, Repeat, ShieldCheck, Wrench } from '@lucide/vue';
 import {
   CAN_ADMIN,
   CAN_BLOCK,
   CAN_CREATE_RECURRING,
   CAN_MANAGE_EQUIPMENT,
   CAN_RESERVE,
+  CAN_VIEW_MAINTENANCE_HISTORY,
   CAN_VIEW_REPORTS,
   hasRole,
   type UserRole,
@@ -19,7 +20,7 @@ import {
  * what `usePermissions`, the router and the backend already enforce.
  */
 
-export type CapabilityId = 'reserve' | 'recurring' | 'block' | 'reports' | 'equipment' | 'admin';
+export type CapabilityId = 'reserve' | 'recurring' | 'block' | 'reports' | 'equipment' | 'maintenance-history' | 'admin';
 
 export interface Capability {
   id: CapabilityId;
@@ -90,6 +91,15 @@ export const CAPABILITIES: readonly Capability[] = [
     deniedHint: (who) => `Os chamados de equipamentos são tratados por ${who}.`,
     icon: Wrench,
     roles: CAN_MANAGE_EQUIPMENT,
+  },
+  {
+    id: 'maintenance-history',
+    label: 'Ver o histórico de manutenção',
+    description: 'Consultar quantas vezes cada equipamento quebrou, quanto tempo ficou parado e o que aconteceu em cada chamado.',
+    verb: 'ver o histórico de manutenção',
+    deniedHint: (who) => `O histórico de manutenção está disponível para ${who}.`,
+    icon: History,
+    roles: CAN_VIEW_MAINTENANCE_HISTORY,
   },
   {
     id: 'admin',

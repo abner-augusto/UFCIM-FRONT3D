@@ -4,6 +4,7 @@ import {
   CAN_BLOCK,
   CAN_CREATE_RECURRING,
   CAN_MANAGE_EQUIPMENT,
+  CAN_VIEW_MAINTENANCE_HISTORY,
   CAN_RESERVE,
   CAN_VIEW_REPORTS,
   hasRole,
@@ -29,6 +30,7 @@ const SOURCE: Record<CapabilityId, UserRole[]> = {
   block: CAN_BLOCK,
   reports: CAN_VIEW_REPORTS,
   equipment: CAN_MANAGE_EQUIPMENT,
+  'maintenance-history': CAN_VIEW_MAINTENANCE_HISTORY,
   admin: CAN_ADMIN,
 };
 
@@ -98,7 +100,7 @@ describe('roleDeniedReason', () => {
 
   it('explains to maintenance what it can do and who reserves', () => {
     expect(roleDeniedReason('reserve', 'maintenance')).toBe(
-      'Seu perfil de manutenção pode bloquear salas, ver relatórios de ocupação e tratar chamados; '
+      'Seu perfil de manutenção pode bloquear salas, ver relatórios de ocupação, tratar chamados e ver o histórico de manutenção; '
         + 'reservas são feitas por alunos, professores e funcionários.',
     );
   });
@@ -121,7 +123,7 @@ describe('roleSummary', () => {
   it('lists what each role can do', () => {
     expect(roleSummary('student')).toBe('Seu perfil de aluno pode reservar salas.');
     expect(roleSummary('maintenance')).toBe(
-      'Seu perfil de manutenção pode bloquear salas, ver relatórios de ocupação e tratar chamados.',
+      'Seu perfil de manutenção pode bloquear salas, ver relatórios de ocupação, tratar chamados e ver o histórico de manutenção.',
     );
   });
 
