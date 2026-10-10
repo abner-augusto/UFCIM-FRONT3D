@@ -11,7 +11,7 @@ vi.stubGlobal('sessionStorage', {
 
 import { authGuard } from '@/router/guards';
 import { useAuthStore } from '@/stores/auth';
-import { CAN_MANAGE_EQUIPMENT, CAN_BLOCK, CAN_VIEW_MAINTENANCE_HISTORY } from '@/utils/roles';
+import { CAN_MANAGE_EQUIPMENT, CAN_BLOCK, CAN_RESERVE, CAN_VIEW_MAINTENANCE_HISTORY } from '@/utils/roles';
 
 function makeTo(meta: Record<string, unknown> = {}): RouteLocationNormalized {
   return { meta: meta as RouteLocationNormalized['meta'] } as RouteLocationNormalized;
@@ -44,6 +44,14 @@ describe('authGuard', () => {
     const auth = useAuthStore();
     auth.setAuth('fake-token', 'fake-refresh', makeStudentUser());
     const result = authGuard(makeTo({ roles: CAN_MANAGE_EQUIPMENT }));
+
+    expect(result).toEqual({ name: 'campus-select' });
+  });
+
+  it('redirects maintenance away from the CAN_RESERVE route (MEL-020)', () => {
+    const auth = useAuthStore();
+    auth.setAuth('fake-token', 'fake-refresh', { ...makeStudentUser(), role: 'maintenance' as UserRole });
+    const result = authGuard(makeTo({ requiresAuth: true, roles: CAN_RESERVE }));
 
     expect(result).toEqual({ name: 'campus-select' });
   });

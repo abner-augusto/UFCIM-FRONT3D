@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 import { authGuard } from './guards';
-import { CAN_VIEW_REPORTS, CAN_MANAGE_EQUIPMENT, CAN_BLOCK, CAN_VIEW_MAINTENANCE_HISTORY } from '@/utils/roles';
+import { CAN_VIEW_REPORTS, CAN_MANAGE_EQUIPMENT, CAN_BLOCK, CAN_RESERVE, CAN_VIEW_MAINTENANCE_HISTORY } from '@/utils/roles';
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -61,7 +61,8 @@ const router = createRouter({
       path: '/minhas-reservas',
       name: 'my-reservations',
       component: () => import('@/views/MyReservationsView.vue'),
-      meta: { requiresAuth: true },
+      // MEL-020: maintenance never holds reservations.
+      meta: { requiresAuth: true, roles: CAN_RESERVE },
     },
     {
       path: '/notificacoes',

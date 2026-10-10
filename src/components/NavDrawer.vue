@@ -16,7 +16,7 @@ const auth = useAuthStore();
 const campus = useCampusStore();
 const router = useRouter();
 
-const { canBlock, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
+const { canReserve, canBlock, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
 
 const viewerTarget = computed(() =>
   campus.selectedCampusId
@@ -62,7 +62,7 @@ function handleOpenChange(open: boolean) {
             <span class="nav-icon"><Search :size="20" /></span> Buscar Espaços
           </router-link>
 
-          <router-link to="/minhas-reservas" class="nav-item" @click="handleLinkClick">
+          <router-link v-if="canReserve" to="/minhas-reservas" class="nav-item" @click="handleLinkClick">
             <span class="nav-icon"><Calendar :size="20" /></span> Minhas Reservas
           </router-link>
 

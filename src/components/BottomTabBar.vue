@@ -19,7 +19,7 @@ const browserTarget = computed(() =>
     : '/campus'
 );
 
-const { canBlock, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
+const { canReserve, canBlock, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
 const isActive = (name: string) => route.name === name;
 
 // Horizontal-scroll affordance: edge fades that show only when there's more
@@ -119,7 +119,7 @@ watch(
         <span class="tab-label">Buscar</span>
       </router-link>
 
-      <router-link to="/minhas-reservas" class="tab-item" :class="{ active: isActive('my-reservations') }">
+      <router-link v-if="canReserve" to="/minhas-reservas" class="tab-item" :class="{ active: isActive('my-reservations') }">
         <span class="tab-icon"><Calendar :size="20" /></span>
         <span class="tab-label">Reservas</span>
       </router-link>

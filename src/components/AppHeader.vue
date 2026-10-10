@@ -29,7 +29,7 @@ const notifOpen = ref(false);
 const { isDark, toggleDarkMode } = useDarkMode();
 const themeToggleLabel = computed(() => isDark.value ? 'Ativar tema claro' : 'Ativar tema escuro');
 
-const { canBlock, canAdmin, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
+const { canReserve, canBlock, canAdmin, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
 const adminUrl = '/admin';
 const viewerRoute = computed(() =>
   campusStore.selectedCampusId
@@ -64,7 +64,7 @@ function logout() {
       <nav class="header-nav">
         <router-link :to="viewerRoute">Maquete 3D</router-link>
         <router-link :to="spaceBrowserRoute">Buscar Espaços</router-link>
-        <router-link to="/minhas-reservas">Minhas Reservas</router-link>
+        <router-link v-if="canReserve" to="/minhas-reservas">Minhas Reservas</router-link>
         <router-link v-if="canBlock" to="/meus-bloqueios">Meus Bloqueios</router-link>
         <router-link v-if="canViewReports" to="/relatorios">Relatórios</router-link>
         <router-link v-if="canManageEquipment" to="/manutencao/chamados">Chamados</router-link>
