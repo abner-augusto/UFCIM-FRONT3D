@@ -6,11 +6,13 @@ import { useAuthStore } from '@/stores/auth';
 import { useReservationStore } from '@/stores/reservation';
 import { api } from '@/services/api';
 import type { Space } from '@/types/space';
-import type { Availability, Blocking, TimeSlot } from '@/types/reservation';
+import type { Availability, AvailabilitySlot, Blocking, TimeSlot } from '@/types/reservation';
 import { BLOCK_TYPE_LABELS, TIME_SLOT_LABELS, TIME_SLOT_RANGES, PURPOSE_OPTIONS, isSlotAvailable } from '@/types/reservation';
 import { usePermissions } from '@/composables/usePermissions';
-import { useHourRangeSelection } from '@/composables/useHourRangeSelection';
+import { useTimeRangePicker } from '@/composables/useTimeRangePicker';
 import RecurringReservationForm from '@/components/RecurringReservationForm.vue';
+import TimeRangeFields from '@/components/schedule/TimeRangeFields.vue';
+import OccupancyBar from '@/components/schedule/OccupancyBar.vue';
 import { toLocalISODate } from '@/utils/date';
 import AppDateField from '@/components/AppDateField.vue';
 import { blockLabel, departmentLabel } from '@/utils/space-labels';
@@ -53,11 +55,40 @@ const descriptionInput = ref('');
 const isRecurring = ref(false);
 
 const { canReserve, canCreateRecurring: canRecurring } = usePermissions();
+
+// ── Custom range: Início / Término in 30-minute steps (MEL-024) ──
+const nowTs = ref(Date.now());
+
+/** A time is past once reached; a slot stays bookable until it ends. */
+function isPastTime(time: string): boolean {
+  if (!selectedDate.value) return false;
+  return new Date(`${selectedDate.value}T${time}:00`).getTime() <= nowTs.value;
+}
+
+const openSlots = computed<AvailabilitySlot[]>(() =>
+  (availability.value ?? [])
+    .filter((slot) => slot.status !== 'closed')
+    .sort((a, b) => a.startTime.localeCompare(b.startTime)),
+);
+
 const {
-  pickedStart, pickedEnd, sortedHours, isPastTime, resetPicks,
-  isHourSelectable, getHourState, handleHourClick,
-  customRangeEnd, customRangeLabel, hourLabel,
-} = useHourRangeSelection(availability, selectedDate);
+  start: customStart,
+  end: customEnd,
+  startOptions,
+  endOptions,
+  range: customRange,
+  clear: clearCustomRange,
+  applyRange,
+} = useTimeRangePicker({
+  slots: openSlots,
+  isBookable: (slot) => slot.status === 'available' && !isPastTime(slot.endTime),
+});
+
+const nowMinutes = computed(() => {
+  if (selectedDate.value !== today) return null;
+  const now = new Date(nowTs.value);
+  return now.getHours() * 60 + now.getMinutes();
+});
 
 onMounted(async () => {
   if (!canReserve.value) {
@@ -102,18 +133,16 @@ if (pendingPrefill) {
 
 function applyPendingPrefill() {
   if (!pendingPrefill || pendingPrefill.date !== selectedDate.value || !availability.value) return;
-  const { startTime, endTime } = pendingPrefill;
+  const range = pendingPrefill;
   pendingPrefill = null; // one-shot
-  const startSlot = availability.value.find(s => s.startTime === startTime && s.status === 'available');
-  const endSlot = availability.value.find(s => s.endTime === endTime && s.status === 'available');
-  if (!startSlot || !endSlot) return; // range no longer fully available — leave picker empty
-  pickedStart.value = startTime;
-  pickedEnd.value = endSlot.startTime; // picker tracks the start time of the last selected hour
+  applyRange(range); // trimmed to the first free hour or more; empty when none is left
 }
 
 watch(selectedDate, async (date) => {
   if (!date) return;
   selectedSlot.value = null;
+  clearCustomRange();
+  nowTs.value = Date.now();
   loadingAvailability.value = true;
   try {
     availability.value = await api.getAvailability(auth.token, spaceId, date);
@@ -127,7 +156,7 @@ watch(selectedDate, async (date) => {
 
 watch(selectionMode, () => {
   selectedSlot.value = null;
-  resetPicks();
+  clearCustomRange();
 });
 
 // ── Named-slot helpers ──────────────────────────────────────────
@@ -165,7 +194,7 @@ function canContinue(): boolean {
   if (space.value?.reservable === false) return false;
   if (!selectedDate.value || !selectedPurpose.value) return false;
   if (selectionMode.value === 'slots') return !!selectedSlot.value;
-  return !!(pickedStart.value && pickedEnd.value);
+  return !!customRange.value;
 }
 
 function handleContinue() {
@@ -174,7 +203,7 @@ function handleContinue() {
   if (selectionMode.value === 'slots') {
     reservationStore.setSchedule(selectedDate.value, selectedSlot.value!);
   } else {
-    reservationStore.setCustomSchedule(selectedDate.value, pickedStart.value!, customRangeEnd.value!);
+    reservationStore.setCustomSchedule(selectedDate.value, customRange.value!.startTime, customRange.value!.endTime);
   }
   reservationStore.setPurpose(selectedPurpose.value);
   reservationStore.setDescription(descriptionInput.value);
@@ -267,30 +296,22 @@ function handleContinue() {
             </Button>
           </div>
 
-          <!-- Hour-by-hour picker -->
+          <!-- Início / Término in 30-minute steps (MEL-024) -->
           <div v-else class="hour-picker">
-            <p class="hour-picker__hint">
-              {{ customRangeLabel ?? 'Toque em um horário para iniciar a seleção' }}
-            </p>
-            <div class="hour-grid">
-              <Button
-                v-for="s in sortedHours"
-                :key="s.startTime"
-                type="button"
-                variant="outline"
-                class="hour-btn"
-                :class="`hour-btn--${getHourState(s)}`"
-                :disabled="!isHourSelectable(s)"
-                :aria-label="`${hourLabel(s.startTime)}${isPastTime(s.endTime) ? ' (horário já passou)' : ''}`"
-                @click="handleHourClick(s)"
-              >
-                {{ hourLabel(s.startTime) }}
-              </Button>
-            </div>
+            <p class="hour-picker__hint">Escolha o início e o término. A reserva dura no mínimo 1 hora.</p>
+            <TimeRangeFields
+              v-model:start="customStart"
+              v-model:end="customEnd"
+              id-prefix="reservation"
+              :start-options="startOptions"
+              :end-options="endOptions"
+            />
+            <p v-if="!startOptions.length" class="form-hint">Não há 1 hora livre seguida nesta data.</p>
+            <OccupancyBar class="hour-picker__bar" :slots="openSlots" :selection="customRange" :now-minutes="nowMinutes" />
           </div>
         </div>
 
-        <div v-if="selectedSlot || (selectionMode === 'hours' && pickedStart && pickedEnd)" class="form-section">
+        <div v-if="selectedSlot || (selectionMode === 'hours' && customRange)" class="form-section">
           <Label class="form-label" for="reservation-purpose">Finalidade</Label>
           <NativeSelect id="reservation-purpose" v-model="selectedPurpose" class="form-input">
             <NativeSelectOption value="" disabled>Selecione uma finalidade</NativeSelectOption>
@@ -300,7 +321,7 @@ function handleContinue() {
           </NativeSelect>
         </div>
 
-        <div v-if="selectedSlot || (selectionMode === 'hours' && pickedStart && pickedEnd)" class="form-section">
+        <div v-if="selectedSlot || (selectionMode === 'hours' && customRange)" class="form-section">
           <Label class="form-label" for="description-input">Descrição</Label>
           <Input
             id="description-input"
@@ -325,7 +346,12 @@ function handleContinue() {
 
       <!-- ── Recurring form ── -->
       <template v-else>
-        <RecurringReservationForm :space-id="spaceId" :reservable="space.reservable" />
+        <RecurringReservationForm
+          :space-id="spaceId"
+          :reservable="space.reservable"
+          :closed-from="space.closedFrom"
+          :closed-to="space.closedTo"
+        />
       </template>
     </div>
   </div>
@@ -446,39 +472,7 @@ function handleContinue() {
   margin: 0 0 0.6rem;
   min-height: 1.2em;
 }
-.hour-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.4rem;
-}
-@media (min-width: 481px) {
-  .hour-grid {
-    grid-template-columns: repeat(6, 1fr);
-  }
-}
-
-.hour-btn {
-  font-size: 0.85rem;
-  text-align: center;
-  min-height: var(--tap-min, 44px);
-}
-.hour-btn--available:hover { border-color: var(--primary); }
-.hour-btn--selected {
-  background: var(--secondary);
-  border-color: var(--primary);
-  color: var(--primary);
-}
-.hour-btn--endpoint {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: var(--primary-foreground);
-  font-weight: 600;
-}
-.hour-btn--unavailable {
-  opacity: 0.35;
-  cursor: not-allowed;
-  background: var(--muted);
-}
+.hour-picker__bar { margin-top: 0.75rem; }
 
 /* Actions */
 .form-actions {

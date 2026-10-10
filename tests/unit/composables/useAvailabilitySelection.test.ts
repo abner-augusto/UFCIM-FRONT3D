@@ -14,6 +14,16 @@ function makeAvailability(...specs: SlotSpec[]): AvailabilitySlot[] {
   return specs.map(([time, status]) => makeSlot(time, status));
 }
 
+/** Half-hour slots (MEL-024): `[start, status]`, each lasting 30 minutes. */
+function makeHalves(...specs: SlotSpec[]): AvailabilitySlot[] {
+  return specs.map(([startTime, status = 'available']) => {
+    const [h, m] = startTime.split(':').map(Number);
+    const end = h * 60 + m + 30;
+    const endTime = `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`;
+    return { startTime, endTime, status };
+  });
+}
+
 function setup(slots: AvailabilitySlot[], selectedDate = '2099-12-31') {
   const availability = ref<AvailabilitySlot[] | null>(slots);
   const date = ref(selectedDate);
@@ -113,6 +123,71 @@ describe('useAvailabilitySelection', () => {
   });
 });
 
+describe('useAvailabilitySelection with half-hour slots (MEL-024)', () => {
+  it('shows one cell per hour and splits a half-occupied hour', () => {
+    const { visibleSlots } = setup(
+      makeHalves(['16:00'], ['16:30', 'reserved'], ['17:00', 'reserved'], ['17:30', 'reserved'], ['18:00'], ['18:30']),
+    );
+
+    expect(visibleSlots.value.map((cell) => [cell.startTime, cell.endTime, cell.status, cell.split])).toEqual([
+      ['16:00', '17:00', 'available', true],
+      ['17:00', '18:00', 'reserved', false],
+      ['18:00', '19:00', 'available', false],
+    ]);
+  });
+
+  it('trims a selection over a half-occupied hour to the free half', () => {
+    const { visibleSlots, onCellClick, startTime, endTime, reserveRangeBookable } = setup(
+      makeHalves(['16:00', 'reserved'], ['16:30'], ['17:00'], ['17:30'], ['18:00'], ['18:30']),
+    );
+
+    onCellClick(visibleSlots.value[0], 0);
+    onCellClick(visibleSlots.value[1], 1);
+
+    expect(startTime.value).toBe('16:30');
+    expect(endTime.value).toBe('18:00');
+    expect(reserveRangeBookable.value).toBe(true);
+  });
+
+  it('refuses a selection that leaves less than 1 hour free', () => {
+    const { visibleSlots, onCellClick, hasUserSelection, startTime, reserveRangeBookable, reserveStartTime, reserveEndTime } = setup(
+      makeHalves(['16:00', 'reserved'], ['16:30'], ['17:00', 'reserved'], ['17:30', 'reserved']),
+    );
+
+    onCellClick(visibleSlots.value[0], 0);
+
+    expect(hasUserSelection.value).toBe(true);
+    expect(startTime.value).toBeNull();
+    expect(reserveRangeBookable.value).toBe(false);
+    expect(reserveStartTime.value).toBe('16:00');
+    expect(reserveEndTime.value).toBe('17:00');
+  });
+
+  it('does not extend across a half-hour conflict in the middle', () => {
+    const { visibleSlots, onCellClick, startTime, endTime } = setup(
+      makeHalves(['16:00'], ['16:30', 'reserved'], ['17:00'], ['17:30']),
+    );
+
+    onCellClick(visibleSlots.value[0], 0);
+    onCellClick(visibleSlots.value[1], 1);
+
+    // 16:00–16:30 and 17:00–18:00 are not contiguous: restart at the clicked hour.
+    expect(startTime.value).toBe('17:00');
+    expect(endTime.value).toBe('18:00');
+  });
+
+  it('keeps a fully occupied hour as a detail cell', () => {
+    const { visibleSlots, onCellClick, selectedSlot, hasUserSelection } = setup(
+      makeHalves(['16:00', 'reserved'], ['16:30', 'reserved']),
+    );
+
+    onCellClick(visibleSlots.value[0], 0);
+
+    expect(selectedSlot.value?.status).toBe('reserved');
+    expect(hasUserSelection.value).toBe(false);
+  });
+});
+
 describe('findBookableSubRange', () => {
   it('BUG-017 regression: trims past slots from the start, returns remaining bookable sub-range', () => {
     // Slots 19-20, 20-21, 21-22; isPast only for the 19-20 slot
@@ -170,6 +245,31 @@ describe('findBookableSubRange', () => {
     const result = findBookableSubRange(slots, { startTime: '19:00', endTime: '22:00' }, isPast);
 
     expect(result).toEqual({ startIdx: 0, endIdx: 0 });
+  });
+
+  it('trims to the first run of at least 1 hour with half-hour slots (MEL-024)', () => {
+    // 19:00 free, 19:30 reserved, 20:00–21:00 free: the 30-minute run is skipped.
+    const slots = makeHalves(['19:00'], ['19:30', 'reserved'], ['20:00'], ['20:30'], ['21:00']);
+
+    const result = findBookableSubRange(slots, { startTime: '19:00', endTime: '21:30' }, () => false);
+
+    expect(result).toEqual({ startIdx: 2, endIdx: 4 }); // 20:00–21:30
+  });
+
+  it('returns null when only 30 minutes remain bookable (MEL-024)', () => {
+    const slots = makeHalves(['11:00'], ['11:30']);
+    const isPast = (slot: AvailabilitySlot) => slot.startTime === '11:00';
+
+    expect(findBookableSubRange(slots, { startTime: '11:00', endTime: '12:00' }, isPast)).toBeNull();
+  });
+
+  it('trims a range that starts mid-slot to the half hours inside it (MEL-024)', () => {
+    const slots = makeHalves(['10:00'], ['10:30'], ['11:00'], ['11:30']);
+
+    expect(findBookableSubRange(slots, { startTime: '10:30', endTime: '12:00' }, () => false)).toEqual({
+      startIdx: 1,
+      endIdx: 3,
+    });
   });
 
   it('respects range boundaries — slots outside [startTime, endTime) are not included', () => {

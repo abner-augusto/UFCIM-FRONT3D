@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, shallowRef, watch } from 'vue';
 import { BLOCK_TYPE_LABELS } from '@/types/reservation';
 import type { ActionStatus } from '@/components/StatefulActionButton.vue';
 import AppDateField from '@/components/AppDateField.vue';
@@ -8,8 +8,10 @@ import { Label } from '@/components/ui/label';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Button } from '@/components/ui/button';
+import TimeRangeFields from '@/components/schedule/TimeRangeFields.vue';
+import { useTimeRangePicker } from '@/composables/useTimeRangePicker';
 import { addLocalDays, formatDateShort, toLocalISODate } from '@/utils/date';
+import { buildOpenSlots } from '@/utils/slots';
 
 type BlockType = 'maintenance' | 'administrative';
 type HourMode = 'full_day' | 'custom';
@@ -56,8 +58,18 @@ const effectiveBlockType = computed<BlockType | ''>(
 );
 const reason = ref(props.initialReason);
 const hourMode = ref<HourMode>('full_day');
-const pickedStart = ref<string | null>(null);
-const pickedEnd = ref<string | null>(null);
+
+// Custom hours: "Início" / "Término" in 30-minute steps over the whole day,
+// at least 1 hour long (MEL-024). A blocking overrides reservations, so every
+// slot is eligible.
+const {
+  start: customStart,
+  end: customEnd,
+  startOptions,
+  endOptions,
+  range: customRange,
+  clear: clearCustomRange,
+} = useTimeRangePicker({ slots: shallowRef(buildOpenSlots('00:00', '24:00')), isBookable: () => true });
 
 const today = toLocalISODate();
 /** Backend caps a single operation at 60 inclusive days (MEL-017). */
@@ -77,26 +89,13 @@ const rangeSummary = computed(() => {
   if (rangeDays.value === 1) return formatDateShort(selectedDateFrom.value);
   return `${rangeDays.value} dias (${formatDateShort(selectedDateFrom.value)} – ${formatDateShort(selectedDateTo.value)})`;
 });
-const ALL_HOURS = Array.from({ length: 24 }, (_, i) => {
-  const h = String(i).padStart(2, '0');
-  return { startTime: `${h}:00`, endTime: `${String(i + 1).padStart(2, '0')}:00` };
-});
-
 const resolvedStart = computed(() => {
   if (hourMode.value === 'full_day') return '00:00';
-  return pickedStart.value;
+  return customRange.value?.startTime ?? null;
 });
 const resolvedEnd = computed(() => {
   if (hourMode.value === 'full_day') return '24:00';
-  if (pickedEnd.value) {
-    const slot = ALL_HOURS.find((hour) => hour.startTime === pickedEnd.value);
-    return slot?.endTime ?? pickedEnd.value;
-  }
-  if (pickedStart.value) {
-    const slot = ALL_HOURS.find((hour) => hour.startTime === pickedStart.value);
-    return slot?.endTime ?? null;
-  }
-  return null;
+  return customRange.value?.endTime ?? null;
 });
 
 const canSubmit = computed(() =>
@@ -112,41 +111,9 @@ watch(selectedDateFrom, (from) => {
   if (!selectedDateTo.value || selectedDateTo.value < from) selectedDateTo.value = from;
 });
 
-function handleHourClick(hour: string) {
-  if (!pickedStart.value) {
-    pickedStart.value = hour;
-    pickedEnd.value = null;
-    return;
-  }
-  if (hour === pickedStart.value && !pickedEnd.value) {
-    pickedStart.value = null;
-    return;
-  }
-  if (pickedEnd.value) {
-    pickedStart.value = hour;
-    pickedEnd.value = null;
-    return;
-  }
-  const [low, high] = hour > pickedStart.value
-    ? [pickedStart.value, hour]
-    : [hour, pickedStart.value];
-  pickedStart.value = low;
-  pickedEnd.value = high;
-}
-
-function getHourState(hour: string): 'available' | 'selected' | 'endpoint' {
-  if (!pickedStart.value) return 'available';
-  if (hour === pickedStart.value || hour === pickedEnd.value) return 'endpoint';
-  if (pickedEnd.value && hour > pickedStart.value && hour < pickedEnd.value) return 'selected';
-  return 'available';
-}
-
 function handleModeChange(value: unknown) {
   hourMode.value = (typeof value === 'string' ? value : 'full_day') as HourMode;
-  if (hourMode.value === 'full_day') {
-    pickedStart.value = null;
-    pickedEnd.value = null;
-  }
+  if (hourMode.value === 'full_day') clearCustomRange();
 }
 
 function handleSubmit() {
@@ -202,28 +169,20 @@ function handleSubmit() {
         <ToggleGroupItem value="custom" class="mode-btn">Horário personalizado</ToggleGroupItem>
       </ToggleGroup>
 
-      <div v-if="hourMode === 'custom'" class="hour-grid">
-        <Button
-          v-for="slot in ALL_HOURS"
-          :key="slot.startTime"
-          type="button"
-          variant="outline"
-          class="hour-btn"
-          :class="{
-            'hour-btn--endpoint': getHourState(slot.startTime) === 'endpoint',
-            'hour-btn--selected': getHourState(slot.startTime) === 'selected',
-          }"
-          @click="handleHourClick(slot.startTime)"
-        >
-          {{ slot.startTime.replace(':00', 'h') }}
-        </Button>
-      </div>
+      <TimeRangeFields
+        v-if="hourMode === 'custom'"
+        v-model:start="customStart"
+        v-model:end="customEnd"
+        class="custom-hours"
+        id-prefix="blocking"
+        :start-options="startOptions"
+        :end-options="endOptions"
+      />
 
-      <p v-if="resolvedStart && resolvedEnd" class="period-summary">
-        {{ hourMode === 'full_day'
-            ? 'Bloqueio para o dia inteiro (00:00 – 24:00)'
-            : `${resolvedStart} – ${resolvedEnd}` }}
+      <p v-if="hourMode === 'full_day'" class="period-summary">
+        Bloqueio para o dia inteiro (00:00 – 24:00)
       </p>
+      <p v-else class="period-summary">O bloqueio dura no mínimo 1 hora.</p>
     </div>
 
     <div class="form-section">
@@ -291,25 +250,11 @@ function handleSubmit() {
 .form-textarea { min-height: var(--tap-min, 44px); resize: vertical; font-family: inherit; }
 .hour-mode-toggle { display: flex; gap: 0.5rem; width: 100%; margin-bottom: 0.75rem; }
 .mode-btn { flex: 1; min-height: var(--tap-min, 44px); }
-.hour-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; margin-bottom: 0.75rem; }
-.hour-btn {
-  min-height: var(--tap-min, 44px);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--background);
-  color: var(--foreground);
-  cursor: pointer;
-  font-size: 0.8rem;
-  text-align: center;
-}
-.hour-btn:hover { border-color: var(--primary); }
-.hour-btn--endpoint { background: var(--primary); border-color: var(--primary); color: var(--primary-foreground); font-weight: 600; }
-.hour-btn--selected { background: var(--secondary); border-color: var(--primary); }
+.custom-hours { margin-bottom: 0.5rem; }
 .period-summary { margin: 0.25rem 0 0; color: var(--muted-foreground); font-size: 0.85rem; }
 .form-actions { margin-top: 1rem; }
 .state-error { margin-bottom: 0.75rem; color: var(--destructive); font-size: 0.9rem; }
 
-@media (min-width: 481px) { .hour-grid { grid-template-columns: repeat(6, 1fr); } }
 @media (max-width: 767px) {
   .form-actions {
     position: sticky;

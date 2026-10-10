@@ -1,5 +1,6 @@
 import type { PinStatus } from '@/composables/usePinAvailability';
 import { addLocalDays } from '@/utils/date';
+import { formatTimeLabel } from '@/utils/slots';
 
 export interface PinLabelInfo {
   statusText: string | null;
@@ -21,9 +22,8 @@ function resolvedColor(status: keyof typeof COLOR_TOKENS): string {
   return getComputedStyle(document.documentElement).getPropertyValue(token).trim() || fallback;
 }
 
-function formatHourLabel(time: string): string {
-  return `${time.slice(0, 2)}h`;
-}
+/** `16:00` → `16h`, `16:30` → `16h30` (half-hour boundaries, MEL-024). */
+const formatHourLabel = formatTimeLabel;
 
 function formatDateLabel(date: string, selectedDate?: string): string {
   if (selectedDate && date === addLocalDays(selectedDate, 1)) return 'amanhã';

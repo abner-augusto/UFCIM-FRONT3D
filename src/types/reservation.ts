@@ -8,8 +8,8 @@ export const TIME_SLOT_RANGES: Record<TimeSlot, { startTime: string; endTime: st
 };
 
 export interface AvailabilitySlot {
-  startTime: string; // "HH:00"
-  endTime: string;   // "HH:00" (last slot of day uses "24:00")
+  startTime: string; // "HH:00" or "HH:30" (30-minute slots, MEL-024)
+  endTime: string;   // "HH:00" or "HH:30" (last slot of day uses "24:00")
   status: 'available' | 'reserved' | 'blocked' | 'closed' | 'not_reservable';
   reservation?: {
     id: string;
@@ -33,19 +33,20 @@ export interface AvailabilitySlot {
 export type Availability = AvailabilitySlot[];
 
 /**
- * Returns true only if every hourly slot in the named range is 'available'.
- * morning: 07:00–12:00, afternoon: 13:00–18:00, evening: 19:00–22:00
+ * Returns true only if the named range is fully covered by 'available' slots
+ * (half-hour or hourly). morning: 07:00–12:00, afternoon: 13:00–18:00, evening: 19:00–22:00
  */
 export function isSlotAvailable(availability: Availability, slot: TimeSlot): boolean {
   const { startTime, endTime } = TIME_SLOT_RANGES[slot];
-  const startHour = parseInt(startTime.split(':')[0], 10);
-  const endHour = parseInt(endTime.split(':')[0], 10);
-  for (let h = startHour; h < endHour; h++) {
-    const key = `${String(h).padStart(2, '0')}:00`;
-    const entry = availability.find(s => s.startTime === key);
-    if (!entry || entry.status !== 'available') return false;
+  const inRange = availability
+    .filter((s) => s.startTime < endTime && s.endTime > startTime)
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  if (!inRange.length || inRange[0].startTime > startTime || inRange[inRange.length - 1].endTime < endTime) {
+    return false;
   }
-  return true;
+  return inRange.every(
+    (s, i) => s.status === 'available' && (i === 0 || inRange[i - 1].endTime === s.startTime),
+  );
 }
 
 export interface Reservation {

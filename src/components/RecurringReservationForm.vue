@@ -3,19 +3,22 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
-import { TIME_SLOT_LABELS, TIME_SLOT_RANGES } from '@/types/reservation';
-import type { TimeSlot } from '@/types/reservation';
 import { toLocalISODate } from '@/utils/date';
+import { openingSlots } from '@/utils/slots';
 import AppDateField from '@/components/AppDateField.vue';
+import TimeRangeFields from '@/components/schedule/TimeRangeFields.vue';
+import { useTimeRangePicker } from '@/composables/useTimeRangePicker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 const props = defineProps<{
   spaceId: string;
   reservable: boolean | undefined;
+  /** The space's closed hours; the opening hours default to 07:00–22:00. */
+  closedFrom?: string | null;
+  closedTo?: string | null;
 }>();
 
 const router = useRouter();
@@ -26,7 +29,18 @@ const startDate = ref('');
 const endDate = ref('');
 const dayOfWeek = ref<number | null>(null);
 const description = ref('');
-const selectedPeriod = ref<TimeSlot | null>(null);
+// "Início" / "Término" in 30-minute steps within opening hours, at least 1 hour
+// (MEL-024). Conflicts are checked per occurrence by the backend, which skips them.
+const {
+  start: seriesStart,
+  end: seriesEnd,
+  startOptions,
+  endOptions,
+  range: seriesRange,
+} = useTimeRangePicker({
+  slots: computed(() => openingSlots(props.closedFrom, props.closedTo)),
+  isBookable: () => true,
+});
 const loading = ref(false);
 const successMsg = ref<string | null>(null);
 const errorMsg = ref<string | null>(null);
@@ -45,14 +59,14 @@ function canSubmit() {
     endDate.value &&
     endDate.value > startDate.value &&
     dayOfWeek.value !== null &&
-    selectedPeriod.value &&
+    seriesRange.value &&
     description.value.trim()
   );
 }
 
 async function handleSubmit() {
-  if (!canSubmit()) return;
-  const { startTime, endTime } = TIME_SLOT_RANGES[selectedPeriod.value!];
+  if (!canSubmit() || !seriesRange.value) return;
+  const { startTime, endTime } = seriesRange.value;
   loading.value = true;
   errorMsg.value = null;
   successMsg.value = null;
@@ -107,27 +121,17 @@ async function handleSubmit() {
       </NativeSelect>
     </div>
 
-    <div class="mb-5">
-      <Label class="mb-2 block text-sm font-semibold">Período</Label>
-      <ToggleGroup
-        type="single"
-        variant="outline"
-        orientation="vertical"
-        :spacing="2"
-        class="w-full"
-        :model-value="selectedPeriod ?? ''"
-        @update:model-value="selectedPeriod = ($event || null) as TimeSlot | null"
-      >
-        <ToggleGroupItem
-          v-for="(label, slot) in TIME_SLOT_LABELS"
-          :key="slot"
-          :value="slot"
-          class="h-11 w-full justify-start"
-        >
-          {{ label }} ({{ TIME_SLOT_RANGES[slot as TimeSlot].startTime }}–{{ TIME_SLOT_RANGES[slot as TimeSlot].endTime }})
-        </ToggleGroupItem>
-      </ToggleGroup>
-    </div>
+    <fieldset class="mb-5">
+      <legend class="mb-2 block text-sm font-semibold">Horário</legend>
+      <TimeRangeFields
+        v-model:start="seriesStart"
+        v-model:end="seriesEnd"
+        id-prefix="rec"
+        :start-options="startOptions"
+        :end-options="endOptions"
+      />
+      <p class="text-muted-foreground mt-2 text-xs">Cada reserva da série dura no mínimo 1 hora.</p>
+    </fieldset>
 
     <div class="mb-5">
       <Label class="mb-2 block text-sm font-semibold" for="rec-desc">Descrição da recorrência</Label>

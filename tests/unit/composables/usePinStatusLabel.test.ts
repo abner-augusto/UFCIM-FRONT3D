@@ -18,6 +18,19 @@ describe('buildPinStatusLabel', () => {
     expect(buildPinStatusLabel('partial', slots, evening).statusText).toBe('até 21h');
   });
 
+  it('labels a half-hour boundary with minutes (MEL-024)', () => {
+    const slots = [
+      { startTime: '19:00', endTime: '19:30', status: 'available' },
+      { startTime: '19:30', endTime: '20:00', status: 'reserved' },
+      { startTime: '20:00', endTime: '20:30', status: 'reserved' },
+      { startTime: '20:30', endTime: '21:00', status: 'available' },
+      { startTime: '21:00', endTime: '21:30', status: 'available' },
+      { startTime: '21:30', endTime: '22:00', status: 'available' },
+    ];
+
+    expect(buildPinStatusLabel('partial', slots, evening).statusText).toBe('até 20h30');
+  });
+
   it('shows the next available slot when the selected period is fully reserved', () => {
     const slots = makeSlots({ '07:00': 'reserved', '08:00': 'reserved', '09:00': 'reserved', '10:00': 'reserved', '11:00': 'reserved' });
 

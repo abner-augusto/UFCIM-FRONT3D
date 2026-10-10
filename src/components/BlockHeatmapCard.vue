@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth';
 import { toLocalISODate } from '@/utils/date';
 import type { Space } from '@/types/space';
 import type { AvailabilitySlot } from '@/types/reservation';
+import { hourlyRoomOccupancy } from '@/utils/slots';
 
 const props = defineProps<{
   visible: boolean;
@@ -50,33 +51,20 @@ async function loadHeatmap() {
     const isToday = props.date === toLocalISODate();
     const nowHour = new Date().getHours();
 
-    const hourData: Array<{ hour: string; occupiedCount: number; totalCount: number; past: boolean }> = [];
-    for (let h = startH; h < endH; h++) {
-      const key = `${String(h).padStart(2, '0')}:00`;
-      let occupied = 0;
-      let total = 0;
-      results.forEach((r) => {
-        if (r.status !== 'fulfilled') return;
-        const slots: AvailabilitySlot[] = r.value;
-        const slot = slots.find(s => s.startTime === key);
-        if (!slot || slot.status === 'closed' || slot.status === 'not_reservable') return;
-        total++;
-        if (slot.status === 'reserved' || slot.status === 'blocked') occupied++;
-      });
-      hourData.push({ hour: key, occupiedCount: occupied, totalCount: total, past: isToday && h < nowHour });
-    }
-
-    hours.value = hourData.map(h => {
-      // Colour by occupancy %, in 25% bands green → amber → orange → red.
-      const pct = h.totalCount > 0 ? h.occupiedCount / h.totalCount : 0;
+    // One cell per hour; each hour aggregates its two half-hour slots (MEL-024).
+    const roomSlots = results.flatMap((r) => (r.status === 'fulfilled' ? [r.value as AvailabilitySlot[]] : []));
+    hours.value = hourlyRoomOccupancy(roomSlots, startH, endH).map((h) => {
+      const past = isToday && Number(h.hour.slice(0, 2)) < nowHour;
+      // Colour by occupied half-hours %, in 25% bands green → amber → orange → red.
+      const pct = h.openHalves > 0 ? h.occupiedHalves / h.openHalves : 0;
       let cssClass = 'cell--q1';
       if (pct >= 0.75) cssClass = 'cell--q4';
       else if (pct >= 0.5) cssClass = 'cell--q3';
       else if (pct >= 0.25) cssClass = 'cell--q2';
-      if (h.past) cssClass += ' cell--past';
+      if (past) cssClass += ' cell--past';
       const pctLabel = Math.round(pct * 100);
-      const tooltip = `${h.occupiedCount}/${h.totalCount} ocupadas (${pctLabel}%) às ${h.hour}${h.past ? ' (encerrado)' : ''}`;
-      return { ...h, cssClass, tooltip };
+      const tooltip = `${h.roomsInUse}/${h.rooms} salas em uso (${pctLabel}% ocupado) às ${h.hour}${past ? ' (encerrado)' : ''}`;
+      return { hour: h.hour, occupiedCount: h.roomsInUse, totalCount: h.rooms, cssClass, tooltip };
     });
 
     // Stats

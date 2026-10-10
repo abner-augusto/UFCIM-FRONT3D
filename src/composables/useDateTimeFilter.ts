@@ -2,6 +2,7 @@ import { ref, computed } from 'vue';
 import { getCurrentPeriod, type PeriodKey } from '@/utils/period';
 import { TIME_SLOT_RANGES } from '@/types/reservation';
 import { toLocalISODate } from '@/utils/date';
+import { slotStartAt } from '@/utils/slots';
 
 /** Pure function: format ISO date string to short pt-BR locale (e.g. "21 de mai.") */
 export function formatShortDate(dateStr: string): string {
@@ -40,14 +41,14 @@ export function useDateTimeFilter() {
 
   const defaultStartTime = computed(() => {
     const rangeStart = periodRange.value.startTime;
-    // When viewing today, start the default range at the *current* hour so the
-    // "Reservar" button follows what's still bookable in the grid instead of the
-    // fixed period start. The in-progress hour stays reservable (it ends later).
+    // When viewing today, start the default range at the *current* half-hour
+    // slot (MEL-024) so the "Reservar" button follows what's still bookable
+    // instead of the fixed period start. The in-progress slot stays reservable.
     if (isToday.value) {
-      const currentHour = String(new Date().getHours()).padStart(2, '0') + ':00';
+      const currentSlot = slotStartAt(new Date());
       // Clamp to period bounds: never before range start, never at/after range end.
-      if (currentHour > rangeStart && currentHour < periodRange.value.endTime) {
-        return currentHour;
+      if (currentSlot > rangeStart && currentSlot < periodRange.value.endTime) {
+        return currentSlot;
       }
     }
     return rangeStart;

@@ -13,6 +13,8 @@ const props = defineProps<{
   reserveDisabled?: boolean;
   loadingReservationState?: boolean;
   reserveRangeBookable: boolean;
+  /** The user picked hours in the strip (vs. the period's default range). */
+  hasUserSelection?: boolean;
   reserveStartTime: string;
   reserveEndTime: string;
   reserveDisabledReason?: string | null;
@@ -48,7 +50,9 @@ const reportsLockedReason = computed(() => (props.canViewReports ? null : roleDe
     <template v-if="canReserve">
       <p v-if="loadingReservationState" class="action-hint">Verificando disponibilidade...</p>
       <p v-else-if="reserveDisabledReason" class="action-hint action-hint--warn">{{ reserveDisabledReason }}</p>
-      <p v-else-if="!reserveRangeBookable" class="action-hint action-hint--warn">Todos os horários deste turno já passaram.</p>
+      <p v-else-if="!reserveRangeBookable" class="action-hint action-hint--warn">
+        {{ hasUserSelection ? 'A reserva precisa de pelo menos 1 hora livre seguida.' : 'Não resta 1 hora livre seguida neste turno.' }}
+      </p>
     </template>
     <Button
       v-if="canBlock"

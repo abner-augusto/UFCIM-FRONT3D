@@ -1,6 +1,7 @@
 import { computed, ref, watch } from 'vue';
 import type { ComputedRef, Ref } from 'vue';
 import type { Availability, AvailabilitySlot } from '@/types/reservation';
+import { MIN_DURATION_MINUTES, groupSlotsByHour, timeToMinutes, type HourCell, type TimeRange } from '@/utils/slots';
 
 export interface AvailabilitySelectionOptions {
   availability: Ref<Availability | null>;
@@ -14,43 +15,55 @@ export interface AvailabilityCellClass extends Record<string, boolean> {
   'hour-cell--red': boolean;
   'hour-cell--amber': boolean;
   'hour-cell--past': boolean;
+  'hour-cell--split': boolean;
   'hour-cell--selected': boolean;
   'hour-cell--default-selected': boolean;
   'hour-cell--clicked': boolean;
 }
 
-export function availabilityHourLabel(time: string): string {
-  return time.replace(':00', 'h');
-}
-
 /**
  * Maps a requested schedule range onto the slot grid, trimming to the first
- * contiguous run of bookable slots inside [startTime, endTime). Returns null
- * when nothing in the range is bookable. A slot is bookable when its status
- * is 'available' and it is not past (in-progress hours count as bookable —
- * same rule as manual selection).
+ * contiguous run of bookable slots inside [startTime, endTime) that lasts at
+ * least `minMinutes` (1 hour, MEL-024). Returns null when no such run exists.
+ * A slot is bookable when its status is 'available' and it is not past
+ * (in-progress slots count as bookable — same rule as the backend).
  */
 export function findBookableSubRange(
   slots: AvailabilitySlot[],
-  range: { startTime: string; endTime: string },
+  range: TimeRange,
   isPast: (slot: AvailabilitySlot) => boolean,
+  minMinutes: number = MIN_DURATION_MINUTES,
 ): { startIdx: number; endIdx: number } | null {
   let startIdx = -1;
   let endIdx = -1;
+  const runIsLongEnough = () =>
+    startIdx !== -1 &&
+    timeToMinutes(slots[endIdx].endTime) - timeToMinutes(slots[startIdx].startTime) >= minMinutes;
+
   for (let i = 0; i < slots.length; i += 1) {
     const slot = slots[i];
     const inRange = slot.startTime >= range.startTime && slot.endTime <= range.endTime;
     const bookable = inRange && slot.status === 'available' && !isPast(slot);
-    if (bookable && startIdx === -1) startIdx = i;
-    if (bookable && startIdx !== -1) {
-      if (endIdx !== -1 && slots[endIdx].endTime !== slot.startTime) break;
+    const contiguous = endIdx !== -1 && slots[endIdx].endTime === slot.startTime;
+
+    if (bookable && startIdx !== -1 && contiguous) {
       endIdx = i;
+      continue;
     }
-    if (!bookable && startIdx !== -1) break; // first contiguous run only
+    // The current run (if any) ends here: keep it when long enough.
+    if (runIsLongEnough()) break;
+    startIdx = bookable ? i : -1;
+    endIdx = bookable ? i : -1;
   }
-  return startIdx === -1 ? null : { startIdx, endIdx };
+  return runIsLongEnough() ? { startIdx, endIdx } : null;
 }
 
+/**
+ * Room-popup selection (viewer and space list). The strip shows one cell per
+ * hour; with half-hour availability (MEL-024) a cell may be half occupied. A
+ * cell is selectable while any half is bookable, and the chosen hours are
+ * trimmed to the first bookable run of at least 1 hour.
+ */
 export function useAvailabilitySelection(options: AvailabilitySelectionOptions) {
   const { availability, selectedDate, defaultStartTime, defaultEndTime } = options;
 
@@ -59,11 +72,17 @@ export function useAvailabilitySelection(options: AvailabilitySelectionOptions) 
   const rangeEndIdx = ref<number | null>(null);
   const nowTs = ref(Date.now());
 
-  const visibleSlots = computed<AvailabilitySlot[]>(() =>
-    availability.value?.filter((slot) => slot.status !== 'closed') ?? [],
+  /** Non-closed slots as returned by the API (half hours), in order. */
+  const openSlots = computed<AvailabilitySlot[]>(() =>
+    (availability.value ?? [])
+      .filter((slot) => slot.status !== 'closed')
+      .sort((a, b) => a.startTime.localeCompare(b.startTime)),
   );
 
-  const selectedSlot = computed<AvailabilitySlot | null>(() => {
+  /** One cell per hour for the strip. */
+  const visibleSlots = computed<HourCell[]>(() => groupSlotsByHour(openSlots.value));
+
+  const selectedSlot = computed<HourCell | null>(() => {
     if (selectedSlotIndex.value === null) return null;
     return visibleSlots.value[selectedSlotIndex.value] ?? null;
   });
@@ -91,23 +110,33 @@ export function useAvailabilitySelection(options: AvailabilitySelectionOptions) 
 
   watch(selectedDate, resetSelection);
 
-  function isPastSlot(slot: AvailabilitySlot): boolean {
+  function isPastSlot(slot: Pick<AvailabilitySlot, 'endTime'>): boolean {
     return new Date(`${selectedDate.value}T${slot.endTime}:00`).getTime() <= nowTs.value;
   }
 
+  function isHalfBookable(slot: AvailabilitySlot): boolean {
+    return slot.status === 'available' && !isPastSlot(slot);
+  }
+
   function isSelectableAt(idx: number): boolean {
-    const slot = visibleSlots.value[idx];
-    return !!slot && slot.status === 'available' && !isPastSlot(slot);
+    const cell = visibleSlots.value[idx];
+    return !!cell && cell.halves.some(isHalfBookable);
   }
 
   function rangeAllAvailable(a: number, b: number): boolean {
     const lo = Math.min(a, b);
     const hi = Math.max(a, b);
+    const cells = visibleSlots.value;
     for (let i = lo; i <= hi; i += 1) {
       if (!isSelectableAt(i)) return false;
-      if (i > lo && visibleSlots.value[i - 1].endTime !== visibleSlots.value[i].startTime) return false;
+      if (i > lo && cells[i - 1].endTime !== cells[i].startTime) return false;
     }
-    return true;
+    // Bookable halves must form one run: only the first half of the first
+    // hour and the last half of the last hour may be taken.
+    const halves = cells.slice(lo, hi + 1).flatMap((cell) => cell.halves);
+    const first = halves.findIndex(isHalfBookable);
+    const last = halves.length - 1 - [...halves].reverse().findIndex(isHalfBookable);
+    return halves.slice(first, last + 1).every(isHalfBookable);
   }
 
   function isInSelectedRange(idx: number): boolean {
@@ -148,49 +177,61 @@ export function useAvailabilitySelection(options: AvailabilitySelectionOptions) 
     }
 
     if (slot.status === 'available') {
-      if (isPastSlot(slot)) return;
+      if (!isSelectableAt(idx)) return;
       clearDetailSelection();
       selectHour(idx);
     }
   }
 
-  const startTime = computed<string | null>(() => {
-    if (!hasUserSelection.value || rangeStartIdx.value === null) return null;
-    return visibleSlots.value[rangeStartIdx.value]?.startTime ?? null;
+  /** Hours the user picked, before trimming. */
+  const pickedRange = computed<TimeRange | null>(() => {
+    if (rangeStartIdx.value === null || rangeEndIdx.value === null) return null;
+    const first = visibleSlots.value[rangeStartIdx.value];
+    const last = visibleSlots.value[rangeEndIdx.value];
+    return first && last ? { startTime: first.startTime, endTime: last.endTime } : null;
   });
 
-  const endTime = computed<string | null>(() => {
-    if (!hasUserSelection.value || rangeEndIdx.value === null) return null;
-    return visibleSlots.value[rangeEndIdx.value]?.endTime ?? null;
-  });
+  function trim(range: TimeRange): TimeRange | null {
+    const slots = openSlots.value;
+    const run = findBookableSubRange(slots, range, isPastSlot);
+    return run ? { startTime: slots[run.startIdx].startTime, endTime: slots[run.endIdx].endTime } : null;
+  }
 
-  const reserveStartTime = computed(() => startTime.value ?? defaultStartTime?.value ?? '');
-  const reserveEndTime = computed(() => endTime.value ?? defaultEndTime?.value ?? '');
+  /** The bookable range (≥ 1 hour) inside the user's pick, or null. */
+  const userRange = computed<TimeRange | null>(() => (pickedRange.value ? trim(pickedRange.value) : null));
+
+  const startTime = computed<string | null>(() => userRange.value?.startTime ?? null);
+  const endTime = computed<string | null>(() => userRange.value?.endTime ?? null);
+
+  const reserveStartTime = computed(() =>
+    hasUserSelection.value
+      ? (startTime.value ?? pickedRange.value?.startTime ?? '')
+      : (defaultStartTime?.value ?? ''),
+  );
+  const reserveEndTime = computed(() =>
+    hasUserSelection.value
+      ? (endTime.value ?? pickedRange.value?.endTime ?? '')
+      : (defaultEndTime?.value ?? ''),
+  );
 
   const reserveRangeBookable = computed(() => {
-    if (hasUserSelection.value) return true;
+    if (hasUserSelection.value) return userRange.value !== null;
     if (!defaultStartTime || !defaultEndTime) return false;
-
-    return visibleSlots.value.some(
-      (slot) =>
-        slot.status === 'available' &&
-        !isPastSlot(slot) &&
-        slot.startTime >= defaultStartTime.value &&
-        slot.startTime < defaultEndTime.value,
-    );
+    return trim({ startTime: defaultStartTime.value, endTime: defaultEndTime.value }) !== null;
   });
 
-  function getCellClass(slot: AvailabilitySlot, idx: number): AvailabilityCellClass {
+  function getCellClass(slot: HourCell, idx: number): AvailabilityCellClass {
     const past = isPastSlot(slot);
     const inUserRange = hasUserSelection.value && isInSelectedRange(idx);
     const isInDefault = !hasUserSelection.value && !past && !!defaultStartTime && !!defaultEndTime
-      && slot.startTime >= defaultStartTime.value && slot.startTime < defaultEndTime.value;
+      && slot.endTime > defaultStartTime.value && slot.startTime < defaultEndTime.value;
 
     return {
       'hour-cell--green': slot.status === 'available',
       'hour-cell--red': slot.status === 'reserved',
       'hour-cell--amber': slot.status === 'blocked',
       'hour-cell--past': past,
+      'hour-cell--split': slot.split && !inUserRange,
       'hour-cell--selected': inUserRange && slot.status === 'available' && !past,
       'hour-cell--default-selected': isInDefault && slot.status === 'available',
       'hour-cell--clicked': selectedSlotIndex.value === idx,
@@ -210,7 +251,6 @@ export function useAvailabilitySelection(options: AvailabilitySelectionOptions) 
     reserveStartTime,
     reserveEndTime,
     reserveRangeBookable,
-    availabilityHourLabel,
     refreshNow,
     clearSelection,
     clearDetailSelection,

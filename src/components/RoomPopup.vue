@@ -192,6 +192,7 @@ function goToReport() {
         :reserve-disabled="reserveDisabled"
         :loading-reservation-state="loadingReservationState"
         :reserve-range-bookable="actionReserveRangeBookable"
+        :has-user-selection="hasUserSelection"
         :reserve-start-time="reserveStartTime"
         :reserve-end-time="reserveEndTime"
         :reserve-disabled-reason="reserveDisabledReason"

@@ -201,8 +201,9 @@ Components are calm and efficient: rounded but not bubbly, generously tappable, 
 ### Signature Component — The 3D Viewer surface
 The defining surface. A full-bleed Three.js campus canvas with floating chrome layered over it:
 - **Control rail:** a right-edge stack of 44px floating buttons (date/period, building, search, fullscreen) plus a left breadcrumb pill — Google-Maps-style, flat-on-map with Resting-lift shadow.
-- **Room pin → RoomPopup:** tapping a pin opens a bottom sheet (`20px` top corners, Modal-sheet shadow, spring entrance). It carries the hourly **availability grid** — a 12-column row of `3px` cells colored by the availability palette — where the user taps free hours to pick a start→end range before reserving. Reserved/blocked cells open an inline detail panel.
-- **Block heatmap card (mobile):** a floating top-left card summarizing a block's hourly occupancy with the availability palette.
+- **Room pin → RoomPopup:** tapping a pin opens a bottom sheet (`20px` top corners, Modal-sheet shadow, spring entrance). It carries the hourly **availability grid** — a 12-column row of `3px` cells colored by the availability palette — where the user taps free hours to pick a start→end range before reserving. An hour with one occupied half (bookings move in 30-minute steps) shows a split fill. Reserved/blocked cells open an inline detail panel.
+- **Reservation tray schedule step:** two native selects, "Início" and "Término", in 30-minute steps that list only valid options (at least 1 hour, no conflict), above a read-only occupancy bar for the opening hours with the selection overlaid and a short list of what is already taken. Blocking and recurring-series forms reuse the same selects.
+- **Block heatmap card (mobile):** a floating top-left card summarizing a block's hourly occupancy with the availability palette; each hour aggregates its two half-hours.
 
 ## 6. Do's and Don'ts
 

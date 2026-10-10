@@ -1,23 +1,25 @@
 <script setup lang="ts">
 import type { AvailabilitySlot } from '@/types/reservation';
 import type { AvailabilityCellClass } from '@/composables/useAvailabilitySelection';
+import type { HourCell } from '@/utils/slots';
 import { Skeleton } from '@/components/ui/skeleton';
 
-defineProps<{
+// One cell per hour (MEL-024): an hour with one occupied half shows a split fill.
+const props = defineProps<{
   formattedDate: string;
   loading: boolean;
-  visibleSlots: AvailabilitySlot[];
+  visibleSlots: HourCell[];
   selectedDate: string;
   hasUserSelection: boolean;
   reserveStartTime: string;
   reserveEndTime: string;
-  isPastSlot: (slot: AvailabilitySlot) => boolean;
+  isPastSlot: (slot: Pick<AvailabilitySlot, 'endTime'>) => boolean;
   isInSelectedRange: (idx: number) => boolean;
-  getCellClass: (slot: AvailabilitySlot, idx: number) => AvailabilityCellClass;
+  getCellClass: (slot: HourCell, idx: number) => AvailabilityCellClass;
 }>();
 
 const emit = defineEmits<{
-  cellClick: [slot: AvailabilitySlot, idx: number];
+  cellClick: [slot: HourCell, idx: number];
   clearSelection: [];
 }>();
 
@@ -30,6 +32,24 @@ function statusLabel(slot: AvailabilitySlot): string {
     not_reservable: 'Não reservável',
   };
   return labels[slot.status] ?? slot.status;
+}
+
+function halfClass(half: AvailabilitySlot): string {
+  if (half.status === 'available') return props.isPastSlot(half) ? 'hour-half--past' : 'hour-half--free';
+  return `hour-half--${half.status}`;
+}
+
+/** A free cell whose free halves have all ended can't be picked anymore. */
+function isElapsed(cell: HourCell): boolean {
+  return cell.status === 'available'
+    && !cell.halves.some((half) => half.status === 'available' && !props.isPastSlot(half));
+}
+
+function cellLabel(cell: HourCell): string {
+  const past = props.isPastSlot(cell) ? ' (horário já passou)' : '';
+  if (!cell.split) return `${cell.startTime} a ${cell.endTime}: ${statusLabel(cell)}${past}`;
+  const parts = cell.halves.map((half) => `${statusLabel(half).toLowerCase()} de ${half.startTime} a ${half.endTime}`);
+  return `${cell.startTime} a ${cell.endTime}: ${parts.join('; ')}${past}`;
 }
 </script>
 
@@ -57,11 +77,14 @@ function statusLabel(slot: AvailabilitySlot): string {
           class="hour-cell"
           :class="getCellClass(slot, idx)"
           :style="{ '--cell-i': idx }"
-          :disabled="slot.status === 'available' && isPastSlot(slot)"
+          :disabled="isElapsed(slot)"
           :aria-pressed="isInSelectedRange(idx)"
-          :aria-label="`${slot.startTime} a ${slot.endTime}: ${statusLabel(slot)}${isPastSlot(slot) ? ' (horário já passou)' : ''}`"
+          :aria-label="cellLabel(slot)"
           @click="emit('cellClick', slot, idx)"
         >
+          <span v-if="getCellClass(slot, idx)['hour-cell--split']" class="hour-halves" aria-hidden="true">
+            <span v-for="half in slot.halves" :key="half.startTime" class="hour-half" :class="halfClass(half)" />
+          </span>
           <span v-if="slot.status === 'reserved' || slot.status === 'blocked'" class="dot">●</span>
         </button>
       </div>
@@ -116,6 +139,16 @@ function statusLabel(slot: AvailabilitySlot): string {
 .hour-cell--default-selected { background: color-mix(in srgb, var(--avail-free) 45%, transparent); border: 1px dashed var(--avail-free); }
 .hour-cell--selected { background: var(--primary); border: 1.5px solid color-mix(in srgb, var(--primary), black 25%); }
 .hour-cell--clicked { outline: 2px solid var(--color-link); outline-offset: 1px; }
+/* Half-occupied hour (MEL-024): two halves side by side, each in its own status colour. */
+.hour-cell--split { background: transparent; overflow: hidden; }
+.hour-halves { position: absolute; inset: 0; display: flex; gap: 1px; pointer-events: none; }
+.hour-half { flex: 1; }
+.hour-half--free { background: color-mix(in srgb, var(--avail-free) 25%, transparent); }
+.hour-cell--split:hover:not(:disabled) .hour-half--free { background: color-mix(in srgb, var(--avail-free) 40%, transparent); }
+.hour-half--reserved { background: color-mix(in srgb, var(--avail-reserved) 25%, transparent); }
+.hour-half--blocked { background: color-mix(in srgb, var(--avail-blocked) 30%, transparent); }
+.hour-half--past { background: color-mix(in srgb, var(--avail-free) 25%, transparent); opacity: 0.4; }
+.hour-half--not_reservable { background: color-mix(in srgb, var(--avail-disabled) 25%, transparent); }
 .hour-cell .dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 8px; color: color-mix(in srgb, var(--avail-reserved), black 35%); }
 
 .hour-axis { display: flex; gap: 2px; font-size: 0.6rem; color: var(--muted-foreground); }

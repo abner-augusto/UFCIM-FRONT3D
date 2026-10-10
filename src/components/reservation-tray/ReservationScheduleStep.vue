@@ -3,11 +3,13 @@ import { computed, onUnmounted, ref, watch } from 'vue';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
 import { toLocalISODate } from '@/utils/date';
-import type { Availability } from '@/types/reservation';
+import type { Availability, AvailabilitySlot } from '@/types/reservation';
 import AppDateField from '@/components/AppDateField.vue';
 import { Label } from '@/components/ui/label';
-import RoomAvailabilityStrip from '@/components/room-popup/RoomAvailabilityStrip.vue';
-import { useAvailabilitySelection, findBookableSubRange } from '@/composables/useAvailabilitySelection';
+import { Skeleton } from '@/components/ui/skeleton';
+import TimeRangeFields from '@/components/schedule/TimeRangeFields.vue';
+import OccupancyBar from '@/components/schedule/OccupancyBar.vue';
+import { useTimeRangePicker } from '@/composables/useTimeRangePicker';
 import { campusLabel } from '@/utils/space-labels';
 
 interface ReservationScheduleSelection {
@@ -32,66 +34,57 @@ const selectedDate = ref(props.initialSchedule?.date ?? today);
 const availability = ref<Availability | null>(null);
 const loadingAvailability = ref(false);
 const errorMsg = ref<string | null>(null);
+const nowTs = ref(Date.now());
 let loadSeq = 0;
 
-const {
-  visibleSlots,
-  hasUserSelection,
-  startTime,
-  endTime,
-  reserveStartTime,
-  reserveEndTime,
-  clearSelection,
-  resetSelection,
-  isPastSlot,
-  isInSelectedRange,
-  onCellClick,
-  getCellClass,
-  rangeStartIdx,
-  rangeEndIdx,
-} = useAvailabilitySelection({
-  availability,
-  selectedDate,
+/** The day's open slots (half hours), in order. */
+const openSlots = computed<AvailabilitySlot[]>(() =>
+  (availability.value ?? [])
+    .filter((slot) => slot.status !== 'closed')
+    .sort((a, b) => a.startTime.localeCompare(b.startTime)),
+);
+
+/** A slot is past once it ends: the in-progress half hour stays bookable (same rule as the backend). */
+function isPastSlot(slot: AvailabilitySlot): boolean {
+  return new Date(`${selectedDate.value}T${slot.endTime}:00`).getTime() <= nowTs.value;
+}
+
+const { start, end, startOptions, endOptions, range, clear, applyRange } = useTimeRangePicker({
+  slots: openSlots,
+  isBookable: (slot) => slot.status === 'available' && !isPastSlot(slot),
 });
 
-const formattedDate = computed(() => {
-  const d = new Date(`${selectedDate.value}T00:00:00`);
-  return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', weekday: 'short' });
-});
-
-const selectionHint = computed(() => {
-  if (hasUserSelection.value) return 'Toque em outro horário livre para ampliar ou reiniciar a seleção.';
-  return 'Escolha uma data e toque em um horário livre para selecionar o intervalo.';
+const nowMinutes = computed(() => {
+  if (selectedDate.value !== today) return null;
+  const now = new Date(nowTs.value);
+  return now.getHours() * 60 + now.getMinutes();
 });
 
 function emitSchedule() {
-  if (!selectedDate.value || !startTime.value || !endTime.value) {
+  if (!selectedDate.value || !range.value) {
     emit('scheduleChange', null);
     return;
   }
 
   emit('scheduleChange', {
     date: selectedDate.value,
-    startTime: startTime.value,
-    endTime: endTime.value,
+    startTime: range.value.startTime,
+    endTime: range.value.endTime,
   });
 }
 
 function applyInitialSchedule(schedule: ReservationScheduleSelection | null | undefined) {
   if (!schedule || schedule.date !== selectedDate.value) return;
-
-  const range = findBookableSubRange(visibleSlots.value, schedule, isPastSlot);
-  if (!range) return; // nothing in the requested range is bookable anymore
-
-  rangeStartIdx.value = range.startIdx;
-  rangeEndIdx.value = range.endIdx;
+  // Trimmed to the first free range of at least 1 hour; empty when none is left.
+  applyRange(schedule);
 }
 
 async function loadAvailability(date: string) {
   const seq = ++loadSeq;
   const initialSchedule = props.initialSchedule;
   errorMsg.value = null;
-  resetSelection();
+  clear();
+  nowTs.value = Date.now();
   loadingAvailability.value = true;
 
   try {
@@ -128,7 +121,7 @@ watch([() => props.spaceId, () => props.initialSchedule], () => {
   }
 });
 
-watch([startTime, endTime], emitSchedule);
+watch(range, emitSchedule);
 
 onUnmounted(() => {
   loadSeq += 1;
@@ -139,7 +132,7 @@ onUnmounted(() => {
   <section class="reservation-schedule-step" aria-labelledby="reservation-schedule-title">
     <div class="reservation-schedule-step__head">
       <h3 id="reservation-schedule-title">Escolher horário</h3>
-      <p>{{ selectionHint }}</p>
+      <p>Escolha o início e o término. A reserva dura no mínimo 1 hora.</p>
     </div>
 
     <div class="reservation-schedule-step__field">
@@ -154,23 +147,30 @@ onUnmounted(() => {
 
     <p class="reservation-schedule-step__campus">Campus {{ campusLabel(campusId) }}</p>
 
-    <RoomAvailabilityStrip
-      :formatted-date="formattedDate"
-      :loading="loadingAvailability"
-      :visible-slots="visibleSlots"
-      :selected-date="selectedDate"
-      :has-user-selection="hasUserSelection"
-      :reserve-start-time="reserveStartTime"
-      :reserve-end-time="reserveEndTime"
-      :is-past-slot="isPastSlot"
-      :is-in-selected-range="isInSelectedRange"
-      :get-cell-class="getCellClass"
-      @cell-click="onCellClick"
-      @clear-selection="clearSelection"
-    />
+    <div v-if="loadingAvailability" class="reservation-schedule-step__loading" aria-busy="true" aria-label="Carregando disponibilidade">
+      <div class="reservation-schedule-step__loading-fields">
+        <Skeleton class="h-11 rounded-lg" />
+        <Skeleton class="h-11 rounded-lg" />
+      </div>
+      <Skeleton class="h-8 rounded-lg" />
+    </div>
+
+    <template v-else-if="openSlots.length">
+      <TimeRangeFields
+        v-model:start="start"
+        v-model:end="end"
+        id-prefix="tray-reservation"
+        :start-options="startOptions"
+        :end-options="endOptions"
+      />
+      <p v-if="!startOptions.length" class="reservation-schedule-step__empty">
+        Não há 1 hora livre seguida nesta data. Escolha outro dia.
+      </p>
+      <OccupancyBar :slots="openSlots" :selection="range" :now-minutes="nowMinutes" />
+    </template>
 
     <p v-if="errorMsg" class="reservation-schedule-step__error">{{ errorMsg }}</p>
-    <p v-else-if="!loadingAvailability && selectedDate && !visibleSlots.length" class="reservation-schedule-step__empty">
+    <p v-else-if="!loadingAvailability && selectedDate && !openSlots.length" class="reservation-schedule-step__empty">
       Não há horários operacionais para esta data.
     </p>
   </section>
@@ -214,6 +214,18 @@ onUnmounted(() => {
   color: var(--foreground);
   font-size: 0.86rem;
   font-weight: 600;
+}
+
+.reservation-schedule-step__loading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.reservation-schedule-step__loading-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
 .reservation-schedule-step__error {
