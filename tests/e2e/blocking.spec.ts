@@ -104,6 +104,8 @@ test.describe('BlockingCreateView', () => {
   });
 
   test('maintenance: blocks a half-hour custom range of at least 1 hour (MEL-024)', async ({ maintenancePage: page }) => {
+    // Mobile viewport: AppDateField is a native date input there (a calendar popover on desktop).
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`/#/espacos/${SPACE_ID}/bloquear`);
     await expect(page.locator('#blocking-date-from')).toBeVisible({ timeout: 15_000 });
     await page.locator('#blocking-date-from').fill('2099-04-06');

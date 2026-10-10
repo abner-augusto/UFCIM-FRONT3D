@@ -162,9 +162,9 @@ test.describe('ReservationTray contextual flow', () => {
     await page.getByLabel('Data de início').fill('2099-04-06');
     await page.getByLabel('Data de fim').fill('2099-04-27');
     await page.getByLabel('Dia da semana').selectOption('1');
-    await page.locator('#rec-start').selectOption('07:00');
-    await expect(page.locator('#rec-end')).toHaveValue('08:00'); // pre-filled with start + 1 hour
-    await page.locator('#rec-end').selectOption('12:00');
+    await page.locator('#rec-time-start').selectOption('07:00');
+    await expect(page.locator('#rec-time-end')).toHaveValue('08:00'); // pre-filled with start + 1 hour
+    await page.locator('#rec-time-end').selectOption('12:00');
     await page.getByLabel('Descrição da recorrência').fill('Aula semanal de teste');
     await page.getByRole('button', { name: 'Agendar Reservas Recorrentes' }).click();
 
@@ -273,6 +273,8 @@ test.describe('ReservationTray half-hour ranges (MEL-024)', () => {
     await expect(end.locator('option:not([disabled])')).toHaveText([/^17:30/, /^18:00/]);
     await end.selectOption('18:00');
     await expect(tray.getByText(/Horário escolhido: 16:30–18:00/)).toBeVisible();
+    // At 360 px the step is taller than the drawer: it scrolls, and the actions stay on screen.
+    await expect(tray.getByRole('button', { name: /^Continuar$/i })).toBeInViewport();
 
     let requestBody: Record<string, unknown> | undefined;
     await page.route('**/api/v1/reservations', async (route) => {
