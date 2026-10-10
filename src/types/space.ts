@@ -1,3 +1,5 @@
+import type { MaintenanceCategory, OpenReportStatus } from '@/types/equipment-report';
+
 export interface Equipment {
   id: string;
   spaceId: string;
@@ -31,6 +33,8 @@ export interface Space {
   description: string | null;
   reservable: boolean;
   equipment?: Equipment[];
+  /** MEL-026: open room tickets per category (GET /spaces/:id only). */
+  openRoomReportStatus?: Partial<Record<MaintenanceCategory, OpenReportStatus>>;
 }
 
 export const SPACE_TYPE_LABELS: Record<string, string> = {

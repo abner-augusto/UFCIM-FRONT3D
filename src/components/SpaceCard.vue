@@ -69,8 +69,14 @@ const {
   groupReportState,
   reportStatusLabel,
   reportingEquipment,
+  reportDialogOpen,
+  reportableEquipment,
+  roomReportStatus,
+  openRoomReports,
   canReport,
   openReportFor,
+  openRoomReport,
+  closeReport,
   onReportSent,
   typeLabel,
   purposeLabel,
@@ -282,7 +288,9 @@ function handleToggle() {
           :group-report-state="groupReportState"
           :report-status-label="reportStatusLabel"
           @toggle="detailsExpanded = !detailsExpanded"
+          :open-room-reports="openRoomReports"
           @report="openReportFor"
+          @report-room="openRoomReport"
         />
 
         <!-- Blocking notice -->
@@ -319,10 +327,13 @@ function handleToggle() {
 
     <!-- Equipment report dialog (teleports to body; not clipped by the card) -->
     <EquipmentReportDialog
-      v-if="reportingEquipment"
-      :equipment="reportingEquipment"
+      v-if="reportDialogOpen"
+      :space-id="space.id"
       :space-name="space.name"
-      @close="reportingEquipment = null"
+      :equipment="reportingEquipment"
+      :equipment-options="reportableEquipment"
+      :room-report-status="roomReportStatus"
+      @close="closeReport"
       @reported="onReportSent"
     />
   </div>

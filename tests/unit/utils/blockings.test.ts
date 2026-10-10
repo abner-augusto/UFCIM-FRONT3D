@@ -43,6 +43,16 @@ describe('buildBlockingReasonFromReport', () => {
     expect(reason.length).toBe(BLOCKING_REASON_MAX_LENGTH);
     expect(reason.endsWith('…')).toBe(true);
   });
+
+  it('names the category for a room ticket and skips an empty description (MEL-026)', () => {
+    const room = { equipmentId: null, equipment: null, category: 'lighting' as const };
+    expect(buildBlockingReasonFromReport(report({ ...room, description: 'lâmpadas queimadas' }))).toBe(
+      'Chamado 7f3a2b1c — Iluminação: lâmpadas queimadas',
+    );
+    expect(buildBlockingReasonFromReport(report({ ...room, description: '' }))).toBe(
+      'Chamado 7f3a2b1c — Iluminação',
+    );
+  });
 });
 
 function blocking(overrides: Partial<Blocking> = {}): Blocking {

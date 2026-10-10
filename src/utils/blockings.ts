@@ -1,5 +1,6 @@
 import type { EquipmentReport } from '@/types/equipment-report';
 import type { Blocking } from '@/types/reservation';
+import { reportTitle } from '@/utils/maintenance-tickets';
 
 /** Max length accepted by the blocking `reason` field (mirrors the backend validator). */
 export const BLOCKING_REASON_MAX_LENGTH = 500;
@@ -10,8 +11,9 @@ export const BLOCKING_REASON_MAX_LENGTH = 500;
  * The short id keeps the ticket traceable from the blocking list.
  */
 export function buildBlockingReasonFromReport(report: EquipmentReport): string {
-  const equipment = report.equipment?.name ?? 'Equipamento';
-  const base = `Chamado ${report.id.slice(0, 8)} — ${equipment}: ${report.description}`;
+  // Room tickets (MEL-026) name their category and may have no description.
+  const detail = report.description ? `: ${report.description}` : '';
+  const base = `Chamado ${report.id.slice(0, 8)} — ${reportTitle(report)}${detail}`;
   if (base.length <= BLOCKING_REASON_MAX_LENGTH) return base;
   return `${base.slice(0, BLOCKING_REASON_MAX_LENGTH - 1).trimEnd()}…`;
 }

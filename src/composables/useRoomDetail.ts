@@ -5,6 +5,19 @@ import { SPACE_TYPE_LABELS, type Space, type Equipment } from '@/types/space';
 import { PURPOSE_LABELS, BLOCK_TYPE_LABELS, type Availability } from '@/types/reservation';
 import { useAvailabilitySelection } from '@/composables/useAvailabilitySelection';
 import { useEquipmentGroups, type EquipmentGroup } from '@/composables/useEquipmentGroups';
+import type { MaintenanceCategory, OpenReportStatus } from '@/types/equipment-report';
+import { openRoomReportList } from '@/utils/maintenance-tickets';
+
+/** An equipment group the user can still report, with the item that gets the ticket. */
+export interface ReportableEquipment {
+  name: string;
+  equipment: Equipment;
+}
+
+/** What a sent ticket was about, for the optimistic overlay. */
+export type ReportedTarget =
+  | { kind: 'equipment'; equipmentId: string }
+  | { kind: 'room'; category: MaintenanceCategory };
 
 /**
  * Shared room-detail wiring for the two surfaces that show a room's detail:
@@ -87,24 +100,62 @@ export function useRoomDetail(options: UseRoomDetailOptions) {
   } = useEquipmentGroups(() => spaceWithOverlay.value);
   const groupStatusClass = (g: EquipmentGroup) => `eq-status--${groupSeverity(g)}`;
 
-  // Equipment reporting
+  // Room tickets by category (MEL-026), with the same optimistic overlay, keyed
+  // by space because the popup can switch rooms without remounting.
+  type RoomStatus = Partial<Record<MaintenanceCategory, OpenReportStatus>>;
+  const overlayRoomReports = ref<Record<string, RoomStatus>>({});
+  const roomReportStatus = computed<RoomStatus>(() => ({
+    ...(space.value?.openRoomReportStatus ?? {}),
+    ...(overlayRoomReports.value[space.value?.id] ?? {}),
+  }));
+  const openRoomReports = computed(() => openRoomReportList(roomReportStatus.value));
+
+  // Reporting: the dialog opens on a given equipment (its row's "Reportar"),
+  // or on the first step, where the user picks equipment or room.
   const reportingEquipment = ref<Equipment | null>(null);
+  const reportDialogOpen = ref(false);
   const canReport = computed(() => !!auth.token);
-  function openReportFor(group: EquipmentGroup) {
-    // First item of the group that still has no open report (group-level guard).
-    const item = spaceWithOverlay.value?.equipment?.find(
+
+  /** First item of the group that still has no open report (group-level guard). */
+  function reportableItem(group: EquipmentGroup): Equipment | undefined {
+    return spaceWithOverlay.value?.equipment?.find(
       (equipment) => equipment.name === group.name && !equipment.openReportStatus,
     );
-    if (item) reportingEquipment.value = item;
   }
-  function onReportSent() {
-    const item = reportingEquipment.value;
-    if (item) {
-      const next = new Map(overlayOpenReports.value);
-      next.set(item.id, 'pending');
-      overlayOpenReports.value = next;
-    }
+  const reportableEquipment = computed<ReportableEquipment[]>(() =>
+    equipmentGroups.value.flatMap((group) => {
+      const item = groupReportState(group) === 'none' ? reportableItem(group) : undefined;
+      return item ? [{ name: group.name, equipment: item }] : [];
+    }),
+  );
+
+  function openReportFor(group: EquipmentGroup) {
+    const item = reportableItem(group);
+    if (!item) return;
+    reportingEquipment.value = item;
+    reportDialogOpen.value = true;
+  }
+  function openRoomReport() {
     reportingEquipment.value = null;
+    reportDialogOpen.value = true;
+  }
+  function closeReport() {
+    reportDialogOpen.value = false;
+    reportingEquipment.value = null;
+  }
+  function onReportSent(target: ReportedTarget) {
+    if (target.kind === 'equipment') {
+      const next = new Map(overlayOpenReports.value);
+      next.set(target.equipmentId, 'pending');
+      overlayOpenReports.value = next;
+    } else {
+      const id = space.value.id;
+      overlayRoomReports.value = {
+        ...overlayRoomReports.value,
+        [id]: { ...overlayRoomReports.value[id], [target.category]: 'pending' },
+      };
+    }
+    closeReport();
   }
 
   // Labels shared by both surfaces
@@ -130,8 +181,14 @@ export function useRoomDetail(options: UseRoomDetailOptions) {
     reportStatusLabel,
     // report
     reportingEquipment,
+    reportDialogOpen,
+    reportableEquipment,
+    roomReportStatus,
+    openRoomReports,
     canReport,
     openReportFor,
+    openRoomReport,
+    closeReport,
     onReportSent,
     // labels
     typeLabel,

@@ -1,7 +1,7 @@
 import type { Space } from '@/types/space';
 import type { Availability, Reservation, Notification, Blocking, BlockingBatchResult, RecurringReservationResult } from '@/types/reservation';
 import type { OccupancyReport, SpaceReportData } from '@/types/report';
-import type { EquipmentReport } from '@/types/equipment-report';
+import type { EquipmentReport, MaintenanceCategory } from '@/types/equipment-report';
 import { collectAllPages } from '@/utils/pagination';
 import type {
   EquipmentMaintenanceReport,
@@ -460,7 +460,16 @@ export const api = {
       method: 'POST', body: JSON.stringify(body),
     }),
 
-  listPendingEquipmentReports: (token: string | null, filters?: { spaceId?: string; status?: string }) =>
+  // MEL-026: ticket about the room itself, by service category.
+  createRoomReport: (
+    token: string | null,
+    body: { spaceId: string; category: MaintenanceCategory; description: string; severity: 'minor' | 'major' | 'blocking' },
+  ) =>
+    request<EquipmentReport>('/equipment/reports', token, {
+      method: 'POST', body: JSON.stringify(body),
+    }),
+
+  listPendingEquipmentReports:(token: string | null, filters?: { spaceId?: string; status?: string }) =>
     request<EquipmentReport[]>(`/equipment/reports/pending${qs(filters)}`, token),
 
   acknowledgeEquipmentReport: (token: string | null, id: string) =>

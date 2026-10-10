@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import BlockingTray from '@/components/BlockingTray.vue';
 import { formatDateTime, toLocalISODate } from '@/utils/date';
 import { buildBlockingReasonFromReport } from '@/utils/blockings';
+import { isRoomTicket, reportSpace, reportTitle } from '@/utils/maintenance-tickets';
 import { roomLabel, blockLabel } from '@/utils/space-labels';
 import StatusBadge, { type StatusBadgeVariant } from '@/components/StatusBadge.vue';
 
@@ -138,7 +139,7 @@ const datetimeLabel = formatDateTime;
 // departments may share the same maintenance team, so the department matters for triage.
 
 function spaceLabel(report: EquipmentReport): string {
-  const space = report.equipment?.space;
+  const space = reportSpace(report);
   if (!space) return '—';
   const parts = [
     roomLabel(space),
@@ -151,7 +152,7 @@ function spaceLabel(report: EquipmentReport): string {
 // Builds a viewer route that opens this report's space on the 3D model.
 // Requires the space to have a modelId (a pin in the GLB) and a known campus.
 function viewerLink(report: EquipmentReport) {
-  const space = report.equipment?.space;
+  const space = reportSpace(report);
   const campus = campusFor(report);
   if (!space?.modelId || !campus) return null;
   return {
@@ -163,17 +164,17 @@ function viewerLink(report: EquipmentReport) {
 
 // Resolves the campus record for a report's space (same key strategy as the viewer deep link).
 function campusFor(report: EquipmentReport) {
-  const campusKey = report.equipment?.space?.campus;
+  const campusKey = reportSpace(report)?.campus;
   if (!campusKey) return null;
   return campuses.find((c) => c.shortName === campusKey || c.id === campusKey) ?? null;
 }
 
-// Blocking from a ticket only makes sense while the ticket is open and the
-// equipment is attached to a space (the blocking target).
+// Blocking from a ticket only makes sense while the ticket is open and its
+// room (the blocking target) is known — for equipment and room tickets alike.
 function canBlockReport(report: EquipmentReport): boolean {
   return (
     (report.status === 'pending' || report.status === 'acknowledged') &&
-    !!report.equipment?.space
+    !!reportSpace(report)
   );
 }
 
@@ -185,7 +186,7 @@ function handleBlockingOpen(open: boolean) {
   if (!open) blockingReport.value = null;
 }
 
-const blockingSpace = computed(() => blockingReport.value?.equipment?.space ?? null);
+const blockingSpace = computed(() => (blockingReport.value ? reportSpace(blockingReport.value) : null));
 const blockingCampusId = computed(() =>
   (blockingReport.value ? campusFor(blockingReport.value)?.id : '') ?? '',
 );
@@ -252,10 +253,11 @@ const blockingReason = computed(() =>
           </StatusBadge>
         </div>
 
-        <h3 class="report-card__title">{{ r.equipment?.name ?? 'Equipamento' }}</h3>
+        <p v-if="isRoomTicket(r)" class="report-card__kind">Problema na sala</p>
+        <h3 class="report-card__title">{{ reportTitle(r) }}</h3>
         <p class="report-card__space">{{ spaceLabel(r) }}</p>
 
-        <p class="report-card__desc">{{ r.description }}</p>
+        <p v-if="r.description" class="report-card__desc">{{ r.description }}</p>
 
         <div class="report-card__meta">
           <span v-if="r.reporter">Reportado por {{ r.reporter.name }}</span>
@@ -386,6 +388,12 @@ const blockingReason = computed(() =>
   font-size: 1rem;
   font-weight: 600;
   color: var(--foreground);
+}
+.report-card__kind {
+  margin: 0 0 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
 }
 .report-card__space {
   margin: 0 0 0.6rem;

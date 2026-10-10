@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { Space } from '@/types/space';
 import type { EquipmentGroup, EquipmentReportState } from '@/composables/useEquipmentGroups';
+import type { OpenRoomReport } from '@/utils/maintenance-tickets';
 import { Users, Lightbulb, Snowflake, Flag } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 
-defineProps<{
+withDefaults(defineProps<{
   detailsExpanded: boolean;
   space: Space;
   equipmentGroups: EquipmentGroup[];
@@ -13,11 +14,14 @@ defineProps<{
   groupStatusLabel: (group: EquipmentGroup) => string;
   groupReportState: (group: EquipmentGroup) => EquipmentReportState;
   reportStatusLabel: (group: EquipmentGroup) => string | null;
-}>();
+  /** MEL-026: open room tickets, by category. */
+  openRoomReports?: OpenRoomReport[];
+}>(), { openRoomReports: () => [] });
 
 const emit = defineEmits<{
   toggle: [];
   report: [group: EquipmentGroup];
+  'report-room': [];
 }>();
 </script>
 
@@ -97,6 +101,29 @@ const emit = defineEmits<{
           </li>
         </ul>
       </div>
+
+      <!-- Maintenance: open room tickets + entry point for any problem (MEL-026) -->
+      <div v-if="canReport || openRoomReports.length" class="room-popup__section">
+        <p class="detail-section-title">Manutenção</p>
+        <ul v-if="openRoomReports.length" class="equipment-list">
+          <li v-for="r in openRoomReports" :key="r.category" class="equipment-item">
+            <span class="equipment-name">{{ r.label }}</span>
+            <div class="equipment-item__right">
+              <span class="equipment-badge" :class="`eq-report--${r.status}`">{{ r.statusLabel }}</span>
+            </div>
+          </li>
+        </ul>
+        <Button
+          v-if="canReport"
+          type="button"
+          variant="outline"
+          class="room-report-btn"
+          @click="emit('report-room')"
+        >
+          <Flag :size="14" aria-hidden="true" />
+          Reportar problema
+        </Button>
+      </div>
       </div>
     </div>
   </div>
@@ -165,6 +192,23 @@ const emit = defineEmits<{
 }
 .equipment-report-btn:hover {
   background: var(--muted);
+  color: var(--color-danger);
+  border-color: var(--danger-border);
+}
+
+/* Room tickets (MEL-026) */
+.room-report-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--muted-foreground);
+}
+.room-report-btn:hover {
   color: var(--color-danger);
   border-color: var(--danger-border);
 }

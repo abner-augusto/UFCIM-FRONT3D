@@ -79,8 +79,14 @@ const {
   groupReportState,
   reportStatusLabel,
   reportingEquipment,
+  reportDialogOpen,
+  reportableEquipment,
+  roomReportStatus,
+  openRoomReports,
   canReport,
   openReportFor,
+  openRoomReport,
+  closeReport,
   onReportSent,
   typeLabel,
   purposeLabel,
@@ -176,7 +182,9 @@ function goToReport() {
         :group-report-state="groupReportState"
         :report-status-label="reportStatusLabel"
         @toggle="detailsExpanded = !detailsExpanded"
+        :open-room-reports="openRoomReports"
         @report="openReportFor"
+        @report-room="openRoomReport"
       />
 
       <!-- Blocking reason -->
@@ -205,10 +213,13 @@ function goToReport() {
     </component>
 
     <EquipmentReportDialog
-      v-if="reportingEquipment"
-      :equipment="reportingEquipment"
+      v-if="reportDialogOpen"
+      :space-id="space.id"
       :space-name="space.name"
-      @close="reportingEquipment = null"
+      :equipment="reportingEquipment"
+      :equipment-options="reportableEquipment"
+      :room-report-status="roomReportStatus"
+      @close="closeReport"
       @reported="onReportSent"
     />
   </component>
