@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, onBeforeUnmount, watch } from 'vue';
+import { ref, reactive, onMounted, computed, onBeforeUnmount, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { ChevronDownIcon, SlidersHorizontalIcon, XIcon } from '@lucide/vue';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
 import type { Reservation } from '@/types/reservation';
@@ -8,7 +9,9 @@ import { TIME_SLOT_LABELS, TIME_SLOT_RANGES, STATUS_LABELS, PURPOSE_OPTIONS } fr
 import { SPACE_TYPE_LABELS } from '@/types/space';
 import type { TimeSlot } from '@/types/reservation';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import ListItemSkeleton from '@/components/ListItemSkeleton.vue';
+import MyReservationsFiltersSheet from '@/components/MyReservationsFiltersSheet.vue';
 import StatusBadge, { type StatusBadgeVariant } from '@/components/StatusBadge.vue';
 import CancelReservationDialog, {
   type CancelReservationStatus,
@@ -16,7 +19,19 @@ import CancelReservationDialog, {
 } from '@/components/CancelReservationDialog.vue';
 import { formatDateLong, formatDateShort, formatDateTime } from '@/utils/date';
 import { blockValue, departmentLabel } from '@/utils/space-labels';
-import { describeSeries, reservationDescription } from '@/utils/my-reservations';
+import {
+  DEFAULT_MY_RESERVATIONS_FILTERS,
+  countActiveFilters,
+  describeSeries,
+  isReservationPast,
+  markCanceled,
+  organizeMyReservations,
+  reservationDescription,
+  reservationSpaceOptions,
+  type MyReservationsFilters,
+  type ReservationGroup,
+  type ReservationStatusFilter,
+} from '@/utils/my-reservations';
 
 const route = useRoute();
 const auth = useAuthStore();
@@ -56,6 +71,85 @@ interface CancelTarget {
 
 const PURPOSE_LABELS = Object.fromEntries(PURPOSE_OPTIONS.map(o => [o.value, o.label]));
 
+// ─── Filters (local view state) ─────────────────────────────────────────────
+const STATUS_FILTER_OPTIONS: { value: ReservationStatusFilter; label: string }[] = [
+  { value: 'active', label: 'Todas, exceto canceladas' },
+  { value: 'canceled', label: 'Somente canceladas' },
+  { value: 'all', label: 'Todas, inclusive canceladas' },
+];
+const STATUS_FILTER_CHIP: Record<ReservationStatusFilter, string> = {
+  active: '',
+  canceled: 'Somente canceladas',
+  all: 'Inclusive canceladas',
+};
+
+const filters = reactive<MyReservationsFilters>({ ...DEFAULT_MY_RESERVATIONS_FILTERS });
+const filtersOpen = ref(false);
+// Past reservations stay folded so they never crowd the upcoming ones.
+const pastOpen = ref(false);
+
+const spaceOptions = computed(() => reservationSpaceOptions(reservations.value));
+const activeFilterCount = computed(() => countActiveFilters(filters));
+
+const organized = computed(() => organizeMyReservations(reservations.value, filters, new Date()));
+const visibleCount = computed(() => organized.value.upcoming.length + organized.value.past.length);
+// With nothing upcoming (e.g. a period filter in the past), show the past right away.
+const pastExpanded = computed(() => pastOpen.value || organized.value.upcoming.length === 0);
+
+interface ReservationSection {
+  key: 'upcoming' | 'past';
+  title: string;
+  groups: ReservationGroup[];
+}
+
+const sections = computed<ReservationSection[]>(() => {
+  const list: ReservationSection[] = [
+    { key: 'upcoming', title: 'Próximas', groups: organized.value.upcoming },
+  ];
+  if (organized.value.past.length) {
+    list.push({ key: 'past', title: 'Anteriores', groups: organized.value.past });
+  }
+  return list;
+});
+
+type FilterKey = 'space' | 'period' | 'status';
+
+const activeChips = computed<{ key: FilterKey; label: string }[]>(() => {
+  const chips: { key: FilterKey; label: string }[] = [];
+  if (filters.spaceId) {
+    const space = spaceOptions.value.find(s => s.value === filters.spaceId);
+    chips.push({ key: 'space', label: space?.label ?? 'Espaço' });
+  }
+  if (filters.from || filters.until) chips.push({ key: 'period', label: periodChipLabel() });
+  if (filters.status !== DEFAULT_MY_RESERVATIONS_FILTERS.status) {
+    chips.push({ key: 'status', label: STATUS_FILTER_CHIP[filters.status] });
+  }
+  return chips;
+});
+
+function periodChipLabel(): string {
+  const from = filters.from ? formatDateShort(filters.from) : null;
+  const until = filters.until ? formatDateShort(filters.until) : null;
+  if (from && until) return `${from} a ${until}`;
+  return from ? `A partir de ${from}` : `Até ${until}`;
+}
+
+function clearFilter(key: FilterKey) {
+  if (key === 'space') filters.spaceId = null;
+  else if (key === 'period') {
+    filters.from = null;
+    filters.until = null;
+  } else filters.status = DEFAULT_MY_RESERVATIONS_FILTERS.status;
+}
+
+function clearAllFilters() {
+  Object.assign(filters, DEFAULT_MY_RESERVATIONS_FILTERS);
+}
+
+function showCanceled() {
+  filters.status = 'canceled';
+}
+
 onMounted(async () => {
   await loadReservations();
   armHighlightFromQuery();
@@ -70,13 +164,17 @@ watch(() => route.query.highlight, () => {
   armHighlightFromQuery();
 });
 
-async function loadReservations() {
-  loading.value = true;
-  errorMsg.value = null;
+// `silent` refreshes in place (no skeleton) after a cancellation, so the
+// cancelled card can leave the list with its exit animation.
+async function loadReservations({ silent = false } = {}) {
+  if (!silent) {
+    loading.value = true;
+    errorMsg.value = null;
+  }
   try {
-    reservations.value = await api.getMyReservations(auth.token);
+    reservations.value = await api.getAllMyReservations(auth.token);
   } catch {
-    errorMsg.value = 'Não foi possível carregar suas reservas.';
+    if (!silent) errorMsg.value = 'Não foi possível carregar suas reservas.';
   } finally {
     loading.value = false;
   }
@@ -109,9 +207,9 @@ function openCancelDialog(reservation: Reservation) {
   cancelDialogOpen.value = true;
 }
 
-function openCancelSeriesDialog(group: GroupedReservation) {
+function openCancelSeriesDialog(group: ReservationGroup) {
   const requestSeq = (impactRequestSeq += 1);
-  const futureOccurrences = futureConfirmedOccurrences(group.items);
+  const futureOccurrences = futureConfirmedOccurrences(seriesOccurrences(group.id));
   const firstFuture = futureOccurrences[0] ?? group.main;
   resetCancelState();
   cancelTarget.value = {
@@ -168,12 +266,20 @@ async function confirmCancellation() {
     } else {
       await handleCancel(target.id);
     }
+    // Captured now: the backend cancels the future confirmed occurrences, so
+    // these are the ones to drop from the list once the dialog closes.
+    const canceledIds = target.kind === 'series'
+      ? futureConfirmedOccurrences(seriesOccurrences(target.id)).map(r => r.id)
+      : [target.id];
     cancelStatus.value = 'success';
     cancelSuccessTimer = setTimeout(() => {
       cancelDialogOpen.value = false;
       cancelTarget.value = null;
       resetCancelState();
-      void loadReservations();
+      // Leave the list at once (cancelled are hidden by default), then
+      // reconcile with the server in the background.
+      reservations.value = markCanceled(reservations.value, canceledIds);
+      void loadReservations({ silent: true });
     }, 700);
   } catch {
     cancelStatus.value = 'error';
@@ -238,6 +344,9 @@ function armHighlightFromQuery() {
   }
 
   activeHighlightId.value = reservationId;
+  if (organized.value.past.some(group => isGroupMatchingHighlight(group, reservationId))) {
+    pastOpen.value = true;
+  }
   highlightTimer = setTimeout(() => {
     activeHighlightId.value = null;
     highlightTimer = null;
@@ -256,93 +365,131 @@ function periodLabel(startTime: string, endTime: string): string {
 }
 
 function isCompleted(r: Reservation): boolean {
-  const normalizedEnd = r.endTime === '24:00' ? '23:59' : r.endTime;
-  return new Date(`${r.date}T${normalizedEnd}:00`) < new Date();
+  return isReservationPast(r, new Date());
 }
 
-function hasFutureOccurrences(items: Reservation[]): boolean {
-  return futureConfirmedOccurrences(items).length > 0;
+// Every loaded occurrence of a series, ignoring the active filters — series
+// cancellation acts on the whole series, not just the dates on screen.
+function seriesOccurrences(recurrenceId: string): Reservation[] {
+  return reservations.value.filter(r => r.recurrenceId === recurrenceId);
 }
 
-interface GroupedReservation {
-  id: string; // recurrenceId if recurrent, else reservation id
-  isRecurrent: boolean;
-  recurrenceId: string | null;
-  items: Reservation[];
-  main: Reservation;
+function hasFutureOccurrences(group: ReservationGroup): boolean {
+  return futureConfirmedOccurrences(seriesOccurrences(group.id)).length > 0;
 }
-
-const groupedReservations = computed<GroupedReservation[]>(() => {
-  const groups: { [key: string]: { isRecurrent: boolean; items: Reservation[] } } = {};
-  
-  for (const r of reservations.value) {
-    const key = r.recurrenceId || r.id;
-    if (!groups[key]) {
-      groups[key] = { isRecurrent: !!r.recurrenceId, items: [] };
-    }
-    groups[key].items.push(r);
-  }
-  
-  const result: GroupedReservation[] = [];
-  const now = new Date();
-  
-  for (const [key, group] of Object.entries(groups)) {
-    group.items.sort((a, b) => a.date.localeCompare(b.date));
-    
-    // For main, pick the first active future reservation, or the last one if none are active
-    let main = group.items.find(r => {
-      const normalizedEnd = r.endTime === '24:00' ? '23:59' : r.endTime;
-      return new Date(`${r.date}T${normalizedEnd}:00`) >= now && r.status === 'confirmed';
-    });
-    if (!main) main = group.items[group.items.length - 1];
-
-    result.push({
-      id: key,
-      isRecurrent: group.isRecurrent,
-      recurrenceId: group.isRecurrent ? key : null,
-      items: group.items,
-      main
-    });
-  }
-  
-  // Sort overall by main date descending
-  result.sort((a, b) => b.main.date.localeCompare(a.main.date));
-  
-  return result;
-});
 
 // Single reservations show their own text; a series shows its shared text, or
 // none here when occurrences differ (each occurrence then shows its own).
-function groupDescription(group: GroupedReservation): string | null {
+function groupDescription(group: ReservationGroup): string | null {
   return group.isRecurrent ? describeSeries(group.items).shared : reservationDescription(group.main);
 }
 
-function hasHighlightedReservation(reservationId: string): boolean {
-  return groupedReservations.value.some(group => isGroupMatchingHighlight(group, reservationId));
+function allGroups(): ReservationGroup[] {
+  return [...organized.value.upcoming, ...organized.value.past];
 }
 
-function isGroupHighlighted(group: GroupedReservation): boolean {
+function hasHighlightedReservation(reservationId: string): boolean {
+  return allGroups().some(group => isGroupMatchingHighlight(group, reservationId));
+}
+
+function isGroupHighlighted(group: ReservationGroup): boolean {
   return !!activeHighlightId.value && isGroupMatchingHighlight(group, activeHighlightId.value);
 }
 
-function isGroupMatchingHighlight(group: GroupedReservation, reservationId: string): boolean {
+function isGroupMatchingHighlight(group: ReservationGroup, reservationId: string): boolean {
   return group.id === reservationId || group.items.some(r => r.id === reservationId);
 }
 </script>
 
 <template>
   <div class="my-reservations-view">
-    <h1>Minhas Reservas</h1>
+    <div class="view-header">
+      <h1>Minhas Reservas</h1>
+      <Button
+        v-if="!loading && !errorMsg && reservations.length"
+        variant="outline"
+        class="h-11 shrink-0 gap-2"
+        data-testid="open-reservation-filters"
+        aria-label="Abrir filtros"
+        @click="filtersOpen = true"
+      >
+        <SlidersHorizontalIcon class="size-4" />
+        Filtros
+        <Badge v-if="activeFilterCount" variant="secondary" class="ml-0.5">{{ activeFilterCount }}</Badge>
+      </Button>
+    </div>
+
+    <!-- Active filter chips -->
+    <div v-if="!loading && activeChips.length" class="mb-4 flex flex-wrap gap-1.5" aria-label="Filtros ativos">
+      <Badge
+        v-for="chip in activeChips"
+        :key="chip.key"
+        variant="secondary"
+        class="h-7 gap-1 pr-1 pl-2.5 text-[0.78rem]"
+        data-testid="active-filter-chip"
+      >
+        {{ chip.label }}
+        <button
+          type="button"
+          class="hover:bg-foreground/10 focus-visible:ring-ring -mr-0.5 inline-flex size-5 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          :aria-label="`Remover filtro: ${chip.label}`"
+          @click="clearFilter(chip.key)"
+        >
+          <XIcon class="size-3.5" />
+        </button>
+      </Badge>
+    </div>
 
     <ListItemSkeleton v-if="loading" :count="4" label="Carregando reservas" />
     <div v-else-if="errorMsg" class="state-error">{{ errorMsg }}</div>
-    <div v-else-if="groupedReservations.length === 0" class="state-empty">
+    <div v-else-if="reservations.length === 0" class="state-empty">
       <p>Você ainda não tem nenhuma reserva.</p>
     </div>
+    <div v-else-if="visibleCount === 0" class="state-empty">
+      <template v-if="activeFilterCount === 0">
+        <p>Você não tem reservas ativas no momento.</p>
+        <Button variant="ghost" class="mt-2 h-11 text-primary" @click="showCanceled">Ver canceladas</Button>
+      </template>
+      <template v-else>
+        <p>Nenhuma reserva encontrada com os filtros selecionados.</p>
+        <Button variant="ghost" class="mt-2 h-11 text-primary" @click="clearAllFilters">Limpar filtros</Button>
+      </template>
+    </div>
 
-    <TransitionGroup v-else tag="ul" name="rlist" class="reservation-list">
+    <template v-else>
+    <section
+      v-for="section in sections"
+      :key="section.key"
+      class="reservation-section"
+      :aria-labelledby="`section-${section.key}`"
+    >
+      <button
+        v-if="section.key === 'past' && organized.upcoming.length"
+        :id="`section-${section.key}`"
+        type="button"
+        class="section-toggle"
+        :aria-expanded="pastExpanded"
+        @click="pastOpen = !pastOpen"
+      >
+        {{ section.title }}
+        <span class="section-count">({{ section.groups.length }})</span>
+        <ChevronDownIcon class="section-toggle__icon size-4" :class="{ 'section-toggle__icon--open': pastExpanded }" />
+      </button>
+      <h2 v-else :id="`section-${section.key}`" class="section-title">
+        {{ section.title }}
+        <span class="section-count">({{ section.groups.length }})</span>
+      </h2>
+
+      <p v-if="section.groups.length === 0" class="section-empty">Nenhuma reserva próxima.</p>
+
+    <TransitionGroup
+      v-else-if="section.key === 'upcoming' || pastExpanded"
+      tag="ul"
+      name="rlist"
+      class="reservation-list"
+    >
       <li
-        v-for="(group, i) in groupedReservations"
+        v-for="(group, i) in section.groups"
         :key="group.id"
         class="reservation-card stagger-item"
         :style="{ '--i': i }"
@@ -357,7 +504,10 @@ function isGroupMatchingHighlight(group: GroupedReservation, reservationId: stri
             <h3>{{ group.main.space?.name ?? group.main.space?.number ?? group.main.spaceId }}</h3>
             <p v-if="groupDescription(group)" class="reservation-card__description">{{ groupDescription(group) }}</p>
             <p v-if="!group.isRecurrent">{{ dateLabel(group.main.date) }}</p>
-            <p v-else>Recorrente: {{ group.items.length }} ocorrências</p>
+            <p v-else>
+              Recorrente: {{ group.items.length }} {{ group.items.length === 1 ? 'ocorrência' : 'ocorrências' }}
+              <template v-if="!isCompleted(group.main)"> · próxima em {{ dateShort(group.main.date) }}</template>
+            </p>
             <p>{{ periodLabel(group.main.startTime, group.main.endTime) }}</p>
           </div>
           <div class="reservation-card__right">
@@ -502,7 +652,7 @@ function isGroupMatchingHighlight(group: GroupedReservation, reservationId: stri
             </Button>
 
             <Button
-              v-if="group.isRecurrent && hasFutureOccurrences(group.items)"
+              v-if="group.isRecurrent && hasFutureOccurrences(group)"
               variant="outline"
               class="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive w-full"
               :disabled="cancellingSeries === group.id"
@@ -517,6 +667,20 @@ function isGroupMatchingHighlight(group: GroupedReservation, reservationId: stri
         </div>
       </li>
     </TransitionGroup>
+    </section>
+    </template>
+
+    <MyReservationsFiltersSheet
+      v-model:open="filtersOpen"
+      v-model:space-id="filters.spaceId"
+      v-model:from="filters.from"
+      v-model:until="filters.until"
+      v-model:status="filters.status"
+      :space-options="spaceOptions"
+      :status-options="STATUS_FILTER_OPTIONS"
+      :active-count="activeFilterCount"
+      @clear="clearAllFilters"
+    />
 
     <CancelReservationDialog
       :open="cancelDialogOpen"
@@ -537,9 +701,74 @@ function isGroupMatchingHighlight(group: GroupedReservation, reservationId: stri
   margin: 0 auto;
   padding: 1.5rem 1rem;
 }
+.view-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  min-height: 2.75rem;
+}
 h1 {
-  margin: 0 0 1.5rem;
+  margin: 0;
   font-size: 1.3rem;
+}
+
+/* Sections: "Próximas" always open, "Anteriores" folded behind a toggle. */
+.reservation-section + .reservation-section {
+  margin-top: 1.75rem;
+}
+.section-title,
+.section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.section-toggle {
+  min-height: var(--tap-min, 44px);
+  width: 100%;
+  margin-bottom: 0.2rem;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+.section-toggle:hover {
+  color: var(--foreground);
+}
+.section-toggle:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.section-toggle__icon {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+}
+.section-toggle__icon--open {
+  transform: rotate(180deg);
+}
+.section-count {
+  font-weight: 400;
+}
+.section-empty {
+  margin: 0;
+  padding: 0.75rem 0;
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-toggle__icon {
+    transition: none;
+  }
 }
 .reservation-list {
   list-style: none;
