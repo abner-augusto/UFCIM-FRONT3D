@@ -69,6 +69,11 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    // Agent worktrees live under .claude/ and Playwright writes HTML reports
+    // under tests/e2e; an .html change there forces a full page reload mid-test.
+    watch: {
+      ignored: ['**/.claude/**', '**/tests/e2e/report/**', '**/tests/e2e/results/**'],
+    },
     proxy: {
       '/api/v1': {
         target: 'http://localhost:8787',
