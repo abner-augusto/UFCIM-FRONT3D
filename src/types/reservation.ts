@@ -60,6 +60,8 @@ export interface Reservation {
   changeOrigin: string | null;
   recurrenceId: string | null;
   purpose?: string | null;
+  /** Free text the user typed when booking (backend caps it at 100 chars). */
+  description?: string | null;
   createdAt: string;
   updatedAt: string;
   space?: { id: string; number: string; name: string; block?: string; campus?: string; type?: string; capacity?: number; department?: string; [key: string]: unknown };

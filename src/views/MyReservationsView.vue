@@ -16,6 +16,7 @@ import CancelReservationDialog, {
 } from '@/components/CancelReservationDialog.vue';
 import { formatDateLong, formatDateShort, formatDateTime } from '@/utils/date';
 import { blockValue, departmentLabel } from '@/utils/space-labels';
+import { describeSeries, reservationDescription } from '@/utils/my-reservations';
 
 const route = useRoute();
 const auth = useAuthStore();
@@ -310,6 +311,12 @@ const groupedReservations = computed<GroupedReservation[]>(() => {
   return result;
 });
 
+// Single reservations show their own text; a series shows its shared text, or
+// none here when occurrences differ (each occurrence then shows its own).
+function groupDescription(group: GroupedReservation): string | null {
+  return group.isRecurrent ? describeSeries(group.items).shared : reservationDescription(group.main);
+}
+
 function hasHighlightedReservation(reservationId: string): boolean {
   return groupedReservations.value.some(group => isGroupMatchingHighlight(group, reservationId));
 }
@@ -348,6 +355,7 @@ function isGroupMatchingHighlight(group: GroupedReservation, reservationId: stri
         <button class="reservation-card__summary press-feedback" :aria-expanded="expandedId === group.id" @click="toggleExpand(group.id)">
           <div class="reservation-card__info">
             <h3>{{ group.main.space?.name ?? group.main.space?.number ?? group.main.spaceId }}</h3>
+            <p v-if="groupDescription(group)" class="reservation-card__description">{{ groupDescription(group) }}</p>
             <p v-if="!group.isRecurrent">{{ dateLabel(group.main.date) }}</p>
             <p v-else>Recorrente: {{ group.items.length }} ocorrências</p>
             <p>{{ periodLabel(group.main.startTime, group.main.endTime) }}</p>
@@ -411,6 +419,10 @@ function isGroupMatchingHighlight(group: GroupedReservation, reservationId: stri
           <section class="detail-section">
             <p class="detail-section__title">{{ group.isRecurrent ? 'Série de Reservas' : 'Reserva' }}</p>
             <div class="detail-grid">
+              <div v-if="groupDescription(group)" class="detail-item detail-item--stacked">
+                <span class="detail-label">Descrição</span>
+                <span class="detail-value detail-value--prose">{{ groupDescription(group) }}</span>
+              </div>
               <div v-if="!group.isRecurrent" class="detail-item">
                 <span class="detail-label">Data</span>
                 <span class="detail-value">{{ dateShort(group.main.date) }}</span>
@@ -450,7 +462,13 @@ function isGroupMatchingHighlight(group: GroupedReservation, reservationId: stri
           <div v-if="group.isRecurrent" class="recurrence-list">
             <p class="detail-section__title" style="margin-top: 1rem">Ocorrências</p>
             <div v-for="r in group.items" :key="r.id" class="recurrence-item">
-              <span class="recurrence-date">{{ dateShort(r.date) }}</span>
+              <div class="recurrence-info">
+                <span class="recurrence-date">{{ dateShort(r.date) }}</span>
+                <span
+                  v-if="describeSeries(group.items).varies && reservationDescription(r)"
+                  class="recurrence-description"
+                >{{ reservationDescription(r) }}</span>
+              </div>
               <div class="recurrence-actions">
                 <StatusBadge v-if="isCompleted(r) && r.status === 'confirmed'" :variant="STATUS_VARIANT.completed">
                   Concluída
@@ -601,6 +619,17 @@ h1 {
   font-size: 0.85rem;
   line-height: 1.5;
 }
+/* What the booking is for — clamped in the summary, full text in the detail. */
+.reservation-card__info p.reservation-card__description {
+  margin: 0 0 0.2rem;
+  color: var(--foreground);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
 .reservation-card__right {
   display: flex;
   flex-direction: column;
@@ -687,6 +716,20 @@ h1 {
   }
 }
 
+/* Free text reads left-aligned under its label, wrapping like prose. */
+.detail-item--stacked {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+.detail-value--prose {
+  text-align: left;
+  font-weight: 400;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
 .detail-value--mono {
   font-family: monospace;
   font-size: 0.75rem;
@@ -724,6 +767,7 @@ h1 {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
   font-size: 0.85rem;
   padding: 0.4rem 0;
   border-bottom: 1px solid var(--border);
@@ -731,8 +775,20 @@ h1 {
 .recurrence-item:last-child {
   border-bottom: none;
 }
+.recurrence-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.1rem;
+}
 .recurrence-date {
   color: var(--foreground);
+}
+.recurrence-description {
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 .recurrence-actions {
   display: flex;
