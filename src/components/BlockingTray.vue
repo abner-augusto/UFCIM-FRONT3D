@@ -109,7 +109,7 @@ function handleBackToMap() {
       class="blocking-tray z-[var(--z-modal)]"
       :class="isDesktop
         ? 'top-auto! bottom-[7dvh]! translate-y-0! max-h-[86dvh]! overflow-y-auto'
-        : 'mx-2 mb-[calc(0.5rem_+_var(--safe-bottom))]'"
+        : 'mx-2 mb-[calc(0.5rem_+_var(--safe-bottom))] px-6'"
       :show-close-button="true"
       overlay-class="supports-backdrop-filter:backdrop-blur-none"
     >
