@@ -1,9 +1,9 @@
 import type { UserRole } from '@/utils/roles';
 
 /**
- * First-access role hint (MEL-008). Dismissal lives in sessionStorage: the
- * project keeps localStorage for the theme only, so the hint returns in a new
- * session. Bump the version to show a rewritten hint again.
+ * First-access role hint (MEL-008). Dismissal lives in sessionStorage: only the
+ * theme preference persists across sessions (see the architecture test), so the
+ * hint returns in a new session. Bump the version to show a rewritten hint again.
  */
 export const ROLE_HINT_VERSION = 1;
 
