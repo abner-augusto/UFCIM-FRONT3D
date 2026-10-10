@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
 import { usePermissions } from '@/composables/usePermissions';
-import { Building2, Search, Calendar, Ban, BarChart3, Wrench, Bell, User } from '@lucide/vue';
+import { Building2, Search, Calendar, Ban, BarChart3, Wrench, History, Bell, User } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -16,7 +16,7 @@ const auth = useAuthStore();
 const campus = useCampusStore();
 const router = useRouter();
 
-const { canBlock, canViewReports, canManageEquipment } = usePermissions();
+const { canBlock, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
 
 const viewerTarget = computed(() =>
   campus.selectedCampusId
@@ -76,6 +76,10 @@ function handleOpenChange(open: boolean) {
 
           <router-link v-if="canManageEquipment" to="/manutencao/chamados" class="nav-item" @click="handleLinkClick">
             <span class="nav-icon"><Wrench :size="20" /></span> Chamados de Manutenção
+          </router-link>
+
+          <router-link v-if="canViewMaintenanceHistory" to="/manutencao/relatorios" class="nav-item" @click="handleLinkClick">
+            <span class="nav-icon"><History :size="20" /></span> Histórico de Manutenção
           </router-link>
 
           <router-link to="/notificacoes" class="nav-item" @click="handleLinkClick">

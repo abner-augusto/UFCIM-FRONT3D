@@ -29,7 +29,7 @@ const notifOpen = ref(false);
 const { isDark, toggleDarkMode } = useDarkMode();
 const themeToggleLabel = computed(() => isDark.value ? 'Ativar tema claro' : 'Ativar tema escuro');
 
-const { canBlock, canAdmin, canViewReports, canManageEquipment } = usePermissions();
+const { canBlock, canAdmin, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
 const adminUrl = '/admin';
 const viewerRoute = computed(() =>
   campusStore.selectedCampusId
@@ -68,6 +68,7 @@ function logout() {
         <router-link v-if="canBlock" to="/meus-bloqueios">Meus Bloqueios</router-link>
         <router-link v-if="canViewReports" to="/relatorios">Relatórios</router-link>
         <router-link v-if="canManageEquipment" to="/manutencao/chamados">Chamados</router-link>
+        <router-link v-if="canViewMaintenanceHistory" to="/manutencao/relatorios">Histórico</router-link>
         <a v-if="canAdmin" :href="adminUrl" target="_blank" rel="noopener" class="admin-link">Admin</a>
       </nav>
 

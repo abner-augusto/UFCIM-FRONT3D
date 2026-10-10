@@ -8,6 +8,8 @@ export const CAN_BLOCK: UserRole[] = ['professor', 'staff', 'maintenance'];
 export const CAN_MANAGE_EQUIPMENT: UserRole[] = ['staff', 'maintenance'];
 export const CAN_ADMIN: UserRole[] = ['staff'];
 export const CAN_VIEW_REPORTS: UserRole[] = ['professor', 'staff', 'maintenance'];
+/** Equipment maintenance history (MEL-013); mirrors the backend RBAC. */
+export const CAN_VIEW_MAINTENANCE_HISTORY: UserRole[] = ['staff', 'maintenance'];
 
 export function hasRole(userRole: UserRole | null, allowed: UserRole[]): boolean {
   if (!userRole) return false;

@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 import { authGuard } from './guards';
-import { CAN_VIEW_REPORTS, CAN_MANAGE_EQUIPMENT, CAN_BLOCK } from '@/utils/roles';
+import { CAN_VIEW_REPORTS, CAN_MANAGE_EQUIPMENT, CAN_BLOCK, CAN_VIEW_MAINTENANCE_HISTORY } from '@/utils/roles';
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -98,6 +98,13 @@ const router = createRouter({
       name: 'maintenance-reports',
       component: () => import('@/views/MaintenanceReportsView.vue'),
       meta: { requiresAuth: true, roles: CAN_MANAGE_EQUIPMENT },
+    },
+    {
+      // Not `maintenance-reports`: that name is the ticket list above.
+      path: '/manutencao/relatorios',
+      name: 'maintenance-history',
+      component: () => import('@/views/MaintenanceHistoryView.vue'),
+      meta: { requiresAuth: true, roles: CAN_VIEW_MAINTENANCE_HISTORY },
     },
     {
       path: '/espacos/:spaceId/relatorio',

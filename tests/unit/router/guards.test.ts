@@ -11,7 +11,7 @@ vi.stubGlobal('sessionStorage', {
 
 import { authGuard } from '@/router/guards';
 import { useAuthStore } from '@/stores/auth';
-import { CAN_MANAGE_EQUIPMENT, CAN_BLOCK } from '@/utils/roles';
+import { CAN_MANAGE_EQUIPMENT, CAN_BLOCK, CAN_VIEW_MAINTENANCE_HISTORY } from '@/utils/roles';
 
 function makeTo(meta: Record<string, unknown> = {}): RouteLocationNormalized {
   return { meta: meta as RouteLocationNormalized['meta'] } as RouteLocationNormalized;
@@ -71,6 +71,19 @@ describe('authGuard', () => {
     const result = authGuard(makeTo({ roles: CAN_BLOCK }));
 
     expect(result).toBeUndefined();
+  });
+
+  it.each([
+    ['student', { name: 'campus-select' }],
+    ['professor', { name: 'campus-select' }],
+    ['staff', undefined],
+    ['maintenance', undefined],
+  ] as const)('maintenance history route (MEL-013): %s → %o', (role, expected) => {
+    const auth = useAuthStore();
+    auth.setAuth('fake-token', 'fake-refresh', { ...makeStudentUser(), role });
+    const result = authGuard(makeTo({ roles: CAN_VIEW_MAINTENANCE_HISTORY }));
+
+    expect(result).toEqual(expected);
   });
 
   it('allows navigation when no meta is set', () => {

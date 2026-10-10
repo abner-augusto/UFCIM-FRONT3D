@@ -3,6 +3,18 @@ import type { Availability, Reservation, Notification, Blocking, BlockingBatchRe
 import type { OccupancyReport, SpaceReportData } from '@/types/report';
 import type { EquipmentReport } from '@/types/equipment-report';
 import { collectAllPages } from '@/utils/pagination';
+import type {
+  EquipmentMaintenanceReport,
+  EquipmentStatus,
+  MaintenanceCounts,
+  MaintenanceEquipmentRow,
+  MaintenanceHistory,
+  MaintenanceRange,
+  MaintenanceSpace,
+  MaintenanceTimelineEvent,
+  ReportSeverity,
+} from '@/types/maintenance-history';
+import { groupSeries } from '@/utils/maintenance-history';
 
 const BASE_URL = '/api/v1';
 
@@ -38,6 +50,55 @@ export interface RawOccupancyReport {
   }>;
   daily?: Array<{ date: string; occupancyRate?: number; reservations?: number }>;
   byTurno?: Array<{ turno: string; reservations?: number }>;
+}
+
+type RawMaintenanceCounts = Partial<MaintenanceCounts>;
+
+interface RawMaintenanceSeriesPoint {
+  date: string;
+  reports?: number;
+  brokenDays?: number;
+}
+
+/** Shape of GET /reports/maintenance/equipment (MEL-013). */
+export interface RawMaintenanceHistory {
+  range?: MaintenanceRange;
+  historySince?: string | null;
+  series?: RawMaintenanceSeriesPoint[];
+  equipment?: Array<
+    RawMaintenanceCounts & {
+      id: string;
+      name?: string;
+      assetId?: string;
+      type?: string;
+      status?: string;
+      space?: MaintenanceSpace | null;
+      lastReportAt?: string | null;
+      lastSeverity?: string | null;
+    }
+  >;
+}
+
+/** Shape of GET /equipment/:id/maintenance-report (MEL-013). */
+export interface RawEquipmentMaintenanceReport {
+  equipment: {
+    id: string;
+    name?: string;
+    assetId?: string;
+    type?: string;
+    status?: string;
+    notes?: string | null;
+    space?: MaintenanceSpace | null;
+  };
+  range?: MaintenanceRange;
+  historySince?: string | null;
+  summary?: RawMaintenanceCounts & {
+    averageTimeToAcknowledgeHours?: number | null;
+    averageTimeToResolveHours?: number | null;
+    lastOccurrenceAt?: string | null;
+  };
+  series?: RawMaintenanceSeriesPoint[];
+  timeline?: MaintenanceTimelineEvent[];
 }
 
 /**
@@ -153,6 +214,84 @@ export function mapOccupancyReport(raw: RawOccupancyReport): OccupancyReport {
       reservas: s.totalReservations ?? 0,
       taxaOcupacao: s.occupancyRate ?? 0,
     })),
+  };
+}
+
+function mapMaintenanceCounts(raw: RawMaintenanceCounts | undefined): MaintenanceCounts {
+  return {
+    reportCount: raw?.reportCount ?? 0,
+    openCount: raw?.openCount ?? 0,
+    resolvedCount: raw?.resolvedCount ?? 0,
+    dismissedCount: raw?.dismissedCount ?? 0,
+    breakdownCount: raw?.breakdownCount ?? 0,
+    repairCount: raw?.repairCount ?? 0,
+    timeInBrokenDays: raw?.timeInBrokenDays ?? 0,
+    recurrences: raw?.recurrences ?? 0,
+    isRecurrent: raw?.isRecurrent ?? false,
+  };
+}
+
+function mapMaintenanceSeries(raw: RawMaintenanceSeriesPoint[] | undefined) {
+  return groupSeries(
+    (raw ?? []).map((d) => ({ date: d.date, reports: d.reports ?? 0, brokenDays: d.brokenDays ?? 0 })),
+  );
+}
+
+/** Maps GET /reports/maintenance/equipment and derives the summary cards; exported for unit tests. */
+export function mapMaintenanceHistory(raw: RawMaintenanceHistory): MaintenanceHistory {
+  const equipment: MaintenanceEquipmentRow[] = (raw.equipment ?? []).map((e) => ({
+    ...mapMaintenanceCounts(e),
+    id: e.id,
+    name: e.name ?? '',
+    assetId: e.assetId ?? '',
+    type: e.type ?? '',
+    status: (e.status as EquipmentStatus | undefined) ?? 'working',
+    space: e.space ?? null,
+    lastReportAt: e.lastReportAt ?? null,
+    lastSeverity: (e.lastSeverity as ReportSeverity | null | undefined) ?? null,
+  }));
+  const brokenDays = equipment.reduce((sum, e) => sum + e.timeInBrokenDays, 0);
+
+  return {
+    range: raw.range ?? { from: '', to: '', days: 0 },
+    historySince: raw.historySince ?? null,
+    summary: {
+      equipmentCount: equipment.length,
+      reportCount: equipment.reduce((sum, e) => sum + e.reportCount, 0),
+      openCount: equipment.reduce((sum, e) => sum + e.openCount, 0),
+      brokenNowCount: equipment.filter((e) => e.status === 'broken').length,
+      timeInBrokenDays: Math.round(brokenDays * 10) / 10,
+      recurrentCount: equipment.filter((e) => e.isRecurrent).length,
+    },
+    series: mapMaintenanceSeries(raw.series),
+    equipment,
+  };
+}
+
+/** Maps GET /equipment/:id/maintenance-report; timeline newest first. Exported for unit tests. */
+export function mapEquipmentMaintenanceReport(raw: RawEquipmentMaintenanceReport): EquipmentMaintenanceReport {
+  const e = raw.equipment;
+  return {
+    equipment: {
+      id: e.id,
+      name: e.name ?? '',
+      assetId: e.assetId ?? '',
+      type: e.type ?? '',
+      status: (e.status as EquipmentStatus | undefined) ?? 'working',
+      notes: e.notes ?? null,
+      space: e.space ?? null,
+    },
+    range: raw.range ?? { from: '', to: '', days: 0 },
+    historySince: raw.historySince ?? null,
+    summary: {
+      ...mapMaintenanceCounts(raw.summary),
+      averageTimeToAcknowledgeHours: raw.summary?.averageTimeToAcknowledgeHours ?? null,
+      averageTimeToResolveHours: raw.summary?.averageTimeToResolveHours ?? null,
+      lastOccurrenceAt: raw.summary?.lastOccurrenceAt ?? null,
+    },
+    series: mapMaintenanceSeries(raw.series),
+    // The backend sends chronological order; the page reads newest first.
+    timeline: [...(raw.timeline ?? [])].reverse(),
   };
 }
 
@@ -295,6 +434,25 @@ export const api = {
   // MEL-005: Individual space report
   getSpaceReport: (token: string | null, spaceId: string, params: { startDate: string; endDate: string }) =>
     request<SpaceReportData>(`/spaces/${spaceId}/report?${new URLSearchParams(params)}`, token),
+
+  // MEL-013: Equipment maintenance history
+  getMaintenanceHistory: async (
+    token: string | null,
+    params?: { from?: string; to?: string; spaceId?: string; departmentId?: string; equipmentId?: string; status?: string; severity?: string },
+  ): Promise<MaintenanceHistory> =>
+    mapMaintenanceHistory(await request<RawMaintenanceHistory>(`/reports/maintenance/equipment${qs(params)}`, token)),
+
+  getEquipmentMaintenanceReport: async (
+    token: string | null,
+    equipmentId: string,
+    params?: { from?: string; to?: string },
+  ): Promise<EquipmentMaintenanceReport> =>
+    mapEquipmentMaintenanceReport(
+      await request<RawEquipmentMaintenanceReport>(
+        `/equipment/${encodeURIComponent(equipmentId)}/maintenance-report${qs(params)}`,
+        token,
+      ),
+    ),
 
   // Equipment Reports
   createEquipmentReport: (token: string | null, equipmentId: string, body: { description: string; severity: 'minor' | 'major' | 'blocking' }) =>

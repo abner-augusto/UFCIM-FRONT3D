@@ -8,6 +8,7 @@ import {
   CAN_MANAGE_EQUIPMENT,
   CAN_ADMIN,
   CAN_VIEW_REPORTS,
+  CAN_VIEW_MAINTENANCE_HISTORY,
 } from '@/utils/roles';
 
 /**
@@ -24,6 +25,15 @@ export function usePermissions() {
   const canManageEquipment = computed(() => hasRole(auth.userRole, CAN_MANAGE_EQUIPMENT));
   const canAdmin = computed(() => hasRole(auth.userRole, CAN_ADMIN));
   const canViewReports = computed(() => hasRole(auth.userRole, CAN_VIEW_REPORTS));
+  const canViewMaintenanceHistory = computed(() => hasRole(auth.userRole, CAN_VIEW_MAINTENANCE_HISTORY));
 
-  return { canReserve, canCreateRecurring, canBlock, canManageEquipment, canAdmin, canViewReports };
+  return {
+    canReserve,
+    canCreateRecurring,
+    canBlock,
+    canManageEquipment,
+    canAdmin,
+    canViewReports,
+    canViewMaintenanceHistory,
+  };
 }

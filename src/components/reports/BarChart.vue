@@ -15,15 +15,19 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const props = defineProps<{
-  labels: string[];
-  datasets: Array<{
-    label: string;
-    data: number[];
-    backgroundColor?: string;
-    borderColor?: string;
-  }>;
-}>();
+const props = withDefaults(
+  defineProps<{
+    labels: string[];
+    datasets: Array<{
+      label: string;
+      data: number[];
+      backgroundColor?: string;
+      borderColor?: string;
+    }>;
+    title?: string;
+  }>(),
+  { title: 'Reservas por Sala' },
+);
 
 const { isDark } = useDarkMode();
 
@@ -71,7 +75,7 @@ const chartOptions = computed(() => {
 
 <template>
   <div class="chart-container">
-    <h3 class="chart-title">Reservas por Sala</h3>
+    <h3 class="chart-title">{{ title }}</h3>
     <div class="chart-wrapper">
       <Bar v-if="labels.length" :data="chartData" :options="chartOptions" />
       <p v-else class="chart-empty">Nenhum dado disponível.</p>

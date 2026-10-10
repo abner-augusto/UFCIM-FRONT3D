@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router';
 import { useCampusStore } from '@/stores/campus';
 import { usePermissions } from '@/composables/usePermissions';
-import { Building2, Search, Calendar, Ban, BarChart3, Wrench, User } from '@lucide/vue';
+import { Building2, Search, Calendar, Ban, BarChart3, Wrench, History, User } from '@lucide/vue';
 
 const campus = useCampusStore();
 const route = useRoute();
@@ -19,7 +19,7 @@ const browserTarget = computed(() =>
     : '/campus'
 );
 
-const { canBlock, canViewReports, canManageEquipment } = usePermissions();
+const { canBlock, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
 const isActive = (name: string) => route.name === name;
 
 // Horizontal-scroll affordance: edge fades that show only when there's more
@@ -137,6 +137,11 @@ watch(
       <router-link v-if="canManageEquipment" to="/manutencao/chamados" class="tab-item" :class="{ active: isActive('maintenance-reports') }">
         <span class="tab-icon"><Wrench :size="20" /></span>
         <span class="tab-label">Chamados</span>
+      </router-link>
+
+      <router-link v-if="canViewMaintenanceHistory" to="/manutencao/relatorios" class="tab-item" :class="{ active: isActive('maintenance-history') }">
+        <span class="tab-icon"><History :size="20" /></span>
+        <span class="tab-label">Histórico</span>
       </router-link>
 
       <router-link to="/perfil" class="tab-item" :class="{ active: isActive('profile') }">
