@@ -1,5 +1,52 @@
 # Changelog
 
+## [3.4.0](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v3.3.0...v3.4.0) (2026-10-10)
+
+
+### Features
+
+* add equipment maintenance history report page (MEL-013) ([083895b](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/083895b16f5f10d40e3c69497e09a6aafa840f8d))
+* block room from a maintenance ticket card (MEL-021) ([cb9d772](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/cb9d77289f1ea95d8bc58ec3dd1eb7c429aa5d72))
+* focus a building by clicking it in the 3D viewer (MEL-002) ([d772a20](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/d772a20d6fab836f5ec3c5932f6ea554d68feeed))
+* lock blocking type to maintenance for maintenance role (MEL-016) ([f0b2789](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/f0b278980fa1f7f12919fbb2dfacb52ce84a2c37))
+* **MEL-008:** add role capability matrix and first-access hint storage ([0d03272](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/0d03272b4184a8c16bd7b7a42cf9851e722fa01c))
+* **MEL-008:** show role permissions in profile, tooltips and first-access hint ([b7fc69c](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/b7fc69c91faa922ba3653a987f6b3d32973052d3))
+* **MEL-013:** list maintenance history in the role capability matrix ([27df1d3](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/27df1d3403dcdd7af36b2898ef3001bcf531d72b))
+* move blocking flow into contextual tray ([30658e8](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/30658e8920a4439c9f10463390425b0d1edc8687))
+* multi-day blocking flow with grouped my-blockings list (MEL-017) ([a99f770](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/a99f77052c0e3b9122fc5fb439e650882f1b99ed))
+* refresh pins after reservation return ([9242b43](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/9242b4356b49b7756816d8577017788dc9131afa))
+* **reservation:** restore recurring bookings in contextual tray ([43c5da3](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/43c5da37cd559461e954639801f87f1e75ef8321))
+* **reservations:** edit a reservation from Minhas Reservas (MEL-023) ([58fc6ef](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/58fc6efd39966a49e960eefc742877884e5b14fc))
+* **reservations:** load every page of my reservations (MEL-022) ([365a75f](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/365a75f110fcc0b231cf9bb3ae884c9638befa42))
+* **reservations:** pick up to 3 weekdays for a recurring series ([2b22bbd](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/2b22bbdaac7a3989a0a0b2cedd66f0cdf4316568))
+* **reservations:** sort and filter my reservations (MEL-022) ([608f142](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/608f14276262c8f387f4d4d262e4e29bb50fcb6f))
+* **reservations:** staff reserve on behalf of another person (MEL-025) ([4b77a6e](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/4b77a6e77eeb9a622d695d0d10ecce480286a303))
+* room maintenance tickets by service category (MEL-026) ([5feea47](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/5feea4771a60aa78b7420401e852704a0fd1f6f7))
+* **schedule:** half-hour reservations and blockings with a 1-hour minimum (MEL-024) ([377e486](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/377e4867e3e1619bed9c68484c495d2669cea632))
+* show open report status and hide report CTA in room popup (MEL-015) ([c32f3a6](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/c32f3a6ed780d9bf0c8f356bf93c44446781b93a))
+* **viewer:** show next available pin availability ([3fea95d](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/3fea95d169b9df3c12ed829edd5975c18aa59bae))
+
+
+### Bug Fixes
+
+* address MEL-002 review on building click ([4f45d54](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/4f45d54a8166d802656de395be3e656f46f43cd8))
+* **blocking:** scroll the mobile blocking tray so the submit stays reachable ([cba587f](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/cba587ffe58be0a03c90a26cf33f923190514ad1))
+* concluir correções do lote de QA ([09dba50](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/09dba500c4a2c70588cf70533c83e837f64c92ce))
+* **MEL-008:** keep the storage guard free of comment false positives ([ec99cc5](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/ec99cc515743fdfc69449fcc680401fb12c6a6d9))
+* **MEL-020:** hide Minhas Reservas from maintenance in nav and route guard ([70749ac](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/70749ac399e93b3c4c92fcf09c1a9acfb2b5ff35))
+* **my-reservations:** reforçar o destaque da reserva recém-criada ([ed428aa](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/ed428aad184336211b4a4147857e88e5f5396516))
+* **period:** unificar limites com TIME_SLOT_RANGES ([941e833](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/941e833056e37853ae9f9b2cafb2e01760ec0831))
+* **reports:** contar apenas salas com reservas em "Salas Usadas" ([ca5a5eb](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/ca5a5eb9e7c0b36b12ff5e12bac729a546bf8dc5))
+* **reservation-tray:** pré-selecionar o trecho ainda reservável do intervalo ([2ccbcda](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/2ccbcdafb8fdc7504529ebef8524de7a772b25fa))
+* **reservations:** show description in my reservations (BUG-018) ([53fa6c6](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/53fa6c673fdf7433df8d0cdc4a7ba48450157c2e))
+* **router:** aplicar guard de papéis após restaurar a sessão e proteger rotas de bloqueio ([3620645](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/3620645b19486e4a977fe5bf4cb31f7d0d409e50))
+* **schedule:** unique recurring time ids and a scrollable mobile tray (MEL-024) ([25b465c](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/25b465ce6bd37674cc122719cdb6667bc1bcfd80))
+* **trays:** pad the mobile reservation and blocking drawers with utilities ([165f798](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/165f79847449af24017270b2dedd8033813eff1c))
+* **types:** sincronizar contrato de usuário e notificações ([93da97d](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/93da97d55bc0118dbfb3dc8fbc7081e7c76f65bc))
+* **ui:** centralizar rótulos de localização ([dc3a1f1](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/dc3a1f15b1d69ff8c21d69ac3e0c4a57c68a7065))
+* **viewer:** descartar cargas de GLB que resolvem após o dispose ([6a9d6c2](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/6a9d6c2b1c480e673de1b6d2581fe8779034aa5c))
+* **viewer:** igualar enquadramento do deep-link ao clique no pin ([1603ee3](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/1603ee339087d1f444a36ccac1f85790a8563da2))
+
 ## [3.3.0](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v3.2.0...v3.3.0) (2026-07-02)
 
 
