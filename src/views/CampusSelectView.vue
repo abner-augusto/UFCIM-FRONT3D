@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router';
 import { useCampusStore } from '@/stores/campus';
 import { campuses } from '@/data/campuses';
 import CampusCard from '@/components/CampusCard.vue';
+import RoleHintBanner from '@/components/RoleHintBanner.vue';
 
 const router = useRouter();
 const campusStore = useCampusStore();
@@ -24,6 +25,7 @@ function handleSelect(campusId: string) {
       <h1>Selecione seu campus</h1>
       <p>Escolha o campus para visualizar e reservar espaços</p>
     </div>
+    <RoleHintBanner class="mb-6" />
     <div class="campus-select__grid">
       <CampusCard
         v-for="campus in campuses"

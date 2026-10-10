@@ -1,14 +1,21 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { Check, X } from '@lucide/vue';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
+import { capabilitiesFor, roleSummary, whoHasCapability } from '@/utils/permissions';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const router = useRouter();
 const auth = useAuthStore();
+
+// MEL-008: what the current role allows, with denied capabilities kept visible
+// (dimmed, with who has them) so the user learns the limit before hitting it.
+const permissions = computed(() => (auth.userRole ? capabilitiesFor(auth.userRole) : []));
+const permissionsSummary = computed(() => roleSummary(auth.userRole));
 
 interface UserProfile {
   id: string;
@@ -88,6 +95,41 @@ function handleLogout() {
         <span class="max-w-[60%] text-right text-sm font-medium">{{ ROLE_LABELS[profile.role] ?? profile.role }}</span>
       </div>
     </Card>
+
+    <section v-if="!loading && permissions.length" id="permissoes" class="mb-6" aria-labelledby="permissions-heading">
+      <h2 id="permissions-heading" class="text-muted-foreground mx-1 mb-1 text-[0.7rem] font-bold tracking-[0.06em] uppercase">
+        Suas permissões
+      </h2>
+      <p v-if="permissionsSummary" class="text-muted-foreground mx-1 mt-0 mb-3 text-sm">{{ permissionsSummary }}</p>
+      <Card class="gap-0 overflow-hidden py-0">
+        <ul class="m-0 list-none p-0">
+          <li
+            v-for="(cap, index) in permissions"
+            :key="cap.id"
+            class="flex items-start gap-3 px-5 py-3.5"
+            :class="{ 'border-b': index < permissions.length - 1 }"
+          >
+            <span
+              class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full"
+              :class="cap.granted ? 'bg-secondary text-primary' : 'bg-muted text-muted-foreground'"
+              aria-hidden="true"
+            >
+              <Check v-if="cap.granted" class="size-3.5" />
+              <X v-else class="size-3.5" />
+            </span>
+            <div class="min-w-0">
+              <p class="m-0 text-sm" :class="cap.granted ? 'font-medium' : 'text-muted-foreground'">
+                {{ cap.label }}
+                <span class="sr-only">{{ cap.granted ? '(permitido)' : '(não permitido)' }}</span>
+              </p>
+              <p class="text-muted-foreground m-0 text-xs leading-snug">
+                {{ cap.granted ? cap.description : whoHasCapability(cap.id) }}
+              </p>
+            </div>
+          </li>
+        </ul>
+      </Card>
+    </section>
 
     <Button
       v-if="!loading"

@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { BarChart3 } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
+import RoleLockedButton from '@/components/RoleLockedButton.vue';
+import { useAuthStore } from '@/stores/auth';
+import { roleDeniedReason } from '@/utils/permissions';
 
-defineProps<{
+const props = defineProps<{
   canReserve: boolean;
   canBlock: boolean;
   canViewReports: boolean;
@@ -20,6 +24,11 @@ const emit = defineEmits<{
   block: [];
   report: [];
 }>();
+
+// MEL-008: CTAs the role cannot use stay visible, locked, with the reason.
+const auth = useAuthStore();
+const reserveLockedReason = computed(() => (props.canReserve ? null : roleDeniedReason('reserve', auth.userRole)));
+const reportsLockedReason = computed(() => (props.canViewReports ? null : roleDeniedReason('reports', auth.userRole)));
 </script>
 
 <template>
@@ -33,9 +42,14 @@ const emit = defineEmits<{
     >
       Reservar {{ reserveStartTime }}–{{ reserveEndTime }}
     </Button>
-    <p v-if="loadingReservationState" class="action-hint">Verificando disponibilidade...</p>
-    <p v-else-if="reserveDisabledReason" class="action-hint action-hint--warn">{{ reserveDisabledReason }}</p>
-    <p v-else-if="!reserveRangeBookable" class="action-hint action-hint--warn">Todos os horários deste turno já passaram.</p>
+    <RoleLockedButton v-else-if="reserveLockedReason" variant="outline" class="h-11 w-full" :reason="reserveLockedReason">
+      Reservar
+    </RoleLockedButton>
+    <template v-if="canReserve">
+      <p v-if="loadingReservationState" class="action-hint">Verificando disponibilidade...</p>
+      <p v-else-if="reserveDisabledReason" class="action-hint action-hint--warn">{{ reserveDisabledReason }}</p>
+      <p v-else-if="!reserveRangeBookable" class="action-hint action-hint--warn">Todos os horários deste turno já passaram.</p>
+    </template>
     <Button
       v-if="canBlock"
       variant="outline"
@@ -49,6 +63,9 @@ const emit = defineEmits<{
     <Button v-if="canViewReports" variant="ghost" class="h-11 w-full" aria-label="Ver relatório de ocupação" @click="emit('report')">
       <BarChart3 :size="14" style="vertical-align: -2px" /> Ver relatório
     </Button>
+    <RoleLockedButton v-else-if="reportsLockedReason" variant="ghost" class="h-11 w-full" :reason="reportsLockedReason">
+      Ver relatório
+    </RoleLockedButton>
   </div>
 </template>
 
