@@ -229,6 +229,19 @@ export class CameraManager {
       .start();
   }
 
+  /**
+   * Frames a building's bounding box with the framing shared by the building
+   * selector, deep-link and building click. A missing or empty box leaves the
+   * camera where it is.
+   * @param {THREE.Box3|null|undefined} bbox
+   * @returns {boolean} true when the camera was sent to frame the box.
+   */
+  focusOnBoundingBox(bbox) {
+    if (!bbox?.isBox3 || bbox.isEmpty()) return false;
+    this.fitCameraToBox(bbox);
+    return true;
+  }
+
   applyBlockFocusZoomLimits() {
     const min = BLOCK_FOCUS_MIN_DISTANCE ?? this.defaultDistances.min ?? CONTROLS_CONFIG.distance.min;
     this.controls.minDistance = Math.max(min, 0.1);

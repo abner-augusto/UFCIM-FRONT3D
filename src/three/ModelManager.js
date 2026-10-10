@@ -29,6 +29,8 @@ export class ModelManager {
 
     this.onPinsLoaded = null;
     this.onPinsVisibilityChange = null;
+    // Floors finish loading in the background; keeps raycast targets current.
+    this.onVisibleMeshesChange = null;
 
     this._disposed = false;
   }
@@ -309,6 +311,7 @@ export class ModelManager {
     this._disposed = true;
     this.onPinsLoaded = null;
     this.onPinsVisibilityChange = null;
+    this.onVisibleMeshesChange = null;
     this.entries.clear();
     this.blockBBoxCache.clear();
     this.visibleMeshes = [];
@@ -326,7 +329,12 @@ export class ModelManager {
         if (entry.object) {
           entry.object.visible = shouldShow;
           if (shouldShow) {
-            entry.object.traverse((c) => c.isMesh && blockingMeshes.push(c));
+            entry.object.traverse((c) => {
+              if (!c.isMesh) return;
+              // Lets a raycast hit resolve its building without a tree walk (MEL-002).
+              c.userData.building = building;
+              blockingMeshes.push(c);
+            });
           }
         }
         if (typeof this.onPinsVisibilityChange === 'function') {
@@ -338,6 +346,9 @@ export class ModelManager {
     this.visibleMeshes = blockingMeshes;
     if (interactionManager) {
       interactionManager.blockingMeshes = blockingMeshes;
+    }
+    if (typeof this.onVisibleMeshesChange === 'function') {
+      this.onVisibleMeshesChange(blockingMeshes);
     }
   }
 }

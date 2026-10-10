@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { PinFactory } from './PinFactory.js'; // Import the new factory
+import { isTap, resolvePointerTarget } from './pointerIntent.js';
 import { logger } from '../utils/logger.ts';
+
+const POINTER_EVENTS = ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'];
 
 export class InteractionManager extends THREE.EventDispatcher {
     constructor(camera, scene, canvas) {
@@ -21,7 +24,17 @@ export class InteractionManager extends THREE.EventDispatcher {
         this._interactionsEnabled = true;
         this._disposed = false;
 
-        this._onPointerDown = this._onPointerDown.bind(this);
+        // Building focus fires on pointerup only for a tap: one pointer, no drag.
+        this._activePointers = new Set();
+        /** @type {{pointerId:number, x:number, y:number, building:string}|null} */
+        this._pendingBuildingTap = null;
+
+        this._pointerHandlers = {
+            pointerdown: this._onPointerDown.bind(this),
+            pointermove: this._onPointerMove.bind(this),
+            pointerup: this._onPointerUp.bind(this),
+            pointercancel: this._onPointerCancel.bind(this),
+        };
     }
 
     async init() {
@@ -31,7 +44,9 @@ export class InteractionManager extends THREE.EventDispatcher {
             this.pinFactory.pinTexture?.dispose();
             return;
         }
-        this.canvas.addEventListener('pointerdown', this._onPointerDown);
+        POINTER_EVENTS.forEach((type) => {
+            this.canvas.addEventListener(type, this._pointerHandlers[type]);
+        });
     }
 
     _getOrCreateBuildingPinMap(building) {
@@ -193,6 +208,12 @@ export class InteractionManager extends THREE.EventDispatcher {
     }
 
     _onPointerDown(event) {
+        // A primary pointer starts a new gesture, so drop ids whose pointerup
+        // never reached the canvas; a second pointer means pinch, not a tap.
+        if (event.isPrimary) this._activePointers.clear();
+        this._activePointers.add(event.pointerId);
+        this._pendingBuildingTap = null;
+
         if (!this._interactionsEnabled) return;
         const rect = this.canvas.getBoundingClientRect();
         this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -200,25 +221,66 @@ export class InteractionManager extends THREE.EventDispatcher {
 
         this.raycaster.setFromCamera(this.pointer, this.camera);
         const visibleTargets = this.clickTargets.filter((obj) => this._isWorldVisible(obj));
-        const pinHits = this.raycaster.intersectObjects(visibleTargets, true);
-        if (pinHits.length === 0) return;
-
+        const pinHits = visibleTargets.length
+            ? this.raycaster.intersectObjects(visibleTargets, true)
+            : [];
         const wallHits = this.blockingMeshes.length
             ? this.raycaster.intersectObjects(this.blockingMeshes, true)
             : [];
 
-        const pinDist = pinHits[0].distance;
-        const wallDist = wallHits.length ? wallHits[0].distance : Infinity;
-        if (wallDist < pinDist) return;
+        const target = resolvePointerTarget(pinHits[0], wallHits[0]);
+        if (!target) return;
 
-        const hitObject = pinHits[0].object;
-        const sprite = hitObject.userData?.pinSprite ?? hitObject;
+        if (target.type === 'pin') {
+            const hitObject = pinHits[0].object;
+            const sprite = hitObject.userData?.pinSprite ?? hitObject;
+            this.dispatchEvent({
+                type: 'pinClick',
+                pin: sprite,
+                pinId: sprite.userData.id,
+                event
+            });
+            return;
+        }
+
+        if (this._activePointers.size === 1 && event.button === 0) {
+            this._pendingBuildingTap = {
+                pointerId: event.pointerId,
+                x: event.clientX,
+                y: event.clientY,
+                building: target.building,
+            };
+        }
+    }
+
+    _onPointerMove(event) {
+        const pending = this._pendingBuildingTap;
+        if (!pending || pending.pointerId !== event.pointerId) return;
+        if (!isTap(pending, { x: event.clientX, y: event.clientY })) {
+            this._pendingBuildingTap = null;
+        }
+    }
+
+    _onPointerUp(event) {
+        this._activePointers.delete(event.pointerId);
+        const pending = this._pendingBuildingTap;
+        if (!pending || pending.pointerId !== event.pointerId) return;
+        this._pendingBuildingTap = null;
+
+        if (!this._interactionsEnabled) return;
+        if (!isTap(pending, { x: event.clientX, y: event.clientY })) return;
         this.dispatchEvent({
-            type: 'pinClick',
-            pin: sprite,
-            pinId: sprite.userData.id,
+            type: 'buildingClick',
+            building: pending.building,
             event
         });
+    }
+
+    _onPointerCancel(event) {
+        this._activePointers.delete(event.pointerId);
+        if (this._pendingBuildingTap?.pointerId === event.pointerId) {
+            this._pendingBuildingTap = null;
+        }
     }
 
     /**
@@ -300,7 +362,11 @@ export class InteractionManager extends THREE.EventDispatcher {
 
     dispose() {
         this._disposed = true;
-        this.canvas.removeEventListener('pointerdown', this._onPointerDown);
+        POINTER_EVENTS.forEach((type) => {
+            this.canvas.removeEventListener(type, this._pointerHandlers[type]);
+        });
+        this._activePointers.clear();
+        this._pendingBuildingTap = null;
         [...this.labelSprites, ...this.clickTargets].forEach((sprite) => {
             sprite.material?.map?.dispose();
             sprite.material?.dispose();

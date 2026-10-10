@@ -81,6 +81,25 @@ export class App {
         this.interactionManager.addEventListener('pinClick', (e) => {
             this.popupManager.show(e.pin, e.event);
         });
+        this.interactionManager.addEventListener('buildingClick', (e) => {
+            this._onBuildingClick(e.building);
+        });
+    }
+
+    /**
+     * Focus a building clicked in the scene, exactly as the building selector
+     * does; the Vue controls follow through `ufcim:building-changed`.
+     * Re-clicking the active building is a no-op ("Todos" stays explicit).
+     */
+    _onBuildingClick(building) {
+        if (this._disposed || !building) return;
+        const ui = this.uiManager;
+        if (ui.getActiveBuildingId() === building) return;
+        // Only buildings the selector lists (skips hidden surroundings).
+        if (!ui.getBuildingsList().some((b) => b.id === building)) return;
+        ui.selectBuilding(building).catch((err) => {
+            logger.error(`failed to focus clicked building ${building}:`, err);
+        });
     }
 
     async _loadModels() {
@@ -96,6 +115,9 @@ export class App {
         };
         this.modelManager.onPinsVisibilityChange = (building, floor, visible) => {
             this.interactionManager.setPinsVisibility(building, floor, visible);
+        };
+        this.modelManager.onVisibleMeshesChange = (meshes) => {
+            this.interactionManager.blockingMeshes = meshes;
         };
       
         try {

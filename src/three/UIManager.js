@@ -58,11 +58,7 @@ export class UIManager {
     this.interactionManager.activateFloorPins(buildingID, newActiveFloor);
     this.interactionManager.blockingMeshes = this.modelManager.getAllMeshes();
     this.cameraManager?.applyBlockFocusZoomLimits?.();
-
-    const blockBox = this.modelManager.getBlockBoundingBox(buildingID);
-    if (!blockBox.isEmpty()) {
-      this.cameraManager.fitCameraToBox(blockBox);
-    }
+    this.cameraManager.focusOnBoundingBox(this.modelManager.getBlockBoundingBox(buildingID));
 
     this._activeBuildingId = buildingID;
     this._activeFloorLevel = newActiveFloor;
@@ -132,11 +128,7 @@ export class UIManager {
     this.modelManager.focusBuilding(building);
 
     this.cameraManager?.applyBlockFocusZoomLimits?.();
-
-    const blockBox = this.modelManager.getBlockBoundingBox(building);
-    if (!blockBox.isEmpty()) {
-      this.cameraManager.fitCameraToBox(blockBox);
-    }
+    this.cameraManager.focusOnBoundingBox(this.modelManager.getBlockBoundingBox(building));
 
     this._activeBuildingId = building;
     this._activeFloorLevel = floorLevel;
