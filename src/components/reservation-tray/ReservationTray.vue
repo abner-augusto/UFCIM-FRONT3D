@@ -15,6 +15,8 @@ import { api, ApiError } from '@/services/api';
 import type { ActionStatus } from '@/components/StatefulActionButton.vue';
 import { campusLabel } from '@/utils/space-labels';
 import { usePermissions } from '@/composables/usePermissions';
+import type { Reservation } from '@/types/reservation';
+import { buildReservationUpdate, reservationEditDraft } from '@/utils/reservation-edit';
 
 export type ReservationTrayStep = 'schedule' | 'purpose' | 'confirm' | 'success';
 
@@ -41,45 +43,78 @@ const props = defineProps<{
   // already picked. The schedule step trims the range to what is still
   // bookable, and self-corrects to null when nothing in it is.
   initialSchedule?: ReservationScheduleSelection | null;
+  // Edit mode (MEL-023): prefilled with this reservation's date, time and
+  // description. The space is fixed and the purpose is not editable.
+  editingReservation?: Reservation | null;
 }>();
 
 const emit = defineEmits<{
   'update:open': [open: boolean];
   'back-to-map': [];
+  updated: [reservation: Reservation];
 }>();
 
-const steps: ReservationTrayStep[] = ['schedule', 'purpose', 'confirm', 'success'];
+const CREATE_STEPS: ReservationTrayStep[] = ['schedule', 'purpose', 'confirm', 'success'];
+const EDIT_STEPS: ReservationTrayStep[] = ['schedule', 'purpose', 'confirm'];
+const isEditing = computed(() => !!props.editingReservation);
+const steps = computed(() => (isEditing.value ? EDIT_STEPS : CREATE_STEPS));
+const editDraft = computed(() => (props.editingReservation ? reservationEditDraft(props.editingReservation) : null));
 const interaction = useInteractionStore();
 const auth = useAuthStore();
 const { canCreateRecurring } = usePermissions();
 const router = useRouter();
 const route = useRoute();
 
-const stepTitles: Record<ReservationTrayStep, string> = {
+const CREATE_STEP_TITLES: Record<ReservationTrayStep, string> = {
   schedule: 'Escolher horário',
   purpose: 'Informar finalidade',
   confirm: 'Confirmar reserva',
   success: 'Reserva concluída',
 };
+const EDIT_STEP_TITLES: Record<ReservationTrayStep, string> = {
+  ...CREATE_STEP_TITLES,
+  purpose: 'Editar descrição',
+  confirm: 'Revisar alterações',
+};
+const stepTitles = computed(() => (isEditing.value ? EDIT_STEP_TITLES : CREATE_STEP_TITLES));
 
 const isDesktop = ref(window.matchMedia('(min-width: 768px)').matches);
 const mediaQuery = window.matchMedia('(min-width: 768px)');
 const currentStep = ref<ReservationTrayStep>('schedule');
 const reservationMode = ref<'single' | 'recurring'>('single');
 const selectedSchedule = ref<ReservationScheduleSelection | null>(null);
-const selectedPurpose = ref<ReservationPurposeSelection>({ purpose: '', description: '' });
+// Edit mode starts from the reservation's purpose and description.
+function initialPurpose(): ReservationPurposeSelection {
+  const editing = props.editingReservation;
+  return editing
+    ? { purpose: editing.purpose ?? '', description: editing.description ?? '' }
+    : { purpose: '', description: '' };
+}
+
+const selectedPurpose = ref<ReservationPurposeSelection>(initialPurpose());
 const reservationId = ref<string | null>(null);
 const confirmStatus = ref<ActionStatus>('idle');
 const confirmError = ref<string | null>(null);
 let successStepTimer: ReturnType<typeof window.setTimeout> | null = null;
 
-const currentStepIndex = computed(() => steps.indexOf(currentStep.value));
-const currentTitle = computed(() => reservationMode.value === 'recurring' ? 'Configurar recorrência' : stepTitles[currentStep.value]);
+// Edit mode: only the fields that changed, or null when nothing did.
+const pendingUpdate = computed(() => {
+  if (!props.editingReservation || !selectedSchedule.value) return null;
+  return buildReservationUpdate(props.editingReservation, {
+    schedule: selectedSchedule.value,
+    description: selectedPurpose.value.description,
+  });
+});
+const editHasNoChanges = computed(() => isEditing.value && !!selectedSchedule.value && !pendingUpdate.value);
+
+const currentStepIndex = computed(() => steps.value.indexOf(currentStep.value));
+const currentTitle = computed(() => reservationMode.value === 'recurring' ? 'Configurar recorrência' : stepTitles.value[currentStep.value]);
 const canGoBack = computed(() => currentStepIndex.value > 0 && currentStep.value !== 'success');
 const scheduleIsValid = computed(() => !!selectedSchedule.value?.date && !!selectedSchedule.value?.startTime && !!selectedSchedule.value?.endTime);
-const purposeIsValid = computed(() => !!selectedPurpose.value.purpose);
+// The purpose is not editable, so edit mode only needs something to have changed.
+const purposeIsValid = computed(() => (isEditing.value ? !!pendingUpdate.value : !!selectedPurpose.value.purpose));
 const canGoNext = computed(() => {
-  if (currentStepIndex.value >= steps.length - 1) return false;
+  if (currentStepIndex.value >= steps.value.length - 1) return false;
   if (currentStep.value === 'schedule') return scheduleIsValid.value;
   if (currentStep.value === 'purpose') return purposeIsValid.value;
   if (currentStep.value === 'confirm') return false;
@@ -108,7 +143,7 @@ const successSummary = computed(() => {
 function resetFlow() {
   reservationMode.value = 'single';
   selectedSchedule.value = null;
-  selectedPurpose.value = { purpose: '', description: '' };
+  selectedPurpose.value = initialPurpose();
   reservationId.value = null;
   confirmStatus.value = 'idle';
   confirmError.value = null;
@@ -125,7 +160,7 @@ function setReservationMode(mode: 'single' | 'recurring') {
   if (mode === 'single') currentStep.value = 'schedule';
 }
 
-watch(() => [props.campusId, props.spaceId], () => {
+watch(() => [props.campusId, props.spaceId, props.editingReservation?.id], () => {
   resetFlow();
 });
 
@@ -160,18 +195,18 @@ function next() {
     confirmStatus.value = 'idle';
     confirmError.value = null;
   }
-  currentStep.value = steps[currentStepIndex.value + 1];
+  currentStep.value = steps.value[currentStepIndex.value + 1];
 }
 
 function back() {
   if (!canGoBack.value) return;
-  currentStep.value = steps[currentStepIndex.value - 1];
+  currentStep.value = steps.value[currentStepIndex.value - 1];
 }
 
 function handleScheduleChange(schedule: ReservationScheduleSelection | null) {
   if (!props.open) return;
   selectedSchedule.value = schedule;
-  if (!schedule) return;
+  if (!schedule || isEditing.value) return;
 
   const subject = interaction.subject;
   if (subject?.campusId === props.campusId && subject.spaceId === props.spaceId) {
@@ -183,8 +218,41 @@ function handlePurposeChange(selection: ReservationPurposeSelection) {
   selectedPurpose.value = selection;
 }
 
+async function handleConfirmEdit(reservation: Reservation) {
+  const update = pendingUpdate.value;
+  if (!update) {
+    confirmStatus.value = 'error';
+    confirmError.value = 'Nada foi alterado. Mude a data, o horário ou a descrição.';
+    return;
+  }
+
+  confirmStatus.value = 'submitting';
+  confirmError.value = null;
+
+  try {
+    const updated = await api.updateReservation(auth.token, reservation.id, update);
+    confirmStatus.value = 'success';
+    // Hold on "Alterações salvas" briefly, then hand the result back and close.
+    successStepTimer = window.setTimeout(() => {
+      successStepTimer = null;
+      emit('updated', updated);
+      closeTray();
+    }, 1200);
+  } catch (e) {
+    confirmStatus.value = 'error';
+    confirmError.value = e instanceof ApiError && e.message
+      ? e.message
+      : 'Não foi possível salvar as alterações. Tente novamente.';
+  }
+}
+
 async function handleConfirm() {
   if (!selectedSchedule.value || confirmStatus.value === 'submitting' || confirmStatus.value === 'success') return;
+
+  if (props.editingReservation) {
+    await handleConfirmEdit(props.editingReservation);
+    return;
+  }
 
   confirmStatus.value = 'submitting';
   confirmError.value = null;
@@ -256,14 +324,14 @@ function handleBackToMap() {
       <div class="reservation-tray__body" :class="{ 'reservation-tray__body--scroll': !isDesktop }">
         <header class="reservation-tray__header">
           <component :is="isDesktop ? DialogTitle : DrawerTitle" class="reservation-tray__title">
-            Fazer reserva
+            {{ isEditing ? 'Editar reserva' : 'Fazer reserva' }}
           </component>
           <component :is="isDesktop ? DialogDescription : DrawerDescription" class="reservation-tray__description">
-            {{ currentTitle }} para {{ contextLabel }}.
+            {{ currentTitle }} {{ isEditing ? 'em' : 'para' }} {{ contextLabel }}.
           </component>
         </header>
 
-        <div v-if="canCreateRecurring" class="reservation-tray__mode-toggle" role="group" aria-label="Tipo de reserva">
+        <div v-if="canCreateRecurring && !isEditing" class="reservation-tray__mode-toggle" role="group" aria-label="Tipo de reserva">
           <Button
             type="button"
             variant="outline"
@@ -286,7 +354,12 @@ function handleBackToMap() {
           </Button>
         </div>
 
-        <div v-if="reservationMode === 'single'" class="reservation-tray__steps" aria-label="Etapas da reserva">
+        <div
+          v-if="reservationMode === 'single'"
+          class="reservation-tray__steps"
+          :style="{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }"
+          aria-label="Etapas da reserva"
+        >
           <span
             v-for="step in steps"
             :key="step"
@@ -302,12 +375,14 @@ function handleBackToMap() {
           v-if="reservationMode === 'single' && currentStep === 'schedule'"
           :campus-id="campusId"
           :space-id="spaceId"
-          :initial-schedule="initialSchedule"
+          :initial-schedule="editDraft ? editDraft.schedule : initialSchedule"
+          :exclude-reservation-id="editingReservation?.id ?? null"
           @schedule-change="handleScheduleChange"
         />
         <ReservationPurposeStep
           v-else-if="reservationMode === 'single' && currentStep === 'purpose'"
           :initial-purpose="selectedPurpose"
+          :description-only="isEditing"
           @purpose-change="handlePurposeChange"
         />
         <ReservationConfirmStep
@@ -317,6 +392,7 @@ function handleBackToMap() {
           :purpose="selectedPurpose"
           :status="confirmStatus"
           :error="confirmError"
+          :previous="editDraft?.schedule ?? null"
           @confirm="handleConfirm"
         />
         <ReservationSuccessStep
@@ -333,6 +409,14 @@ function handleBackToMap() {
           :space-id="spaceId"
           :reservable="reservable"
         />
+
+        <p
+          v-if="editHasNoChanges && currentStep === 'purpose'"
+          class="reservation-tray__hint"
+          aria-live="polite"
+        >
+          Altere a data, o horário ou a descrição para continuar.
+        </p>
 
         <footer v-if="reservationMode === 'single' && currentStep !== 'success'" class="reservation-tray__actions">
           <Button
@@ -473,6 +557,12 @@ function handleBackToMap() {
 
 .reservation-tray__step-dot--active {
   background: var(--primary);
+}
+
+.reservation-tray__hint {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
 }
 
 .reservation-tray__actions {

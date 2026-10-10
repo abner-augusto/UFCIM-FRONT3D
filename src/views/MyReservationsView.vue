@@ -17,6 +17,8 @@ import CancelReservationDialog, {
   type CancelReservationStatus,
   type CancelReservationSummary,
 } from '@/components/CancelReservationDialog.vue';
+import ReservationTray from '@/components/reservation-tray/ReservationTray.vue';
+import { usePermissions } from '@/composables/usePermissions';
 import { formatDateLong, formatDateShort, formatDateTime } from '@/utils/date';
 import { blockValue, departmentLabel } from '@/utils/space-labels';
 import {
@@ -35,6 +37,7 @@ import {
 
 const route = useRoute();
 const auth = useAuthStore();
+const { canEditReservation, canCancelReservation } = usePermissions();
 
 const STATUS_VARIANT: Record<Reservation['status'] | 'completed' | 'recurrent', StatusBadgeVariant> = {
   confirmed: 'success',
@@ -56,6 +59,11 @@ const cancelDialogOpen = ref(false);
 const cancelTarget = ref<CancelTarget | null>(null);
 const cancelStatus = ref<CancelReservationStatus>('idle');
 const cancelErrorMessage = ref<string | null>(null);
+// Edit tray (MEL-023). The target outlives the close so the exit animation
+// still has content; it is cleared once the tray is gone.
+const editTarget = ref<Reservation | null>(null);
+const editTrayOpen = ref(false);
+let editClearTimer: ReturnType<typeof setTimeout> | null = null;
 let highlightTimer: ReturnType<typeof setTimeout> | null = null;
 let cancelSuccessTimer: ReturnType<typeof setTimeout> | null = null;
 // Bumped on every cancel-target change so a slow series-impact response can't
@@ -158,6 +166,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   clearHighlightTimer();
   clearCancelSuccessTimer();
+  clearEditTimer();
 });
 
 watch(() => route.query.highlight, () => {
@@ -305,6 +314,46 @@ async function handleCancelSeries(recurrenceId: string) {
   } finally {
     cancellingSeries.value = null;
   }
+}
+
+function clearEditTimer() {
+  if (!editClearTimer) return;
+  clearTimeout(editClearTimer);
+  editClearTimer = null;
+}
+
+function openEditTray(reservation: Reservation) {
+  clearEditTimer();
+  editTarget.value = reservation;
+  editTrayOpen.value = true;
+}
+
+function handleEditOpenChange(open: boolean) {
+  editTrayOpen.value = open;
+  if (open) return;
+  clearEditTimer();
+  editClearTimer = setTimeout(() => {
+    editTarget.value = null;
+    editClearTimer = null;
+  }, 550);
+}
+
+// Swap the edited reservation in place (keeping the space it was listed with)
+// and point the user at it; no reload needed.
+function handleReservationUpdated(updated: Reservation) {
+  reservations.value = reservations.value.map(r =>
+    r.id === updated.id ? { ...r, ...updated, space: updated.space ?? r.space } : r,
+  );
+  flashHighlight(updated.id);
+}
+
+function flashHighlight(reservationId: string) {
+  clearHighlightTimer();
+  activeHighlightId.value = reservationId;
+  highlightTimer = setTimeout(() => {
+    activeHighlightId.value = null;
+    highlightTimer = null;
+  }, 2500);
 }
 
 function toggleExpand(id: string) {
@@ -626,7 +675,17 @@ function isGroupMatchingHighlight(group: ReservationGroup, reservationId: string
                 <StatusBadge v-else :variant="STATUS_VARIANT[r.status]">
                   {{ STATUS_LABELS[r.status] }}
                 </StatusBadge>
-                <Button v-if="r.status === 'confirmed' && !isCompleted(r)" variant="link" class="text-destructive h-auto p-0 text-xs" @click="openCancelDialog(r)" :disabled="cancelling === r.id || cancellingSeries === group.id">
+                <Button
+                  v-if="canEditReservation(r)"
+                  variant="link"
+                  class="h-auto p-0 text-xs"
+                  :aria-label="`Editar a ocorrência de ${dateShort(r.date)}`"
+                  :disabled="cancelling === r.id || cancellingSeries === group.id"
+                  @click="openEditTray(r)"
+                >
+                  Editar
+                </Button>
+                <Button v-if="canCancelReservation(r)" variant="link" class="text-destructive h-auto p-0 text-xs" @click="openCancelDialog(r)" :disabled="cancelling === r.id || cancellingSeries === group.id">
                   {{ cancelling === r.id ? '...' : 'Cancelar' }}
                 </Button>
               </div>
@@ -642,7 +701,16 @@ function isGroupMatchingHighlight(group: ReservationGroup, reservationId: string
           <!-- Actions -->
           <div class="detail-actions" style="margin-top: 1rem">
             <Button
-              v-if="!group.isRecurrent && group.main.status === 'confirmed' && !isCompleted(group.main)"
+              v-if="!group.isRecurrent && canEditReservation(group.main)"
+              variant="outline"
+              :disabled="cancelling === group.main.id"
+              @click="openEditTray(group.main)"
+            >
+              Editar reserva
+            </Button>
+
+            <Button
+              v-if="!group.isRecurrent && canCancelReservation(group.main)"
               variant="outline"
               class="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
               :disabled="cancelling === group.main.id"
@@ -652,7 +720,7 @@ function isGroupMatchingHighlight(group: ReservationGroup, reservationId: string
             </Button>
 
             <Button
-              v-if="group.isRecurrent && hasFutureOccurrences(group)"
+              v-if="group.isRecurrent && hasFutureOccurrences(group) && canCancelReservation(group.main)"
               variant="outline"
               class="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive w-full"
               :disabled="cancellingSeries === group.id"
@@ -691,6 +759,17 @@ function isGroupMatchingHighlight(group: ReservationGroup, reservationId: string
       @update:open="handleCancelDialogOpenChange"
       @confirm="confirmCancellation"
       @keep="closeCancelDialog"
+    />
+
+    <ReservationTray
+      v-if="editTarget"
+      :open="editTrayOpen"
+      :campus-id="editTarget.space?.campus ?? ''"
+      :space-id="editTarget.spaceId"
+      :space-name="reservationSpaceName(editTarget)"
+      :editing-reservation="editTarget"
+      @update:open="handleEditOpenChange"
+      @updated="handleReservationUpdated"
     />
   </div>
 </template>
@@ -1027,6 +1106,9 @@ h1 {
 
 /* Actions */
 .detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   padding-top: 0.25rem;
 }
 

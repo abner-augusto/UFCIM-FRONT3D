@@ -9,7 +9,11 @@ import {
   CAN_ADMIN,
   CAN_VIEW_REPORTS,
   CAN_VIEW_MAINTENANCE_HISTORY,
+  canCancelReservation as canCancelReservationFor,
+  canEditReservation as canEditReservationFor,
+  type ReservationActor,
 } from '@/utils/roles';
+import type { Reservation } from '@/types/reservation';
 
 /**
  * Ready-to-use permission computeds over the current user's role.
@@ -27,7 +31,18 @@ export function usePermissions() {
   const canViewReports = computed(() => hasRole(auth.userRole, CAN_VIEW_REPORTS));
   const canViewMaintenanceHistory = computed(() => hasRole(auth.userRole, CAN_VIEW_MAINTENANCE_HISTORY));
 
+  // Per-reservation checks (MEL-023): owner or staff, and the reservation's state.
+  const actor = computed<ReservationActor | null>(() =>
+    auth.user ? { id: auth.user.id, role: auth.user.role } : null,
+  );
+  const canEditReservation = (reservation: Reservation, now = new Date()) =>
+    canEditReservationFor(actor.value, reservation, now);
+  const canCancelReservation = (reservation: Reservation, now = new Date()) =>
+    canCancelReservationFor(actor.value, reservation, now);
+
   return {
+    canEditReservation,
+    canCancelReservation,
     canReserve,
     canCreateRecurring,
     canBlock,

@@ -11,6 +11,7 @@ import TimeRangeFields from '@/components/schedule/TimeRangeFields.vue';
 import OccupancyBar from '@/components/schedule/OccupancyBar.vue';
 import { useTimeRangePicker } from '@/composables/useTimeRangePicker';
 import { campusLabel } from '@/utils/space-labels';
+import { freeOwnReservation } from '@/utils/reservation-edit';
 
 interface ReservationScheduleSelection {
   date: string;
@@ -22,6 +23,8 @@ const props = defineProps<{
   campusId: string;
   spaceId: string;
   initialSchedule?: ReservationScheduleSelection | null;
+  /** Edit mode (MEL-023): this reservation's own interval counts as free. */
+  excludeReservationId?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -39,7 +42,7 @@ let loadSeq = 0;
 
 /** The day's open slots (half hours), in order. */
 const openSlots = computed<AvailabilitySlot[]>(() =>
-  (availability.value ?? [])
+  freeOwnReservation(availability.value ?? [], props.excludeReservationId)
     .filter((slot) => slot.status !== 'closed')
     .sort((a, b) => a.startTime.localeCompare(b.startTime)),
 );

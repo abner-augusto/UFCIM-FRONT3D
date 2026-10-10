@@ -1,4 +1,7 @@
 import type { UserRole } from '@/stores/auth';
+import type { Reservation } from '@/types/reservation';
+import { isReservationPast } from '@/utils/my-reservations';
+import { hasReservationStarted } from '@/utils/reservation-edit';
 
 export type { UserRole };
 
@@ -14,6 +17,38 @@ export const CAN_VIEW_MAINTENANCE_HISTORY: UserRole[] = ['staff', 'maintenance']
 export function hasRole(userRole: UserRole | null, allowed: UserRole[]): boolean {
   if (!userRole) return false;
   return allowed.includes(userRole);
+}
+
+export interface ReservationActor {
+  id: string;
+  role: UserRole;
+}
+
+/**
+ * Who may edit or cancel a reservation (MEL-023): the owner and staff;
+ * maintenance never. Mirrors the backend `canManageReservation`, which stays
+ * authoritative.
+ */
+export function canManageReservation(
+  actor: ReservationActor | null,
+  reservation: Pick<Reservation, 'userId'>,
+): boolean {
+  if (!actor || actor.role === 'maintenance') return false;
+  return actor.role === 'staff' || reservation.userId === actor.id;
+}
+
+/** Editable: manageable, confirmed and not started yet. */
+export function canEditReservation(actor: ReservationActor | null, reservation: Reservation, now: Date): boolean {
+  return canManageReservation(actor, reservation)
+    && reservation.status === 'confirmed'
+    && !hasReservationStarted(reservation, now);
+}
+
+/** Cancelable: manageable, confirmed and not over yet. */
+export function canCancelReservation(actor: ReservationActor | null, reservation: Reservation, now: Date): boolean {
+  return canManageReservation(actor, reservation)
+    && reservation.status === 'confirmed'
+    && !isReservationPast(reservation, now);
 }
 
 /**

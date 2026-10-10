@@ -385,6 +385,14 @@ export const api = {
   getAllMyReservations: (token: string | null) =>
     collectAllPages((page, limit) => api.getMyReservations(token, page, limit), { pageSize: 100 }),
 
+  // MEL-023: partial edit of date, time range and description; the space is fixed.
+  // Owner or staff only; the backend revalidates the slot and replies 409 on conflict.
+  updateReservation: (
+    token: string | null,
+    id: string,
+    body: { date?: string; startTime?: string; endTime?: string; description?: string }
+  ) => request<Reservation>(`/reservations/${id}`, token, { method: 'PATCH', body: JSON.stringify(body) }),
+
   cancelReservation: (token: string | null, id: string) =>
     request<Reservation>(`/reservations/${id}/cancel`, token, { method: 'PATCH' }),
 

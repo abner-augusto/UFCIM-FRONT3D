@@ -37,7 +37,7 @@ O usuário `funcionario@teste.com` cobre `staff`/`CAN_ADMIN`.
 - [ ] Reservar a partir do popup (slot livre) → **tray contextual** (horário→finalidade→confirmar→sucesso)
 - [ ] NÃO vê opção de recorrência
 - [ ] Espaços (`/espacos`): lista, filtros, busca, **reservar pelo card → mesmo tray contextual** (não a página `/reserva`); do sucesso, "Voltar para maquete" faz deep-link do pin
-- [ ] Minhas Reservas: lista, detalhe, cancelar
+- [ ] Minhas Reservas: lista, detalhe, editar (data, horário e descrição de reserva futura), cancelar
 - [ ] NÃO vê Bloqueios / Relatórios / Chamados
 
 ## C. professor

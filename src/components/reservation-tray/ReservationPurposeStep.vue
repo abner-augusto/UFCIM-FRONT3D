@@ -12,6 +12,8 @@ interface ReservationPurposeSelection {
 
 const props = defineProps<{
   initialPurpose?: ReservationPurposeSelection | null;
+  /** Edit mode (MEL-023): the purpose is fixed, only the description changes. */
+  descriptionOnly?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -36,12 +38,16 @@ watch([selectedPurpose, descriptionInput], () => {
 
 <template>
   <section class="reservation-purpose-step" aria-labelledby="reservation-purpose-title">
-    <div class="reservation-purpose-step__head">
+    <div v-if="descriptionOnly" class="reservation-purpose-step__head">
+      <h3 id="reservation-purpose-title">Editar descrição</h3>
+      <p>Ajuste a descrição curta da reserva ou deixe em branco para removê-la.</p>
+    </div>
+    <div v-else class="reservation-purpose-step__head">
       <h3 id="reservation-purpose-title">Informar finalidade</h3>
       <p>Escolha o motivo da reserva e, se quiser, acrescente uma descrição curta.</p>
     </div>
 
-    <div class="reservation-purpose-step__field">
+    <div v-if="!descriptionOnly" class="reservation-purpose-step__field">
       <Label class="reservation-purpose-step__label" for="tray-reservation-purpose">Finalidade</Label>
       <NativeSelect id="tray-reservation-purpose" v-model="selectedPurpose" class="reservation-purpose-step__input">
         <NativeSelectOption value="" disabled>Selecione uma finalidade</NativeSelectOption>
