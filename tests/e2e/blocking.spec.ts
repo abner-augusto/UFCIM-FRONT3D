@@ -9,10 +9,11 @@ async function openContextualBlockingTray(page: import('@playwright/test').Page)
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(
-        Array.from({ length: 15 }, (_, i) => {
-          const hour = 7 + i;
+        // 07:00–22:00 in 30-minute slots (MEL-024), all available.
+        Array.from({ length: 30 }, (_, i) => {
           const pad = (value: number) => String(value).padStart(2, '0');
-          return { startTime: `${pad(hour)}:00`, endTime: `${pad(hour + 1)}:00`, status: 'available' };
+          const time = (minutes: number) => `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;
+          return { startTime: time(420 + i * 30), endTime: time(450 + i * 30), status: 'available' };
         }),
       ),
     }),
@@ -100,5 +101,30 @@ test.describe('BlockingCreateView', () => {
 
     await expect(page.locator('#blocking-date-from')).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('#blocking-type')).toBeVisible();
+  });
+
+  test('maintenance: blocks a half-hour custom range of at least 1 hour (MEL-024)', async ({ maintenancePage: page }) => {
+    await page.goto(`/#/espacos/${SPACE_ID}/bloquear`);
+    await expect(page.locator('#blocking-date-from')).toBeVisible({ timeout: 15_000 });
+    await page.locator('#blocking-date-from').fill('2099-04-06');
+
+    let requestBody: Record<string, unknown> | undefined;
+    await page.route('**/api/v1/blockings', async (route) => {
+      requestBody = route.request().postDataJSON() as Record<string, unknown>;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ blockings: [], created: 1, overriddenReservations: 0 }),
+      });
+    });
+
+    await page.getByRole('button', { name: 'Horário personalizado' }).click();
+    await page.locator('#blocking-start').selectOption('16:30');
+    await expect(page.locator('#blocking-end')).toHaveValue('17:30');
+    await expect(page.locator('#blocking-end option[value="17:00"]')).toHaveCount(0);
+    await page.locator('#blocking-end').selectOption('18:00');
+
+    await page.getByRole('button', { name: /^Bloquear Espaço$/i }).click();
+    await expect.poll(() => requestBody).toMatchObject({ startTime: '16:30', endTime: '18:00' });
   });
 });
