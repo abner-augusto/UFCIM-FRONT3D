@@ -4,7 +4,9 @@ import { InteractionManager } from '@/three/InteractionManager.js';
 import { PinFactory } from '@/three/PinFactory.js';
 import { CameraManager } from '@/three/CameraManager.js';
 import { ModelManager } from '@/three/ModelManager.js';
+import { UIManager } from '@/three/UIManager.js';
 import { App } from '@/three/App.js';
+import { logger } from '@/utils/logger';
 
 // Engine files are plain JS; reach into their internals via `any` casts
 // (no-explicit-any is a warning, not an error, in this repo).
@@ -39,6 +41,7 @@ describe('InteractionManager building click (MEL-002)', () => {
   let im: any;
   let pinHits: any[];
   let wallHits: any[];
+  let wallRaycasts: number;
   let onBuilding: ReturnType<typeof vi.fn>;
   let onPin: ReturnType<typeof vi.fn>;
 
@@ -52,11 +55,18 @@ describe('InteractionManager building click (MEL-002)', () => {
 
     pinHits = [];
     wallHits = [];
+    wallRaycasts = 0;
     im.blockingMeshes = [buildingMesh('bloco1')];
     im.clickTargets = [new THREE.Sprite()];
     im.raycaster = {
       setFromCamera: vi.fn(),
-      intersectObjects: vi.fn((objects: unknown[]) => (objects === im.blockingMeshes ? wallHits : pinHits)),
+      intersectObjects: vi.fn((objects: unknown[]) => {
+        if (objects === im.blockingMeshes) {
+          wallRaycasts += 1;
+          return wallHits;
+        }
+        return pinHits;
+      }),
     };
 
     onBuilding = vi.fn();
@@ -79,6 +89,27 @@ describe('InteractionManager building click (MEL-002)', () => {
     expect(onBuilding).toHaveBeenCalledTimes(1);
     expect(onBuilding.mock.calls[0][0].building).toBe('bloco1');
     expect(onPin).not.toHaveBeenCalled();
+  });
+
+  it('does not raycast building meshes on pointerdown without a pin hit', () => {
+    wallHits = [{ distance: 5, object: im.blockingMeshes[0] }];
+
+    fire('pointerdown', pointer());
+    expect(wallRaycasts).toBe(0);
+
+    fire('pointerup', pointer());
+    expect(wallRaycasts).toBe(1);
+  });
+
+  it('never raycasts building meshes for a drag', () => {
+    wallHits = [{ distance: 5, object: im.blockingMeshes[0] }];
+
+    fire('pointerdown', pointer());
+    fire('pointermove', pointer({ clientX: 160 }));
+    fire('pointerup', pointer({ clientX: 160 }));
+
+    expect(wallRaycasts).toBe(0);
+    expect(onBuilding).not.toHaveBeenCalled();
   });
 
   it('does not fire when the pointer was dragged (orbit/pan)', () => {
@@ -109,6 +140,7 @@ describe('InteractionManager building click (MEL-002)', () => {
     fire('pointerup', pointer({ pointerId: 7 }));
 
     expect(onBuilding).not.toHaveBeenCalled();
+    expect(wallRaycasts).toBe(0);
   });
 
   it('recovers after a touch whose pointerup was never delivered', () => {
@@ -121,6 +153,13 @@ describe('InteractionManager building click (MEL-002)', () => {
     expect(onBuilding).toHaveBeenCalledTimes(1);
   });
 
+  it('does not fire when the tap lands on no building', () => {
+    fire('pointerdown', pointer());
+    fire('pointerup', pointer());
+
+    expect(onBuilding).not.toHaveBeenCalled();
+  });
+
   it('gives the pin priority when it is in front of the building', () => {
     const sprite = im.clickTargets[0];
     sprite.userData.id = 'sala-101';
@@ -128,6 +167,7 @@ describe('InteractionManager building click (MEL-002)', () => {
     wallHits = [{ distance: 5, object: im.blockingMeshes[0] }];
 
     fire('pointerdown', pointer());
+    expect(wallRaycasts).toBe(1); // occlusion check, as before
     fire('pointerup', pointer());
 
     expect(onPin).toHaveBeenCalledTimes(1);
@@ -175,11 +215,13 @@ describe('InteractionManager building click (MEL-002)', () => {
     expect(onBuilding).not.toHaveBeenCalled();
   });
 
-  it('removes every pointer listener it added on dispose', () => {
+  it('removes every pointer listener and drops raycast targets on dispose', () => {
     expect(canvas.handlers.size).toBeGreaterThan(0);
     im.dispose();
     expect(canvas.handlers.size).toBe(0);
     expect(canvas.removeEventListener).toHaveBeenCalledTimes(canvas.addEventListener.mock.calls.length);
+    expect(im.blockingMeshes).toEqual([]);
+    expect(im._tapPointerId).toBeNull();
   });
 });
 
@@ -210,7 +252,23 @@ describe('CameraManager.focusOnBoundingBox (MEL-002)', () => {
 });
 
 describe('ModelManager building tags (MEL-002)', () => {
-  it('tags visible meshes with their building and reports them', () => {
+  it('tags each mesh with its building once, when the floor loads', async () => {
+    const mm = new ModelManager(new THREE.Scene()) as any;
+    mm.entries.set('bloco2', new Map([[0, {
+      building: 'bloco2', floor: 0, path: 'x.glb', object: null, visible: true,
+      pins: [], pinsLoaded: false, loadingPromise: null,
+    }]]));
+    const root = new THREE.Group();
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial());
+    root.add(mesh);
+    mm.loader = { loadAsync: vi.fn().mockResolvedValue({ scene: root }) };
+
+    await mm._ensureLoaded('bloco2', 0);
+
+    expect(mesh.userData.building).toBe('bloco2');
+  });
+
+  it('reports the visible meshes after each visibility pass', () => {
     const mm = new ModelManager(new THREE.Scene()) as any;
     const root = new THREE.Group();
     const mesh = new THREE.Mesh();
@@ -223,25 +281,57 @@ describe('ModelManager building tags (MEL-002)', () => {
 
     mm._applyVisibility();
 
-    expect(mesh.userData.building).toBe('bloco2');
     expect(onMeshes).toHaveBeenCalledWith([mesh]);
   });
 });
 
+describe('UIManager.selectBuilding dispose guard (MEL-002)', () => {
+  it('stops when the engine is disposed while floors are loading', async () => {
+    let resolveFloor!: () => void;
+    const modelManager = {
+      manifest: { bloco1: {} },
+      enableBuilding: vi.fn(),
+      focusBuilding: vi.fn(),
+      maxFloorVisibleByBuilding: new Map([['bloco1', 1]]),
+      entries: new Map([['bloco1', new Map([[0, {}]])]]),
+      setFloorLevel: vi.fn(() => new Promise<void>((resolve) => { resolveFloor = resolve; })),
+      getAllMeshes: vi.fn(() => []),
+      getBlockBoundingBox: vi.fn(() => new THREE.Box3()),
+    };
+    const interactionManager = { resetPinsForBuilding: vi.fn(), activateFloorPins: vi.fn() };
+    const cameraManager = { applyBlockFocusZoomLimits: vi.fn(), focusOnBoundingBox: vi.fn() };
+    const ui = new UIManager() as any;
+    ui.init(modelManager, interactionManager, cameraManager);
+
+    const focus = ui.selectBuilding('bloco1');
+    ui.dispose();
+    resolveFloor();
+
+    await expect(focus).resolves.toBeUndefined();
+    expect(interactionManager.activateFloorPins).not.toHaveBeenCalled();
+    expect(cameraManager.focusOnBoundingBox).not.toHaveBeenCalled();
+  });
+});
+
 describe('App building click handling (MEL-002)', () => {
-  function fakeApp(activeBuilding: string | null) {
+  function fakeApp(activeBuilding: string | null, selectBuilding = vi.fn().mockResolvedValue(undefined)) {
     return {
       _disposed: false,
+      _focusingBuilding: null as string | null,
       uiManager: {
         getActiveBuildingId: () => activeBuilding,
         getBuildingsList: () => [{ id: 'bloco1', name: 'Bloco1' }, { id: 'bloco2', name: 'Bloco2' }],
-        selectBuilding: vi.fn().mockResolvedValue(undefined),
+        selectBuilding,
       },
     };
   }
 
   const onBuildingClick = (app: unknown, building: string) =>
     (App.prototype as any)._onBuildingClick.call(app, building);
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('focuses the clicked building like the selector does', () => {
     const app = fakeApp(null);
@@ -265,5 +355,43 @@ describe('App building click handling (MEL-002)', () => {
     const app = { ...fakeApp(null), _disposed: true };
     onBuildingClick(app, 'bloco1');
     expect(app.uiManager.selectBuilding).not.toHaveBeenCalled();
+  });
+
+  it('skips a second focus of the same building while the first is in flight', async () => {
+    let finish!: () => void;
+    const selectBuilding = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
+    const app = fakeApp(null, selectBuilding);
+
+    onBuildingClick(app, 'bloco1');
+    onBuildingClick(app, 'bloco1');
+    expect(selectBuilding).toHaveBeenCalledTimes(1);
+
+    finish();
+    await vi.waitFor(() => expect(app._focusingBuilding).toBeNull());
+    onBuildingClick(app, 'bloco1');
+    expect(selectBuilding).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not log an error when the engine was disposed mid-focus', async () => {
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
+    let fail!: (err: Error) => void;
+    const selectBuilding = vi.fn(() => new Promise<void>((_, reject) => { fail = reject; }));
+    const app = fakeApp(null, selectBuilding);
+
+    onBuildingClick(app, 'bloco1');
+    app._disposed = true;
+    fail(new Error('torn down'));
+
+    await vi.waitFor(() => expect(app._focusingBuilding).toBeNull());
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it('logs a real focus failure while the engine is alive', async () => {
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
+    const app = fakeApp(null, vi.fn().mockRejectedValue(new Error('boom')));
+
+    onBuildingClick(app, 'bloco1');
+
+    await vi.waitFor(() => expect(errorSpy).toHaveBeenCalled());
   });
 });

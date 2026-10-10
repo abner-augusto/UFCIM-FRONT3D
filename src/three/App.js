@@ -53,6 +53,8 @@ export class App {
         // engine is torn down mid-load, this lets the resumed init() abort
         // instead of attaching listeners / starting the loop on a dead instance.
         this._disposed = false;
+        /** Building whose click-triggered focus is still awaiting floor loads. */
+        this._focusingBuilding = null;
     }
 
     async init() {
@@ -93,13 +95,22 @@ export class App {
      */
     _onBuildingClick(building) {
         if (this._disposed || !building) return;
+        // A second tap while the same focus is still loading floors is a no-op.
+        if (this._focusingBuilding === building) return;
         const ui = this.uiManager;
         if (ui.getActiveBuildingId() === building) return;
         // Only buildings the selector lists (skips hidden surroundings).
         if (!ui.getBuildingsList().some((b) => b.id === building)) return;
-        ui.selectBuilding(building).catch((err) => {
-            logger.error(`failed to focus clicked building ${building}:`, err);
-        });
+
+        this._focusingBuilding = building;
+        ui.selectBuilding(building)
+            .catch((err) => {
+                if (this._disposed) return; // torn down mid-focus
+                logger.error(`failed to focus clicked building ${building}:`, err);
+            })
+            .finally(() => {
+                if (this._focusingBuilding === building) this._focusingBuilding = null;
+            });
     }
 
     async _loadModels() {

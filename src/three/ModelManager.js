@@ -211,6 +211,8 @@ export class ModelManager {
         }
 
         if (child.isMesh) {
+          // Lets a raycast hit resolve its building without a tree walk (MEL-002).
+          child.userData.building = entry.building;
           child.castShadow = false;
           child.receiveShadow = false;
           
@@ -329,12 +331,7 @@ export class ModelManager {
         if (entry.object) {
           entry.object.visible = shouldShow;
           if (shouldShow) {
-            entry.object.traverse((c) => {
-              if (!c.isMesh) return;
-              // Lets a raycast hit resolve its building without a tree walk (MEL-002).
-              c.userData.building = building;
-              blockingMeshes.push(c);
-            });
+            entry.object.traverse((c) => c.isMesh && blockingMeshes.push(c));
           }
         }
         if (typeof this.onPinsVisibilityChange === 'function') {

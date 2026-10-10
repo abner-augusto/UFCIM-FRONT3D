@@ -36,6 +36,9 @@ export class UIManager {
     if (buildingID === null) {
       return this.selectAll();
     }
+    // dispose() nulls the managers; every await below re-checks so a focus
+    // that resolves after teardown stops instead of throwing.
+    if (!this.modelManager) return;
 
     for (const b of Object.keys(this.modelManager.manifest)) {
       this.modelManager.enableBuilding(b, false);
@@ -46,6 +49,7 @@ export class UIManager {
 
     if ((this.modelManager.maxFloorVisibleByBuilding.get(buildingID) ?? -1) < 0) {
       await this.modelManager.setFloorLevel(buildingID, 0);
+      if (!this.modelManager) return;
     }
 
     const floorsMap = this.modelManager.entries.get(buildingID);
@@ -55,6 +59,7 @@ export class UIManager {
     }
 
     await this.modelManager.setFloorLevel(buildingID, newActiveFloor);
+    if (!this.modelManager) return;
     this.interactionManager.activateFloorPins(buildingID, newActiveFloor);
     this.interactionManager.blockingMeshes = this.modelManager.getAllMeshes();
     this.cameraManager?.applyBlockFocusZoomLimits?.();

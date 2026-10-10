@@ -9,21 +9,19 @@
 export const TAP_MAX_MOVE_PX = 4;
 
 /**
- * True when the pointer stayed within the tap threshold between two points.
- * @param {{x:number, y:number}|null|undefined} start
- * @param {{x:number, y:number}|null|undefined} end
+ * True when a pointer displacement stays within the tap threshold.
+ * Takes the deltas as numbers so pointermove checks allocate nothing.
+ * @param {number} dx
+ * @param {number} dy
  * @param {number} [maxMove]
  */
-export function isTap(start, end, maxMove = TAP_MAX_MOVE_PX) {
-    if (!start || !end) return false;
-    const dx = end.x - start.x;
-    const dy = end.y - start.y;
+export function isTap(dx, dy, maxMove = TAP_MAX_MOVE_PX) {
     return dx * dx + dy * dy < maxMove * maxMove;
 }
 
 /**
  * Building id tagged on a hit mesh (or its nearest tagged ancestor) by
- * ModelManager._applyVisibility.
+ * ModelManager._ensureLoaded.
  * @param {import('three').Object3D|null|undefined} object
  * @returns {string|null}
  */
@@ -38,17 +36,11 @@ export function findBuildingId(object) {
 }
 
 /**
- * Decide what a press targets from the nearest pin hit and nearest building
- * mesh hit on the same ray. Pins win unless a building wall sits strictly in
- * front of them.
+ * True when the nearest pin hit wins over the nearest building mesh hit on
+ * the same ray: a wall only blocks a pin when it sits strictly in front.
  * @param {{distance:number}|null|undefined} pinHit
- * @param {{distance:number, object:import('three').Object3D}|null|undefined} wallHit
- * @returns {{type:'pin'} | {type:'building', building:string} | null}
+ * @param {{distance:number}|null|undefined} wallHit
  */
-export function resolvePointerTarget(pinHit, wallHit) {
-    if (pinHit && (!wallHit || pinHit.distance <= wallHit.distance)) {
-        return { type: 'pin' };
-    }
-    const building = wallHit ? findBuildingId(wallHit.object) : null;
-    return building ? { type: 'building', building } : null;
+export function pinWins(pinHit, wallHit) {
+    return !!pinHit && (!wallHit || pinHit.distance <= wallHit.distance);
 }
