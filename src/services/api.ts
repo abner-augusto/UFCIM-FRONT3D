@@ -2,6 +2,7 @@ import type { Space } from '@/types/space';
 import type { Availability, Reservation, Notification, Blocking, BlockingBatchResult, RecurringReservationResult } from '@/types/reservation';
 import type { OccupancyReport, SpaceReportData } from '@/types/report';
 import type { EquipmentReport } from '@/types/equipment-report';
+import { collectAllPages } from '@/utils/pagination';
 
 const BASE_URL = '/api/v1';
 
@@ -239,6 +240,11 @@ export const api = {
 
   getMyReservations: (token: string | null, page = 1, limit = 20) =>
     request<Reservation[]>(`/reservations/mine?page=${page}&limit=${limit}`, token),
+
+  // Every page of /reservations/mine (backend max limit = 100), so "Minhas
+  // Reservas" can sort and filter the whole history client-side.
+  getAllMyReservations: (token: string | null) =>
+    collectAllPages((page, limit) => api.getMyReservations(token, page, limit), { pageSize: 100 }),
 
   cancelReservation: (token: string | null, id: string) =>
     request<Reservation>(`/reservations/${id}/cancel`, token, { method: 'PATCH' }),
