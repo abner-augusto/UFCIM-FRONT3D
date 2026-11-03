@@ -23,6 +23,10 @@ export function chartColors() {
     partial: cssVar('--avail-partial', '#f2c200'),
     reserved: cssVar('--avail-reserved', '#d32f2f'),
     blocked: cssVar('--avail-blocked', '#e8650a'),
+    // Air-quality levels (bom / moderado / ruim): status tokens, not the availability palette.
+    levelGood: cssVar('--success-solid', '') || cssVar('--success', '#15803d'),
+    levelModerate: cssVar('--warning', '#92400e'),
+    levelPoor: cssVar('--destructive', '#c0392b'),
     grid: cssVar('--border', '#e5e5e5'),
     card: cssVar('--card', '#ffffff'),
     mutedText: cssVar('--muted-foreground', '#888888'),

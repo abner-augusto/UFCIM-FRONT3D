@@ -34,14 +34,14 @@ export const AIR_BANDS: Partial<Record<AirMetricKey, readonly [number, number]>>
   hchoMgm3: [0.1, 0.1],
 };
 
-const COMFORT: Partial<Record<AirMetricKey, readonly [number, number]>> = {
+export const AIR_COMFORT: Partial<Record<AirMetricKey, readonly [number, number]>> = {
   temperatureC: [23, 26],
   humidityPct: [40, 65],
 };
 
 export function airLevel(metric: AirMetricKey, value: number | null | undefined): AirLevel {
   if (value === null || value === undefined || !Number.isFinite(value)) return 'unknown';
-  const comfort = COMFORT[metric];
+  const comfort = AIR_COMFORT[metric];
   if (comfort) return value >= comfort[0] && value <= comfort[1] ? 'good' : 'moderate';
   const bands = AIR_BANDS[metric];
   if (!bands) return 'unknown';
@@ -93,4 +93,61 @@ export function formatReadingAge(measuredAt: string, now = new Date()): string {
   if (hours < 24) return `há ${hours} h`;
   const days = Math.floor(hours / 24);
   return `há ${days} ${days === 1 ? 'dia' : 'dias'}`;
+}
+
+/**
+ * Pollutants shown on a reference scale (popup bands). The scale ends past the
+ * "poor" threshold so a poor value still lands inside the track.
+ */
+export const AIR_BAND_ROWS: Array<{ key: AirMetricKey; scaleMax: number }> = [
+  { key: 'co2Ppm', scaleMax: 1500 },
+  { key: 'pm25Ugm3', scaleMax: 60 },
+  { key: 'pm10Ugm3', scaleMax: 120 },
+  { key: 'tvocMgm3', scaleMax: 1.5 },
+  { key: 'hchoMgm3', scaleMax: 0.2 },
+];
+
+/** Position of `value` on a 0…scaleMax track, as a 0–100 percentage, clamped. */
+export function bandPercent(value: number, scaleMax: number): number {
+  if (!Number.isFinite(value) || scaleMax <= 0) return 0;
+  return Math.min(100, Math.max(0, (value / scaleMax) * 100));
+}
+
+/** A color stop along the value axis, for a line colored by its level. */
+export interface LevelStop {
+  value: number;
+  level: Exclude<AirLevel, 'unknown'>;
+}
+
+/**
+ * Stops for coloring a chart line by value: green inside the acceptable band,
+ * yellow through "moderate", red from the poor threshold up. Comfort metrics go
+ * yellow below and above their range. Empty when the metric has no reference.
+ */
+export function levelStops(metric: AirMetricKey): LevelStop[] {
+  const comfort = AIR_COMFORT[metric];
+  if (comfort) {
+    const [lo, hi] = comfort;
+    const margin = (hi - lo) * 0.15;
+    return [
+      { value: lo - margin, level: 'moderate' },
+      { value: lo, level: 'good' },
+      { value: hi, level: 'good' },
+      { value: hi + margin, level: 'moderate' },
+    ];
+  }
+  const bands = AIR_BANDS[metric];
+  if (!bands) return [];
+  const [good, moderate] = bands;
+  if (good === moderate) {
+    return [
+      { value: good * 0.8, level: 'good' },
+      { value: good, level: 'poor' },
+    ];
+  }
+  return [
+    { value: good, level: 'good' },
+    { value: (good + moderate) / 2, level: 'moderate' },
+    { value: moderate, level: 'poor' },
+  ];
 }

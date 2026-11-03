@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { airLevel, formatReadingAge, overallAirLevel, AIR_METRICS } from '@/utils/air-quality';
+import { airLevel, bandPercent, formatReadingAge, levelStops, overallAirLevel, AIR_METRICS } from '@/utils/air-quality';
 import type { AirQualityReading } from '@/types/air-quality';
 
 function reading(overrides: Partial<AirQualityReading> = {}): AirQualityReading {
@@ -73,5 +73,33 @@ describe('formatting', () => {
   it('formats TVOC with three decimals and a comma', () => {
     const tvoc = AIR_METRICS.find((m) => m.key === 'tvocMgm3')!;
     expect(tvoc.format(0.003)).toBe('0,003');
+  });
+});
+
+describe('bands and gradient stops', () => {
+  it('places a value on its track, clamped to the ends', () => {
+    expect(bandPercent(750, 1500)).toBe(50);
+    expect(bandPercent(4000, 1500)).toBe(100);
+    expect(bandPercent(-1, 1500)).toBe(0);
+  });
+
+  it('goes green → yellow → red at the CO₂ thresholds', () => {
+    expect(levelStops('co2Ppm')).toEqual([
+      { value: 800, level: 'good' },
+      { value: 900, level: 'moderate' },
+      { value: 1000, level: 'poor' },
+    ]);
+  });
+
+  it('jumps to red at the single formaldehyde guideline', () => {
+    expect(levelStops('hchoMgm3').map((s) => s.level)).toEqual(['good', 'poor']);
+  });
+
+  it('turns yellow on both sides of the comfort range', () => {
+    expect(levelStops('temperatureC').map((s) => s.level)).toEqual(['moderate', 'good', 'good', 'moderate']);
+  });
+
+  it('has no stops for a metric without reference', () => {
+    expect(levelStops('pm1Ugm3')).toEqual([]);
   });
 });
