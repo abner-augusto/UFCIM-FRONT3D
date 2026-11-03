@@ -14,6 +14,8 @@ import AppDateField from '@/components/AppDateField.vue';
 import ChartCardSkeleton from '@/components/ChartCardSkeleton.vue';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toLocalISODate } from '@/utils/date';
+import AirQualityHistory from '@/components/reports/AirQualityHistory.vue';
+import type { SpaceAirQualityHistory } from '@/types/air-quality';
 
 const route = useRoute();
 const router = useRouter();
@@ -76,6 +78,28 @@ async function loadReport() {
 
 onMounted(loadReport);
 watch([startDate, endDate], loadReport);
+
+// Air-quality history for the same range, averaged per hour. Campus dates are
+// UTC−3 (America/Fortaleza, no DST). A room without a sensor hides the section.
+const airHistory = ref<SpaceAirQualityHistory | null>(null);
+let airHistorySeq = 0;
+async function loadAirHistory() {
+  const seq = ++airHistorySeq;
+  const end = new Date(`${endDate.value}T00:00:00-03:00`);
+  end.setDate(end.getDate() + 1);
+  try {
+    const result = await api.getSpaceAirQualityHistory(auth.token, spaceId, {
+      from: new Date(`${startDate.value}T00:00:00-03:00`).toISOString(),
+      to: end.toISOString(),
+      bucket: 'hour',
+    });
+    if (seq === airHistorySeq) airHistory.value = result;
+  } catch {
+    if (seq === airHistorySeq) airHistory.value = null;
+  }
+}
+onMounted(loadAirHistory);
+watch([startDate, endDate], loadAirHistory);
 
 const adaptedSummary = computed<Summary>(() => {
   if (!report.value) return { ocupacaoMedia: 0, totalReservas: 0, salasUsadas: 0 };
@@ -178,6 +202,12 @@ const todayStr = computed(() => toLocalISODate());
       <section class="report-section">
         <h2>Horários mais procurados</h2>
         <HourlyHeatmap :data="report.hourlyAverage" />
+      </section>
+
+      <section v-if="airHistory?.device" class="report-section">
+        <h2>Qualidade do ar</h2>
+        <AirQualityHistory v-if="airHistory.points.length" :points="airHistory.points" />
+        <p v-else class="state-msg">Nenhuma medição do sensor no período.</p>
       </section>
 
       <section class="report-section">
