@@ -20,16 +20,33 @@ import {
   type ScriptableContext,
   type TooltipItem,
 } from 'chart.js';
+import { Download } from '@lucide/vue';
 import type { AirQualityHistoryPoint } from '@/types/air-quality';
 import { AIR_LEVEL_LABELS, AIR_METRICS, airLevel, levelStops, type AirLevel, type AirMetricKey } from '@/utils/air-quality';
+import { airQualityCsv } from '@/utils/air-quality-csv';
 import { useDarkMode } from '@/composables/useDarkMode';
 import { chartColors } from '@/lib/chartColors';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip);
 
-const props = defineProps<{ points: AirQualityHistoryPoint[] }>();
+const props = defineProps<{
+  points: AirQualityHistoryPoint[];
+  /** Set only for roles allowed to export (CAN_EXPORT_SENSOR_DATA); shows "Exportar CSV" in the table view. */
+  csvFileName?: string;
+}>();
 const { isDark } = useDarkMode();
 const showTable = ref(false);
+
+function exportCsv() {
+  // BOM so Excel opens the UTF-8 accents and units correctly.
+  const blob = new Blob(['﻿', airQualityCsv(props.points)], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = props.csvFileName!;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
 
 const HOUR_MS = 60 * 60 * 1000;
 const PANELS: Array<{ key: AirMetricKey; reference?: { value: number; label: string }; note?: string }> = [
@@ -169,9 +186,21 @@ const panels = computed(() =>
         <span class="aqh__key aqh__key--poor" aria-hidden="true" /> acima do limite
         · tracejado = referência
       </p>
-      <button type="button" class="aqh__toggle" :aria-pressed="showTable" @click="showTable = !showTable">
-        {{ showTable ? 'Ver gráficos' : 'Ver tabela' }}
-      </button>
+      <div class="aqh__actions">
+        <button
+          v-if="showTable && csvFileName"
+          type="button"
+          class="aqh__toggle aqh__export"
+          data-testid="air-quality-export-csv"
+          @click="exportCsv"
+        >
+          <Download :size="15" aria-hidden="true" />
+          Exportar CSV
+        </button>
+        <button type="button" class="aqh__toggle" :aria-pressed="showTable" @click="showTable = !showTable">
+          {{ showTable ? 'Ver gráficos' : 'Ver tabela' }}
+        </button>
+      </div>
     </div>
 
     <div v-if="!showTable" class="aqh__grid">
@@ -228,6 +257,9 @@ const panels = computed(() =>
 .aqh__key--poor { background: var(--destructive); }
 .aqh__toggle { min-height: 36px; padding: 0.35rem 0.8rem; border: 1px solid var(--border); border-radius: 999px; background: var(--card); color: var(--foreground); font-size: 0.8rem; cursor: pointer; }
 .aqh__toggle:hover { background: var(--accent); }
+.aqh__toggle:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.aqh__actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.aqh__export { display: inline-flex; align-items: center; gap: 0.35rem; }
 .aqh__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem; }
 .aqh__panel { padding: 0.75rem 0.85rem; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
 .aqh__panel--wide { grid-column: 1 / -1; }

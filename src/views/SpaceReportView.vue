@@ -16,6 +16,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toLocalISODate } from '@/utils/date';
 import AirQualityHistory from '@/components/reports/AirQualityHistory.vue';
 import type { SpaceAirQualityHistory } from '@/types/air-quality';
+import { airQualityCsvFileName } from '@/utils/air-quality-csv';
+import { CAN_EXPORT_SENSOR_DATA, hasRole } from '@/utils/roles';
 
 const route = useRoute();
 const router = useRouter();
@@ -100,6 +102,13 @@ async function loadAirHistory() {
 }
 onMounted(loadAirHistory);
 watch([startDate, endDate], loadAirHistory);
+
+// CSV export for professors and staff only; maintenance still sees the charts and table.
+const airCsvFileName = computed(() => {
+  if (!report.value || !hasRole(auth.userRole, CAN_EXPORT_SENSOR_DATA)) return undefined;
+  const { name, number } = report.value.space;
+  return airQualityCsvFileName(`${name} ${number}`, startDate.value, endDate.value);
+});
 
 const adaptedSummary = computed<Summary>(() => {
   if (!report.value) return { ocupacaoMedia: 0, totalReservas: 0, salasUsadas: 0 };
@@ -206,7 +215,7 @@ const todayStr = computed(() => toLocalISODate());
 
       <section v-if="airHistory?.device" class="report-section">
         <h2>Qualidade do ar</h2>
-        <AirQualityHistory v-if="airHistory.points.length" :points="airHistory.points" />
+        <AirQualityHistory v-if="airHistory.points.length" :points="airHistory.points" :csv-file-name="airCsvFileName" />
         <p v-else class="state-msg">Nenhuma medição do sensor no período.</p>
       </section>
 
