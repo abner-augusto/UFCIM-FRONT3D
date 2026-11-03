@@ -12,6 +12,8 @@ import RoomPopupActions from './room-popup/RoomPopupActions.vue';
 import RoomDetailsCollapse from './room-popup/RoomDetailsCollapse.vue';
 import RoomPopupHeader from './room-popup/RoomPopupHeader.vue';
 import RoomSlotDetail from './room-popup/RoomSlotDetail.vue';
+import RoomAirQuality from './room-popup/RoomAirQuality.vue';
+import { useAirQuality } from '@/composables/useAirQuality';
 
 const props = defineProps<{
   open?: boolean;
@@ -99,6 +101,8 @@ const {
   defaultEndTime: () => props.selectedEndTime,
 });
 
+const { data: airQuality, loading: loadingAirQuality } = useAirQuality(() => props.space.id);
+
 const actionReserveRangeBookable = computed(() => loadingAvailability.value || reserveRangeBookable.value);
 
 function emitReserve() {
@@ -171,6 +175,8 @@ function goToReport() {
         :block-type-label="blockTypeLabel"
         @go-to-reservation="goToReservation"
       />
+
+      <RoomAirQuality :data="airQuality" :loading="loadingAirQuality" />
 
       <RoomDetailsCollapse
         :details-expanded="detailsExpanded"
