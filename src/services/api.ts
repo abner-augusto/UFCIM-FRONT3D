@@ -10,6 +10,7 @@ import type {
   RequesterPayload,
 } from '@/types/reservation';
 import type { OccupancyReport, SpaceReportData } from '@/types/report';
+import type { SpaceAirQuality, SpaceAirQualityHistory, HistoryBucket } from '@/types/air-quality';
 import type { EquipmentReport, MaintenanceCategory } from '@/types/equipment-report';
 import { collectAllPages } from '@/utils/pagination';
 import type {
@@ -369,6 +370,15 @@ export const api = {
 
   getAvailability: (token: string | null, spaceId: string, date: string) =>
     request<Availability>(`/spaces/${spaceId}/availability?date=${date}`, token),
+
+  // Air quality: the room's sensor and its latest reading. A room without a
+  // sensor answers 200 with `device: null`.
+  getSpaceAirQuality: (token: string | null, spaceId: string) =>
+    request<SpaceAirQuality>(`/spaces/${spaceId}/air-quality`, token),
+
+  // Averaged readings for the room report (professor, staff, maintenance).
+  getSpaceAirQualityHistory: (token: string | null, spaceId: string, params: { from: string; to: string; bucket: HistoryBucket }) =>
+    request<SpaceAirQualityHistory>(`/spaces/${spaceId}/air-quality/history${qs(params)}`, token),
 
   // Reservations — GET /reservations/mine returns array directly. The requester
   // fields (MEL-025) are staff only; the backend answers 403 for other roles.
