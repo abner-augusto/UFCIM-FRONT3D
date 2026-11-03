@@ -11,6 +11,8 @@ export const CAN_BLOCK: UserRole[] = ['professor', 'staff', 'maintenance'];
 export const CAN_MANAGE_EQUIPMENT: UserRole[] = ['staff', 'maintenance'];
 export const CAN_ADMIN: UserRole[] = ['staff'];
 export const CAN_VIEW_REPORTS: UserRole[] = ['professor', 'staff', 'maintenance'];
+/** CSV export of a room's air-quality history; the data itself stays visible to CAN_VIEW_REPORTS. */
+export const CAN_EXPORT_SENSOR_DATA: UserRole[] = ['professor', 'staff'];
 /** Equipment maintenance history (MEL-013); mirrors the backend RBAC. */
 export const CAN_VIEW_MAINTENANCE_HISTORY: UserRole[] = ['staff', 'maintenance'];
 /** Reserve on behalf of another person (MEL-025); mirrors the backend 403. */
