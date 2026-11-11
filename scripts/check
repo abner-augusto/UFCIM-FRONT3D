@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# The pre-commit gate from AGENTS.md: lint, strict type-check, unit tests.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+npm run lint
+npm run type-check
+npm test

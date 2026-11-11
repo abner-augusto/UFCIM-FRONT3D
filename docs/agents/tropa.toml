@@ -1,0 +1,13 @@
+[check]
+command = "bash scripts/check"
+
+[tracker]
+kind = "github"
+labels = "docs/agents/triage-labels.md"
+
+[autonomy]
+merge = "pr"
+push = false
+
+[night]
+eligible = false
