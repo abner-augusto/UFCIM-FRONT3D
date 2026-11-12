@@ -4,7 +4,13 @@ Machine config lives in [`tropa.toml`](tropa.toml): check command, tracker, auto
 
 ## Check
 
-`bash scripts/check` runs the pre-commit gate from `AGENTS.md`: `npm run lint`, `npm run type-check` and `npm test`. Run the Playwright suite (`npm run test:e2e`) as well before a PR that changes broad user behavior; it needs the sibling `../ufcim-backend-proto`.
+`bash scripts/check` runs the pre-commit gate from `AGENTS.md` (`npm run lint`, `npm run type-check`, `npm test`) and then `tropa quality`, and needs the `tropa` CLI on PATH. Its last line is `check: passed` or `check: FAILED (<parts>)`.
+
+`tropa quality` holds TypeScript and JavaScript to the `[quality]` limits in `tropa.toml`; today's debt is in [`quality-baseline.json`](quality-baseline.json), which only shrinks (`tropa quality --shrink-baseline`). It has no `.vue` scanner, so single-file components are outside this gate. CRAP is unmeasured until a Vitest coverage provider is installed.
+
+Enable the pre-push hook once per clone with `git config core.hooksPath scripts/git-hooks`. It reruns the check unless the check already passed on every pushed tree.
+
+Run the Playwright suite (`npm run test:e2e`) as well before a PR that changes broad user behavior; it needs the sibling `../ufcim-backend-proto`.
 
 ## Tracker and ledger
 
