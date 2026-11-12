@@ -1,7 +1,24 @@
 #!/usr/bin/env bash
-# The pre-commit gate from AGENTS.md: lint, strict type-check, unit tests.
-set -euo pipefail
+# The pre-commit gate from AGENTS.md (lint, strict type-check, unit tests), then tropa quality.
+set -uo pipefail
 cd "$(dirname "$0")/.."
-npm run lint
-npm run type-check
-npm test
+
+if ! command -v tropa >/dev/null 2>&1; then
+  echo "check: FAILED (the tropa CLI is not on PATH)"
+  exit 2
+fi
+
+start="$(tropa gate tree)"
+failed=()
+
+npm run lint || failed+=("lint")
+npm run type-check || failed+=("type-check")
+npm test || failed+=("test")
+tropa quality || failed+=("quality")
+
+if [ ${#failed[@]} -gt 0 ]; then
+  echo "check: FAILED ($(IFS=,; echo "${failed[*]}"))"
+  exit 1
+fi
+tropa gate record check --tree "$start" || { echo "check: FAILED (gate not recorded)"; exit 1; }
+echo "check: passed"

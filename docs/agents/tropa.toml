@@ -11,3 +11,35 @@ push = false
 
 [night]
 eligible = false
+
+[deploy]
+commands = [
+    "wrangler deploy",
+    "wrangler pages deploy",
+    "wrangler d1 execute",
+    "wrangler d1 migrations apply",
+]
+local = [
+    "wrangler d1 execute --local",
+    "wrangler d1 migrations apply --local",
+]
+
+[quality]
+include = [
+    "src/**/*.ts",
+    "src/**/*.js",
+    "tests/**/*.ts",
+    "tools/**/*.js",
+    "public/_worker.js",
+    "*.ts",
+    "*.js",
+]
+exclude = [
+    "src/components/ui/**",
+    "public/libs/**",
+]
+max_file_lines = 300
+max_function_lines = 40
+max_crap = 30
+docstrings = false
+baseline = "docs/agents/quality-baseline.json"
