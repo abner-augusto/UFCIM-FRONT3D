@@ -28,6 +28,7 @@ local = [
 include = [
     "src/**/*.ts",
     "src/**/*.js",
+    "src/**/*.vue",
     "tests/**/*.ts",
     "tools/**/*.js",
     "public/_worker.js",
