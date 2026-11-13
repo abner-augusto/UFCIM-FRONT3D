@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.5.0](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v3.4.0...v3.5.0) (2026-11-13)
+
+
+### Features
+
+* **air-quality:** compact popup line with bands, and level-colored history ([bc039c7](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/bc039c7d2c8bfff6327f83a7016e2aeb76b089e3))
+* **air-quality:** export the room's sensor history as CSV for professors and staff ([4867c46](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/4867c46331af3a66f72b031ff7be2e40e20192e2))
+* **air-quality:** show the room's air quality in the popup ([e1322f3](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/e1322f3fc9afbb7935ac30810e536054c10fd6d3))
+
 ## [3.4.0](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v3.3.0...v3.4.0) (2026-10-10)
 
 
