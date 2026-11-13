@@ -4,9 +4,9 @@ Machine config lives in [`tropa.toml`](tropa.toml): check command, tracker, auto
 
 ## Check
 
-`bash scripts/check` runs the pre-commit gate from `AGENTS.md` (`npm run lint`, `npm run type-check`, `npm test`) and then `tropa quality`, and needs the `tropa` CLI on PATH. Its last line is `check: passed` or `check: FAILED (<parts>)`.
+`bash scripts/check` runs the pre-commit gate from `AGENTS.md` (`npm run lint`, `npm run type-check`, `npm test` with V8 coverage) and then `tropa quality`, and needs the `tropa` CLI on PATH. Its last line is `check: passed` or `check: FAILED (<parts>)`.
 
-`tropa quality` holds TypeScript and JavaScript to the `[quality]` limits in `tropa.toml`; today's debt is in [`quality-baseline.json`](quality-baseline.json), which only shrinks (`tropa quality --shrink-baseline`). It has no `.vue` scanner, so single-file components are outside this gate. CRAP is unmeasured until a Vitest coverage provider is installed.
+`tropa quality` holds TypeScript, JavaScript and Vue components (`<script>` blocks, whole file against the line limit) to the `[quality]` limits in `tropa.toml`; today's debt is in [`quality-baseline.json`](quality-baseline.json), which only shrinks (`tropa quality --shrink-baseline`). The check writes `coverage/coverage-final.json` (git-ignored) with `@vitest/coverage-v8`, and CRAP reads it. No unit test mounts a `.vue` file, so a component's CRAP is measured only once a test imports it.
 
 Enable the pre-push hook once per clone with `git config core.hooksPath scripts/git-hooks`. It reruns the check unless the check already passed on every pushed tree.
 

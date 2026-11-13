@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The pre-commit gate from AGENTS.md (lint, strict type-check, unit tests), then tropa quality.
+# The pre-commit gate from AGENTS.md (lint, strict type-check, unit tests with coverage), then tropa quality.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
@@ -13,7 +13,8 @@ failed=()
 
 npm run lint || failed+=("lint")
 npm run type-check || failed+=("type-check")
-npm test || failed+=("test")
+npm test -- --coverage.enabled --coverage.provider=v8 --coverage.reporter=json \
+  --coverage.include='src/**/*.{ts,js,vue}' || failed+=("test")
 tropa quality || failed+=("quality")
 
 if [ ${#failed[@]} -gt 0 ]; then

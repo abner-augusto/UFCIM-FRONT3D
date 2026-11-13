@@ -43,4 +43,5 @@ max_file_lines = 300
 max_function_lines = 40
 max_crap = 30
 docstrings = false
+coverage = "coverage/coverage-final.json"
 baseline = "docs/agents/quality-baseline.json"
