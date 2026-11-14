@@ -168,8 +168,19 @@ export class ModelManager {
     
     // Then load everything else in the background
     // We don't await this so the UI is interactive sooner
-    Promise.all(upperFloors.map(e => this._ensureLoaded(e.building, e.floor)))
+    this._loadUpperFloors(upperFloors)
       .catch(err => logger.error('failed loading upper floors in background', err));
+  }
+
+  async _loadUpperFloors(entries) {
+    for (let i = 0; i < entries.length && !this._disposed; i += 4) {
+      const batch = entries.slice(i, i + 4);
+      await Promise.all(batch.map(e => this._ensureLoaded(e.building, e.floor, true)));
+      if (this._disposed) return;
+      this._applyVisibility();
+      if (globalThis.scheduler?.yield) await globalThis.scheduler.yield();
+      else await new Promise(resolve => setTimeout(resolve, 0));
+    }
   }
 
   getFloorObject(building, floor) {
@@ -185,7 +196,7 @@ export class ModelManager {
       return this.blockBBoxCache.get(building) || new THREE.Box3();
    }
 
-  async _ensureLoaded(building, floor) {
+  async _ensureLoaded(building, floor, deferVisibility = false) {
     const floors = this.entries.get(building);
     const entry = floors?.get(floor);
     if (!entry || entry.object) return;
@@ -242,7 +253,7 @@ export class ModelManager {
 
       this.scene.add(gltf.scene);
       this._emitPinsForEntry(entry);
-      this._applyVisibility();
+      if (!deferVisibility) this._applyVisibility();
     })();
 
     try {

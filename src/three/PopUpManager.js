@@ -74,7 +74,7 @@ export class PopupManager {
     if (this._interactionLocked) {
       this._interactionLocked = false;
       if (this.interactionManager && typeof this.interactionManager.setInteractionsEnabled === 'function') {
-        this.interactionManager.setInteractionsEnabled(true);
+        this.interactionManager.setInteractionsEnabled(true, false);
       }
     }
 
@@ -93,7 +93,7 @@ export class PopupManager {
     if (!pin) return;
 
     if (!this._interactionLocked && this.interactionManager && typeof this.interactionManager.setInteractionsEnabled === 'function') {
-      this.interactionManager.setInteractionsEnabled(false);
+      this.interactionManager.setInteractionsEnabled(false, false);
       this._interactionLocked = true;
     }
 

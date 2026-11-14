@@ -386,7 +386,8 @@ export class InteractionManager extends THREE.EventDispatcher {
         this.pinFactory?.pinTexture?.dispose();
     }
 
-    setInteractionsEnabled(enabled) {
+    setInteractionsEnabled(enabled, affectsOverlay = true) {
+        if (affectsOverlay) this.onOverlayChange?.(!enabled);
         this._interactionsEnabled = !!enabled;
     }
 }
