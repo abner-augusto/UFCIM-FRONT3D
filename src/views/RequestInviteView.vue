@@ -1,3 +1,22 @@
+<script lang="ts">
+let turnstileLoad: Promise<void> | null = null;
+
+function loadTurnstile(): Promise<void> {
+  if (!turnstileLoad) {
+    turnstileLoad = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.referrerPolicy = 'no-referrer';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Turnstile failed to load'));
+      document.head.appendChild(script);
+    });
+  }
+  return turnstileLoad;
+}
+</script>
+
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { api } from '@/services/api';
@@ -16,26 +35,19 @@ const submitted = ref(false);
 const turnstileToken = ref('');
 
 let turnstileWidgetId: string | null = null;
-let turnstileScript: HTMLScriptElement | null = null;
+let unmounted = false;
 
-onMounted(() => {
-  if (window.turnstile) {
-    renderTurnstile();
-    return;
+onMounted(async () => {
+  try {
+    await loadTurnstile();
+    if (!unmounted) renderTurnstile();
+  } catch {
+    if (!unmounted) errorMsg.value = 'Não foi possível carregar a verificação de segurança. Recarregue a página.';
   }
-  turnstileScript = document.createElement('script');
-  turnstileScript.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-  turnstileScript.async = true;
-  turnstileScript.referrerPolicy = 'no-referrer';
-  turnstileScript.onload = renderTurnstile;
-  document.head.appendChild(turnstileScript);
 });
 
 onUnmounted(() => {
-  if (turnstileScript) {
-    turnstileScript.onload = null;
-    if (!window.turnstile) turnstileScript.remove();
-  }
+  unmounted = true;
   if (turnstileWidgetId !== null) window.turnstile?.remove(turnstileWidgetId);
 });
 
