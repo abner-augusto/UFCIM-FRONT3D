@@ -137,20 +137,18 @@ function handleSubmit() {
         <div>
           <Label class="form-label" id="blocking-date-from-label" for="blocking-date-from">De</Label>
           <AppDateField
-            id="blocking-date-from"
+            id="blocking-date-from" label-id="blocking-date-from-label"
             v-model="selectedDateFrom"
             :min="today"
-            aria-label="De"
           />
         </div>
         <div>
           <Label class="form-label" id="blocking-date-to-label" for="blocking-date-to">Até</Label>
           <AppDateField
-            id="blocking-date-to"
+            id="blocking-date-to" label-id="blocking-date-to-label"
             v-model="selectedDateTo"
             :min="selectedDateFrom || today"
             :max="maxDateTo"
-            aria-label="Até"
           />
         </div>
       </div>

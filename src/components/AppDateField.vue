@@ -25,6 +25,7 @@ const props = withDefaults(
     disabled?: boolean;
     id?: string;
     ariaLabel?: string;
+    labelId?: string;
     class?: string;
   }>(),
   { modelValue: '' },
@@ -73,7 +74,7 @@ function onNativeInput(e: Event) {
         variant="outline"
         :disabled="disabled"
         :aria-label="!id && ariaLabel ? `${ariaLabel}: ${triggerLabel}` : undefined"
-        :aria-labelledby="id ? `${id}-label ${id}-value` : undefined"
+        :aria-labelledby="labelId && id ? `${labelId} ${id}-value` : undefined"
         :class="cn('h-11 w-full justify-start gap-2 font-normal', !modelValue && 'text-muted-foreground', props.class)"
       >
         <CalendarIcon class="size-4 opacity-70" />

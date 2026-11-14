@@ -21,6 +21,7 @@ function loadTurnstile(): Promise<void> {
 import { ref, onMounted, onUnmounted } from 'vue';
 import { api } from '@/services/api';
 import { mapRequestInviteError } from '@/utils/api-errors';
+import { invitationSecurityError } from '@/utils/form-validation';
 import { RouterLink } from 'vue-router';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -86,10 +87,8 @@ function resetTurnstile() {
 
 async function handleSubmit() {
   if (!name.value.trim() || !email.value.trim()) return;
-  if (!turnstileToken.value) {
-    errorMsg.value = 'Por favor, complete a verificação de segurança.';
-    return;
-  }
+  errorMsg.value = invitationSecurityError(siteKey, turnstileToken.value);
+  if (errorMsg.value) return;
 
   loading.value = true;
   errorMsg.value = null;

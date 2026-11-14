@@ -180,7 +180,7 @@ onMounted(async () => {
           />
           <div class="flex shrink-0 flex-col gap-1">
             <Label class="text-muted-foreground text-[0.72rem] font-semibold uppercase" id="browser-date-label" for="browser-date">Data</Label>
-            <AppDateField id="browser-date" v-model="selectedDate" :min="today" aria-label="Data" />
+            <AppDateField id="browser-date" label-id="browser-date-label" v-model="selectedDate" :min="today" />
           </div>
           <Button
             variant="outline"

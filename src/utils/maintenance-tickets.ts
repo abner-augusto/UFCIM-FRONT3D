@@ -12,12 +12,6 @@ export type TicketTarget =
   | { kind: 'equipment' }
   | { kind: 'room'; category: MaintenanceCategory };
 
-export function reportDescriptionPlaceholder(category: MaintenanceCategory | null): string {
-  if (!category) return 'Descreva o que está acontecendo...';
-  if (category === 'other') return 'Conte o que está acontecendo na sala...';
-  return 'Se quiser, conte mais detalhes...';
-}
-
 const MIN_DESCRIPTION = 5;
 
 export const OPEN_REPORT_STATUS_LABELS: Record<OpenReportStatus, string> = {

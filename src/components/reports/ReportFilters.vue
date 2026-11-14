@@ -47,12 +47,12 @@ function applyFilters() {
     <div class="filter-row">
       <div class="filter-group">
         <label id="startDate-label" for="startDate">Data início</label>
-        <AppDateField id="startDate" v-model="startDate" :max="endDate" aria-label="Data início" class="filter-input" />
+        <AppDateField id="startDate" label-id="startDate-label" v-model="startDate" :max="endDate" class="filter-input" />
       </div>
 
       <div class="filter-group">
         <label id="endDate-label" for="endDate">Data fim</label>
-        <AppDateField id="endDate" v-model="endDate" :min="startDate" aria-label="Data fim" class="filter-input" />
+        <AppDateField id="endDate" label-id="endDate-label" v-model="endDate" :min="startDate" class="filter-input" />
       </div>
 
       <div class="filter-group">

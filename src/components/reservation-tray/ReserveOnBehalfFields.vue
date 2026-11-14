@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api } from '@/services/api';
+import { requesterSearchStatus } from '@/utils/form-validation';
 import { useAuthStore } from '@/stores/auth';
 import type { RequesterCandidate } from '@/types/reservation';
 import {
   REQUESTER_TEXT_MAX,
   emptyRequester,
-  requesterRoleLabel, requesterFieldIds,
+  requesterRoleLabel,
   type RequesterSelection,
 } from '@/utils/reservation-requester';
 
@@ -43,11 +44,19 @@ const searchInput = ref<InstanceType<typeof Input> | null>(null);
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 let searchAbort: AbortController | null = null;
 
-const ids = computed(() => requesterFieldIds(props.idPrefix));
+const ids = computed(() => ({
+  panel: `${props.idPrefix}-panel`,
+  search: `${props.idPrefix}-search`,
+  hint: `${props.idPrefix}-hint`,
+  contact: `${props.idPrefix}-contact`,
+}));
 
 const trimmedQuery = computed(() => props.modelValue.query.trim());
 const showResults = computed(() => !props.modelValue.user && trimmedQuery.value.length >= MIN_QUERY_LENGTH);
 const visibleResults = computed(() => results.value.slice(0, VISIBLE_RESULTS));
+const searchStatus = computed(() => requesterSearchStatus(
+  showResults.value, searching.value, searchFailed.value, visibleResults.value.length, results.value.length,
+));
 
 function update(patch: Partial<RequesterSelection>) {
   emit('update:modelValue', { ...props.modelValue, ...patch });
@@ -162,11 +171,11 @@ async function changePerson() {
             ref="searchInput"
             :model-value="modelValue.query"
             class="on-behalf__input"
-            type="text" autocomplete="off" role="combobox"
-            :aria-expanded="showResults" aria-autocomplete="list"
+            type="text"
+            autocomplete="off"
             :maxlength="REQUESTER_TEXT_MAX"
             placeholder="Nome ou e-mail de quem pediu"
-            :aria-describedby="ids.hint" :aria-controls="showResults ? ids.results : undefined"
+            :aria-describedby="ids.hint"
             data-testid="reserve-on-behalf-search"
             @update:model-value="update({ query: String($event) })"
           />
@@ -174,31 +183,15 @@ async function changePerson() {
             Escolha alguém cadastrado na lista ou mantenha o nome digitado.
           </p>
 
-          <div class="on-behalf__results" role="status" aria-live="polite"><template v-if="showResults">
-            <p v-if="searching" class="on-behalf__status">Buscando…</p>
-            <p v-else-if="searchFailed" class="on-behalf__status">Não foi possível buscar agora. O nome digitado será usado.</p>
-            <p v-else-if="!visibleResults.length" class="on-behalf__status">
-              Ninguém cadastrado com esse nome. O nome digitado será usado.
-            </p>
-            <ul v-else :id="ids.results" class="on-behalf__list" role="listbox" aria-label="Usuários encontrados">
-              <li v-for="candidate in visibleResults" :key="candidate.id" role="option" aria-selected="false">
-                <button
-                  type="button"
-                  class="on-behalf__option"
-                  data-testid="reserve-on-behalf-option"
-                  @click="pick(candidate)"
-                >
-                  <span class="on-behalf__option-name">{{ candidate.name }}</span>
-                  <span class="on-behalf__meta">
-                    {{ requesterRoleLabel(candidate.role) }}<template v-if="candidate.department"> · {{ candidate.department }}</template>
-                  </span>
-                </button>
-              </li>
-            </ul>
-            <p v-if="!searching && results.length > VISIBLE_RESULTS" class="on-behalf__status">
-              Continue digitando para refinar a busca.
-            </p>
-            </template></div>
+          <p role="status" class="on-behalf__status">{{ searchStatus }}</p>
+          <ul v-if="showResults && !searching && !searchFailed && visibleResults.length" class="on-behalf__list" aria-label="Usuários encontrados">
+            <li v-for="candidate in visibleResults" :key="candidate.id">
+              <button type="button" class="on-behalf__option" data-testid="reserve-on-behalf-option" @click="pick(candidate)">
+                <span class="on-behalf__option-name">{{ candidate.name }}</span>
+                <span class="on-behalf__meta">{{ requesterRoleLabel(candidate.role) }}<template v-if="candidate.department"> · {{ candidate.department }}</template></span>
+              </button>
+            </li>
+          </ul>
         </template>
       </div>
 

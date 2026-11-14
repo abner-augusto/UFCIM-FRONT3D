@@ -27,11 +27,10 @@ defineEmits<{
       Data
     </Label>
     <AppDateField
-      id="period-date"
+      id="period-date" label-id="period-date-label"
       class="mb-2"
       :model-value="selectedDate"
       min="2024-01-01"
-      aria-label="Selecionar data"
       @update:model-value="$emit('update:selectedDate', $event)"
     />
 

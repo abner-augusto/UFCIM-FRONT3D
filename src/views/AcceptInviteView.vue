@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { api, ApiError } from '@/services/api';
 import { mapAcceptError } from '@/utils/api-errors';
-import { inviteErrorId, validateAcceptInvite } from '@/utils/form-validation';
+import { validateAcceptInvite } from '@/utils/form-validation';
 import type { UserRole } from '@/stores/auth';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -57,12 +57,34 @@ onMounted(async () => {
 
 async function focusError() {
   await nextTick();
-  document.getElementById(inviteErrorId(fieldErrors.value) ?? '')?.focus();
+  const first = ['registration', 'password', 'passwordConfirm'].find((field) => fieldErrors.value[field]);
+  if (first) document.getElementById(first === 'passwordConfirm' ? 'invite-password-confirm' : `invite-${first}`)?.focus();
+}
+
+async function handleAcceptError(e: unknown) {
+    if (e instanceof ApiError && e.details?.length) {
+      for (const d of e.details) {
+        fieldErrors.value[d.field] = d.message;
+      }
+      await focusError();
+    } else {
+      submitError.value = mapAcceptError(e);
+    }
 }
 
 async function handleAccept() {
-  fieldErrors.value = validateAcceptInvite({ student: isStudent.value, registration: registration.value, password: password.value, confirmation: passwordConfirm.value });
-  if (Object.keys(fieldErrors.value).length) { await focusError(); return; }
+  const invalid = validateAcceptInvite({
+    student: isStudent.value,
+    registration: registration.value,
+    password: password.value,
+    confirmation: passwordConfirm.value,
+  });
+  fieldErrors.value = {};
+  if (invalid) {
+    fieldErrors.value[invalid.field] = invalid.message;
+    await focusError();
+    return;
+  }
 
   state.value = 'submitting';
   submitError.value = null;
@@ -82,14 +104,7 @@ async function handleAccept() {
     router.push({ name: 'campus-select' });
   } catch (e) {
     state.value = 'ready';
-    if (e instanceof ApiError && e.details?.length) {
-      for (const d of e.details) {
-        fieldErrors.value[d.field] = d.message;
-      }
-      await focusError();
-    } else {
-      submitError.value = mapAcceptError(e);
-    }
+    await handleAcceptError(e);
   }
 }
 </script>

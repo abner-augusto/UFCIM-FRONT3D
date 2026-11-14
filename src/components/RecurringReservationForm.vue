@@ -64,11 +64,29 @@ const occurrenceCount = computed(() =>
   endDate.value > startDate.value ? countRecurringDates(startDate.value, endDate.value, daysOfWeek.value) : 0
 );
 
+function focusInvalid(field: 'startDate' | 'endDate' | 'weekdays' | 'start' | 'end' | 'description') {
+    const ids = { startDate: 'rec-start', endDate: 'rec-end', start: 'rec-time-start', end: 'rec-time-end', description: 'rec-desc' };
+    const target = field === 'weekdays'
+      ? document.querySelector<HTMLElement>('#rec-weekdays button:not(:disabled)')
+      : document.getElementById(ids[field]);
+    target?.focus();
+}
+
+const submissionBlocked = computed(() => loading.value || !!successMsg.value || props.reservable === false);
+
 async function handleSubmit() {
-  const invalid = validateRecurringForm({ reservable: props.reservable, startDate: startDate.value, endDate: endDate.value, occurrences: occurrenceCount.value, start: seriesStart.value, hasRange: !!seriesRange.value, description: description.value });
+  if (submissionBlocked.value) return;
+  const invalid = validateRecurringForm({
+    startDate: startDate.value,
+    endDate: endDate.value,
+    occurrences: occurrenceCount.value,
+    start: seriesStart.value,
+    hasRange: !!seriesRange.value,
+    description: description.value,
+  });
   if (invalid) {
     errorMsg.value = invalid.message;
-    document.getElementById(invalid.id)?.focus();
+    focusInvalid(invalid.field);
     return;
   }
   if (!seriesRange.value) return;
@@ -84,7 +102,7 @@ async function handleSubmit() {
       daysOfWeek: daysOfWeek.value,
       startTime,
       endTime,
-      description: description.value.trim() || undefined,
+      description: description.value.trim(),
       ...requesterPayload(canReserveOnBehalf.value ? requester.value : null),
     });
     successMsg.value = `${result.created.length} reservas criadas, ${result.skipped.length} conflitos ignorados.`;
@@ -101,17 +119,17 @@ async function handleSubmit() {
   <form novalidate @submit.prevent="handleSubmit">
     <div class="mb-5">
       <Label class="mb-2 block text-sm font-semibold" id="rec-start-label" for="rec-start">Data de início</Label>
-      <AppDateField id="rec-start" v-model="startDate" :min="today" aria-label="Data de início" />
+      <AppDateField id="rec-start" label-id="rec-start-label" v-model="startDate" :min="today" />
     </div>
 
     <div class="mb-5">
       <Label class="mb-2 block text-sm font-semibold" id="rec-end-label" for="rec-end">Data de fim</Label>
-      <AppDateField id="rec-end" v-model="endDate" :min="minEndDate" aria-label="Data de fim" />
+      <AppDateField id="rec-end" label-id="rec-end-label" v-model="endDate" :min="minEndDate" />
     </div>
 
     <div class="mb-5">
       <p id="rec-dow-label" tabindex="-1" class="mb-2 text-sm font-semibold">Dias da semana</p>
-      <WeekdayPicker v-model="daysOfWeek" :max="MAX_WEEKDAYS" aria-labelledby="rec-dow-label" />
+      <WeekdayPicker id="rec-weekdays" v-model="daysOfWeek" :max="MAX_WEEKDAYS" aria-labelledby="rec-dow-label" />
       <p class="text-muted-foreground mt-2 text-xs" aria-live="polite">
         {{ daysOfWeek.length < MAX_WEEKDAYS
           ? `Escolha até ${MAX_WEEKDAYS} dias.`
@@ -160,7 +178,7 @@ async function handleSubmit() {
       <Button
         class="h-11 w-full"
         type="submit"
-        :disabled="loading"
+        :disabled="loading || !!successMsg || reservable === false"
       >
         {{ loading ? 'Agendando...' : 'Agendar Reservas Recorrentes' }}
       </Button>

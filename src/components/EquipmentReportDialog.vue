@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, type Component } from 'vue';
+import { ref, computed, nextTick, type Component } from 'vue';
 import {
   MAINTENANCE_CATEGORIES,
   MAINTENANCE_CATEGORY_LABELS,
-  SEVERITY_LABELS,
   type MaintenanceCategory,
   type OpenReportStatus,
 } from '@/types/equipment-report';
@@ -25,12 +24,13 @@ import {
 } from '@lucide/vue';
 import type { Equipment } from '@/types/space';
 import type { ReportableEquipment, ReportedTarget } from '@/composables/useRoomDetail';
-import { isTicketDescriptionValid, OPEN_REPORT_STATUS_LABELS, reportDescriptionPlaceholder, type TicketTarget } from '@/utils/maintenance-tickets';
+import { isTicketDescriptionValid, OPEN_REPORT_STATUS_LABELS, type TicketTarget } from '@/utils/maintenance-tickets';
 import { validateEquipmentReport } from '@/utils/form-validation';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import EquipmentSeverityPicker from '@/components/EquipmentSeverityPicker.vue';
 
 /**
  * Maintenance ticket dialog. Opened on an equipment row, it goes straight to
@@ -127,13 +127,18 @@ const descriptionOptional = computed(
   () => target.value.kind === 'room' && target.value.category !== 'other',
 );
 const descriptionValid = computed(() => isTicketDescriptionValid(target.value, description.value));
+const validationError = computed(() => submitted.value ? validateEquipmentReport(severity.value, target.value, description.value) : null);
 const descriptionCount = computed(() => description.value.length);
 const subject = computed(() =>
   selectedCategory.value
     ? MAINTENANCE_CATEGORY_LABELS[selectedCategory.value]
     : (selectedEquipment.value?.name ?? ''),
 );
-const descriptionPlaceholder = computed(() => reportDescriptionPlaceholder(selectedCategory.value));
+const descriptionPlaceholder = computed(() => {
+  if (!selectedCategory.value) return 'Descreva o que está acontecendo...';
+  if (selectedCategory.value === 'other') return 'Conte o que está acontecendo na sala...';
+  return 'Se quiser, conte mais detalhes...';
+});
 
 const title = computed(() => {
   if (step.value === 'equipment') return 'Qual equipamento?';
@@ -144,16 +149,24 @@ const subtitle = computed(() =>
   step.value === 'form' && subject.value ? `${subject.value} · ${props.spaceName}` : props.spaceName,
 );
 
-function selectSeverity(value: 'minor' | 'major' | 'blocking') {
-  if (!loading.value) {
-    severity.value = value;
-  }
+function handleReportError(e: unknown) {
+    if (e instanceof ApiError) {
+      // 409: an open ticket already exists (MEL-015/MEL-026) or the same user
+      // reported it in the last 24h — the API message tells which.
+      error.value = e.message || (e.status === 409 ? 'Já existe um chamado em aberto para este problema.' : 'Erro ao enviar');
+    } else {
+      error.value = 'Erro ao enviar. Tente novamente.';
+    }
 }
 
 async function submitReport() {
   submitted.value = true;
-  const invalid = validateEquipmentReport(severity.value, target.value, description.value);
-  if (invalid) { document.getElementById(invalid)?.focus(); return; }
+  const invalid = validationError.value;
+  if (invalid) {
+    await nextTick();
+    document.getElementById({ severity: 'report-severity-first', description: 'report-desc' }[invalid.field])?.focus();
+    return;
+  }
   if (!auth.token || loading.value) return;
 
   loading.value = true;
@@ -181,13 +194,7 @@ async function submitReport() {
     // Auto-close after 1.5s on success
     setTimeout(() => emit('reported', reported), 1500);
   } catch (e) {
-    if (e instanceof ApiError) {
-      // 409: an open ticket already exists (MEL-015/MEL-026) or the same user
-      // reported it in the last 24h — the API message tells which.
-      error.value = e.message || (e.status === 409 ? 'Já existe um chamado em aberto para este problema.' : 'Erro ao enviar');
-    } else {
-      error.value = 'Erro ao enviar. Tente novamente.';
-    }
+    handleReportError(e);
   } finally {
     loading.value = false;
   }
@@ -306,25 +313,11 @@ function handleOpenChange(open: boolean) {
 
           <!-- Step 3: severity and description -->
           <div v-else key="form" class="dialog__step">
-            <div class="dialog__field">
-              <p id="report-severity-label" class="dialog__label">Gravidade *</p>
-              <div class="severity-options" role="group" aria-labelledby="report-severity-label">
-                <Button
-                  v-for="s in (['minor', 'major', 'blocking'] as const)"
-                  :key="s"
-                  :id="s === 'minor' ? 'report-severity-first' : undefined"
-                  type="button"
-                  variant="outline"
-                  class="severity-btn"
-                  :class="{ 'severity-btn--selected': severity === s, [`severity-btn--${s}`]: severity === s }"
-                  :aria-pressed="severity === s"
-                  @click="selectSeverity(s)"
-                >
-                  <span class="severity-btn__label">{{ SEVERITY_LABELS[s] }}</span>
-                </Button>
-              </div>
-              <p v-if="submitted && severity === null" class="dialog__field-error">Selecione a gravidade.</p>
-            </div>
+            <EquipmentSeverityPicker
+              v-model="severity"
+              :disabled="loading"
+              :error="validationError?.field === 'severity' ? validationError.message : undefined"
+            />
 
             <div class="dialog__field">
               <Label class="dialog__label" for="report-desc">
@@ -599,59 +592,6 @@ function handleOpenChange(open: boolean) {
   color: var(--muted-foreground);
   letter-spacing: 0.06em;
   margin-bottom: 0.4rem;
-}
-
-/* Severity buttons */
-.severity-options {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.severity-btn {
-  display: block;
-  width: 100%;
-  padding: 0.65rem 0.75rem;
-  border: 1.5px solid var(--input);
-  border-radius: 10px;
-  background: var(--background);
-  font-size: 0.82rem;
-  color: var(--foreground);
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-  min-height: 44px;
-}
-
-.severity-btn:hover {
-  background: var(--accent);
-  border-color: var(--border);
-}
-
-.severity-btn--selected {
-  border-width: 2px;
-}
-
-.severity-btn--selected.severity-btn--minor {
-  background: var(--warning-surface);
-  border-color: var(--warning);
-  color: var(--warning);
-}
-
-.severity-btn--selected.severity-btn--major {
-  background: var(--danger-surface);
-  border-color: var(--danger-fg);
-  color: var(--danger-fg);
-}
-
-.severity-btn--selected.severity-btn--blocking {
-  background: color-mix(in srgb, var(--destructive) 15%, transparent);
-  border-color: var(--destructive);
-  color: var(--destructive);
-}
-
-.severity-btn__label {
-  font-weight: 500;
 }
 
 /* Textarea */

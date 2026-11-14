@@ -76,12 +76,12 @@ const labelClass = 'text-muted-foreground text-[0.7rem] font-bold tracking-[0.06
     <div class="grid grid-cols-2 gap-3 md:grid-cols-3">
       <div :class="fieldClass">
         <label id="mh-from-label" for="mh-from" :class="labelClass">Data início</label>
-        <AppDateField id="mh-from" v-model="form.from" :max="form.to" aria-label="Data início" />
+        <AppDateField id="mh-from" label-id="mh-from-label" v-model="form.from" :max="form.to" />
       </div>
 
       <div :class="fieldClass">
         <label id="mh-to-label" for="mh-to" :class="labelClass">Data fim</label>
-        <AppDateField id="mh-to" v-model="form.to" :min="form.from" aria-label="Data fim" />
+        <AppDateField id="mh-to" label-id="mh-to-label" v-model="form.to" :min="form.from" />
       </div>
 
       <div :class="fieldClass">
