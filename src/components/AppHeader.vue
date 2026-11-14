@@ -80,7 +80,6 @@ function logout() {
             size="icon"
             class="theme-toggle"
             :aria-label="themeToggleLabel"
-            :aria-pressed="isDark"
             @click="toggleDarkMode"
           >
             <Sun v-if="isDark" :size="20" />
@@ -112,7 +111,6 @@ function logout() {
             size="icon"
             class="theme-toggle"
             :aria-label="themeToggleLabel"
-            :aria-pressed="isDark"
             @click="toggleDarkMode"
           >
             <Sun v-if="isDark" :size="20" />
@@ -257,6 +255,13 @@ function logout() {
 
 .theme-toggle {
   color: var(--foreground);
+}
+
+@media (pointer: coarse) {
+  .theme-toggle {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 .mobile-avatar {

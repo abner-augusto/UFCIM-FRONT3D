@@ -6,6 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <!-- PWA / iOS standalone -->
     <meta name="theme-color" content="#00697D" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      (() => {
+        let stored = null;
+        try { stored = localStorage.getItem('ufcim-theme'); } catch { /* Storage may be blocked. */ }
+        const dark = stored === 'dark' || (stored !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', dark);
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#121212' : '#00697D');
+      })();
+    </script>
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="UFCIM" />

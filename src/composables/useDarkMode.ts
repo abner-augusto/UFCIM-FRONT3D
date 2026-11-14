@@ -1,6 +1,8 @@
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 
-const STORAGE_KEY = 'ufcim-theme';
+export const STORAGE_KEY = 'ufcim-theme';
+export const DARK_THEME_COLOR = '#121212';
+export const LIGHT_THEME_COLOR = '#00697D';
 
 type ThemeTransitionDocument = Document & {
   startViewTransition?: (updateCallback: () => void) => { finished: Promise<void> };
@@ -8,18 +10,31 @@ type ThemeTransitionDocument = Document & {
 
 type ThemeToggleTrigger = MouseEvent | HTMLElement;
 
-function getInitialTheme(): boolean {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === 'dark') return true;
-  if (stored === 'light') return false;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+function readPreference(): boolean | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored === 'dark' ? true : stored === 'light' ? false : null;
+  } catch {
+    return null;
+  }
 }
 
-const isDark = ref(getInitialTheme());
+function persistPreference(value: boolean | null) {
+  try {
+    if (value === null) localStorage.removeItem(STORAGE_KEY);
+    else localStorage.setItem(STORAGE_KEY, value ? 'dark' : 'light');
+  } catch {
+    return;
+  }
+}
+
+const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
+let preference = readPreference();
+const isDark = ref(preference ?? systemTheme.matches);
 
 function applyTheme(value: boolean) {
   document.documentElement.classList.toggle('dark', value);
-  localStorage.setItem(STORAGE_KEY, value ? 'dark' : 'light');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', value ? DARK_THEME_COLOR : LIGHT_THEME_COLOR);
 }
 
 function getTriggerElement(trigger?: ThemeToggleTrigger): HTMLElement | null {
@@ -44,13 +59,33 @@ function setThemeTransitionOrigin(trigger?: ThemeToggleTrigger) {
   root.style.setProperty('--theme-transition-radius', `${radius}px`);
 }
 
-watch(isDark, applyTheme, { immediate: true });
+applyTheme(isDark.value);
+function handleSystemThemeChange(event: MediaQueryListEvent) {
+  if (preference === null) {
+    isDark.value = event.matches;
+    applyTheme(event.matches);
+  }
+}
+function handleStorageChange(event: StorageEvent) {
+  if (event.key !== STORAGE_KEY && event.key !== null) return;
+  preference = event.newValue === 'dark' ? true : event.newValue === 'light' ? false : null;
+  isDark.value = preference ?? systemTheme.matches;
+  applyTheme(isDark.value);
+}
+systemTheme.addEventListener('change', handleSystemThemeChange);
+window.addEventListener('storage', handleStorageChange);
+import.meta.hot?.dispose(() => {
+  systemTheme.removeEventListener('change', handleSystemThemeChange);
+  window.removeEventListener('storage', handleStorageChange);
+});
 
 export function useDarkMode() {
   function setDarkMode(value: boolean, trigger?: ThemeToggleTrigger) {
     if (isDark.value === value) return;
 
     const switchTheme = () => {
+      preference = value === systemTheme.matches ? null : value;
+      persistPreference(preference);
       isDark.value = value;
       applyTheme(value);
     };
