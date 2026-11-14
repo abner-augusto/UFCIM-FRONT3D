@@ -1,5 +1,5 @@
 export class RenderScheduler {
-  constructor(render, request = requestAnimationFrame, cancel = cancelAnimationFrame) {
+  constructor(render, request = callback => requestAnimationFrame(callback), cancel = frame => cancelAnimationFrame(frame)) {
     this.render = render;
     this.request = request;
     this.cancel = cancel;
