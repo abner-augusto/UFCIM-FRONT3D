@@ -4,7 +4,7 @@ import { derivePinStatus, type PinStatus } from '@/composables/usePinAvailabilit
 import type { Space } from '@/types/space';
 import type { AvailabilitySlot } from '@/types/reservation';
 import { getCurrentPeriod, type PeriodKey } from '@/utils/period';
-import { toLocalISODate } from '@/utils/date';
+import { campusISODate } from '@/utils/date';
 
 export function useSpaceBrowser() {
   const allSpaces = ref<Space[]>([]);
@@ -17,7 +17,7 @@ export function useSpaceBrowser() {
   const statusFilter = ref<PinStatus | null>(null);
   const selectedPeriod = ref<PeriodKey>(getCurrentPeriod());
   const periodAutoDetected = ref(true);
-  const selectedDate = ref(toLocalISODate());
+  const selectedDate = ref(campusISODate());
 
   let currentToken: string | null = null;
 

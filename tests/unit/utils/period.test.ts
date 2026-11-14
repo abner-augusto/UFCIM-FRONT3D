@@ -2,10 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getCurrentPeriod } from '@/utils/period';
 
 function mockHour(hour: number) {
-  vi.spyOn(Date.prototype, 'getHours').mockReturnValue(hour);
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(`2026-11-14T${String(hour).padStart(2, '0')}:00:00-03:00`));
 }
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => vi.useRealTimers());
 
 describe('getCurrentPeriod', () => {
   it.each([0, 6])('returns morning for hour %i before opening', (hour) => {

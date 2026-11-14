@@ -13,7 +13,7 @@ import ReservationTimeline from '@/components/reports/ReservationTimeline.vue';
 import AppDateField from '@/components/AppDateField.vue';
 import ChartCardSkeleton from '@/components/ChartCardSkeleton.vue';
 import { Skeleton } from '@/components/ui/skeleton';
-import { toLocalISODate } from '@/utils/date';
+import { campusInstant, campusISODate, defaultReportPeriod } from '@/utils/date';
 import AirQualityHistory from '@/components/reports/AirQualityHistory.vue';
 import type { SpaceAirQualityHistory } from '@/types/air-quality';
 import { airQualityCsvFileName } from '@/utils/air-quality-csv';
@@ -41,12 +41,9 @@ const loading = ref(false);
 const errorMsg = ref<string | null>(null);
 
 // Date range: default = last 30 days
-const today = new Date();
-const thirtyDaysAgo = new Date(today);
-thirtyDaysAgo.setDate(today.getDate() - 29);
-
-const startDate = ref(toLocalISODate(thirtyDaysAgo));
-const endDate = ref(toLocalISODate(today));
+const period = defaultReportPeriod();
+const startDate = ref(period.startDate);
+const endDate = ref(period.endDate);
 
 // Preset chips
 const presets = [
@@ -56,11 +53,9 @@ const presets = [
 ];
 
 function applyPreset(days: number) {
-  const end = new Date();
-  const start = new Date(end);
-  start.setDate(end.getDate() - (days - 1));
-  startDate.value = toLocalISODate(start);
-  endDate.value = toLocalISODate(end);
+  const period = defaultReportPeriod(new Date(), days);
+  startDate.value = period.startDate;
+  endDate.value = period.endDate;
 }
 
 async function loadReport() {
@@ -87,11 +82,10 @@ const airHistory = ref<SpaceAirQualityHistory | null>(null);
 let airHistorySeq = 0;
 async function loadAirHistory() {
   const seq = ++airHistorySeq;
-  const end = new Date(`${endDate.value}T00:00:00-03:00`);
-  end.setDate(end.getDate() + 1);
+  const end = campusInstant(endDate.value, '24:00');
   try {
     const result = await api.getSpaceAirQualityHistory(auth.token, spaceId, {
-      from: new Date(`${startDate.value}T00:00:00-03:00`).toISOString(),
+      from: campusInstant(startDate.value, '00:00').toISOString(),
       to: end.toISOString(),
       bucket: 'hour',
     });
@@ -119,7 +113,7 @@ const adaptedSummary = computed<Summary>(() => {
   };
 });
 
-const todayStr = computed(() => toLocalISODate());
+const todayStr = computed(() => campusISODate());
 </script>
 
 <template>
