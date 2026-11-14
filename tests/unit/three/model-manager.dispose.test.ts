@@ -33,6 +33,13 @@ function makeGltf() {
 }
 
 describe('ModelManager teardown-during-load race (BUG-013)', () => {
+  it('disposes the Draco decoder', () => {
+    const mm = new ModelManager(new THREE.Scene()) as any;
+    const dispose = vi.spyOn(mm.dracoLoader, 'dispose');
+    mm.dispose();
+    expect(dispose).toHaveBeenCalledOnce();
+  });
+
   it('does not build manifest entries when the manifest resolves after dispose', async () => {
     const mm = new ModelManager(new THREE.Scene()) as any;
     let resolveManifest!: (manifest: unknown) => void;

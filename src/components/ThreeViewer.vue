@@ -30,6 +30,7 @@ interface ThreeApp {
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 let threeApp: ThreeApp | null = null;
+let unmounted = false;
 
 const emit = defineEmits<{
   'pin-click': [detail: { pinId: string; displayName: string; building: string; floorLevel: number }];
@@ -42,6 +43,13 @@ function onPinClick(event: Event) {
   emit('pin-click', detail);
 }
 
+function onInitError(err: unknown) {
+  if (unmounted) return;
+  // Surface failed initialization so the view can offer a retry.
+  console.error('[ThreeViewer] engine init failed', err);
+  emit('error');
+}
+
 onMounted(async () => {
   if (!canvasRef.value) return;
 
@@ -49,22 +57,22 @@ onMounted(async () => {
     // Dynamic import to code-split the heavy Three.js bundle
     // @ts-expect-error — legacy JS module, no types
     const { App } = await import('@/three/App.js');
+    if (unmounted) return;
     const app: ThreeApp = new App(canvasRef.value);
     threeApp = app;
     await app.init();
   } catch (err) {
-    // The manifest or a GLB failed to load — surface it so the view can show a
-    // retry instead of leaving the loading overlay spinning forever.
-    console.error('[ThreeViewer] engine init failed', err);
-    emit('error');
+    onInitError(err);
     return;
   }
 
+  if (unmounted) return;
   window.addEventListener('ufcim:pin-click', onPinClick);
   emit('ready');
 });
 
 onUnmounted(() => {
+  unmounted = true;
   window.removeEventListener('ufcim:pin-click', onPinClick);
   // Ensure fullscreen mode doesn't leak to other views if we unmount while active.
   document.body.classList.remove('viewer-fullscreen');
