@@ -61,10 +61,11 @@ async function findNextAvailableDate(
   token: string | null,
   spaceId: string,
   date: string,
+  getSlots: (token: string | null, id: string, date: string, low?: boolean) => Promise<PinAvailabilityData['slots']>,
 ): Promise<string | undefined> {
   for (let offset = 1; offset <= 31; offset++) {
     const candidateDate = addLocalDays(date, offset);
-    const slots = await api.getAvailability(token, spaceId, candidateDate);
+    const slots = await getSlots(token, spaceId, candidateDate, true);
     const hasAvailableSlot = slots.some((slot) => slot.status === 'available');
     if (hasAvailableSlot) return candidateDate;
   }
@@ -74,6 +75,19 @@ async function findNextAvailableDate(
 export function usePinAvailability() {
   const loading = ref(false);
   const error = ref<string | null>(null);
+  const cache = new Map<string, Promise<PinAvailabilityData['slots']>>();
+  let generation = 0;
+  function invalidate() { generation++; cache.clear(); }
+  function getSlots(token: string | null, id: string, date: string, low = false) {
+    const key = JSON.stringify([token, id, date]);
+    let pending = cache.get(key);
+    if (!pending) {
+      pending = api.getAvailability(token, id, date, low ? { priority: 'low' } : undefined);
+      cache.set(key, pending);
+      pending.catch(() => { if (cache.get(key) === pending) cache.delete(key); });
+    }
+    return pending;
+  }
 
   async function fetchStatuses(
     spaces: Map<string, Space>,
@@ -87,7 +101,7 @@ export function usePinAvailability() {
     try {
       const entries = [...spaces.entries()];
       const results = await Promise.allSettled(
-        entries.map(([, space]) => api.getAvailability(token, space.id, date)),
+        entries.map(([, space]) => getSlots(token, space.id, date)),
       );
 
       const statusMap = new Map<string, PinAvailabilityData>();
@@ -107,22 +121,20 @@ export function usePinAvailability() {
       const needsNextDate = [...statusMap.entries()].filter(([, data]) =>
         data.status === 'reserved' && isDayFullyReserved(data.slots),
       );
-      const nextDates = await Promise.all(
-        needsNextDate.map(async ([modelId]) => {
+      let nextIndex = 0;
+      const currentGeneration = generation;
+      await Promise.all(Array.from({ length: Math.min(4, needsNextDate.length) }, async () => {
+        while (nextIndex < needsNextDate.length && currentGeneration === generation) {
+          const [modelId, data] = needsNextDate[nextIndex++];
           const space = spaces.get(modelId);
-          if (!space) return [modelId, undefined] as const;
+          if (!space) continue;
           try {
-            return [modelId, await findNextAvailableDate(token, space.id, date)] as const;
+            data.nextAvailableDate = await findNextAvailableDate(token, space.id, date, getSlots);
           } catch (reason) {
             logger.warn(`[Availability] Failed to find next available date for space "${modelId}":`, reason);
-            return [modelId, undefined] as const;
           }
-        }),
-      );
-      for (const [modelId, nextAvailableDate] of nextDates) {
-        const data = statusMap.get(modelId);
-        if (data && nextAvailableDate) data.nextAvailableDate = nextAvailableDate;
-      }
+        }
+      }));
 
       return statusMap;
     } catch {
@@ -133,5 +145,5 @@ export function usePinAvailability() {
     }
   }
 
-  return { loading, error, fetchStatuses };
+  return { loading, error, fetchStatuses, invalidate };
 }

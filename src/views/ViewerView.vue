@@ -17,8 +17,8 @@ import ViewerDesktopControls from '@/components/ViewerDesktopControls.vue';
 import ViewerSearchSheet from '@/components/ViewerSearchSheet.vue';
 import BlockHeatmapCard from '@/components/BlockHeatmapCard.vue';
 import { useDateTimeFilter, formatShortDate } from '@/composables/useDateTimeFilter';
+import { updatePinLabels } from '@/utils/updatePinLabels';
 import { usePinAvailability, PERIOD_COLORS, type PinAvailabilityData } from '@/composables/usePinAvailability';
-import { buildPinStatusLabel } from '@/composables/usePinStatusLabel';
 import { useDarkMode } from '@/composables/useDarkMode';
 import { useViewerTestHarness } from '@/composables/useViewerTestHarness';
 import type { PeriodKey } from '@/composables/usePinAvailability';
@@ -47,7 +47,7 @@ const showPopup = ref(false);
 // flips `showPopup` (drives the Dialog/Drawer `open`), and we only drop the
 // space data once the close transition has finished.
 let popupUnmountTimer: ReturnType<typeof setTimeout> | null = null;
-const { loading: availabilityLoading, fetchStatuses } = usePinAvailability();
+const { loading: availabilityLoading, fetchStatuses, invalidate: invalidateAvailability } = usePinAvailability();
 const popupReserveDisabled = ref(false);
 const popupReserveDisabledReason = ref<string | null>(null);
 const popupBlockingReason = ref<string | null>(null);
@@ -204,30 +204,23 @@ async function applyPinColors() {
   const seq = ++colorUpdateSeq;
   if (!spacesLoaded.value) return;
   try {
-    cachedStatusMap = await fetchStatuses(spacesByModelId, auth.token, selectedDate.value, selectedPeriod.value);
+    const statuses = await fetchStatuses(spacesByModelId, auth.token, selectedDate.value, selectedPeriod.value);
     if (seq !== colorUpdateSeq) return;
+    cachedStatusMap = statuses;
     const colorMap = new Map<string, string>();
     cachedStatusMap.forEach(({ status }, modelId) => {
       colorMap.set(modelId, PERIOD_COLORS[status]);
     });
     viewerRef.value?.applyBackendFilter(new Set(cachedStatusMap.keys()), colorMap);
 
-    updatePinLabels();
+    await updatePinLabels(cachedStatusMap, periodRange.value, selectedDate.value,
+      (id, text, color) => viewerRef.value?.updatePinLabelStatus?.(id, text, color),
+      () => seq === colorUpdateSeq);
   } catch (e) {
     logger.error('Falha ao atualizar cores:', e);
   }
 }
 
-function updatePinLabels() {
-  if (!viewerRef.value?.updatePinLabelStatus) return;
-  cachedStatusMap.forEach(({ status, slots, nextAvailableDate }, modelId) => {
-    const labelInfo = buildPinStatusLabel(status, slots, periodRange.value, {
-      selectedDate: selectedDate.value,
-      nextAvailableDate,
-    });
-    viewerRef.value!.updatePinLabelStatus!(modelId, labelInfo.statusText, labelInfo.statusColor);
-  });
-}
 
 function handlePeriodChange(period: PeriodKey) {
   setPeriod(period);
@@ -295,7 +288,6 @@ watch(viewerOverlayOpen, (open) => {
 
 watch(isDark, (dark) => {
   viewerRef.value?.setThemeMode(dark);
-  updatePinLabels();
 }, { immediate: true });
 
 onMounted(async () => {
@@ -378,6 +370,7 @@ function handleReserve(range: { startTime: string; endTime: string }) {
 function handleReservationBackToMap() {
   // The reservation was created while this viewer stayed mounted. Revalidate
   // availability so the affected pin reflects the new reservation immediately.
+  invalidateAvailability();
   void applyPinColors();
 }
 
@@ -394,6 +387,7 @@ function handleBlock() {
 }
 
 function handleBlockingBackToMap() {
+  invalidateAvailability();
   void applyPinColors();
 }
 

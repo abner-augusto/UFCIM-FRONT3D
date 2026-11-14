@@ -80,3 +80,29 @@ describe('derivePinStatus', () => {
     expect(result.get('model-1')?.nextAvailableDate).toBe('2026-09-21');
   });
 });
+
+it('reuses daily slots when the period changes', async () => {
+  vi.mocked(api.getAvailability).mockReset().mockResolvedValue(makeSlots());
+  const { fetchStatuses } = usePinAvailability();
+  const spaces = new Map([['model', { id: 'space' } as Space]]);
+  await fetchStatuses(spaces, null, '2026-09-20', 'morning');
+  await fetchStatuses(spaces, null, '2026-09-20', 'evening');
+  expect(api.getAvailability).toHaveBeenCalledTimes(1);
+});
+
+it('limits concurrent next-date searches to four', async () => {
+  const reserved = makeSlots(Object.fromEntries(Array.from({ length: 15 }, (_, i) => [`${String(i + 7).padStart(2, '0')}:00`, 'reserved'])));
+  let active = 0;
+  let peak = 0;
+  vi.mocked(api.getAvailability).mockReset().mockImplementation(async (_token, _id, date) => {
+    if (date === '2026-09-20') return reserved;
+    active++;
+    peak = Math.max(peak, active);
+    await new Promise(resolve => setTimeout(resolve, 1));
+    active--;
+    return makeSlots();
+  });
+  const spaces = new Map(Array.from({ length: 9 }, (_, i) => [`model${i}`, { id: `space${i}` } as Space]));
+  await usePinAvailability().fetchStatuses(spaces, null, '2026-09-20', 'morning');
+  expect(peak).toBe(4);
+});
