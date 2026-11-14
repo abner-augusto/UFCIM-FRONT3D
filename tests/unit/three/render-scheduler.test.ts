@@ -81,3 +81,30 @@ describe('on-demand rendering', () => {
     expect(invalidate).toHaveBeenCalled();
   });
 });
+
+describe('default frame functions', () => {
+  function rejectBoundReceiver(receiver: unknown) {
+    if (receiver !== undefined && receiver !== globalThis) throw new TypeError('Illegal invocation');
+  }
+
+  it('calls requestAnimationFrame and cancelAnimationFrame without binding them to the scheduler', () => {
+    let pending: FrameRequestCallback | null = null;
+    const cancel = vi.fn(function (this: unknown) { rejectBoundReceiver(this); });
+    vi.stubGlobal('requestAnimationFrame', function (this: unknown, callback: FrameRequestCallback) {
+      rejectBoundReceiver(this);
+      pending = callback;
+      return 1;
+    });
+    vi.stubGlobal('cancelAnimationFrame', cancel);
+    const render = vi.fn();
+    const scheduler = new RenderScheduler(render);
+
+    scheduler.invalidate();
+    pending!(0);
+    expect(render).toHaveBeenCalledTimes(1);
+
+    scheduler.invalidate();
+    scheduler.dispose();
+    expect(cancel).toHaveBeenCalledWith(1);
+  });
+});
