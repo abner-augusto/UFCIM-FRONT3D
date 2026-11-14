@@ -368,8 +368,8 @@ export const api = {
   getSpace: (token: string | null, id: string) =>
     request<Space>(`/spaces/${id}`, token),
 
-  getAvailability: (token: string | null, spaceId: string, date: string) =>
-    request<Availability>(`/spaces/${spaceId}/availability?date=${date}`, token),
+  getAvailability: (token: string | null, spaceId: string, date: string, options?: RequestInit) =>
+    request<Availability>(`/spaces/${spaceId}/availability?date=${date}`, token, options),
 
   // Air quality: the room's sensor and its latest reading. A room without a
   // sensor answers 200 with `device: null`.

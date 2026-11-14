@@ -17,12 +17,15 @@ import ViewerDesktopControls from '@/components/ViewerDesktopControls.vue';
 import ViewerSearchSheet from '@/components/ViewerSearchSheet.vue';
 import BlockHeatmapCard from '@/components/BlockHeatmapCard.vue';
 import { useDateTimeFilter, formatShortDate } from '@/composables/useDateTimeFilter';
+import { updatePinLabels } from '@/utils/updatePinLabels';
+import { getBlockingReason } from '@/utils/getBlockingReason';
+import { normalizeBlockKey } from '@/utils/normalizeBlockKey';
+import { watchViewerTheme } from '@/composables/watchViewerTheme';
 import { usePinAvailability, PERIOD_COLORS, type PinAvailabilityData } from '@/composables/usePinAvailability';
-import { buildPinStatusLabel } from '@/composables/usePinStatusLabel';
 import { useDarkMode } from '@/composables/useDarkMode';
 import { useViewerTestHarness } from '@/composables/useViewerTestHarness';
 import type { PeriodKey } from '@/composables/usePinAvailability';
-import { BLOCK_TYPE_LABELS, TIME_SLOT_RANGES, type Blocking } from '@/types/reservation';
+import { TIME_SLOT_RANGES, type Blocking } from '@/types/reservation';
 import { logger } from '@/utils/logger';
 
 const route = useRoute();
@@ -47,7 +50,7 @@ const showPopup = ref(false);
 // flips `showPopup` (drives the Dialog/Drawer `open`), and we only drop the
 // space data once the close transition has finished.
 let popupUnmountTimer: ReturnType<typeof setTimeout> | null = null;
-const { loading: availabilityLoading, fetchStatuses } = usePinAvailability();
+const { loading: availabilityLoading, fetchStatuses, invalidate: invalidateAvailability, cancel: cancelAvailability } = usePinAvailability();
 const popupReserveDisabled = ref(false);
 const popupReserveDisabledReason = ref<string | null>(null);
 const popupBlockingReason = ref<string | null>(null);
@@ -106,16 +109,6 @@ const spaces = ref<Space[]>([]);
 
 const spacesInActiveBlock = ref<Space[]>([]);
 
-// The 3D layer reports the manifest building id ("bloco1", "pavilhao"), while
-// the backend stores a display block name ("Bloco 1", "Pavilhão"). Normalize
-// both to a canonical key so they can be matched.
-function normalizeBlockKey(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '') // strip accents
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '');      // strip spaces & punctuation
-}
 
 function updateBlockHeatmap() {
   if (!activeBuildingId.value) {
@@ -141,11 +134,6 @@ function onFullscreenToggle(on: boolean) {
   viewerRef.value?.setFullscreen(on);
 }
 
-function getBlockingReason(blocking: Blocking): string {
-  const typeLabel = BLOCK_TYPE_LABELS[blocking.blockType];
-  const reason = blocking.reason?.trim();
-  return reason ? `${typeLabel}: ${reason}` : typeLabel;
-}
 
 async function updatePopupReservationState(space: Space) {
   const seq = ++popupStateSeq;
@@ -200,34 +188,36 @@ async function updatePopupReservationState(space: Space) {
   }
 }
 
+function refreshPinLabels(seq: number) {
+  return updatePinLabels(cachedStatusMap, periodRange.value, selectedDate.value,
+    (id, text, color) => viewerRef.value?.updatePinLabelStatus?.(id, text, color), () => seq === colorUpdateSeq);
+}
+
 async function applyPinColors() {
   const seq = ++colorUpdateSeq;
   if (!spacesLoaded.value) return;
   try {
-    cachedStatusMap = await fetchStatuses(spacesByModelId, auth.token, selectedDate.value, selectedPeriod.value);
+    const pendingDates = new Map<string, string>();
+    let applied = false;
+    const statuses = await fetchStatuses(spacesByModelId, auth.token, selectedDate.value, selectedPeriod.value, (id, date) => {
+      pendingDates.set(id, date);
+      if (applied && seq === colorUpdateSeq) { const data = cachedStatusMap.get(id); if (data) data.nextAvailableDate = date; void refreshPinLabels(seq); }
+    });
     if (seq !== colorUpdateSeq) return;
+    pendingDates.forEach((date, id) => { const data = statuses.get(id); if (data) data.nextAvailableDate = date; });
+    cachedStatusMap = statuses; applied = true;
     const colorMap = new Map<string, string>();
     cachedStatusMap.forEach(({ status }, modelId) => {
       colorMap.set(modelId, PERIOD_COLORS[status]);
     });
     viewerRef.value?.applyBackendFilter(new Set(cachedStatusMap.keys()), colorMap);
 
-    updatePinLabels();
+    await refreshPinLabels(seq);
   } catch (e) {
     logger.error('Falha ao atualizar cores:', e);
   }
 }
 
-function updatePinLabels() {
-  if (!viewerRef.value?.updatePinLabelStatus) return;
-  cachedStatusMap.forEach(({ status, slots, nextAvailableDate }, modelId) => {
-    const labelInfo = buildPinStatusLabel(status, slots, periodRange.value, {
-      selectedDate: selectedDate.value,
-      nextAvailableDate,
-    });
-    viewerRef.value!.updatePinLabelStatus!(modelId, labelInfo.statusText, labelInfo.statusColor);
-  });
-}
 
 function handlePeriodChange(period: PeriodKey) {
   setPeriod(period);
@@ -293,10 +283,11 @@ watch(viewerOverlayOpen, (open) => {
   viewerRef.value?.setInteractive(!open);
 }, { immediate: true });
 
-watch(isDark, (dark) => {
-  viewerRef.value?.setThemeMode(dark);
-  updatePinLabels();
-}, { immediate: true });
+watch([reservationTrayOpen, blockingTrayOpen], ([reservation, blocking], [oldReservation, oldBlocking]) => {
+  if ((oldReservation && !reservation) || (oldBlocking && !blocking)) invalidateAvailability();
+});
+
+watchViewerTheme(isDark, (dark) => viewerRef.value?.setThemeMode(dark));
 
 onMounted(async () => {
   mql.addEventListener('change', onResize);
@@ -326,6 +317,8 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  colorUpdateSeq++;
+  cancelAvailability();
   mql.removeEventListener('change', onResize);
   if (popupUnmountTimer) clearTimeout(popupUnmountTimer);
 });
@@ -378,6 +371,7 @@ function handleReserve(range: { startTime: string; endTime: string }) {
 function handleReservationBackToMap() {
   // The reservation was created while this viewer stayed mounted. Revalidate
   // availability so the affected pin reflects the new reservation immediately.
+  invalidateAvailability();
   void applyPinColors();
 }
 
@@ -394,6 +388,7 @@ function handleBlock() {
 }
 
 function handleBlockingBackToMap() {
+  invalidateAvailability();
   void applyPinColors();
 }
 
@@ -443,6 +438,7 @@ useViewerTestHarness({
     <ThreeViewer :key="viewerKey"
       ref="viewerRef"
       @ready="handleViewerReady"
+      @pins-loaded="applyPinColors"
       @error="handleViewerError"
       @pin-click="handlePinClick"
     />

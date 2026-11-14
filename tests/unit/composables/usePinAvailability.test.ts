@@ -70,13 +70,113 @@ describe('derivePinStatus', () => {
     );
 
     const { fetchStatuses } = usePinAvailability();
-    const result = await fetchStatuses(
+    const onNextDate = vi.fn();
+    await fetchStatuses(
       new Map([['model-1', { id: 'space-1' } as Space]]),
       null,
       '2026-09-20',
-      'evening',
+      'evening', onNextDate,
     );
 
-    expect(result.get('model-1')?.nextAvailableDate).toBe('2026-09-21');
+    await vi.waitFor(() => expect(onNextDate).toHaveBeenCalledWith('model-1', '2026-09-21'));
   });
+});
+
+it('reuses daily slots when the period changes', async () => {
+  vi.mocked(api.getAvailability).mockReset().mockResolvedValue(makeSlots());
+  const { fetchStatuses } = usePinAvailability();
+  const spaces = new Map([['model', { id: 'space' } as Space]]);
+  await fetchStatuses(spaces, null, '2026-09-20', 'morning');
+  await fetchStatuses(spaces, null, '2026-09-20', 'evening');
+  expect(api.getAvailability).toHaveBeenCalledTimes(1);
+});
+
+it('limits concurrent next-date searches to four', async () => {
+  const reserved = makeSlots(Object.fromEntries(Array.from({ length: 15 }, (_, i) => [`${String(i + 7).padStart(2, '0')}:00`, 'reserved'])));
+  let active = 0;
+  let peak = 0;
+  vi.mocked(api.getAvailability).mockReset().mockImplementation(async (_token, _id, date) => {
+    if (date === '2026-09-20') return reserved;
+    active++;
+    peak = Math.max(peak, active);
+    await new Promise(resolve => setTimeout(resolve, 1));
+    active--;
+    return makeSlots();
+  });
+  const spaces = new Map(Array.from({ length: 9 }, (_, i) => [`model${i}`, { id: `space${i}` } as Space]));
+  await usePinAvailability().fetchStatuses(spaces, null, '2026-09-20', 'morning');
+  await vi.waitFor(() => expect(peak).toBe(4));
+});
+
+
+it('shares the next-date limit across simultaneous lookups', async () => {
+  const reserved = makeSlots(Object.fromEntries(Array.from({ length: 15 }, (_, i) => [`${String(i + 7).padStart(2, '0')}:00`, 'reserved'])));
+  let active = 0;
+  let peak = 0;
+  vi.mocked(api.getAvailability).mockReset().mockImplementation(async (_token, _id, date) => {
+    if (date === '2026-09-20') return reserved;
+    active++;
+    peak = Math.max(peak, active);
+    await new Promise(resolve => setTimeout(resolve, 5));
+    active--;
+    return makeSlots();
+  });
+  const spaces = (prefix: string) => new Map(Array.from({ length: 6 }, (_, i) => [`${prefix}${i}`, { id: `${prefix}${i}` } as Space]));
+  await Promise.all([
+    usePinAvailability().fetchStatuses(spaces('a'), null, '2026-09-20', 'morning'),
+    usePinAvailability().fetchStatuses(spaces('b'), null, '2026-09-20', 'morning'),
+  ]);
+  await vi.waitFor(() => expect(peak).toBe(4));
+});
+
+it('refetches after invalidation, expiry and rejection', async () => {
+  const get = vi.mocked(api.getAvailability).mockReset().mockResolvedValue(makeSlots());
+  const availability = usePinAvailability();
+  const spaces = new Map([['m', { id: 's' } as Space]]);
+  const fetch = () => availability.fetchStatuses(spaces, null, '2026-09-20', 'morning');
+  const now = vi.spyOn(Date, 'now').mockReturnValue(1000);
+  await fetch(); await fetch();
+  expect(get).toHaveBeenCalledTimes(1);
+  now.mockReturnValue(61001);
+  await fetch();
+  expect(get).toHaveBeenCalledTimes(2);
+  availability.invalidate();
+  get.mockRejectedValueOnce(new Error('failed'));
+  await fetch(); await fetch();
+  expect(get).toHaveBeenCalledTimes(4);
+  now.mockRestore();
+});
+
+it('cancels queued and subsequent next-date requests', async () => {
+  const reserved = makeSlots(Object.fromEntries(Array.from({ length: 15 }, (_, i) => [`${String(i + 7).padStart(2, '0')}:00`, 'reserved'])));
+  const releases: Array<() => void> = [];
+  const get = vi.mocked(api.getAvailability).mockReset().mockImplementation(async (_token, _id, date) => {
+    if (date === '2026-09-20') return reserved;
+    await new Promise<void>(resolve => releases.push(resolve));
+    return reserved;
+  });
+  const availability = usePinAvailability();
+  const spaces = new Map(Array.from({ length: 8 }, (_, i) => [`m${i}`, { id: `s${i}` } as Space]));
+  const callback = vi.fn();
+  await availability.fetchStatuses(spaces, null, '2026-09-20', 'morning', callback);
+  await vi.waitFor(() => expect(releases).toHaveLength(4));
+  availability.cancel();
+  releases.forEach(resolve => resolve());
+  await new Promise(resolve => setTimeout(resolve, 10));
+  expect(get).toHaveBeenCalledTimes(12);
+  expect(callback).not.toHaveBeenCalled();
+});
+
+it('releases a next-date slot after a rejected request', async () => {
+  const reserved = makeSlots(Object.fromEntries(Array.from({ length: 15 }, (_, i) => [`${String(i + 7).padStart(2, '0')}:00`, 'reserved'])));
+  const get = vi.mocked(api.getAvailability).mockReset().mockImplementation(async (_token, id, date) => {
+    if (date === '2026-09-20') return reserved;
+    if (id === 's0') throw new Error('failed');
+    return makeSlots();
+  });
+  const spaces = new Map(Array.from({ length: 6 }, (_, i) => [`m${i}`, { id: `s${i}` } as Space]));
+  const callback = vi.fn();
+  await usePinAvailability().fetchStatuses(spaces, null, '2026-09-20', 'morning', callback);
+  await vi.waitFor(() => expect(callback).toHaveBeenCalledTimes(5));
+  expect(get).toHaveBeenCalledTimes(12);
 });

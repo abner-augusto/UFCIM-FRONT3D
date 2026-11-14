@@ -32,6 +32,8 @@ export class PinFactory {
         this.textureLoader = new THREE.TextureLoader();
         this._textureCache = new Map();
         this._canvasCache = new Map();
+        this._lineHeight = null;
+        this._labelStyle = null;
     }
 
     async loadAssets() {
@@ -153,25 +155,7 @@ export class PinFactory {
     _createLabelSprite(pinData, labelParams) {
         const cacheKey = this._getLabelCacheKey(labelParams);
 
-        // Canvas cache: avoid re-running DOM measurement for identical labels
-        let sourceCanvas;
-        if (this._canvasCache.has(cacheKey)) {
-            sourceCanvas = this._canvasCache.get(cacheKey);
-        } else {
-            sourceCanvas = this.createLabelCanvas(labelParams);
-            this._canvasCache.set(cacheKey, sourceCanvas);
-        }
-
-        // Texture cache: clone to avoid sharing across materials
-        let texture;
-        if (this._textureCache.has(cacheKey)) {
-            texture = this._textureCache.get(cacheKey).clone();
-        } else {
-            texture = new THREE.CanvasTexture(sourceCanvas);
-            texture.needsUpdate = true;
-            this._textureCache.set(cacheKey, texture);
-            this._evictCache();
-        }
+        const { canvas: sourceCanvas, texture } = this.getLabelTexture(labelParams);
 
         const material = new THREE.SpriteMaterial({
             map: texture,
@@ -193,27 +177,38 @@ export class PinFactory {
         sprite.name = `${pinData.id}_label`;
         sprite.userData.displayName = labelParams.displayName;
         sprite.userData.baseDisplayName = labelParams.displayName;
+        sprite.userData.labelKey = cacheKey;
 
         return sprite;
+    }
+
+    getLabelTexture(params) {
+        const key = this._getLabelCacheKey(params);
+        let canvas = this._canvasCache.get(key);
+        if (!canvas) {
+            canvas = this.createLabelCanvas(params);
+            this._canvasCache.set(key, canvas);
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            this._textureCache.set(key, texture);
+            this._evictCache();
+        }
+        return { canvas, texture: this._textureCache.get(key).clone() };
+    }
+
+    dispose() {
+        this._textureCache.forEach(texture => texture.dispose());
+        this._textureCache.clear();
+        this._canvasCache.clear();
     }
 
     createLabelCanvas({ displayName, statusText, statusColor }) {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
 
-        // Get computed style from a temporary DOM element
-        const tempLabel = document.createElement('div');
-        tempLabel.className = 'pin-label'; // match your CSS class
-        tempLabel.style.position = 'absolute'; // off-screen
-        tempLabel.style.visibility = 'hidden';
-
-        // Build text: displayName always, statusText on second line if present
         const hasStatus = statusText != null && statusText !== '';
         const labelText = hasStatus ? `${displayName}\n${statusText}` : displayName;
-        tempLabel.textContent = labelText;
-        document.body.appendChild(tempLabel);
-        try {
-            const style = getComputedStyle(tempLabel);
+        const style = this._getLabelStyle();
             const font = LABEL_STYLE.font || `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
             // Status line font: smaller (10px vs 12px)
             const statusFont = hasStatus ? '400 10px Roboto, sans-serif' : font;
@@ -234,7 +229,7 @@ export class PinFactory {
             const borderWidth = (borderConfig.width ?? parseInt(style.borderWidth, 10)) || 2;
 
             const lines = labelText.split('\n');
-            const lineHeight = this._resolveLineHeight(style);
+            const lineHeight = this._getLineHeight(style);
             // Status line gets a smaller line height
             const statusLineHeight = hasStatus ? Math.round(10 * 1.2) : lineHeight;
 
@@ -292,9 +287,29 @@ export class PinFactory {
             });
 
             return canvas;
+    }
+
+    _getLabelStyle() {
+        if (this._labelStyle) return this._labelStyle;
+        const element = document.createElement('div');
+        element.className = 'pin-label';
+        element.style.position = 'absolute';
+        element.style.visibility = 'hidden';
+        document.body.appendChild(element);
+        try {
+            const style = getComputedStyle(element);
+            const keys = ['fontWeight', 'fontSize', 'fontFamily', 'lineHeight', 'paddingLeft', 'paddingRight',
+                'paddingTop', 'paddingBottom', 'borderRadius', 'borderWidth', 'backgroundColor', 'borderColor', 'color'];
+            this._labelStyle = Object.fromEntries(keys.map(key => [key, style[key]]));
+            return this._labelStyle;
         } finally {
-            tempLabel.remove();
+            element.remove();
         }
+    }
+
+    _getLineHeight(style) {
+        if (this._lineHeight === null) this._lineHeight = this._resolveLineHeight(style);
+        return this._lineHeight;
     }
 
     _resolveLineHeight(style) {

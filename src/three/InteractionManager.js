@@ -1,3 +1,4 @@
+import { updatePinLabel } from './updatePinLabel.js';
 import * as THREE from 'three';
 import { PinFactory } from './PinFactory.js'; // Import the new factory
 import { findBuildingId, isTap, pinWins } from './pointerIntent.js';
@@ -16,6 +17,7 @@ export class InteractionManager extends THREE.EventDispatcher {
         this.pointer = new THREE.Vector2();
         this.interactiveObjects = [];
         this.labelSprites = [];
+        this.labelsById = new Map();
         this.clickTargets = [];
         this.blockingMeshes = [];
         this.pinFactory = null;
@@ -107,6 +109,7 @@ export class InteractionManager extends THREE.EventDispatcher {
 
             this.interactiveObjects.push(pinSprite);
             this.labelSprites.push(labelSprite);
+            this.labelsById.set(pinData.id, labelSprite);
             labelSprite.userData.pinSprite = pinSprite;
             // Only make the pin sprite a click target if it opens a popup.
             if (preparedData.opensPopup !== false) {
@@ -338,33 +341,8 @@ export class InteractionManager extends THREE.EventDispatcher {
         });
     }
 
-    /**
-     * Updates the label text and status of an existing pin without rebuilding the sprite.
-     * Regenerates only the canvas texture.
-     */
     updatePinLabelStatus(pinId, statusText, statusColor) {
-        const labelSprite = this.labelSprites.find(
-            s => s.name === `${pinId}_label`
-        );
-        if (!labelSprite || !labelSprite.material?.map) return;
-
-        const displayName = labelSprite.userData.baseDisplayName ?? labelSprite.userData.displayName;
-        const canvas = this.pinFactory.createLabelCanvas({
-            displayName,
-            statusText: statusText ?? null,
-            statusColor: statusColor ?? null,
-        });
-
-        // Replace the texture
-        const newTexture = new THREE.CanvasTexture(canvas);
-        newTexture.needsUpdate = true;
-        labelSprite.material.map.dispose();
-        labelSprite.material.map = newTexture;
-        labelSprite.material.needsUpdate = true; this.onChange?.();
-
-        // Update scale if canvas dimensions changed
-        const pixelToWorldScale = 0.05;
-        labelSprite.scale.set(canvas.width * pixelToWorldScale, canvas.height * pixelToWorldScale, 1);
+        updatePinLabel(this, pinId, statusText, statusColor);
     }
 
     dispose() {
@@ -383,6 +361,8 @@ export class InteractionManager extends THREE.EventDispatcher {
         this.clickTargets = [];
         this.blockingMeshes = [];
         this.pinGroups.clear();
+        this.labelsById.clear();
+        this.pinFactory?.dispose();
         this.pinFactory?.pinTexture?.dispose();
     }
 

@@ -130,6 +130,7 @@ export class App {
 
         this.modelManager.onPinsLoaded = (pins) => {
             this.interactionManager.addPins(pins);
+            this.onPinsLoaded?.();
         };
         this.modelManager.onPinsVisibilityChange = (building, floor, visible) => {
             this.interactionManager.setPinsVisibility(building, floor, visible);

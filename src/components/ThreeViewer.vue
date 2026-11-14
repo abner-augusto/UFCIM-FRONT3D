@@ -7,6 +7,7 @@ interface ViewerBuilding { id: string; name: string }
 interface ViewerFloor { level: number; name: string }
 interface ThreeApp {
   init(): Promise<void>;
+  onPinsLoaded?: () => void;
   dispose(): void;
   setThemeMode(isDark: boolean): void;
   controls?: {
@@ -35,6 +36,7 @@ let unmounted = false;
 const emit = defineEmits<{
   'pin-click': [detail: { pinId: string; displayName: string; building: string; floorLevel: number }];
   'ready': [];
+  'pins-loaded': [];
   'error': [];
 }>();
 
@@ -60,6 +62,7 @@ onMounted(async () => {
     if (unmounted) return;
     const app: ThreeApp = new App(canvasRef.value);
     threeApp = app;
+    app.onPinsLoaded = () => emit('pins-loaded');
     await app.init();
   } catch (err) {
     onInitError(err);
