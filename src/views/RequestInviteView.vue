@@ -50,18 +50,18 @@ function renderTurnstile() {
   if (!el) return;
 
   if (window.turnstile) {
-      turnstileWidgetId = window.turnstile.render(el, {
-        sitekey: siteKey,
-        callback: (token: string) => {
-          turnstileToken.value = token;
-        },
-        'expired-callback': () => {
-          turnstileToken.value = '';
-        },
-        'error-callback': () => {
-          turnstileToken.value = '';
-        },
-      });
+    turnstileWidgetId = window.turnstile.render(el, {
+      sitekey: siteKey,
+      callback: (token: string) => {
+        turnstileToken.value = token;
+      },
+      'expired-callback': () => {
+        turnstileToken.value = '';
+      },
+      'error-callback': () => {
+        turnstileToken.value = '';
+      },
+    });
   }
 }
 
