@@ -5,8 +5,8 @@ import type { Space } from '@/types/space';
 import { usePermissions } from '@/composables/usePermissions';
 import { useRoomDetail } from '@/composables/useRoomDetail';
 import EquipmentReportDialog from './EquipmentReportDialog.vue';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Drawer, DrawerContent } from '@/components/ui/drawer';
+import { Dialog, DialogContent, DialogDescription } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerDescription } from '@/components/ui/drawer';
 import RoomAvailabilityStrip from './room-popup/RoomAvailabilityStrip.vue';
 import RoomPopupActions from './room-popup/RoomPopupActions.vue';
 import RoomDetailsCollapse from './room-popup/RoomDetailsCollapse.vue';
@@ -139,6 +139,7 @@ function goToReport() {
       overlay-class="supports-backdrop-filter:backdrop-blur-none"
       :show-close-button="false"
     >
+      <component :is="isDesktop ? DialogDescription : DrawerDescription" class="sr-only">Detalhes e disponibilidade do espaço.</component>
       <!-- On mobile this is the scroll region; on the desktop dialog it's
            layout-transparent (display:contents) so nothing about that path changes.
            Keeping the scroller a child of the drawer (not its root) lets vaul tell

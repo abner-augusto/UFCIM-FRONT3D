@@ -7,8 +7,9 @@ const { needRefresh, update, dismiss } = usePwaUpdate();
 </script>
 
 <template>
+  <div role="status" aria-live="polite">
   <Transition name="update-toast">
-    <div v-if="needRefresh" class="update-toast" role="status" aria-live="polite">
+    <div v-if="needRefresh" class="update-toast">
       <RefreshCw class="update-toast__icon" />
       <div class="update-toast__text">
         <p class="update-toast__title">Nova versão disponível</p>
@@ -20,6 +21,7 @@ const { needRefresh, update, dismiss } = usePwaUpdate();
       </div>
     </div>
   </Transition>
+  </div>
 </template>
 
 <style scoped>

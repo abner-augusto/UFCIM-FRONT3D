@@ -224,9 +224,9 @@ const panels = computed(() =>
       </article>
     </div>
 
-    <div v-else class="aqh__table-wrap">
+    <div v-else class="aqh__table-wrap" role="region" aria-labelledby="air-quality-table-caption" tabindex="0">
       <table class="aqh__table">
-        <caption class="sr-only">Médias por hora das medições de qualidade do ar</caption>
+        <caption id="air-quality-table-caption" class="sr-only">Médias por hora das medições de qualidade do ar</caption>
         <thead>
           <tr>
             <th scope="col">Hora</th>

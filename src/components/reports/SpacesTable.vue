@@ -43,7 +43,7 @@ function taxaClass(taxa: number): string {
 <template>
   <div class="table-container">
     <div class="table-head">
-      <h3 class="table-title">Detalhamento por Sala</h3>
+      <h3 id="spaces-table-title" class="table-title">Detalhamento por Sala</h3>
       <label class="sort-control">
         <span class="sort-label">Ordenar por</span>
         <NativeSelect v-model="sortBy" class="sort-select" aria-label="Ordenar salas por">
@@ -54,21 +54,22 @@ function taxaClass(taxa: number): string {
         </NativeSelect>
       </label>
     </div>
-    <div class="table-scroll">
+    <div class="table-scroll" role="region" aria-labelledby="spaces-table-title" tabindex="0">
       <table class="spaces-table">
+        <caption class="sr-only">Detalhamento por sala</caption>
         <thead>
           <tr>
-            <th>Sala</th>
-            <th>Número</th>
-            <th>Bloco</th>
-            <th>Tipo</th>
-            <th>Capacidade</th>
-            <th>Reservas</th>
-            <th>Taxa</th>
+            <th scope="col">Sala</th>
+            <th scope="col">Número</th>
+            <th scope="col">Bloco</th>
+            <th scope="col">Tipo</th>
+            <th scope="col">Capacidade</th>
+            <th scope="col">Reservas</th>
+            <th scope="col">Taxa</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="s in sortedSpaces" :key="s.id" class="space-row" @click="goToReport(s.id)">
+          <tr v-for="s in sortedSpaces" :key="s.id" class="space-row" tabindex="0" @click="goToReport(s.id)" @keydown.enter.prevent="goToReport(s.id)" @keydown.space.prevent="goToReport(s.id)">
             <td class="cell-name">{{ s.nome }}</td>
             <td>{{ s.numero }}</td>
             <td>{{ s.bloco }}</td>
@@ -170,7 +171,8 @@ function taxaClass(taxa: number): string {
   transition: background 0.15s;
 }
 
-.space-row:hover {
+.space-row:hover,
+.space-row:focus-visible {
   background: var(--accent);
 }
 

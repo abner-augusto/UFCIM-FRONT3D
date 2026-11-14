@@ -371,22 +371,22 @@ function handleBackToMap() {
           </Button>
         </div>
 
-        <div
+        <ol
           v-if="reservationMode === 'single'"
           class="reservation-tray__steps"
           :style="{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }"
           aria-label="Etapas da reserva"
         >
-          <span
+          <li
             v-for="step in steps"
             :key="step"
             class="reservation-tray__step-dot"
             :class="{ 'reservation-tray__step-dot--active': step === currentStep }"
             :aria-current="step === currentStep ? 'step' : undefined"
           >
-            {{ stepTitles[step] }}
-          </span>
-        </div>
+            <span class="sr-only">{{ stepTitles[step] }}</span>
+          </li>
+        </ol>
 
         <ReservationScheduleStep
           v-if="reservationMode === 'single' && currentStep === 'schedule'"
@@ -546,6 +546,7 @@ function handleBackToMap() {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.4rem;
+  margin: 0; padding: 0; list-style: none;
 }
 
 .reservation-tray__mode-toggle {
@@ -571,8 +572,6 @@ function handleBackToMap() {
   overflow: hidden;
   border-radius: 999px;
   background: var(--muted);
-  color: transparent;
-  white-space: nowrap;
 }
 
 .reservation-tray__step-dot--active {

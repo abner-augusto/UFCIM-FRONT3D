@@ -37,7 +37,8 @@ function color(rate: number): string {
             borderColor: color(h.occupancyRate),
           }"
         />
-        <span class="heatbar-label">{{ h.hour.slice(0, 2) }}h</span>
+        <span class="sr-only">{{ h.hour }}: {{ h.occupancyRate.toFixed(1) }}% de ocupação</span>
+        <span class="heatbar-label" aria-hidden="true">{{ h.hour.slice(0, 2) }}h</span>
       </div>
     </div>
     <p v-else class="heatmap-empty">Nenhum dado de horário disponível.</p>
