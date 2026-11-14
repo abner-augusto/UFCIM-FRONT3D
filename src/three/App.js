@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import TWEEN from 'three/examples/jsm/libs/tween.module.js';
 
 import { World } from './World.js';
 import { ModelManager } from './ModelManager.js';
@@ -8,6 +7,7 @@ import { UIManager } from './UIManager.js';
 import { InteractionManager } from './InteractionManager.js';
 import { PopupManager } from './PopUpManager.js';
 import { CameraManager } from './CameraManager.js';
+import { RenderScheduler, observeContainer } from './RenderScheduler.js';
 import { CAMERA_CONFIG, CONTROLS_CONFIG } from './config.js';
 import { logger } from '../utils/logger.ts';
 
@@ -30,7 +30,8 @@ export class App {
         this._updateRendererSize();
 
         this.controls = this._createControls();
-        this.cameraManager = new CameraManager(this.camera, this.controls);
+        this.scheduler = new RenderScheduler(() => this.animate());
+        this.cameraManager = new CameraManager(this.camera, this.controls, () => this.invalidate());
         this.devTools = null;
 
         // App components
@@ -38,6 +39,7 @@ export class App {
         this.modelManager = new ModelManager(this.scene);
         this.uiManager = new UIManager();
         this.interactionManager = new InteractionManager(this.camera, this.scene, this.canvas);
+        this.interactionManager.onChange = () => this.invalidate();
         this.popupManager = new PopupManager(
             this.camera,
             this.controls,
@@ -48,6 +50,8 @@ export class App {
         // Bind 'this' to methods
         this.animate = this.animate.bind(this);
         this._onResize = this._onResize.bind(this);
+        this.invalidate = this.invalidate.bind(this);
+        this._onVisibilityChange = this._onVisibilityChange.bind(this);
 
         // Set by dispose(). init() is async (it awaits the model load); if the
         // engine is torn down mid-load, this lets the resumed init() abort
@@ -74,8 +78,11 @@ export class App {
             if (this._disposed) return;
             installDebugTools(this);
         }
-        window.addEventListener('resize', this._onResize);
-        this.animate();
+        this.controls.addEventListener('change', this.invalidate);
+        document.addEventListener('visibilitychange', this._onVisibilityChange);
+        this._resizeObserver = observeContainer(this.canvas, this._onResize);
+        this.scheduler.setPaused('hidden', document.hidden);
+        this.invalidate();
     }
 
 
@@ -129,6 +136,7 @@ export class App {
         };
         this.modelManager.onVisibleMeshesChange = (meshes) => {
             this.interactionManager.blockingMeshes = meshes;
+            this.invalidate();
         };
       
         try {
@@ -175,6 +183,7 @@ export class App {
 
     setThemeMode(isDark) {
         this.renderer?.setClearColor(isDark ? CLEAR_COLOR.dark : CLEAR_COLOR.light);
+        this.invalidate();
     }
 
     _getPerformanceConfiguration() {
@@ -241,51 +250,55 @@ export class App {
     }
 
     _onResize() {
-        if (!this.renderer) return; // disposed — ignore late resize events
-        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this._resizePending = true;
+        this.invalidate();
+    }
+
+    _onVisibilityChange() {
+        this.scheduler.setPaused('hidden', document.hidden);
+        if (!document.hidden) this.invalidate();
+    }
+
+    invalidate() {
+        this.scheduler.invalidate();
+    }
+
+    _applyPendingResize() {
+        if (!this._resizePending) return;
+        this._resizePending = false;
+        const container = this.canvas.parentElement || this.canvas;
+        const width = container.clientWidth || window.innerWidth;
+        const height = container.clientHeight || window.innerHeight;
+        this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setSize(width, height);
         this.renderer.setPixelRatio(this.renderConfig.targetDPR);
     }
 
     animate() {
-        // Bail if the engine has been disposed. The next frame is scheduled
-        // (line below) *before* the render call, so without this guard a single
-        // frame slipping through after dispose() nulls the renderer would
-        // reschedule itself and throw forever — a runaway error loop.
-        if (!this.renderer) return;
-
+        this._applyPendingResize();
         this.devTools?.beginFrame?.();
-
-        this._animationFrameId = requestAnimationFrame(this.animate);
-        this.controls.update();
-
-        // Enforce minimum camera height
-        if (this.camera.position.y < CONTROLS_CONFIG.minCameraHeight) {
-            this.camera.position.y = CONTROLS_CONFIG.minCameraHeight;
-        }
-
-        TWEEN.update();
-
+        const changed = this.controls.update();
+        this.camera.position.y = Math.max(this.camera.position.y, CONTROLS_CONFIG.minCameraHeight);
+        const tweening = this.cameraManager.tweens.update();
         this.renderer.render(this.scene, this.camera);
         this.devTools?.endFrame?.();
+        if (changed || tweening) this.invalidate();
     }
 
     dispose() {
         // Mark disposed first so an in-flight async init() bails on resume.
         this._disposed = true;
 
-        // Stop animation loop
-        if (this._animationFrameId) {
-            cancelAnimationFrame(this._animationFrameId);
-            this._animationFrameId = null;
-        }
+        this.scheduler.dispose();
 
-        // Remove resize listener
-        window.removeEventListener('resize', this._onResize);
+        this._resizeObserver?.disconnect();
+        document.removeEventListener('visibilitychange', this._onVisibilityChange);
+        this.controls?.removeEventListener('change', this.invalidate);
 
         // Dispose sub-managers
         this.popupManager?.dispose();
+        this.cameraManager?.dispose();
         this.interactionManager?.dispose();
         this.uiManager?.dispose?.();
         this.modelManager?.dispose();

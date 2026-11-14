@@ -1,3 +1,4 @@
+import { campusInstant } from '@/utils/date';
 import type { Reservation } from '@/types/reservation';
 
 /** Trimmed description, or null when empty. */
@@ -54,10 +55,9 @@ export interface OrganizedReservations {
   past: ReservationGroup[];
 }
 
-/** True once the occurrence's end time has passed (local time). */
+/** True once the occurrence's end time has passed (campus time). */
 export function isReservationPast(r: Reservation, now: Date): boolean {
-  const end = r.endTime === '24:00' ? '23:59' : r.endTime;
-  return new Date(`${r.date}T${end}:00`) < now;
+  return campusInstant(r.date, r.endTime) < now;
 }
 
 function startKey(r: Reservation): string {

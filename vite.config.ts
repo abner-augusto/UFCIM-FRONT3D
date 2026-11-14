@@ -89,6 +89,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
+    env: { TZ: 'UTC' },
     include: ['tests/unit/**/*.{test,spec}.ts'],
   },
 });

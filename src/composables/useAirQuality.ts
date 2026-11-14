@@ -19,6 +19,7 @@ export function useAirQuality(spaceId: MaybeRefOrGetter<string>) {
   let requestSeq = 0;
 
   async function load() {
+    if (document.hidden) return;
     const id = toValue(spaceId);
     const seq = ++requestSeq;
     loading.value = data.value === null;
@@ -48,7 +49,14 @@ export function useAirQuality(spaceId: MaybeRefOrGetter<string>) {
     { immediate: true },
   );
 
-  onUnmounted(stop);
+  function onVisibilityChange() {
+    if (!document.hidden) void load();
+  }
+  document.addEventListener('visibilitychange', onVisibilityChange);
+  onUnmounted(() => {
+    stop();
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+  });
 
   return { data, loading, reload: load };
 }

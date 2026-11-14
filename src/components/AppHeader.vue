@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { preventNavigationFocusRestore } from '@/utils/navigation-focus';
 import { ref, computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
@@ -26,6 +27,8 @@ const router = useRouter();
 
 const drawerOpen = ref(false);
 const notifOpen = ref(false);
+const menuNavigating = ref(false);
+function onMenuCloseAutoFocus(event: Event) { if (menuNavigating.value) preventNavigationFocusRestore(event); }
 const { isDark, toggleDarkMode } = useDarkMode();
 const themeToggleLabel = computed(() => isDark.value ? 'Ativar tema claro' : 'Ativar tema escuro');
 
@@ -52,7 +55,7 @@ function logout() {
   <header class="app-header">
     <div class="header-content">
       <!-- Tablet Hamburger (481-1023px) -->
-      <Button variant="ghost" size="icon" class="hamburger-btn" aria-label="Abrir menu" @click="drawerOpen = true"><Menu :size="24" /></Button>
+      <Button variant="ghost" size="icon" class="hamburger-btn" aria-label="Abrir menu" :aria-expanded="drawerOpen" aria-controls="nav-drawer" @click="drawerOpen = true"><Menu :size="24" /></Button>
 
       <div class="header-left">
         <router-link to="/campus" class="header-logo" aria-label="UFCIM — Início">
@@ -61,7 +64,7 @@ function logout() {
       </div>
 
       <!-- Desktop Nav (>= 1024px) -->
-      <nav class="header-nav">
+      <nav class="header-nav" aria-label="Principal">
         <router-link :to="viewerRoute">Maquete 3D</router-link>
         <router-link :to="spaceBrowserRoute">Buscar Espaços</router-link>
         <router-link v-if="canReserve" to="/minhas-reservas">Minhas Reservas</router-link>
@@ -80,27 +83,26 @@ function logout() {
             size="icon"
             class="theme-toggle"
             :aria-label="themeToggleLabel"
-            :aria-pressed="isDark"
             @click="toggleDarkMode"
           >
             <Sun v-if="isDark" :size="20" />
             <Moon v-else :size="20" />
           </Button>
-          <Button variant="ghost" size="icon" class="desktop-notif" aria-label="Abrir notificações" @click="notifOpen = !notifOpen">
+          <Button variant="ghost" size="icon" class="desktop-notif" aria-label="Abrir notificações" :aria-expanded="notifOpen" aria-controls="notifications-panel" @click="notifOpen = !notifOpen">
             <span class="notif-icon">
               <Bell :size="20" />
               <NotificationBadge :count="authStore.unreadCount" />
             </span>
           </Button>
-          <DropdownMenu>
+          <DropdownMenu @update:open="(open) => { if (open) menuNavigating = false; }">
             <DropdownMenuTrigger as-child>
               <Button variant="ghost" class="header-user">{{ authStore.user?.name }}</Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" class="z-[var(--z-popover)]">
+            <DropdownMenuContent @close-auto-focus="onMenuCloseAutoFocus" align="end" class="z-[var(--z-popover)]">
               <DropdownMenuLabel>{{ authStore.user?.name }}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem @select="router.push({ name: 'profile' })">Perfil</DropdownMenuItem>
-              <DropdownMenuItem @select="logout">Sair</DropdownMenuItem>
+              <DropdownMenuItem @select="menuNavigating = true; router.push({ name: 'profile' })">Perfil</DropdownMenuItem>
+              <DropdownMenuItem @select="menuNavigating = true; logout()">Sair</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -112,19 +114,18 @@ function logout() {
             size="icon"
             class="theme-toggle"
             :aria-label="themeToggleLabel"
-            :aria-pressed="isDark"
             @click="toggleDarkMode"
           >
             <Sun v-if="isDark" :size="20" />
             <Moon v-else :size="20" />
           </Button>
-          <Button variant="ghost" size="icon" class="mobile-notif" aria-label="Abrir notificações" @click="notifOpen = !notifOpen">
+          <Button variant="ghost" size="icon" class="mobile-notif" aria-label="Abrir notificações" :aria-expanded="notifOpen" aria-controls="notifications-panel" @click="notifOpen = !notifOpen">
             <span class="notif-icon">
               <Bell :size="20" />
               <NotificationBadge :count="authStore.unreadCount" />
             </span>
           </Button>
-          <router-link to="/perfil" class="mobile-avatar">
+          <router-link to="/perfil" class="mobile-avatar" aria-label="Perfil">
             {{ authStore.user?.name?.[0] || 'U' }}
           </router-link>
         </div>
@@ -257,6 +258,13 @@ function logout() {
 
 .theme-toggle {
   color: var(--foreground);
+}
+
+@media (pointer: coarse) {
+  .theme-toggle {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 .mobile-avatar {

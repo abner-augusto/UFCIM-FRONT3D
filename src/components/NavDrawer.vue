@@ -1,20 +1,24 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { preventNavigationFocusRestore } from '@/utils/navigation-focus';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
 import { usePermissions } from '@/composables/usePermissions';
 import { Building2, Search, Calendar, Ban, BarChart3, Wrench, History, Bell, User } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-defineProps<{ open: boolean }>();
+const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 
 const auth = useAuthStore();
 const campus = useCampusStore();
 const router = useRouter();
+const navigating = ref(false);
+watch(() => props.open, (open) => { if (open) navigating.value = false; });
+function onCloseAutoFocus(event: Event) { if (navigating.value) preventNavigationFocusRestore(event); }
 
 const { canReserve, canBlock, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
 
@@ -31,12 +35,15 @@ const browserTarget = computed(() =>
 );
 
 function logout() {
+  navigating.value = true;
   emit('close');
   auth.logout();
   router.push({ name: 'login' });
 }
 
-function handleLinkClick() {
+function handleLinkClick(event: MouseEvent) {
+  const href = (event.currentTarget as HTMLAnchorElement).getAttribute('href') ?? '';
+  navigating.value = href.split('?')[0] !== `#${router.currentRoute.value.path}`;
   emit('close');
 }
 
@@ -47,13 +54,14 @@ function handleOpenChange(open: boolean) {
 
 <template>
   <Sheet :open="open" @update:open="handleOpenChange">
-    <SheetContent side="left" class="drawer-content z-[var(--z-overlay)]" :show-close-button="true">
+    <SheetContent id="nav-drawer" side="left" class="drawer-content z-[var(--z-overlay)]" :show-close-button="true" @close-auto-focus="onCloseAutoFocus">
         <SheetHeader class="drawer-header">
           <SheetTitle class="drawer-logo">UFCIM</SheetTitle>
+          <SheetDescription class="sr-only">Acesse as páginas do sistema.</SheetDescription>
         </SheetHeader>
 
         <ScrollArea class="drawer-nav">
-        <nav>
+        <nav aria-label="Menu">
           <router-link :to="viewerTarget" class="nav-item" @click="handleLinkClick">
             <span class="nav-icon"><Building2 :size="20" /></span> Maquete 3D
           </router-link>

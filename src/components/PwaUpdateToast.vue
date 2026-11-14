@@ -7,19 +7,19 @@ const { needRefresh, update, dismiss } = usePwaUpdate();
 </script>
 
 <template>
-  <Transition name="update-toast">
-    <div v-if="needRefresh" class="update-toast" role="status" aria-live="polite">
-      <RefreshCw class="update-toast__icon" />
-      <div class="update-toast__text">
+  <div :class="{ 'update-toast': needRefresh }">
+    <RefreshCw v-if="needRefresh" class="update-toast__icon" />
+    <div class="update-toast__text" role="status" aria-live="polite">
+      <template v-if="needRefresh">
         <p class="update-toast__title">Nova versão disponível</p>
         <p class="update-toast__desc">Atualize para carregar as últimas melhorias.</p>
-      </div>
-      <div class="update-toast__actions">
-        <Button variant="ghost" size="sm" @click="dismiss">Agora não</Button>
-        <Button size="sm" @click="update">Atualizar</Button>
-      </div>
+      </template>
     </div>
-  </Transition>
+    <div v-if="needRefresh" class="update-toast__actions">
+      <Button variant="ghost" size="sm" @click="dismiss">Agora não</Button>
+      <Button size="sm" @click="update">Atualizar</Button>
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -75,16 +75,4 @@ const { needRefresh, update, dismiss } = usePwaUpdate();
   gap: 4px;
 }
 
-/* Gentle slide + fade from the bottom. */
-.update-toast-enter-active {
-  transition: opacity 220ms var(--ease-out-expo, ease), transform 220ms var(--ease-out-expo, ease);
-}
-.update-toast-leave-active {
-  transition: opacity 140ms ease-in, transform 140ms ease-in;
-}
-.update-toast-enter-from,
-.update-toast-leave-to {
-  opacity: 0;
-  transform: translateX(-50%) translateY(12px);
-}
 </style>

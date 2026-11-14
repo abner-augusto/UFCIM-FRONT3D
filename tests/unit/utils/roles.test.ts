@@ -30,9 +30,9 @@ function reservation(overrides: Partial<Reservation> = {}): Reservation {
   };
 }
 
-const BEFORE = new Date('2026-10-20T08:00:00');
-const DURING = new Date('2026-10-20T09:30:00');
-const AFTER = new Date('2026-10-20T11:00:00');
+const BEFORE = new Date('2026-10-20T08:00:00-03:00');
+const DURING = new Date('2026-10-20T09:30:00-03:00');
+const AFTER = new Date('2026-10-20T11:00:00-03:00');
 
 describe('canManageReservation (MEL-023)', () => {
   it.each(['student', 'professor', 'staff'] as const)('lets a %s manage their own reservation', (role) => {

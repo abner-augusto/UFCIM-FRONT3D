@@ -72,7 +72,7 @@ export class InteractionManager extends THREE.EventDispatcher {
             const opensPopup = sprite.userData?.opensPopup !== false;
             sprite.visible = shouldDisplay && opensPopup;
         });
-        group.labels.forEach((sprite) => {
+        this.onChange?.(); group.labels.forEach((sprite) => {
             const pinSprite = sprite.userData?.pinSprite;
             const pinOpensPopup = pinSprite ? pinSprite.userData?.opensPopup !== false : true;
             sprite.visible = shouldDisplay && pinOpensPopup;
@@ -181,13 +181,13 @@ export class InteractionManager extends THREE.EventDispatcher {
     changePinColor(pinId, hexColor) {
         const sprite = this.interactiveObjects.find(s => s.userData.id === pinId);
         if (!sprite) return;
-        sprite.material.color.set(hexColor);
+        sprite.material.color.set(hexColor); this.onChange?.();
     }
 
     setPinOpacity(pinId, opacity) {
         const sprite = this.interactiveObjects.find(s => s.userData.id === pinId);
         if (!sprite) return;
-        sprite.material.opacity = opacity;
+        sprite.material.opacity = opacity; this.onChange?.();
         sprite.material.transparent = true;
         sprite.userData.opensPopup = opacity > 0;
         const building = sprite.userData.building;
@@ -320,7 +320,7 @@ export class InteractionManager extends THREE.EventDispatcher {
             }
         });
         // Re-apply floor/building visibility rules so the change takes effect
-        this.pinGroups.forEach((buildingMap, building) => {
+        this.onChange?.(); this.pinGroups.forEach((buildingMap, building) => {
             buildingMap.forEach((group) => {
                 this._updateGroupVisibility(building, group);
             });
@@ -360,7 +360,7 @@ export class InteractionManager extends THREE.EventDispatcher {
         newTexture.needsUpdate = true;
         labelSprite.material.map.dispose();
         labelSprite.material.map = newTexture;
-        labelSprite.material.needsUpdate = true;
+        labelSprite.material.needsUpdate = true; this.onChange?.();
 
         // Update scale if canvas dimensions changed
         const pixelToWorldScale = 0.05;
@@ -368,7 +368,7 @@ export class InteractionManager extends THREE.EventDispatcher {
     }
 
     dispose() {
-        this._disposed = true;
+        this._disposed = true; this.onChange = null;
         POINTER_EVENTS.forEach((type) => {
             this.canvas.removeEventListener(type, this._pointerHandlers[type]);
         });

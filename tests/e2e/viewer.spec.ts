@@ -8,6 +8,8 @@ test.describe('ViewerView', () => {
     await page.goto(`/#/campus/${CAMPUS}/viewer`);
     await expect(page.getByRole('heading', { name: 'Maquete 3D' })).toBeAttached();
     await expect(page.getByRole('img', { name: /Maquete 3D.*Pesquisar.*Buscar Espaços/ })).toBeVisible();
+    await expect(page.locator('.viewer-loading[role="status"]')).toBeHidden();
+    await expect(page.locator('.viewer-loading--error')).toHaveCount(0);
     const building = page.getByRole('button', { name: 'Edifício', includeHidden: true });
     await expect(building).toBeVisible();
     await building.focus();

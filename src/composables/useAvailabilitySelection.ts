@@ -1,7 +1,7 @@
 import { computed, ref, watch } from 'vue';
 import type { ComputedRef, Ref } from 'vue';
 import type { Availability, AvailabilitySlot } from '@/types/reservation';
-import { MIN_DURATION_MINUTES, groupSlotsByHour, timeToMinutes, type HourCell, type TimeRange } from '@/utils/slots';
+import { MIN_DURATION_MINUTES, isSlotPast, groupSlotsByHour, timeToMinutes, type HourCell, type TimeRange } from '@/utils/slots';
 
 export interface AvailabilitySelectionOptions {
   availability: Ref<Availability | null>;
@@ -111,7 +111,7 @@ export function useAvailabilitySelection(options: AvailabilitySelectionOptions) 
   watch(selectedDate, resetSelection);
 
   function isPastSlot(slot: Pick<AvailabilitySlot, 'endTime'>): boolean {
-    return new Date(`${selectedDate.value}T${slot.endTime}:00`).getTime() <= nowTs.value;
+    return isSlotPast(selectedDate.value, slot.endTime, nowTs.value);
   }
 
   function isHalfBookable(slot: AvailabilitySlot): boolean {
