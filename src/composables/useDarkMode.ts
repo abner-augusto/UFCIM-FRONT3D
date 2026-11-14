@@ -19,6 +19,15 @@ function readPreference(): boolean | null {
   }
 }
 
+function persistPreference(value: boolean | null) {
+  try {
+    if (value === null) localStorage.removeItem(STORAGE_KEY);
+    else localStorage.setItem(STORAGE_KEY, value ? 'dark' : 'light');
+  } catch {
+    return;
+  }
+}
+
 const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
 let preference = readPreference();
 const isDark = ref(preference ?? systemTheme.matches);
@@ -76,10 +85,7 @@ export function useDarkMode() {
 
     const switchTheme = () => {
       preference = value === systemTheme.matches ? null : value;
-      try {
-        if (preference === null) localStorage.removeItem(STORAGE_KEY);
-        else localStorage.setItem(STORAGE_KEY, value ? 'dark' : 'light');
-      } catch { /* Keep the preference in memory. */ }
+      persistPreference(preference);
       isDark.value = value;
       applyTheme(value);
     };
