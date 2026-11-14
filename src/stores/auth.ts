@@ -66,6 +66,10 @@ export const useAuthStore = defineStore('auth', () => {
     unreadCount.value = 0;
     sessionStorage.removeItem('ufcim_token');
     sessionStorage.removeItem('ufcim_refresh');
+    if (typeof window !== 'undefined' && 'caches' in window) {
+      void window.caches.delete('api-cache').catch(() => {});
+      void window.caches.delete('availability').catch(() => {});
+    }
   }
 
   return {

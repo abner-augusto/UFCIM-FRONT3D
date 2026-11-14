@@ -11,7 +11,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'prompt',
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,glb,json}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,glb,json,wasm}'],
+        globIgnores: ['_worker.js', 'libs/draco/draco_decoder.js'],
         maximumFileSizeToCacheInBytes: 50 * 1024 * 1024,
         runtimeCaching: [
           {
@@ -34,6 +35,7 @@ export default defineConfig({
         ],
       },
       manifest: {
+        id: '/',
         name: 'UFCIM — Reserva de Espaços UFC',
         short_name: 'UFCIM',
         theme_color: '#00697D',
