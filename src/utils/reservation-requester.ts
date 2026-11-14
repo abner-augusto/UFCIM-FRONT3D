@@ -76,3 +76,6 @@ export function reservationRequesterNote(r: Reservation): RequesterNote | null {
   }
   return null;
 }
+export function requesterFieldIds(prefix: string) {
+  return { panel: `${prefix}-panel`, search: `${prefix}-search`, hint: `${prefix}-hint`, results: `${prefix}-results`, contact: `${prefix}-contact` };
+}

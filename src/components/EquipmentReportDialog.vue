@@ -25,7 +25,8 @@ import {
 } from '@lucide/vue';
 import type { Equipment } from '@/types/space';
 import type { ReportableEquipment, ReportedTarget } from '@/composables/useRoomDetail';
-import { isTicketDescriptionValid, OPEN_REPORT_STATUS_LABELS, type TicketTarget } from '@/utils/maintenance-tickets';
+import { isTicketDescriptionValid, OPEN_REPORT_STATUS_LABELS, reportDescriptionPlaceholder, type TicketTarget } from '@/utils/maintenance-tickets';
+import { validateEquipmentReport } from '@/utils/form-validation';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -127,17 +128,12 @@ const descriptionOptional = computed(
 );
 const descriptionValid = computed(() => isTicketDescriptionValid(target.value, description.value));
 const descriptionCount = computed(() => description.value.length);
-const formValid = computed(() => severity.value !== null && descriptionValid.value);
 const subject = computed(() =>
   selectedCategory.value
     ? MAINTENANCE_CATEGORY_LABELS[selectedCategory.value]
     : (selectedEquipment.value?.name ?? ''),
 );
-const descriptionPlaceholder = computed(() => {
-  if (!selectedCategory.value) return 'Descreva o que está acontecendo...';
-  if (selectedCategory.value === 'other') return 'Conte o que está acontecendo na sala...';
-  return 'Se quiser, conte mais detalhes...';
-});
+const descriptionPlaceholder = computed(() => reportDescriptionPlaceholder(selectedCategory.value));
 
 const title = computed(() => {
   if (step.value === 'equipment') return 'Qual equipamento?';
@@ -156,10 +152,8 @@ function selectSeverity(value: 'minor' | 'major' | 'blocking') {
 
 async function submitReport() {
   submitted.value = true;
-  if (!formValid.value) {
-    document.getElementById(severity.value === null ? 'report-severity-first' : 'report-desc')?.focus();
-    return;
-  }
+  const invalid = validateEquipmentReport(severity.value, target.value, description.value);
+  if (invalid) { document.getElementById(invalid)?.focus(); return; }
   if (!auth.token || loading.value) return;
 
   loading.value = true;

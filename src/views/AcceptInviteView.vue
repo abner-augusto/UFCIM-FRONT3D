@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { api, ApiError } from '@/services/api';
 import { mapAcceptError } from '@/utils/api-errors';
+import { inviteErrorId, validateAcceptInvite } from '@/utils/form-validation';
 import type { UserRole } from '@/stores/auth';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -54,35 +55,14 @@ onMounted(async () => {
   }
 });
 
-function validateForm(): boolean {
-  fieldErrors.value = {};
-  if (isStudent.value && !registration.value.trim()) {
-    fieldErrors.value.registration = 'A matrícula é obrigatória para alunos.';
-    return false;
-  }
-  const val = password.value;
-  if (val.length < 8) {
-    fieldErrors.value.password = 'A senha deve ter ao menos 8 caracteres.';
-    return false;
-  }
-  if (!/[a-zA-Z]/.test(val) || !/[0-9]/.test(val)) {
-    fieldErrors.value.password = 'A senha deve conter ao menos uma letra e um número.';
-    return false;
-  }
-  if (password.value !== passwordConfirm.value) {
-    fieldErrors.value.passwordConfirm = 'As senhas não coincidem.';
-    return false;
-  }
-  return true;
+async function focusError() {
+  await nextTick();
+  document.getElementById(inviteErrorId(fieldErrors.value) ?? '')?.focus();
 }
 
 async function handleAccept() {
-  if (!validateForm()) {
-    await nextTick();
-    const first = Object.keys(fieldErrors.value)[0];
-    document.getElementById(first === 'passwordConfirm' ? 'invite-password-confirm' : `invite-${first}`)?.focus();
-    return;
-  }
+  fieldErrors.value = validateAcceptInvite({ student: isStudent.value, registration: registration.value, password: password.value, confirmation: passwordConfirm.value });
+  if (Object.keys(fieldErrors.value).length) { await focusError(); return; }
 
   state.value = 'submitting';
   submitError.value = null;
@@ -106,9 +86,7 @@ async function handleAccept() {
       for (const d of e.details) {
         fieldErrors.value[d.field] = d.message;
       }
-      await nextTick();
-      const first = ['registration', 'password', 'passwordConfirm'].find((field) => fieldErrors.value[field]);
-      if (first) document.getElementById(first === 'passwordConfirm' ? 'invite-password-confirm' : `invite-${first}`)?.focus();
+      await focusError();
     } else {
       submitError.value = mapAcceptError(e);
     }

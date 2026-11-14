@@ -10,6 +10,7 @@ import TimeRangeFields from '@/components/schedule/TimeRangeFields.vue';
 import WeekdayPicker from '@/components/schedule/WeekdayPicker.vue';
 import { useTimeRangePicker } from '@/composables/useTimeRangePicker';
 import { countRecurringDates } from '@/utils/recurrence';
+import { validateRecurringForm } from '@/utils/form-validation';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -63,30 +64,14 @@ const occurrenceCount = computed(() =>
   endDate.value > startDate.value ? countRecurringDates(startDate.value, endDate.value, daysOfWeek.value) : 0
 );
 
-function canSubmit() {
-  return (
-    props.reservable !== false &&
-    startDate.value &&
-    endDate.value &&
-    endDate.value > startDate.value &&
-    occurrenceCount.value > 0 &&
-    seriesRange.value &&
-    description.value.trim()
-  );
-}
-
 async function handleSubmit() {
-  if (!canSubmit() || !seriesRange.value) {
-    let id = 'rec-start';
-    if (props.reservable === false) errorMsg.value = 'Este espaço não está disponível para reserva.';
-    else if (!startDate.value) errorMsg.value = 'Selecione a data de início.';
-    else if (!endDate.value || endDate.value <= startDate.value) { id = 'rec-end'; errorMsg.value = 'Selecione uma data de fim posterior ao início.'; }
-    else if (!occurrenceCount.value) { id = 'rec-dow-label'; errorMsg.value = 'Selecione dias da semana com ocorrências no período.'; }
-    else if (!seriesRange.value) { id = !seriesStart.value ? 'rec-time-start' : 'rec-time-end'; errorMsg.value = 'Selecione o horário.'; }
-    else { id = 'rec-desc'; errorMsg.value = 'Informe a descrição da recorrência.'; }
-    document.getElementById(id)?.focus();
+  const invalid = validateRecurringForm({ reservable: props.reservable, startDate: startDate.value, endDate: endDate.value, occurrences: occurrenceCount.value, start: seriesStart.value, hasRange: !!seriesRange.value, description: description.value });
+  if (invalid) {
+    errorMsg.value = invalid.message;
+    document.getElementById(invalid.id)?.focus();
     return;
   }
+  if (!seriesRange.value) return;
   const { startTime, endTime } = seriesRange.value;
   loading.value = true;
   errorMsg.value = null;

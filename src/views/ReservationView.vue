@@ -15,6 +15,7 @@ import TimeRangeFields from '@/components/schedule/TimeRangeFields.vue';
 import OccupancyBar from '@/components/schedule/OccupancyBar.vue';
 import { followCampusToday, useCampusToday } from '@/composables/useCampusToday';
 import { campusMinutesNow, isSlotPast } from '@/utils/slots';
+import { validateReservationForm } from '@/utils/form-validation';
 import AppDateField from '@/components/AppDateField.vue';
 import { blockLabel, departmentLabel } from '@/utils/space-labels';
 import SpaceHeaderSkeleton from '@/components/SpaceHeaderSkeleton.vue';
@@ -188,23 +189,14 @@ const reservationStatusMessage = computed(() => {
 });
 
 
-// ── Can continue? ───────────────────────────────────────────────
-function canContinue(): boolean {
-  if (space.value?.reservable === false) return false;
-  if (!selectedDate.value || !selectedPurpose.value) return false;
-  if (selectionMode.value === 'slots') return !!selectedSlot.value;
-  return !!customRange.value;
-}
-
 function handleContinue() {
-  if (!canContinue() || !space.value) {
-    if (space.value?.reservable === false) errorMsg.value = 'Este espaço não está disponível para reserva.';
-    else if (!selectedDate.value) { errorMsg.value = 'Selecione uma data.'; document.getElementById('reservation-date')?.focus(); }
-    else if (!selectedSlot.value && !customRange.value) { errorMsg.value = 'Selecione um período ou horário.'; document.querySelector<HTMLElement>('.slot-btn:not(:disabled), #reservation-start')?.focus(); }
-    else { errorMsg.value = 'Selecione uma finalidade.'; document.getElementById('reservation-purpose')?.focus(); }
+  const invalid = validateReservationForm({ reservable: space.value?.reservable, date: selectedDate.value, schedule: selectionMode.value === 'slots' ? !!selectedSlot.value : !!customRange.value, purpose: selectedPurpose.value });
+  if (invalid) {
+    errorMsg.value = invalid.message;
+    document.querySelector<HTMLElement>(invalid.id || '#reservation-date')?.focus();
     return;
   }
-  reservationStore.setSpace(spaceId, space.value.name);
+  reservationStore.setSpace(spaceId, space.value!.name);
   if (selectionMode.value === 'slots') {
     reservationStore.setSchedule(selectedDate.value, selectedSlot.value!);
   } else {

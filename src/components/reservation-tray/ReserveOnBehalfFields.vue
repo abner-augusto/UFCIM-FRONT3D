@@ -10,7 +10,7 @@ import type { RequesterCandidate } from '@/types/reservation';
 import {
   REQUESTER_TEXT_MAX,
   emptyRequester,
-  requesterRoleLabel,
+  requesterRoleLabel, requesterFieldIds,
   type RequesterSelection,
 } from '@/utils/reservation-requester';
 
@@ -43,13 +43,7 @@ const searchInput = ref<InstanceType<typeof Input> | null>(null);
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 let searchAbort: AbortController | null = null;
 
-const ids = computed(() => ({
-  panel: `${props.idPrefix}-panel`,
-  search: `${props.idPrefix}-search`,
-  hint: `${props.idPrefix}-hint`,
-  results: `${props.idPrefix}-results`,
-  contact: `${props.idPrefix}-contact`,
-}));
+const ids = computed(() => requesterFieldIds(props.idPrefix));
 
 const trimmedQuery = computed(() => props.modelValue.query.trim());
 const showResults = computed(() => !props.modelValue.user && trimmedQuery.value.length >= MIN_QUERY_LENGTH);
@@ -168,13 +162,11 @@ async function changePerson() {
             ref="searchInput"
             :model-value="modelValue.query"
             class="on-behalf__input"
-            type="text"
-            autocomplete="off"
-            role="combobox" :aria-expanded="showResults" aria-autocomplete="list"
+            type="text" autocomplete="off" role="combobox"
+            :aria-expanded="showResults" aria-autocomplete="list"
             :maxlength="REQUESTER_TEXT_MAX"
             placeholder="Nome ou e-mail de quem pediu"
-            :aria-describedby="ids.hint"
-            :aria-controls="showResults ? ids.results : undefined"
+            :aria-describedby="ids.hint" :aria-controls="showResults ? ids.results : undefined"
             data-testid="reserve-on-behalf-search"
             @update:model-value="update({ query: String($event) })"
           />
@@ -182,12 +174,9 @@ async function changePerson() {
             Escolha alguém cadastrado na lista ou mantenha o nome digitado.
           </p>
 
-          <div class="on-behalf__results" role="status" aria-live="polite">
-            <template v-if="showResults">
+          <div class="on-behalf__results" role="status" aria-live="polite"><template v-if="showResults">
             <p v-if="searching" class="on-behalf__status">Buscando…</p>
-            <p v-else-if="searchFailed" class="on-behalf__status">
-              Não foi possível buscar agora. O nome digitado será usado.
-            </p>
+            <p v-else-if="searchFailed" class="on-behalf__status">Não foi possível buscar agora. O nome digitado será usado.</p>
             <p v-else-if="!visibleResults.length" class="on-behalf__status">
               Ninguém cadastrado com esse nome. O nome digitado será usado.
             </p>
@@ -209,8 +198,7 @@ async function changePerson() {
             <p v-if="!searching && results.length > VISIBLE_RESULTS" class="on-behalf__status">
               Continue digitando para refinar a busca.
             </p>
-            </template>
-          </div>
+            </template></div>
         </template>
       </div>
 
