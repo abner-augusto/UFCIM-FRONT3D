@@ -23,7 +23,7 @@ defineEmits<{
   <div
     class="bg-background/90 min-w-[170px] rounded-[10px] px-3.5 py-2.5 backdrop-blur-sm"
   >
-    <Label class="text-muted-foreground mb-1.5 block text-[0.72rem] font-semibold tracking-wide uppercase" for="period-date">
+    <Label class="text-muted-foreground mb-1.5 block text-[0.72rem] font-semibold tracking-wide uppercase" id="period-date-label" for="period-date">
       Data
     </Label>
     <AppDateField

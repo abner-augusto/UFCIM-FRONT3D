@@ -33,6 +33,7 @@ const loading = ref(false);
 const errorMsg = ref<string | null>(null);
 const submitted = ref(false);
 const turnstileToken = ref('');
+const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY as string;
 
 let turnstileWidgetId: string | null = null;
 let unmounted = false;
@@ -52,7 +53,6 @@ onUnmounted(() => {
 });
 
 function renderTurnstile() {
-  const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY as string;
   if (!siteKey) {
     console.warn('VITE_TURNSTILE_SITE_KEY not set');
     return;
@@ -154,16 +154,18 @@ async function handleSubmit() {
             type="email"
             placeholder="seu@email.com"
             autocomplete="email"
+            name="email" spellcheck="false" autocapitalize="none" enterkeyhint="go"
             required
             :disabled="loading"
           />
         </div>
 
+        <p v-if="!siteKey" class="text-destructive text-sm">A verificação de segurança não está configurada. Entre em contato com o suporte.</p>
         <div id="turnstile-container" class="mt-2 flex min-h-[65px] justify-center"></div>
 
-        <p v-if="errorMsg" class="text-destructive m-0 text-sm" role="alert" aria-live="polite">{{ errorMsg }}</p>
+        <p v-if="errorMsg" class="text-destructive m-0 text-sm" role="alert">{{ errorMsg }}</p>
 
-        <Button type="submit" class="mt-1 h-11" :disabled="loading || !turnstileToken">
+        <Button type="submit" class="mt-1 h-11" :disabled="loading">
           {{ loading ? 'Enviando...' : 'Solicitar convite' }}
         </Button>
       </form>

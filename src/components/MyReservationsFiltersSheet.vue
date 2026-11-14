@@ -65,7 +65,7 @@ const isDesktop = useMediaQuery('(min-width: 768px)');
           <legend class="filters__label">Período</legend>
           <div class="filters__range">
             <div class="filters__range-item">
-              <Label class="filters__sublabel" for="my-reservations-from">De</Label>
+              <Label class="filters__sublabel" id="my-reservations-from-label" for="my-reservations-from">De</Label>
               <AppDateField
                 id="my-reservations-from"
                 :model-value="from ?? ''"
@@ -75,7 +75,7 @@ const isDesktop = useMediaQuery('(min-width: 768px)');
               />
             </div>
             <div class="filters__range-item">
-              <Label class="filters__sublabel" for="my-reservations-until">Até</Label>
+              <Label class="filters__sublabel" id="my-reservations-until-label" for="my-reservations-until">Até</Label>
               <AppDateField
                 id="my-reservations-until"
                 :model-value="until ?? ''"

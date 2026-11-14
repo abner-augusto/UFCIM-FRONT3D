@@ -173,14 +173,14 @@ onMounted(async () => {
         <div class="flex items-end gap-2 max-[480px]:flex-col max-[480px]:items-stretch">
           <Input
             v-model="searchQuery"
-            type="text"
+            type="search" enterkeyhint="search"
             class="h-11 flex-1 bg-background"
             placeholder="Buscar por nome ou número..."
             aria-label="Buscar por nome ou número"
           />
           <div class="flex shrink-0 flex-col gap-1">
-            <Label class="text-muted-foreground text-[0.72rem] font-semibold uppercase" for="browser-date">Data</Label>
-            <AppDateField id="browser-date" v-model="selectedDate" :min="today" aria-label="Selecionar data" />
+            <Label class="text-muted-foreground text-[0.72rem] font-semibold uppercase" id="browser-date-label" for="browser-date">Data</Label>
+            <AppDateField id="browser-date" v-model="selectedDate" :min="today" aria-label="Data" />
           </div>
           <Button
             variant="outline"

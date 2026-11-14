@@ -197,7 +197,13 @@ function canContinue(): boolean {
 }
 
 function handleContinue() {
-  if (!canContinue() || !space.value) return;
+  if (!canContinue() || !space.value) {
+    if (space.value?.reservable === false) errorMsg.value = 'Este espaço não está disponível para reserva.';
+    else if (!selectedDate.value) { errorMsg.value = 'Selecione uma data.'; document.getElementById('reservation-date')?.focus(); }
+    else if (!selectedSlot.value && !customRange.value) { errorMsg.value = 'Selecione um período ou horário.'; document.querySelector<HTMLElement>('.slot-btn:not(:disabled), #reservation-start')?.focus(); }
+    else { errorMsg.value = 'Selecione uma finalidade.'; document.getElementById('reservation-purpose')?.focus(); }
+    return;
+  }
   reservationStore.setSpace(spaceId, space.value.name);
   if (selectionMode.value === 'slots') {
     reservationStore.setSchedule(selectedDate.value, selectedSlot.value!);
@@ -245,9 +251,9 @@ function handleContinue() {
       </div>
 
       <!-- ── Non-recurring form ── -->
-      <template v-if="!isRecurring">
+      <form v-if="!isRecurring" novalidate @submit.prevent="handleContinue">
         <div class="form-section">
-          <Label class="form-label" for="reservation-date">Data da reserva</Label>
+          <Label class="form-label" id="reservation-date-label" for="reservation-date">Data da reserva</Label>
           <AppDateField id="reservation-date" v-model="selectedDate" :min="today" aria-label="Data da reserva" />
           <p v-if="loadingBlockings && selectedDate" class="form-hint">Verificando bloqueios do dia...</p>
           <div v-else-if="selectedDateBlockings.length" class="blocking-notice">
@@ -311,8 +317,8 @@ function handleContinue() {
         </div>
 
         <div v-if="selectedSlot || (selectionMode === 'hours' && customRange)" class="form-section">
-          <Label class="form-label" for="reservation-purpose">Finalidade</Label>
-          <NativeSelect id="reservation-purpose" v-model="selectedPurpose" class="form-input">
+          <Label class="form-label" for="reservation-purpose">Finalidade *</Label>
+          <NativeSelect id="reservation-purpose" v-model="selectedPurpose" class="form-input" required>
             <NativeSelectOption value="" disabled>Selecione uma finalidade</NativeSelectOption>
             <NativeSelectOption v-for="opt in PURPOSE_OPTIONS" :key="opt.value" :value="opt.value">
               {{ opt.label }}
@@ -337,11 +343,11 @@ function handleContinue() {
         <p v-if="errorMsg" class="state-error">{{ errorMsg }}</p>
 
         <div class="form-actions">
-          <Button class="continue-btn" :disabled="!canContinue()" @click="handleContinue">
+          <Button type="submit" class="continue-btn">
             Continuar
           </Button>
         </div>
-      </template>
+      </form>
 
       <!-- ── Recurring form ── -->
       <template v-else>

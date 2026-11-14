@@ -72,11 +72,12 @@ function onNativeInput(e: Event) {
         type="button"
         variant="outline"
         :disabled="disabled"
-        :aria-label="ariaLabel"
+        :aria-label="!id && ariaLabel ? `${ariaLabel}: ${triggerLabel}` : undefined"
+        :aria-labelledby="id ? `${id}-label ${id}-value` : undefined"
         :class="cn('h-11 w-full justify-start gap-2 font-normal', !modelValue && 'text-muted-foreground', props.class)"
       >
         <CalendarIcon class="size-4 opacity-70" />
-        {{ triggerLabel }}
+        <span :id="id ? `${id}-value` : undefined">{{ triggerLabel }}</span>
       </Button>
     </PopoverTrigger>
     <PopoverContent class="w-auto p-0" align="start">
@@ -99,7 +100,7 @@ function onNativeInput(e: Event) {
     :min="min"
     :max="max"
     :disabled="disabled"
-    :aria-label="ariaLabel"
+    :aria-label="!id ? ariaLabel : undefined"
     :class="cn(
       'border-input focus-visible:border-ring focus-visible:ring-ring/50 h-11 w-full rounded-lg border bg-transparent px-3 text-sm outline-none focus-visible:ring-3 disabled:pointer-events-none disabled:opacity-50',
       props.class,

@@ -75,12 +75,12 @@ const labelClass = 'text-muted-foreground text-[0.7rem] font-bold tracking-[0.06
   <form class="bg-card border-border rounded-[12px] border px-5 py-4" @submit.prevent="apply">
     <div class="grid grid-cols-2 gap-3 md:grid-cols-3">
       <div :class="fieldClass">
-        <label for="mh-from" :class="labelClass">Data início</label>
+        <label id="mh-from-label" for="mh-from" :class="labelClass">Data início</label>
         <AppDateField id="mh-from" v-model="form.from" :max="form.to" aria-label="Data início" />
       </div>
 
       <div :class="fieldClass">
-        <label for="mh-to" :class="labelClass">Data fim</label>
+        <label id="mh-to-label" for="mh-to" :class="labelClass">Data fim</label>
         <AppDateField id="mh-to" v-model="form.to" :min="form.from" aria-label="Data fim" />
       </div>
 

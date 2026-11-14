@@ -156,7 +156,11 @@ function selectSeverity(value: 'minor' | 'major' | 'blocking') {
 
 async function submitReport() {
   submitted.value = true;
-  if (!formValid.value || !auth.token || loading.value) return;
+  if (!formValid.value) {
+    document.getElementById(severity.value === null ? 'report-severity-first' : 'report-desc')?.focus();
+    return;
+  }
+  if (!auth.token || loading.value) return;
 
   loading.value = true;
   error.value = null;
@@ -309,11 +313,12 @@ function handleOpenChange(open: boolean) {
           <!-- Step 3: severity and description -->
           <div v-else key="form" class="dialog__step">
             <div class="dialog__field">
-              <Label class="dialog__label">Gravidade</Label>
-              <div class="severity-options">
+              <p id="report-severity-label" class="dialog__label">Gravidade *</p>
+              <div class="severity-options" role="group" aria-labelledby="report-severity-label">
                 <Button
                   v-for="s in (['minor', 'major', 'blocking'] as const)"
                   :key="s"
+                  :id="s === 'minor' ? 'report-severity-first' : undefined"
                   type="button"
                   variant="outline"
                   class="severity-btn"
@@ -324,6 +329,7 @@ function handleOpenChange(open: boolean) {
                   <span class="severity-btn__label">{{ SEVERITY_LABELS[s] }}</span>
                 </Button>
               </div>
+              <p v-if="submitted && severity === null" class="dialog__field-error">Selecione a gravidade.</p>
             </div>
 
             <div class="dialog__field">
@@ -355,7 +361,7 @@ function handleOpenChange(open: boolean) {
 
             <Button
               class="dialog__submit"
-              :disabled="loading || severity === null"
+              :disabled="loading"
               @click="submitReport"
             >
               <span v-if="loading" class="dialog__spinner" />

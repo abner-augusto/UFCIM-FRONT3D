@@ -170,6 +170,7 @@ async function changePerson() {
             class="on-behalf__input"
             type="text"
             autocomplete="off"
+            role="combobox" :aria-expanded="showResults" aria-autocomplete="list"
             :maxlength="REQUESTER_TEXT_MAX"
             placeholder="Nome ou e-mail de quem pediu"
             :aria-describedby="ids.hint"
@@ -181,7 +182,8 @@ async function changePerson() {
             Escolha alguém cadastrado na lista ou mantenha o nome digitado.
           </p>
 
-          <div v-if="showResults" class="on-behalf__results" aria-live="polite">
+          <div class="on-behalf__results" role="status" aria-live="polite">
+            <template v-if="showResults">
             <p v-if="searching" class="on-behalf__status">Buscando…</p>
             <p v-else-if="searchFailed" class="on-behalf__status">
               Não foi possível buscar agora. O nome digitado será usado.
@@ -189,8 +191,8 @@ async function changePerson() {
             <p v-else-if="!visibleResults.length" class="on-behalf__status">
               Ninguém cadastrado com esse nome. O nome digitado será usado.
             </p>
-            <ul v-else :id="ids.results" class="on-behalf__list" aria-label="Usuários encontrados">
-              <li v-for="candidate in visibleResults" :key="candidate.id">
+            <ul v-else :id="ids.results" class="on-behalf__list" role="listbox" aria-label="Usuários encontrados">
+              <li v-for="candidate in visibleResults" :key="candidate.id" role="option" aria-selected="false">
                 <button
                   type="button"
                   class="on-behalf__option"
@@ -207,6 +209,7 @@ async function changePerson() {
             <p v-if="!searching && results.length > VISIBLE_RESULTS" class="on-behalf__status">
               Continue digitando para refinar a busca.
             </p>
+            </template>
           </div>
         </template>
       </div>

@@ -67,6 +67,18 @@ async function openContextualReservationTray(page: Page, slots = halfHourDay()) 
 }
 
 test.describe('ReservationView fallback route', () => {
+  test('sem finalidade, continuar mostra erro e foca o campo', async ({ professorPage: page }) => {
+    await page.goto(`/#/reserva/${SPACE_ID}`);
+    await waitForReservationFallbackLoad(page);
+    const slot = page.locator('button.slot-btn:not([disabled])').first();
+    await expect(slot).toBeVisible({ timeout: 15_000 });
+    await slot.click();
+    const continueButton = page.getByRole('button', { name: 'Continuar' });
+    await expect(continueButton).toBeEnabled();
+    await continueButton.click();
+    await expect(page.getByText('Selecione uma finalidade.')).toBeVisible();
+    await expect(page.locator('#reservation-purpose')).toBeFocused();
+  });
   test('professor: route /reserva/:id resolves', async ({ professorPage: page }) => {
     await page.goto(`/#/reserva/${SPACE_ID}`);
     await page.waitForURL(/#\/reserva\//, { timeout: 10_000 });
