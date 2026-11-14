@@ -111,10 +111,9 @@ export class InteractionManager extends THREE.EventDispatcher {
             this.labelSprites.push(labelSprite);
             this.labelsById.set(pinData.id, labelSprite);
             labelSprite.userData.pinSprite = pinSprite;
-            // Only make the pin sprite a click target if it opens a popup.
-            if (preparedData.opensPopup !== false) {
-                this.clickTargets.push(pinSprite);
-            }
+            // applyBackendFilter can turn opensPopup on later; a pin that
+            // does not open a popup is hidden, so the raycast skips it.
+            this.clickTargets.push(pinSprite);
             this.clickTargets.push(labelSprite);
 
             const building = pinData.building;
