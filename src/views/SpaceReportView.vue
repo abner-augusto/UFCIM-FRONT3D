@@ -13,7 +13,7 @@ import ReservationTimeline from '@/components/reports/ReservationTimeline.vue';
 import AppDateField from '@/components/AppDateField.vue';
 import ChartCardSkeleton from '@/components/ChartCardSkeleton.vue';
 import { Skeleton } from '@/components/ui/skeleton';
-import { addLocalDays, campusInstant, toLocalISODate } from '@/utils/date';
+import { campusInstant, campusISODate, defaultReportPeriod } from '@/utils/date';
 import AirQualityHistory from '@/components/reports/AirQualityHistory.vue';
 import type { SpaceAirQualityHistory } from '@/types/air-quality';
 import { airQualityCsvFileName } from '@/utils/air-quality-csv';
@@ -41,9 +41,9 @@ const loading = ref(false);
 const errorMsg = ref<string | null>(null);
 
 // Date range: default = last 30 days
-const today = toLocalISODate();
-const startDate = ref(addLocalDays(today, -29));
-const endDate = ref(today);
+const period = defaultReportPeriod();
+const startDate = ref(period.startDate);
+const endDate = ref(period.endDate);
 
 // Preset chips
 const presets = [
@@ -53,9 +53,9 @@ const presets = [
 ];
 
 function applyPreset(days: number) {
-  const end = toLocalISODate();
-  startDate.value = addLocalDays(end, -(days - 1));
-  endDate.value = end;
+  const period = defaultReportPeriod(new Date(), days);
+  startDate.value = period.startDate;
+  endDate.value = period.endDate;
 }
 
 async function loadReport() {
@@ -113,7 +113,7 @@ const adaptedSummary = computed<Summary>(() => {
   };
 });
 
-const todayStr = computed(() => toLocalISODate());
+const todayStr = computed(() => campusISODate());
 </script>
 
 <template>

@@ -55,7 +55,7 @@ export interface OrganizedReservations {
   past: ReservationGroup[];
 }
 
-/** True once the occurrence's end time has passed (local time). */
+/** True once the occurrence's end time has passed (campus time). */
 export function isReservationPast(r: Reservation, now: Date): boolean {
   return campusInstant(r.date, r.endTime) < now;
 }

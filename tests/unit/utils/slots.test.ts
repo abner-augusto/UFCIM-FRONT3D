@@ -56,9 +56,9 @@ describe('constants and time helpers', () => {
   });
 
   it('finds the half-hour slot containing a moment', () => {
-    expect(slotStartAt(new Date(2099, 0, 1, 10, 40))).toBe('10:30');
-    expect(slotStartAt(new Date(2099, 0, 1, 10, 29))).toBe('10:00');
-    expect(slotStartAt(new Date(2099, 0, 1, 10, 30))).toBe('10:30');
+    expect(slotStartAt(new Date('2099-01-01T10:40:00-03:00'))).toBe('10:30');
+    expect(slotStartAt(new Date('2099-01-01T10:29:00-03:00'))).toBe('10:00');
+    expect(slotStartAt(new Date('2099-01-01T10:30:00-03:00'))).toBe('10:30');
   });
 });
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { addLocalDays, toLocalISODate } from '@/utils/date';
+import { defaultReportPeriod } from '@/utils/date';
 import { computed, ref, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
@@ -68,10 +68,8 @@ async function handleApply(filters: { startDate: string; endDate: string; campus
 }
 
 onMounted(async () => {
-  const today = toLocalISODate();
   await loadReport({
-    startDate: addLocalDays(today, -29),
-    endDate: today,
+    ...defaultReportPeriod(),
     campus: '',
     department: '',
   });

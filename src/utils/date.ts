@@ -1,18 +1,12 @@
-/**
- * Format a Date as a local-time ISO date string (`YYYY-MM-DD`).
- *
- * Unlike `Date.prototype.toISOString()`, which converts to UTC first, this uses
- * the local calendar day. `toISOString()` rolls the day forward near midnight in
- * negative-offset zones — e.g. at 21h in UTC-3 it is already the next day in UTC,
- * so "today" would wrongly resolve to tomorrow. Always use this for the date the
- * user is meant to see/select.
- */
-export function toLocalISODate(d: Date = new Date()): string {
+export const CAMPUS_TIME_ZONE = 'America/Fortaleza';
+export const CAMPUS_UTC_OFFSET = '-03:00';
+
+export function campusISODate(d: Date = new Date()): string {
   return campusNow(d).date;
 }
 
 const campusFormatter = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'America/Fortaleza', year: 'numeric', month: '2-digit', day: '2-digit',
+  timeZone: CAMPUS_TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit',
   hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
 });
 
@@ -23,14 +17,19 @@ export function campusNow(now: Date = new Date()): { date: string; hour: number;
 
 export function campusInstant(date: string, time: string): Date {
   const normalizedDate = time === '24:00' ? addLocalDays(date, 1) : date;
-  return new Date(`${normalizedDate}T${time === '24:00' ? '00:00' : time}:00-03:00`);
+  return new Date(`${normalizedDate}T${time === '24:00' ? '00:00' : time}:00${CAMPUS_UTC_OFFSET}`);
 }
 
 /** Add calendar days to a date-only ISO value without converting through UTC. */
 export function addLocalDays(iso: string, days: number): string {
   const date = new Date(`${iso}T12:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().substring(0, 10);
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+}
+
+export function defaultReportPeriod(now: Date = new Date(), days = 30) {
+  const endDate = campusISODate(now);
+  return { startDate: addLocalDays(endDate, 1 - days), endDate };
 }
 
 /** Date-only ISO (`YYYY-MM-DD`) → "02 de julho de 2026". Anchors to local noon. */

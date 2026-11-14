@@ -9,7 +9,7 @@ import type {
   MaintenanceHistoryFilters as Filters,
 } from '@/types/maintenance-history';
 import { formatDays, MAX_MAINTENANCE_RANGE_DAYS } from '@/utils/maintenance-history';
-import { addLocalDays, formatDateLong, toLocalISODate } from '@/utils/date';
+import { addLocalDays, formatDateLong, campusISODate } from '@/utils/date';
 import { useDarkMode } from '@/composables/useDarkMode';
 import { chartColors } from '@/lib/chartColors';
 import MaintenanceHistoryFilters from '@/components/reports/MaintenanceHistoryFilters.vue';
@@ -25,7 +25,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 const auth = useAuthStore();
 const { isDark } = useDarkMode();
 
-const today = toLocalISODate();
+const today = campusISODate();
 const initialFilters: Filters = {
   from: addLocalDays(today, -(MAX_MAINTENANCE_RANGE_DAYS - 1)),
   to: today,
@@ -50,7 +50,7 @@ let detailRequest = 0;
 const historySinceLabel = computed(() => {
   const since = history.value?.historySince;
   if (!since) return 'As mudanças de situação passam a ser registradas a partir da primeira alteração.';
-  return `Mudanças de situação registradas desde ${formatDateLong(toLocalISODate(new Date(since)))}. Antes disso, só os reportes entram no histórico.`;
+  return `Mudanças de situação registradas desde ${formatDateLong(campusISODate(new Date(since)))}. Antes disso, só os reportes entram no histórico.`;
 });
 
 const summaryCards = computed(() => {

@@ -61,7 +61,7 @@ export function buildReservationUpdate(
   return Object.keys(update).length ? update : null;
 }
 
-/** True from the reservation's start onwards (local time, like the rest of the UI). */
+/** True from the reservation's start onwards (campus time). */
 export function hasReservationStarted(reservation: Reservation, now: Date): boolean {
   return campusInstant(reservation.date, reservation.startTime) <= now;
 }

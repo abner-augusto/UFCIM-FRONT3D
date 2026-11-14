@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { campusInstant } from '@/utils/date';
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
-import { campusNow } from '@/utils/date';
-import { useCampusToday } from '@/composables/useCampusToday';
+import { campusMinutesNow, isSlotPast } from '@/utils/slots';
+import { followCampusToday, useCampusToday } from '@/composables/useCampusToday';
 import type { Availability, AvailabilitySlot } from '@/types/reservation';
 import AppDateField from '@/components/AppDateField.vue';
 import { Label } from '@/components/ui/label';
@@ -36,6 +35,7 @@ const emit = defineEmits<{
 const auth = useAuthStore();
 const today = useCampusToday();
 const selectedDate = ref(props.initialSchedule?.date ?? today.value);
+followCampusToday(today, selectedDate);
 const availability = ref<Availability | null>(null);
 const loadingAvailability = ref(false);
 const errorMsg = ref<string | null>(null);
@@ -51,7 +51,7 @@ const openSlots = computed<AvailabilitySlot[]>(() =>
 
 /** A slot is past once it ends: the in-progress half hour stays bookable (same rule as the backend). */
 function isPastSlot(slot: AvailabilitySlot): boolean {
-  return campusInstant(selectedDate.value, slot.endTime).getTime() <= nowTs.value;
+  return isSlotPast(selectedDate.value, slot.endTime, nowTs.value);
 }
 
 const { start, end, startOptions, endOptions, range, clear, applyRange } = useTimeRangePicker({
@@ -60,9 +60,7 @@ const { start, end, startOptions, endOptions, range, clear, applyRange } = useTi
 });
 
 const nowMinutes = computed(() => {
-  if (selectedDate.value !== today.value) return null;
-  const now = campusNow(new Date(nowTs.value));
-  return now.hour * 60 + now.minute;
+  return campusMinutesNow(selectedDate.value, nowTs.value);
 });
 
 function emitSchedule() {

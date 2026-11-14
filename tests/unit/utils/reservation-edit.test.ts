@@ -162,15 +162,15 @@ describe('hasReservationStarted (MEL-023)', () => {
   const r = reservation(); // 2026-10-20 09:00–10:30
 
   it('is false before the start', () => {
-    expect(hasReservationStarted(r, new Date('2026-10-20T08:59:00'))).toBe(false);
+    expect(hasReservationStarted(r, new Date('2026-10-20T08:59:00-03:00'))).toBe(false);
   });
 
   it('is true at the start and while in progress', () => {
-    expect(hasReservationStarted(r, new Date('2026-10-20T09:00:00'))).toBe(true);
-    expect(hasReservationStarted(r, new Date('2026-10-20T10:00:00'))).toBe(true);
+    expect(hasReservationStarted(r, new Date('2026-10-20T09:00:00-03:00'))).toBe(true);
+    expect(hasReservationStarted(r, new Date('2026-10-20T10:00:00-03:00'))).toBe(true);
   });
 
   it('is true after the reservation ended', () => {
-    expect(hasReservationStarted(r, new Date('2026-10-21T08:00:00'))).toBe(true);
+    expect(hasReservationStarted(r, new Date('2026-10-21T08:00:00-03:00'))).toBe(true);
   });
 });

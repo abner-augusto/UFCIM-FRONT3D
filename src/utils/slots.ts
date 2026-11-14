@@ -1,4 +1,4 @@
-import { campusNow } from '@/utils/date';
+import { campusInstant, campusNow } from '@/utils/date';
 import type { AvailabilitySlot } from '@/types/reservation';
 
 /**
@@ -35,11 +35,20 @@ export function formatTimeLabel(time: string): string {
   return minutes === '00' ? `${hours}h` : `${hours}h${minutes}`;
 }
 
-/** Start (`HH:MM`) of the half-hour slot that contains `moment`, in local time. */
+/** Start (`HH:MM`) of the campus half-hour slot containing `moment`. */
 export function slotStartAt(moment: Date): string {
   const { hour, minute } = campusNow(moment);
   const minutes = hour * 60 + minute;
   return minutesToTime(Math.floor(minutes / SLOT_MINUTES) * SLOT_MINUTES);
+}
+
+export function isSlotPast(date: string, endTime: string, nowTs: number): boolean {
+  return !!date && campusInstant(date, endTime).getTime() <= nowTs;
+}
+
+export function campusMinutesNow(date: string, nowTs: number): number | null {
+  const now = campusNow(new Date(nowTs));
+  return date === now.date ? now.hour * 60 + now.minute : null;
 }
 
 function durationOf(slot: TimeRange): number {

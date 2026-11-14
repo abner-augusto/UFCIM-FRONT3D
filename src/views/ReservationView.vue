@@ -13,7 +13,8 @@ import { useTimeRangePicker } from '@/composables/useTimeRangePicker';
 import RecurringReservationForm from '@/components/RecurringReservationForm.vue';
 import TimeRangeFields from '@/components/schedule/TimeRangeFields.vue';
 import OccupancyBar from '@/components/schedule/OccupancyBar.vue';
-import { toLocalISODate } from '@/utils/date';
+import { followCampusToday, useCampusToday } from '@/composables/useCampusToday';
+import { campusMinutesNow, isSlotPast } from '@/utils/slots';
 import AppDateField from '@/components/AppDateField.vue';
 import { blockLabel, departmentLabel } from '@/utils/space-labels';
 import SpaceHeaderSkeleton from '@/components/SpaceHeaderSkeleton.vue';
@@ -32,9 +33,10 @@ const spaceId = route.params.spaceId as string;
 
 const space = ref<Space | null>(null);
 const availability = ref<Availability | null>(null);
-const today = toLocalISODate();
+const today = useCampusToday();
 
-const selectedDate = ref(today);
+const selectedDate = ref(today.value);
+followCampusToday(today, selectedDate);
 const selectedPurpose = ref('');
 const loadingSpace = ref(true);
 const loadingAvailability = ref(false);
@@ -61,8 +63,7 @@ const nowTs = ref(Date.now());
 
 /** A time is past once reached; a slot stays bookable until it ends. */
 function isPastTime(time: string): boolean {
-  if (!selectedDate.value) return false;
-  return new Date(`${selectedDate.value}T${time}:00`).getTime() <= nowTs.value;
+  return isSlotPast(selectedDate.value, time, nowTs.value);
 }
 
 const openSlots = computed<AvailabilitySlot[]>(() =>
@@ -85,9 +86,7 @@ const {
 });
 
 const nowMinutes = computed(() => {
-  if (selectedDate.value !== today) return null;
-  const now = new Date(nowTs.value);
-  return now.getHours() * 60 + now.getMinutes();
+  return campusMinutesNow(selectedDate.value, nowTs.value);
 });
 
 onMounted(async () => {

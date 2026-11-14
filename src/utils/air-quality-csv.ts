@@ -1,3 +1,4 @@
+import { CAMPUS_TIME_ZONE } from '@/utils/date';
 import type { AirQualityHistoryPoint } from '@/types/air-quality';
 
 /**
@@ -27,7 +28,7 @@ const CAMPUS_TIME = new Intl.DateTimeFormat('pt-BR', {
   hour: '2-digit',
   minute: '2-digit',
   hour12: false,
-  timeZone: 'America/Fortaleza',
+  timeZone: CAMPUS_TIME_ZONE,
 });
 
 const DECIMAL = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 3, useGrouping: false });

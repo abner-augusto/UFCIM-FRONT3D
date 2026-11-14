@@ -1,8 +1,8 @@
 import { ref, computed } from 'vue';
 import { getCurrentPeriod, type PeriodKey } from '@/utils/period';
 import { TIME_SLOT_RANGES } from '@/types/reservation';
-import { addLocalDays, toLocalISODate } from '@/utils/date';
-import { useCampusToday } from '@/composables/useCampusToday';
+import { addLocalDays } from '@/utils/date';
+import { followCampusToday, useCampusToday } from '@/composables/useCampusToday';
 import { slotStartAt } from '@/utils/slots';
 
 /** Pure function: format ISO date string to short pt-BR locale (e.g. "21 de mai.") */
@@ -12,8 +12,7 @@ export function formatShortDate(dateStr: string): string {
 }
 
 /** Pure function: generate 3 date chips (Hoje, Amanhã, weekday) with ISO values */
-export function createDateChips(): Array<{ value: string; label: string }> {
-  const todayDate = toLocalISODate();
+export function createDateChips(todayDate: string): Array<{ value: string; label: string }> {
   const chips: Array<{ value: string; label: string }> = [];
   for (let i = 0; i < 3; i++) {
     const iso = addLocalDays(todayDate, i);
@@ -30,12 +29,13 @@ export function createDateChips(): Array<{ value: string; label: string }> {
 export function useDateTimeFilter() {
   const today = useCampusToday();
   const selectedDate = ref<string>(today.value);
+  followCampusToday(today, selectedDate);
   const selectedPeriod = ref<PeriodKey>(getCurrentPeriod());
   const periodAutoDetected = ref(true);
 
   const isToday = computed(() => selectedDate.value === today.value);
 
-  const dateChips = computed(() => { void today.value; return createDateChips(); });
+  const dateChips = computed(() => createDateChips(today.value));
 
   const periodRange = computed(() => TIME_SLOT_RANGES[selectedPeriod.value]);
 

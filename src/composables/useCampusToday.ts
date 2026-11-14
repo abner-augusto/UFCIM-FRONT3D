@@ -1,9 +1,9 @@
-import { onMounted, onUnmounted, ref } from 'vue';
-import { toLocalISODate } from '@/utils/date';
+import { onMounted, onUnmounted, ref, watch, type Ref } from 'vue';
+import { campusISODate } from '@/utils/date';
 
 export function useCampusToday() {
-  const today = ref(toLocalISODate());
-  const refresh = () => { today.value = toLocalISODate(); };
+  const today = ref(campusISODate());
+  const refresh = () => { today.value = campusISODate(); };
   let timer: ReturnType<typeof setInterval>;
   onMounted(() => {
     document.addEventListener('visibilitychange', refresh);
@@ -16,3 +16,9 @@ export function useCampusToday() {
   return today;
 }
 
+
+export function followCampusToday(today: Ref<string>, selectedDate: Ref<string>) {
+  watch(today, (date, previous) => {
+    if (selectedDate.value === previous) selectedDate.value = date;
+  });
+}

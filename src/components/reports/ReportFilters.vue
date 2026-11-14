@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { addLocalDays, toLocalISODate } from '@/utils/date';
+import { defaultReportPeriod } from '@/utils/date';
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
@@ -11,10 +11,10 @@ const emit = defineEmits<{
   apply: [filters: { startDate: string; endDate: string; campus: string; department: string }];
 }>();
 
-const today = toLocalISODate();
+const period = defaultReportPeriod();
 
-const startDate = ref(addLocalDays(today, -29));
-const endDate = ref(today);
+const startDate = ref(period.startDate);
+const endDate = ref(period.endDate);
 const selectedCampus = ref('');
 const selectedDepartment = ref('');
 
