@@ -10,6 +10,7 @@ import TimeRangeFields from '@/components/schedule/TimeRangeFields.vue';
 import WeekdayPicker from '@/components/schedule/WeekdayPicker.vue';
 import { useTimeRangePicker } from '@/composables/useTimeRangePicker';
 import { countRecurringDates } from '@/utils/recurrence';
+import { validateRecurringForm } from '@/utils/form-validation';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -63,20 +64,32 @@ const occurrenceCount = computed(() =>
   endDate.value > startDate.value ? countRecurringDates(startDate.value, endDate.value, daysOfWeek.value) : 0
 );
 
-function canSubmit() {
-  return (
-    props.reservable !== false &&
-    startDate.value &&
-    endDate.value &&
-    endDate.value > startDate.value &&
-    occurrenceCount.value > 0 &&
-    seriesRange.value &&
-    description.value.trim()
-  );
+function focusInvalid(field: 'startDate' | 'endDate' | 'weekdays' | 'start' | 'end' | 'description') {
+  const ids = { startDate: 'rec-start', endDate: 'rec-end', start: 'rec-time-start', end: 'rec-time-end', description: 'rec-desc' };
+  const target = field === 'weekdays'
+    ? document.querySelector<HTMLElement>('#rec-weekdays button:not(:disabled)')
+    : document.getElementById(ids[field]);
+  target?.focus();
 }
 
+const submissionBlocked = computed(() => loading.value || !!successMsg.value || props.reservable === false);
+
 async function handleSubmit() {
-  if (!canSubmit() || !seriesRange.value) return;
+  if (submissionBlocked.value) return;
+  const invalid = validateRecurringForm({
+    startDate: startDate.value,
+    endDate: endDate.value,
+    occurrences: occurrenceCount.value,
+    start: seriesStart.value,
+    hasRange: !!seriesRange.value,
+    description: description.value,
+  });
+  if (invalid) {
+    errorMsg.value = invalid.message;
+    focusInvalid(invalid.field);
+    return;
+  }
+  if (!seriesRange.value) return;
   const { startTime, endTime } = seriesRange.value;
   loading.value = true;
   errorMsg.value = null;
@@ -89,7 +102,7 @@ async function handleSubmit() {
       daysOfWeek: daysOfWeek.value,
       startTime,
       endTime,
-      description: description.value.trim() || undefined,
+      description: description.value.trim(),
       ...requesterPayload(canReserveOnBehalf.value ? requester.value : null),
     });
     successMsg.value = `${result.created.length} reservas criadas, ${result.skipped.length} conflitos ignorados.`;
@@ -103,20 +116,20 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div>
+  <form novalidate @submit.prevent="handleSubmit">
     <div class="mb-5">
-      <Label class="mb-2 block text-sm font-semibold" for="rec-start">Data de início</Label>
-      <AppDateField id="rec-start" v-model="startDate" :min="today" aria-label="Data de início" />
+      <Label class="mb-2 block text-sm font-semibold" id="rec-start-label" for="rec-start">Data de início</Label>
+      <AppDateField id="rec-start" label-id="rec-start-label" v-model="startDate" :min="today" />
     </div>
 
     <div class="mb-5">
-      <Label class="mb-2 block text-sm font-semibold" for="rec-end">Data de fim</Label>
-      <AppDateField id="rec-end" v-model="endDate" :min="minEndDate" aria-label="Data de fim" />
+      <Label class="mb-2 block text-sm font-semibold" id="rec-end-label" for="rec-end">Data de fim</Label>
+      <AppDateField id="rec-end" label-id="rec-end-label" v-model="endDate" :min="minEndDate" />
     </div>
 
     <div class="mb-5">
-      <p id="rec-dow-label" class="mb-2 text-sm font-semibold">Dias da semana</p>
-      <WeekdayPicker v-model="daysOfWeek" :max="MAX_WEEKDAYS" aria-labelledby="rec-dow-label" />
+      <p id="rec-dow-label" tabindex="-1" class="mb-2 text-sm font-semibold">Dias da semana</p>
+      <WeekdayPicker id="rec-weekdays" v-model="daysOfWeek" :max="MAX_WEEKDAYS" aria-labelledby="rec-dow-label" />
       <p class="text-muted-foreground mt-2 text-xs" aria-live="polite">
         {{ daysOfWeek.length < MAX_WEEKDAYS
           ? `Escolha até ${MAX_WEEKDAYS} dias.`
@@ -140,9 +153,10 @@ async function handleSubmit() {
     </fieldset>
 
     <div class="mb-5">
-      <Label class="mb-2 block text-sm font-semibold" for="rec-desc">Descrição da recorrência</Label>
+      <Label class="mb-2 block text-sm font-semibold" for="rec-desc">Descrição da recorrência *</Label>
       <Input
         id="rec-desc"
+        required
         v-model="description"
         class="h-11"
         type="text"
@@ -158,18 +172,18 @@ async function handleSubmit() {
     />
 
     <p v-if="successMsg" class="text-primary mb-3 text-sm font-medium" role="status" aria-live="polite">{{ successMsg }}</p>
-    <p v-if="errorMsg" class="text-destructive mb-3 text-sm" role="alert" aria-live="polite">{{ errorMsg }}</p>
+    <p v-if="errorMsg" class="text-destructive mb-3 text-sm" role="alert">{{ errorMsg }}</p>
 
     <div class="form-actions">
       <Button
         class="h-11 w-full"
-        :disabled="!canSubmit() || loading"
-        @click="handleSubmit"
+        type="submit"
+        :disabled="submissionBlocked"
       >
         {{ loading ? 'Agendando...' : 'Agendar Reservas Recorrentes' }}
       </Button>
     </div>
-  </div>
+  </form>
 </template>
 
 <style scoped>

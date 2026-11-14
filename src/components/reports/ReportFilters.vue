@@ -43,16 +43,16 @@ function applyFilters() {
 </script>
 
 <template>
-  <div class="filters-container">
+  <form class="filters-container" @submit.prevent="applyFilters">
     <div class="filter-row">
       <div class="filter-group">
-        <label for="startDate">Data início</label>
-        <AppDateField id="startDate" v-model="startDate" :max="endDate" aria-label="Data início" class="filter-input" />
+        <label id="startDate-label" for="startDate">Data início</label>
+        <AppDateField id="startDate" label-id="startDate-label" v-model="startDate" :max="endDate" class="filter-input" />
       </div>
 
       <div class="filter-group">
-        <label for="endDate">Data fim</label>
-        <AppDateField id="endDate" v-model="endDate" :min="startDate" aria-label="Data fim" class="filter-input" />
+        <label id="endDate-label" for="endDate">Data fim</label>
+        <AppDateField id="endDate" label-id="endDate-label" v-model="endDate" :min="startDate" class="filter-input" />
       </div>
 
       <div class="filter-group">
@@ -72,10 +72,10 @@ function applyFilters() {
       </div>
 
       <div class="filter-actions">
-        <button class="btn-apply" @click="applyFilters">Aplicar</button>
+        <button type="submit" class="btn-apply">Aplicar</button>
       </div>
     </div>
-  </div>
+  </form>
 </template>
 
 <style scoped>

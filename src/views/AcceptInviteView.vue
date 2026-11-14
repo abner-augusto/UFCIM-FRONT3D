@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { api, ApiError } from '@/services/api';
-import { mapAcceptError } from '@/utils/api-errors';
+import { api } from '@/services/api';
+import { acceptFieldErrors, mapAcceptError } from '@/utils/api-errors';
+import { validateAcceptInvite } from '@/utils/form-validation';
 import type { UserRole } from '@/stores/auth';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -54,30 +55,25 @@ onMounted(async () => {
   }
 });
 
-function validateForm(): boolean {
-  fieldErrors.value = {};
-  if (isStudent.value && !registration.value.trim()) {
-    fieldErrors.value.registration = 'A matrícula é obrigatória para alunos.';
-    return false;
-  }
-  const val = password.value;
-  if (val.length < 8) {
-    fieldErrors.value.password = 'A senha deve ter ao menos 8 caracteres.';
-    return false;
-  }
-  if (!/[a-zA-Z]/.test(val) || !/[0-9]/.test(val)) {
-    fieldErrors.value.password = 'A senha deve conter ao menos uma letra e um número.';
-    return false;
-  }
-  if (password.value !== passwordConfirm.value) {
-    fieldErrors.value.passwordConfirm = 'As senhas não coincidem.';
-    return false;
-  }
-  return true;
+async function focusError() {
+  await nextTick();
+  const first = ['registration', 'password', 'passwordConfirm'].find((field) => fieldErrors.value[field]);
+  if (first) document.getElementById(first === 'passwordConfirm' ? 'invite-password-confirm' : `invite-${first}`)?.focus();
 }
 
 async function handleAccept() {
-  if (!validateForm()) return;
+  const invalid = validateAcceptInvite({
+    student: isStudent.value,
+    registration: registration.value,
+    password: password.value,
+    confirmation: passwordConfirm.value,
+  });
+  fieldErrors.value = {};
+  if (invalid) {
+    fieldErrors.value[invalid.field] = invalid.message;
+    await focusError();
+    return;
+  }
 
   state.value = 'submitting';
   submitError.value = null;
@@ -97,10 +93,10 @@ async function handleAccept() {
     router.push({ name: 'campus-select' });
   } catch (e) {
     state.value = 'ready';
-    if (e instanceof ApiError && e.details?.length) {
-      for (const d of e.details) {
-        fieldErrors.value[d.field] = d.message;
-      }
+    const errors = acceptFieldErrors(e);
+    if (errors) {
+      fieldErrors.value = errors;
+      await focusError();
     } else {
       submitError.value = mapAcceptError(e);
     }
@@ -131,7 +127,7 @@ async function handleAccept() {
       </p>
       <p class="text-muted-foreground mb-2 text-sm">Defina uma senha para ativar sua conta.</p>
 
-      <form class="mt-6 flex flex-col gap-3.5 text-left" @submit.prevent="handleAccept">
+      <form novalidate class="mt-6 flex flex-col gap-3.5 text-left" @submit.prevent="handleAccept">
         <div class="flex flex-col gap-1">
           <Label for="invite-registration">Matrícula{{ isStudent ? '' : ' (opcional)' }}</Label>
           <Input
@@ -147,7 +143,7 @@ async function handleAccept() {
             :aria-invalid="!!fieldErrors.registration"
             :aria-describedby="fieldErrors.registration ? 'err-registration' : undefined"
           />
-          <span v-if="fieldErrors.registration" id="err-registration" class="text-destructive text-[0.8rem]" aria-live="polite">{{ fieldErrors.registration }}</span>
+          <span v-if="fieldErrors.registration" id="err-registration" class="text-destructive text-[0.8rem]">{{ fieldErrors.registration }}</span>
         </div>
 
         <div class="flex flex-col gap-1">
@@ -165,7 +161,7 @@ async function handleAccept() {
             :aria-describedby="`invite-password-hint${fieldErrors.password ? ' err-password' : ''}`"
           />
           <span id="invite-password-hint" class="text-muted-foreground text-[0.78rem]">≥8 caracteres, ao menos uma letra e um número</span>
-          <span v-if="fieldErrors.password" id="err-password" class="text-destructive text-[0.8rem]" aria-live="polite">{{ fieldErrors.password }}</span>
+          <span v-if="fieldErrors.password" id="err-password" class="text-destructive text-[0.8rem]">{{ fieldErrors.password }}</span>
         </div>
 
         <div class="flex flex-col gap-1">
@@ -182,10 +178,10 @@ async function handleAccept() {
             :aria-invalid="!!fieldErrors.passwordConfirm"
             :aria-describedby="fieldErrors.passwordConfirm ? 'err-password-confirm' : undefined"
           />
-          <span v-if="fieldErrors.passwordConfirm" id="err-password-confirm" class="text-destructive text-[0.8rem]" aria-live="polite">{{ fieldErrors.passwordConfirm }}</span>
+          <span v-if="fieldErrors.passwordConfirm" id="err-password-confirm" class="text-destructive text-[0.8rem]">{{ fieldErrors.passwordConfirm }}</span>
         </div>
 
-        <p v-if="submitError" class="text-destructive m-0 text-sm" role="alert" aria-live="polite">{{ submitError }}</p>
+        <p v-if="submitError" class="text-destructive m-0 text-sm" role="alert">{{ submitError }}</p>
 
         <Button type="submit" class="mt-1 h-11" :disabled="state === 'submitting'">
           {{ state === 'submitting' ? 'Ativando...' : 'Ativar conta' }}

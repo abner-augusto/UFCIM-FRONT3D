@@ -135,22 +135,22 @@ function handleSubmit() {
     <div class="form-section">
       <div class="date-range">
         <div>
-          <Label class="form-label" for="blocking-date-from">De</Label>
+          <Label class="form-label" id="blocking-date-from-label" for="blocking-date-from">De</Label>
           <AppDateField
             id="blocking-date-from"
+            label-id="blocking-date-from-label"
             v-model="selectedDateFrom"
             :min="today"
-            aria-label="Data inicial do bloqueio"
           />
         </div>
         <div>
-          <Label class="form-label" for="blocking-date-to">Até</Label>
+          <Label class="form-label" id="blocking-date-to-label" for="blocking-date-to">Até</Label>
           <AppDateField
             id="blocking-date-to"
+            label-id="blocking-date-to-label"
             v-model="selectedDateTo"
             :min="selectedDateFrom || today"
             :max="maxDateTo"
-            aria-label="Data final do bloqueio"
           />
         </div>
       </div>
@@ -158,11 +158,12 @@ function handleSubmit() {
     </div>
 
     <div class="form-section">
-      <Label class="form-label">Período</Label>
+      <p id="blocking-period-label" class="form-label">Período</p>
       <ToggleGroup
         type="single"
         variant="outline"
         class="hour-mode-toggle"
+        aria-labelledby="blocking-period-label"
         :model-value="hourMode"
         @update:model-value="handleModeChange"
       >
@@ -208,7 +209,7 @@ function handleSubmit() {
       />
     </div>
 
-    <p v-if="error" class="state-error" role="alert" aria-live="polite">{{ error }}</p>
+    <p v-if="error" class="state-error" role="alert">{{ error }}</p>
 
     <div class="form-actions">
       <StatefulActionButton

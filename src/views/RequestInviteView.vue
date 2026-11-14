@@ -21,6 +21,7 @@ function loadTurnstile(): Promise<void> {
 import { ref, onMounted, onUnmounted } from 'vue';
 import { api } from '@/services/api';
 import { mapRequestInviteError } from '@/utils/api-errors';
+import { invitationSecurityError } from '@/utils/form-validation';
 import { RouterLink } from 'vue-router';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -33,6 +34,7 @@ const loading = ref(false);
 const errorMsg = ref<string | null>(null);
 const submitted = ref(false);
 const turnstileToken = ref('');
+const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY as string;
 
 let turnstileWidgetId: string | null = null;
 let unmounted = false;
@@ -52,7 +54,6 @@ onUnmounted(() => {
 });
 
 function renderTurnstile() {
-  const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY as string;
   if (!siteKey) {
     console.warn('VITE_TURNSTILE_SITE_KEY not set');
     return;
@@ -86,10 +87,8 @@ function resetTurnstile() {
 
 async function handleSubmit() {
   if (!name.value.trim() || !email.value.trim()) return;
-  if (!turnstileToken.value) {
-    errorMsg.value = 'Por favor, complete a verificação de segurança.';
-    return;
-  }
+  errorMsg.value = invitationSecurityError(siteKey, turnstileToken.value);
+  if (errorMsg.value) return;
 
   loading.value = true;
   errorMsg.value = null;
@@ -154,6 +153,7 @@ async function handleSubmit() {
             type="email"
             placeholder="seu@email.com"
             autocomplete="email"
+            name="email" spellcheck="false" autocapitalize="none" enterkeyhint="go"
             required
             :disabled="loading"
           />
@@ -161,9 +161,9 @@ async function handleSubmit() {
 
         <div id="turnstile-container" class="mt-2 flex min-h-[65px] justify-center"></div>
 
-        <p v-if="errorMsg" class="text-destructive m-0 text-sm" role="alert" aria-live="polite">{{ errorMsg }}</p>
+        <p v-if="errorMsg" class="text-destructive m-0 text-sm" role="alert">{{ errorMsg }}</p>
 
-        <Button type="submit" class="mt-1 h-11" :disabled="loading || !turnstileToken">
+        <Button type="submit" class="mt-1 h-11" :disabled="loading">
           {{ loading ? 'Enviando...' : 'Solicitar convite' }}
         </Button>
       </form>

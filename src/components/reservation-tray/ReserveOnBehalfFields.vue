@@ -11,6 +11,7 @@ import {
   REQUESTER_TEXT_MAX,
   emptyRequester,
   requesterRoleLabel,
+  requesterSearchStatus,
   type RequesterSelection,
 } from '@/utils/reservation-requester';
 
@@ -47,13 +48,19 @@ const ids = computed(() => ({
   panel: `${props.idPrefix}-panel`,
   search: `${props.idPrefix}-search`,
   hint: `${props.idPrefix}-hint`,
-  results: `${props.idPrefix}-results`,
   contact: `${props.idPrefix}-contact`,
 }));
 
 const trimmedQuery = computed(() => props.modelValue.query.trim());
 const showResults = computed(() => !props.modelValue.user && trimmedQuery.value.length >= MIN_QUERY_LENGTH);
 const visibleResults = computed(() => results.value.slice(0, VISIBLE_RESULTS));
+const searchStatus = computed(() => requesterSearchStatus({
+  active: showResults.value,
+  searching: searching.value,
+  failed: searchFailed.value,
+  visibleCount: visibleResults.value.length,
+  totalCount: results.value.length,
+}));
 
 function update(patch: Partial<RequesterSelection>) {
   emit('update:modelValue', { ...props.modelValue, ...patch });
@@ -173,7 +180,6 @@ async function changePerson() {
             :maxlength="REQUESTER_TEXT_MAX"
             placeholder="Nome ou e-mail de quem pediu"
             :aria-describedby="ids.hint"
-            :aria-controls="showResults ? ids.results : undefined"
             data-testid="reserve-on-behalf-search"
             @update:model-value="update({ query: String($event) })"
           />
@@ -181,33 +187,26 @@ async function changePerson() {
             Escolha alguém cadastrado na lista ou mantenha o nome digitado.
           </p>
 
-          <div v-if="showResults" class="on-behalf__results" aria-live="polite">
-            <p v-if="searching" class="on-behalf__status">Buscando…</p>
-            <p v-else-if="searchFailed" class="on-behalf__status">
-              Não foi possível buscar agora. O nome digitado será usado.
-            </p>
-            <p v-else-if="!visibleResults.length" class="on-behalf__status">
-              Ninguém cadastrado com esse nome. O nome digitado será usado.
-            </p>
-            <ul v-else :id="ids.results" class="on-behalf__list" aria-label="Usuários encontrados">
-              <li v-for="candidate in visibleResults" :key="candidate.id">
-                <button
-                  type="button"
-                  class="on-behalf__option"
-                  data-testid="reserve-on-behalf-option"
-                  @click="pick(candidate)"
-                >
-                  <span class="on-behalf__option-name">{{ candidate.name }}</span>
-                  <span class="on-behalf__meta">
-                    {{ requesterRoleLabel(candidate.role) }}<template v-if="candidate.department"> · {{ candidate.department }}</template>
-                  </span>
-                </button>
-              </li>
-            </ul>
-            <p v-if="!searching && results.length > VISIBLE_RESULTS" class="on-behalf__status">
-              Continue digitando para refinar a busca.
-            </p>
-          </div>
+          <p role="status" class="on-behalf__status">{{ searchStatus.message }}</p>
+          <ul
+            v-if="searchStatus.showList"
+            class="on-behalf__list"
+            aria-label="Usuários encontrados"
+          >
+            <li v-for="candidate in visibleResults" :key="candidate.id">
+              <button
+                type="button"
+                class="on-behalf__option"
+                data-testid="reserve-on-behalf-option"
+                @click="pick(candidate)"
+              >
+                <span class="on-behalf__option-name">{{ candidate.name }}</span>
+                <span class="on-behalf__meta">
+                  {{ requesterRoleLabel(candidate.role) }}<template v-if="candidate.department"> · {{ candidate.department }}</template>
+                </span>
+              </button>
+            </li>
+          </ul>
         </template>
       </div>
 
@@ -285,12 +284,6 @@ async function changePerson() {
   margin: 0;
   color: var(--muted-foreground);
   font-size: 0.82rem;
-}
-
-.on-behalf__results {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
 }
 
 .on-behalf__list {
