@@ -18,6 +18,7 @@ export class CameraManager {
    */
   constructor(camera, controls, invalidate = () => {}) {
     this.invalidate = invalidate;
+    this.tweens = new TWEEN.Group();
     this.camera = camera;
     this.controls = controls;
     this.savedCameraState = null;
@@ -28,8 +29,12 @@ export class CameraManager {
     };
   }
 
+  dispose() {
+    this.tweens.removeAll();
+  }
+
   _finishTransition() {
-    if (this._duration() === 0) TWEEN.update();
+    if (this._duration() === 0) this.tweens.update();
     this.invalidate();
   }
 
@@ -75,7 +80,7 @@ export class CameraManager {
     newTarget.y += PIN_FOCUS_TARGET_Y_OFFSET;
     const newCamPos = newTarget.clone().add(newOffset);
 
-    new TWEEN.Tween(this.camera.position)
+    new TWEEN.Tween(this.camera.position, this.tweens)
       .to(newCamPos, this._duration())
       .easing(TWEEN.Easing.Quadratic.Out)
       .onStart(() => {
@@ -84,7 +89,7 @@ export class CameraManager {
       .start();
     this._finishTransition();
 
-    new TWEEN.Tween(this.controls.target)
+    new TWEEN.Tween(this.controls.target, this.tweens)
       .to(newTarget, this._duration())
       .easing(TWEEN.Easing.Quadratic.Out)
       .onComplete(() => {
@@ -102,7 +107,7 @@ export class CameraManager {
   restoreSavedState() {
     if (!this.savedCameraState) return;
 
-    new TWEEN.Tween(this.camera.position)
+    new TWEEN.Tween(this.camera.position, this.tweens)
       .to(this.savedCameraState.position, this._duration())
       .easing(TWEEN.Easing.Quadratic.Out)
       .onStart(() => {
@@ -111,7 +116,7 @@ export class CameraManager {
       .start();
     this._finishTransition();
 
-    new TWEEN.Tween(this.controls.target)
+    new TWEEN.Tween(this.controls.target, this.tweens)
       .to(this.savedCameraState.target, this._duration())
       .easing(TWEEN.Easing.Quadratic.Out)
       .onComplete(() => {
@@ -132,7 +137,7 @@ export class CameraManager {
     this.applyDefaultZoomLimits();
 
     // Animate camera position
-    new TWEEN.Tween(this.camera.position)
+    new TWEEN.Tween(this.camera.position, this.tweens)
       .to({ x: newPos.x, y: newPos.y, z: newPos.z }, this._duration())
       .easing(TWEEN.Easing.Quadratic.Out)
       .onStart(() => {
@@ -142,7 +147,7 @@ export class CameraManager {
     this._finishTransition();
 
     // Animate controls target
-    new TWEEN.Tween(this.controls.target)
+    new TWEEN.Tween(this.controls.target, this.tweens)
       .to({ x: newTarget.x, y: newTarget.y, z: newTarget.z }, this._duration())
       .easing(TWEEN.Easing.Quadratic.Out)
       .onComplete(() => {
@@ -182,7 +187,7 @@ export class CameraManager {
     const newCamPos = newTarget.clone().add(offset);
 
     // Use TWEEN to animate
-    new TWEEN.Tween(this.camera.position)
+    new TWEEN.Tween(this.camera.position, this.tweens)
       .to(newCamPos, this._duration())
       .easing(TWEEN.Easing.Quadratic.Out)
       .onStart(() => {
@@ -191,7 +196,7 @@ export class CameraManager {
       .start();
     this._finishTransition();
 
-    new TWEEN.Tween(this.controls.target)
+    new TWEEN.Tween(this.controls.target, this.tweens)
       .to(newTarget, this._duration())
       .easing(TWEEN.Easing.Quadratic.Out)
       .onComplete(() => {
@@ -234,14 +239,14 @@ export class CameraManager {
     const newCamPos = newTarget.clone().add(direction.multiplyScalar(newDistance));
 
     // Animate
-    new TWEEN.Tween(this.camera.position)
+    new TWEEN.Tween(this.camera.position, this.tweens)
       .to(newCamPos, this._duration())
       .easing(TWEEN.Easing.Quadratic.Out)
       .onStart(() => { this.controls.enabled = false; })
       .start();
     this._finishTransition();
 
-    new TWEEN.Tween(this.controls.target)
+    new TWEEN.Tween(this.controls.target, this.tweens)
       .to(newTarget, this._duration())
       .easing(TWEEN.Easing.Quadratic.Out)
       .onComplete(() => { this.controls.enabled = true; })

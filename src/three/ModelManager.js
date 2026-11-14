@@ -179,7 +179,14 @@ export class ModelManager {
       if (this._disposed) return;
       this._applyVisibility();
       if (globalThis.scheduler?.yield) await globalThis.scheduler.yield();
-      else await new Promise(resolve => setTimeout(resolve, 0));
+      else await new Promise(resolve => {
+        this._yieldResolve = resolve;
+        this._yieldTimer = setTimeout(() => {
+          this._yieldTimer = null;
+          this._yieldResolve = null;
+          resolve();
+        }, 0);
+      });
     }
   }
 

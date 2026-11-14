@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import TWEEN from 'three/examples/jsm/libs/tween.module.js';
 
 import { World } from './World.js';
 import { ModelManager } from './ModelManager.js';
@@ -282,10 +281,10 @@ export class App {
         this.devTools?.beginFrame?.();
         const changed = this.controls.update();
         this.camera.position.y = Math.max(this.camera.position.y, CONTROLS_CONFIG.minCameraHeight);
-        TWEEN.update();
+        this.cameraManager.tweens.update();
         this.renderer.render(this.scene, this.camera);
         this.devTools?.endFrame?.();
-        if (changed || TWEEN.getAll().length) this.invalidate();
+        if (changed || this.cameraManager.tweens.getAll().length) this.invalidate();
     }
 
     dispose() {
@@ -300,6 +299,7 @@ export class App {
 
         // Dispose sub-managers
         this.popupManager?.dispose();
+        this.cameraManager?.dispose();
         this.interactionManager?.dispose();
         this.uiManager?.dispose?.();
         this.modelManager?.dispose();
