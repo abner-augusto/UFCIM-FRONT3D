@@ -6,7 +6,7 @@ import RouteProgressBar from './components/RouteProgressBar.vue';
 import PwaUpdateToast from './components/PwaUpdateToast.vue';
 import { useAuthStore } from './stores/auth';
 import { api } from './services/api';
-import { onMounted, onUnmounted, watch } from 'vue';
+import { onMounted, onUnmounted } from 'vue';
 import { useDarkMode } from './composables/useDarkMode';
 
 const auth = useAuthStore();
@@ -15,29 +15,28 @@ useDarkMode();
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-watch(() => route.path, () => {
-  refreshUnreadCount();
-});
-
 async function refreshUnreadCount() {
-  if (!auth.token) return;
+  if (!auth.token || document.hidden) return;
   try {
-    const me = await api.getMe(auth.token);
+    const me = await api.getMe(auth.token, { priority: 'low' });
     auth.setUnreadCount(me.unreadCount ?? 0);
   } catch {
     // Silently fail — the refresh token flow handles 401s
   }
 }
 
+function skipToContent() {
+  document.getElementById('conteudo')?.focus();
+}
+
 function onVisibilityChange() {
-  if (document.visibilityState === 'visible') {
+  if (!document.hidden) {
     refreshUnreadCount();
   }
 }
 
 onMounted(() => {
   // Poll every 60s
-  refreshUnreadCount();
   pollTimer = setInterval(refreshUnreadCount, 60_000);
   document.addEventListener('visibilitychange', onVisibilityChange);
 });
@@ -49,9 +48,10 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <a class="skip-link" href="#conteudo" @click.prevent="skipToContent">Pular para o conteúdo</a>
   <RouteProgressBar />
   <AppHeader v-if="auth.isAuthenticated" />
-  <main class="app-main bg-background text-foreground">
+  <main id="conteudo" tabindex="-1" class="app-main bg-background text-foreground">
     <RouterView v-slot="{ Component }">
       <Transition name="page">
         <component :is="Component" :key="route.path" />
@@ -63,6 +63,18 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.skip-link {
+  position: fixed;
+  z-index: 10000;
+  top: 0;
+  left: 0;
+  padding: 0.75rem;
+  background: var(--background);
+  color: var(--foreground);
+  transform: translateY(-150%);
+}
+.skip-link:focus { transform: translateY(0); }
+
 .app-main {
   position: relative; /* containing block for the leaving page during route crossfade */
   min-height: 100vh; /* fallback */
@@ -101,3 +113,4 @@ onUnmounted(() => {
   transform: translateY(-6px);
 }
 </style>
+

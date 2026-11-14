@@ -347,9 +347,9 @@ export const api = {
     ),
 
   // Users
-  getMe: (token: string | null) =>
+  getMe: (token: string | null, init?: RequestInit) =>
     request<PublicUser>(
-      '/users/me', token
+      '/users/me', token, init
     ),
 
   // MEL-025 (staff only): active users matching name or e-mail, at most 10,

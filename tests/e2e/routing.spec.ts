@@ -98,3 +98,42 @@ test.describe('Authenticated routing', () => {
     await expect(page).toHaveURL(/#\/campus/, { timeout: 10000 });
   });
 });
+
+base.test('o primeiro Tab mostra o link para o conteúdo', async ({ page }) => {
+  await page.goto('/#/login');
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('link', { name: 'Pular para o conteúdo' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#conteudo')).toBeFocused();
+});
+
+test('a navegação anuncia a nova página e a sessão sobrevive ao recarregar', async ({ staffPage: page }) => {
+  await page.goto('/#/campus');
+  await expect(page.getByRole('heading', { name: 'Selecione seu campus' })).toBeVisible();
+  await page.evaluate(() => { window.location.hash = '#/notificacoes'; });
+  await expect(page).toHaveURL(/#\/notificacoes/);
+  await expect(page.locator('#conteudo h1').last()).toBeFocused();
+  await expect(page).toHaveTitle('Notificações – UFCIM');
+  await page.goto('/#/relatorios');
+  await page.reload();
+  await expect(page).toHaveURL(/#\/relatorios/);
+  await expect(page.getByRole('heading', { name: /relatório de ocupação/i })).toBeVisible();
+});
+
+test('não consulta notificações enquanto a aba está oculta', async ({ studentPage: page }) => {
+  await page.clock.install();
+  await page.goto('/#/campus');
+  await expect(page.getByRole('heading', { name: 'Selecione seu campus' })).toBeVisible();
+  let requests = 0;
+  page.on('request', (request) => {
+    if (request.url().includes('/users/me')) requests++;
+  });
+  await page.evaluate(() => Object.defineProperty(document, 'hidden', { configurable: true, value: true }));
+  await page.clock.fastForward('01:01');
+  expect(requests).toBe(0);
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect.poll(() => requests).toBe(1);
+});

@@ -438,7 +438,7 @@ useViewerTestHarness({
 </script>
 
 <template>
-  <div class="viewer-view" :class="{ 'viewer-view--fullscreen': fullscreen }">
+  <div class="viewer-view" :class="{ 'viewer-view--fullscreen': fullscreen }"><h1 class="sr-only">Visualizador do campus</h1>
     <ThreeViewer
       :key="viewerKey"
       ref="viewerRef"
@@ -675,3 +675,4 @@ useViewerTestHarness({
   }
 }
 </style>
+
