@@ -1,6 +1,8 @@
 import { ref } from 'vue';
 
-const STORAGE_KEY = 'ufcim-theme';
+export const STORAGE_KEY = 'ufcim-theme';
+export const DARK_THEME_COLOR = '#121212';
+export const LIGHT_THEME_COLOR = '#00697D';
 
 type ThemeTransitionDocument = Document & {
   startViewTransition?: (updateCallback: () => void) => { finished: Promise<void> };
@@ -23,7 +25,7 @@ const isDark = ref(preference ?? systemTheme.matches);
 
 function applyTheme(value: boolean) {
   document.documentElement.classList.toggle('dark', value);
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', value ? '#1c1c1c' : '#00697D');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', value ? DARK_THEME_COLOR : LIGHT_THEME_COLOR);
 }
 
 function getTriggerElement(trigger?: ThemeToggleTrigger): HTMLElement | null {
@@ -49,17 +51,23 @@ function setThemeTransitionOrigin(trigger?: ThemeToggleTrigger) {
 }
 
 applyTheme(isDark.value);
-systemTheme.addEventListener('change', (event) => {
+function handleSystemThemeChange(event: MediaQueryListEvent) {
   if (preference === null) {
     isDark.value = event.matches;
     applyTheme(event.matches);
   }
-});
-window.addEventListener('storage', (event) => {
+}
+function handleStorageChange(event: StorageEvent) {
   if (event.key !== STORAGE_KEY && event.key !== null) return;
   preference = event.newValue === 'dark' ? true : event.newValue === 'light' ? false : null;
   isDark.value = preference ?? systemTheme.matches;
   applyTheme(isDark.value);
+}
+systemTheme.addEventListener('change', handleSystemThemeChange);
+window.addEventListener('storage', handleStorageChange);
+import.meta.hot?.dispose(() => {
+  systemTheme.removeEventListener('change', handleSystemThemeChange);
+  window.removeEventListener('storage', handleStorageChange);
 });
 
 export function useDarkMode() {
@@ -71,7 +79,7 @@ export function useDarkMode() {
       try {
         if (preference === null) localStorage.removeItem(STORAGE_KEY);
         else localStorage.setItem(STORAGE_KEY, value ? 'dark' : 'light');
-      } catch { void 0; }
+      } catch { /* Keep the preference in memory. */ }
       isDark.value = value;
       applyTheme(value);
     };

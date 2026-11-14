@@ -26,7 +26,7 @@ export default {
     res.headers.set('X-Content-Type-Options', 'nosniff');
     res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.headers.set('Permissions-Policy', 'camera=(), geolocation=(), microphone=()');
-    res.headers.set('Content-Security-Policy-Report-Only', "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
+    res.headers.set('Content-Security-Policy-Report-Only', "default-src 'self'; script-src 'self' 'sha256-J1hQa1TV+LSR0ptHxVmggPXYep4iKYgPOu8hiVMRlnU=' 'wasm-unsafe-eval' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
 
     // The service worker, the HTML entry, and the web manifest gate PWA update
     // detection: if any is served stale from the browser/edge cache, an installed
