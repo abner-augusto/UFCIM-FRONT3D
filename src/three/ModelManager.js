@@ -11,12 +11,12 @@ export class ModelManager {
   constructor(scene) {
     this.scene = scene;
 
-    const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath('/libs/draco/');
-    dracoLoader.setDecoderConfig({ type: 'wasm' });
+    this.dracoLoader = new DRACOLoader();
+    this.dracoLoader.setDecoderPath('/libs/draco/');
+    this.dracoLoader.setDecoderConfig({ type: 'wasm' });
 
     this.loader = new GLTFLoader();
-    this.loader.setDRACOLoader(dracoLoader);
+    this.loader.setDRACOLoader(this.dracoLoader);
 
     this.manifest = {};
     this.entries = new Map();
@@ -322,6 +322,7 @@ export class ModelManager {
 
   dispose() {
     this._disposed = true;
+    this.dracoLoader.dispose();
     this.onPinsLoaded = null;
     this.onPinsVisibilityChange = null;
     this.onVisibleMeshesChange = null;

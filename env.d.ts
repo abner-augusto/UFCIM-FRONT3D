@@ -27,6 +27,7 @@ interface TurnstileApi {
     }
   ): string;
   reset(widgetId?: string): void;
+  remove(widgetId: string): void;
 }
 
 interface Window {

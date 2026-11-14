@@ -21,6 +21,12 @@ export default {
 
     // Otherwise, serve the static assets from the Pages project
     const response = await env.ASSETS.fetch(request);
+    const res = new Response(response.body, response);
+    res.headers.set('X-Frame-Options', 'DENY');
+    res.headers.set('X-Content-Type-Options', 'nosniff');
+    res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.headers.set('Permissions-Policy', 'camera=(), geolocation=(), microphone=()');
+    res.headers.set('Content-Security-Policy-Report-Only', "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
 
     // The service worker, the HTML entry, and the web manifest gate PWA update
     // detection: if any is served stale from the browser/edge cache, an installed
@@ -28,11 +34,9 @@ export default {
     // file can't do this — Cloudflare ignores it when a `_worker.js` is present.)
     const p = url.pathname;
     if (p === '/sw.js' || p === '/' || p.endsWith('.html') || p === '/manifest.webmanifest') {
-      const res = new Response(response.body, response); // copy → mutable headers
       res.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-      return res;
     }
 
-    return response;
+    return res;
   },
 };
