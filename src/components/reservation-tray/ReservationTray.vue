@@ -544,9 +544,10 @@ function handleBackToMap() {
 
 .reservation-tray__steps {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.4rem;
-  margin: 0; padding: 0; list-style: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .reservation-tray__mode-toggle {
@@ -568,7 +569,7 @@ function handleBackToMap() {
 }
 
 .reservation-tray__step-dot {
-  min-height: 0.35rem;
+  min-height: 1lh;
   overflow: hidden;
   border-radius: 999px;
   background: var(--muted);

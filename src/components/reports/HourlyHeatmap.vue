@@ -27,7 +27,6 @@ function color(rate: number): string {
         v-for="h in data"
         :key="h.hour"
         class="heatbar"
-        :title="`${h.hour}: ${h.occupancyRate.toFixed(1)}%`"
       >
         <div
           class="heatbar-fill"

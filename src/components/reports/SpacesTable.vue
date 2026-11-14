@@ -69,8 +69,8 @@ function taxaClass(taxa: number): string {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="s in sortedSpaces" :key="s.id" class="space-row" tabindex="0" @click="goToReport(s.id)" @keydown.enter.prevent="goToReport(s.id)" @keydown.space.prevent="goToReport(s.id)">
-            <td class="cell-name">{{ s.nome }}</td>
+          <tr v-for="s in sortedSpaces" :key="s.id" class="space-row" @click="goToReport(s.id)">
+            <td class="cell-name"><router-link :to="{ name: 'space-report', params: { spaceId: s.id } }" @click.stop>{{ s.nome }}</router-link></td>
             <td>{{ s.numero }}</td>
             <td>{{ s.bloco }}</td>
             <td>{{ s.tipo }}</td>
@@ -172,7 +172,7 @@ function taxaClass(taxa: number): string {
 }
 
 .space-row:hover,
-.space-row:focus-visible {
+.space-row:focus-within {
   background: var(--accent);
 }
 
