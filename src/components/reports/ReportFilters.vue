@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { addLocalDays, toLocalISODate } from '@/utils/date';
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
@@ -10,12 +11,10 @@ const emit = defineEmits<{
   apply: [filters: { startDate: string; endDate: string; campus: string; department: string }];
 }>();
 
-const today = new Date();
-const thirtyDaysAgo = new Date(today);
-thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+const today = toLocalISODate();
 
-const startDate = ref(thirtyDaysAgo.toISOString().slice(0, 10));
-const endDate = ref(today.toISOString().slice(0, 10));
+const startDate = ref(addLocalDays(today, -29));
+const endDate = ref(today);
 const selectedCampus = ref('');
 const selectedDepartment = ref('');
 

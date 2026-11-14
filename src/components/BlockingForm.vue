@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import TimeRangeFields from '@/components/schedule/TimeRangeFields.vue';
 import { useTimeRangePicker } from '@/composables/useTimeRangePicker';
-import { addLocalDays, formatDateShort, toLocalISODate } from '@/utils/date';
+import { addLocalDays, formatDateShort, useCampusToday } from '@/utils/date';
 import { buildOpenSlots } from '@/utils/slots';
 
 type BlockType = 'maintenance' | 'administrative';
@@ -71,7 +71,7 @@ const {
   clear: clearCustomRange,
 } = useTimeRangePicker({ slots: shallowRef(buildOpenSlots('00:00', '24:00')), isBookable: () => true });
 
-const today = toLocalISODate();
+const today = useCampusToday();
 /** Backend caps a single operation at 60 inclusive days (MEL-017). */
 const MAX_RANGE_DAYS = 60;
 const maxDateTo = computed(() =>

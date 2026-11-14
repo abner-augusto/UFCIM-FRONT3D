@@ -13,7 +13,7 @@ const props = defineProps<{
   hasUserSelection: boolean;
   reserveStartTime: string;
   reserveEndTime: string;
-  isPastSlot: (slot: Pick<AvailabilitySlot, 'endTime'>) => boolean;
+  isPastSlot: (slot: Pick<AvailabilitySlot, 'startTime'>) => boolean;
   isInSelectedRange: (idx: number) => boolean;
   getCellClass: (slot: HourCell, idx: number) => AvailabilityCellClass;
 }>();

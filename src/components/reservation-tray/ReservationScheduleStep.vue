@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { campusInstant } from '@/utils/date';
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
-import { toLocalISODate } from '@/utils/date';
+import { campusNow, useCampusToday } from '@/utils/date';
 import type { Availability, AvailabilitySlot } from '@/types/reservation';
 import AppDateField from '@/components/AppDateField.vue';
 import { Label } from '@/components/ui/label';
@@ -32,8 +33,8 @@ const emit = defineEmits<{
 }>();
 
 const auth = useAuthStore();
-const today = toLocalISODate();
-const selectedDate = ref(props.initialSchedule?.date ?? today);
+const today = useCampusToday();
+const selectedDate = ref(props.initialSchedule?.date ?? today.value);
 const availability = ref<Availability | null>(null);
 const loadingAvailability = ref(false);
 const errorMsg = ref<string | null>(null);
@@ -47,9 +48,9 @@ const openSlots = computed<AvailabilitySlot[]>(() =>
     .sort((a, b) => a.startTime.localeCompare(b.startTime)),
 );
 
-/** A slot is past once it ends: the in-progress half hour stays bookable (same rule as the backend). */
+/** A slot is past after its start. */
 function isPastSlot(slot: AvailabilitySlot): boolean {
-  return new Date(`${selectedDate.value}T${slot.endTime}:00`).getTime() <= nowTs.value;
+  return campusInstant(selectedDate.value, slot.startTime).getTime() < nowTs.value;
 }
 
 const { start, end, startOptions, endOptions, range, clear, applyRange } = useTimeRangePicker({
@@ -58,9 +59,9 @@ const { start, end, startOptions, endOptions, range, clear, applyRange } = useTi
 });
 
 const nowMinutes = computed(() => {
-  if (selectedDate.value !== today) return null;
-  const now = new Date(nowTs.value);
-  return now.getHours() * 60 + now.getMinutes();
+  if (selectedDate.value !== today.value) return null;
+  const now = campusNow(new Date(nowTs.value));
+  return now.hour * 60 + now.minute;
 });
 
 function emitSchedule() {
@@ -116,7 +117,7 @@ watch(selectedDate, (date) => {
 }, { immediate: true });
 
 watch([() => props.spaceId, () => props.initialSchedule], () => {
-  const initialDate = props.initialSchedule?.date ?? today;
+  const initialDate = props.initialSchedule?.date ?? today.value;
   if (selectedDate.value === initialDate) {
     void loadAvailability(initialDate);
   } else {

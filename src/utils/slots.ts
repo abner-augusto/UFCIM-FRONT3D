@@ -1,3 +1,4 @@
+import { campusNow } from '@/utils/date';
 import type { AvailabilitySlot } from '@/types/reservation';
 
 /**
@@ -36,7 +37,8 @@ export function formatTimeLabel(time: string): string {
 
 /** Start (`HH:MM`) of the half-hour slot that contains `moment`, in local time. */
 export function slotStartAt(moment: Date): string {
-  const minutes = moment.getHours() * 60 + moment.getMinutes();
+  const { hour, minute } = campusNow(moment);
+  const minutes = hour * 60 + minute;
   return minutesToTime(Math.floor(minutes / SLOT_MINUTES) * SLOT_MINUTES);
 }
 

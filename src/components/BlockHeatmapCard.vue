@@ -3,7 +3,7 @@ import { ref, watch } from 'vue';
 import { ChevronDown, ChevronUp } from '@lucide/vue';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
-import { toLocalISODate } from '@/utils/date';
+import { campusNow, toLocalISODate } from '@/utils/date';
 import type { Space } from '@/types/space';
 import type { AvailabilitySlot } from '@/types/reservation';
 import { hourlyRoomOccupancy } from '@/utils/slots';
@@ -49,7 +49,7 @@ async function loadHeatmap() {
     // Tint hours that have already elapsed — but only today (a past date is
     // legitimate history and should stay full-colour; future dates have none).
     const isToday = props.date === toLocalISODate();
-    const nowHour = new Date().getHours();
+    const nowHour = campusNow().hour;
 
     // One cell per hour; each hour aggregates its two half-hour slots (MEL-024).
     const roomSlots = results.flatMap((r) => (r.status === 'fulfilled' ? [r.value as AvailabilitySlot[]] : []));

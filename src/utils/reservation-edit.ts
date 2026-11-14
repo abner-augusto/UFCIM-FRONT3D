@@ -1,3 +1,4 @@
+import { campusInstant } from '@/utils/date';
 import type { AvailabilitySlot, Reservation } from '@/types/reservation';
 import type { TimeRange } from '@/utils/slots';
 
@@ -62,5 +63,5 @@ export function buildReservationUpdate(
 
 /** True from the reservation's start onwards (local time, like the rest of the UI). */
 export function hasReservationStarted(reservation: Reservation, now: Date): boolean {
-  return new Date(`${reservation.date}T${reservation.startTime}:00`) <= now;
+  return campusInstant(reservation.date, reservation.startTime) <= now;
 }

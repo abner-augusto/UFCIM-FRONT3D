@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue';
 import { getCurrentPeriod, type PeriodKey } from '@/utils/period';
 import { TIME_SLOT_RANGES } from '@/types/reservation';
-import { toLocalISODate } from '@/utils/date';
+import { addLocalDays, toLocalISODate, useCampusToday } from '@/utils/date';
 import { slotStartAt } from '@/utils/slots';
 
 /** Pure function: format ISO date string to short pt-BR locale (e.g. "21 de mai.") */
@@ -12,12 +12,11 @@ export function formatShortDate(dateStr: string): string {
 
 /** Pure function: generate 3 date chips (Hoje, Amanhã, weekday) with ISO values */
 export function createDateChips(): Array<{ value: string; label: string }> {
-  const todayDate = new Date();
+  const todayDate = toLocalISODate();
   const chips: Array<{ value: string; label: string }> = [];
   for (let i = 0; i < 3; i++) {
-    const d = new Date(todayDate);
-    d.setDate(todayDate.getDate() + i);
-    const iso = toLocalISODate(d);
+    const iso = addLocalDays(todayDate, i);
+    const d = new Date(`${iso}T12:00:00`);
     let label: string;
     if (i === 0) label = 'Hoje';
     else if (i === 1) label = 'Amanhã';
@@ -28,14 +27,14 @@ export function createDateChips(): Array<{ value: string; label: string }> {
 }
 
 export function useDateTimeFilter() {
-  const today = toLocalISODate();
-  const selectedDate = ref<string>(today);
+  const today = useCampusToday();
+  const selectedDate = ref<string>(today.value);
   const selectedPeriod = ref<PeriodKey>(getCurrentPeriod());
   const periodAutoDetected = ref(true);
 
-  const isToday = computed(() => selectedDate.value === today);
+  const isToday = computed(() => selectedDate.value === today.value);
 
-  const dateChips = computed(() => createDateChips());
+  const dateChips = computed(() => { void today.value; return createDateChips(); });
 
   const periodRange = computed(() => TIME_SLOT_RANGES[selectedPeriod.value]);
 
@@ -57,7 +56,7 @@ export function useDateTimeFilter() {
 
   function setDate(date: string) {
     selectedDate.value = date;
-    if (date === today && periodAutoDetected.value) {
+    if (date === today.value && periodAutoDetected.value) {
       selectedPeriod.value = getCurrentPeriod();
     }
   }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { addLocalDays, toLocalISODate } from '@/utils/date';
 import { computed, ref, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
@@ -67,12 +68,10 @@ async function handleApply(filters: { startDate: string; endDate: string; campus
 }
 
 onMounted(async () => {
-  const today = new Date();
-  const thirtyDaysAgo = new Date(today);
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const today = toLocalISODate();
   await loadReport({
-    startDate: thirtyDaysAgo.toISOString().slice(0, 10),
-    endDate: today.toISOString().slice(0, 10),
+    startDate: addLocalDays(today, -29),
+    endDate: today,
     campus: '',
     department: '',
   });
