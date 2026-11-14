@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, nextTick, watch, type Ref } from 'vue';
 import { useViewerSync } from '@/composables/useViewerSync';
 import { PERIOD_LABELS, type PeriodKey } from '@/utils/period';
 import { TIME_SLOT_RANGES } from '@/types/reservation';
@@ -57,10 +57,14 @@ const buildingPopoverOpen = ref(false);
 const dateOptionsRef = ref<HTMLElement | null>(null);
 const buildingOptionsRef = ref<HTMLElement | null>(null);
 
-function focusFirstOption(event: Event, options: 'date' | 'building') {
-  event.preventDefault();
-  nextTick(() => (options === 'date' ? dateOptionsRef.value : buildingOptionsRef.value)?.querySelector<HTMLButtonElement>('button')?.focus());
+function focusOnOpen(open: Ref<boolean>, options: Ref<HTMLElement | null>) {
+  watch(open, isOpen => {
+    if (isOpen) nextTick(() => options.value?.querySelector<HTMLButtonElement>('button')?.focus());
+  }, { flush: 'post' });
 }
+
+focusOnOpen(dateTimePopoverOpen, dateOptionsRef);
+focusOnOpen(buildingPopoverOpen, buildingOptionsRef);
 
 const rangeOf = (key: PeriodKey) => `${TIME_SLOT_RANGES[key].startTime.slice(0, 2)}h–${TIME_SLOT_RANGES[key].endTime.slice(0, 2)}h`;
 
@@ -179,7 +183,7 @@ function onFloorPick(level: number) {
             <span class="rail-btn-label">{{ dateTimeBtnLabel }}</span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent side="left" align="start" class="w-[175px] gap-0 rounded-xl p-2 shadow-[0_4px_20px_rgb(var(--shadow-color)/0.2)]" @open-auto-focus="focusFirstOption($event, 'date')">
+        <PopoverContent side="left" align="start" class="w-[175px] gap-0 rounded-xl p-2 shadow-[0_4px_20px_rgb(var(--shadow-color)/0.2)]">
         <div class="popover-section">
           <div class="popover-label">
             <span>Data</span>
@@ -230,7 +234,7 @@ function onFloorPick(level: number) {
         <PopoverTrigger as-child>
           <Button variant="ghost" size="icon" class="rail-btn" :class="{ active: buildingPopoverOpen }" title="Edifício" aria-label="Edifício"><Building2 :size="20" /></Button>
         </PopoverTrigger>
-        <PopoverContent side="left" align="start" class="w-[180px] gap-0 rounded-xl p-2 shadow-[0_4px_20px_rgb(var(--shadow-color)/0.2)]" @open-auto-focus="focusFirstOption($event, 'building')">
+        <PopoverContent side="left" align="start" class="w-[180px] gap-0 rounded-xl p-2 shadow-[0_4px_20px_rgb(var(--shadow-color)/0.2)]">
         <div ref="buildingOptionsRef" class="popover-grid">
           <Button type="button" variant="ghost" class="popover-item" :class="{ active: !activeBuildingId }" :aria-pressed="!activeBuildingId" @click="onBuildingPick(null)">Todos</Button>
           <Button v-for="b in buildings" :key="b.id"

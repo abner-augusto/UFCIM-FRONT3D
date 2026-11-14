@@ -15,7 +15,7 @@ test.describe('ViewerView', () => {
     await building.focus();
     await page.keyboard.press('Enter');
     await expect(building).toHaveAttribute('aria-expanded', 'true');
-    const dialog = page.getByRole('dialog');
+    const dialog = page.getByRole('dialog', { name: 'Edifício' });
     await expect(dialog).toHaveCSS('width', '180px');
     await expect(dialog.getByRole('button', { name: 'Todos' })).toBeFocused();
     await page.keyboard.press('Escape');
@@ -32,11 +32,11 @@ test.describe('ViewerView', () => {
     await floor.focus();
     await page.keyboard.press('Enter');
     await expect(floor).toHaveAttribute('aria-pressed', 'true');
-    const date = page.getByRole('button', { name: /Hoje · / });
-    await date.focus();
+    const date = page.getByRole('button', { name: /Hoje · / }); await date.focus();
     await page.keyboard.press('Enter');
-    await expect(dialog).toHaveCSS('width', '175px');
-    await expect(dialog.getByRole('button', { name: 'Hoje' })).toBeFocused();
+    const dateDialog = page.getByRole('dialog', { name: /Hoje · / });
+    await expect(dateDialog).toHaveCSS('width', '175px');
+    await expect(dateDialog.getByRole('button', { name: 'Hoje' })).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(date).toBeFocused();
     await page.getByRole('button', { name: 'Pesquisar', exact: true }).click();
