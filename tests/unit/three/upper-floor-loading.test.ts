@@ -11,7 +11,10 @@ describe('upper floor loading', () => {
     manager._ensureLoaded = vi.fn(() => new Promise<void>(resolve => {
       active++;
       peak = Math.max(peak, active);
-      finish.push(() => { active--; resolve(); });
+      finish.push(() => {
+        active--;
+        resolve();
+      });
     }));
     manager._applyVisibility = vi.fn();
     const entries = Array.from({ length: 6 }, (_, floor) => ({ building: 'a', floor }));

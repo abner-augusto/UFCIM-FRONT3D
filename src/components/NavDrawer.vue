@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { preventNavigationFocusRestore } from '@/utils/navigation-focus';
-import { computed, ref, watch } from 'vue';
+import { useNavigationCloseFocus } from '@/utils/navigation-focus';
+import { computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
@@ -16,9 +16,10 @@ const emit = defineEmits<{ close: [] }>();
 const auth = useAuthStore();
 const campus = useCampusStore();
 const router = useRouter();
-const navigating = ref(false);
-watch(() => props.open, (open) => { if (open) navigating.value = false; });
-function onCloseAutoFocus(event: Event) { if (navigating.value) preventNavigationFocusRestore(event); }
+const { markNavigating, reset, onCloseAutoFocus } = useNavigationCloseFocus();
+watch(() => props.open, (open) => {
+  if (open) reset();
+});
 
 const { canReserve, canBlock, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
 
@@ -35,7 +36,7 @@ const browserTarget = computed(() =>
 );
 
 function logout() {
-  navigating.value = true;
+  markNavigating();
   emit('close');
   auth.logout();
   router.push({ name: 'login' });
@@ -43,7 +44,7 @@ function logout() {
 
 function handleLinkClick(event: MouseEvent) {
   const href = (event.currentTarget as HTMLAnchorElement).getAttribute('href') ?? '';
-  navigating.value = href.split('?')[0] !== `#${router.currentRoute.value.path}`;
+  markNavigating(href.split('?')[0] !== `#${router.currentRoute.value.path}`);
   emit('close');
 }
 

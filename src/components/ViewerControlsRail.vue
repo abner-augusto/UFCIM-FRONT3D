@@ -4,7 +4,6 @@ import { useViewerSync } from '@/composables/useViewerSync';
 import { PERIOD_LABELS, type PeriodKey } from '@/utils/period';
 import { TIME_SLOT_RANGES } from '@/types/reservation';
 import { formatShortDate, createDateChips } from '@/composables/useDateTimeFilter';
-import { campusISODate } from '@/utils/date';
 import { Building2, Search, Maximize, Calendar } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -34,6 +33,7 @@ const props = defineProps<{
   viewerRef: ThreeViewerExposed | null;
   ready: boolean;
   selectedDate: string;
+  today: string;
   selectedPeriod: PeriodKey;
   periodAutoDetected: boolean;
   fullscreen: boolean;
@@ -46,7 +46,7 @@ const emit = defineEmits<{
   'open-search': [];
 }>();
 
-const isToday = computed(() => props.selectedDate === campusISODate());
+const isToday = computed(() => props.selectedDate === props.today);
 
 const { activeBuildingId, activeFloorLevel, buildings, floors } = useViewerSync(
   () => props.viewerRef,
@@ -98,7 +98,7 @@ const dateTimeBtnLabel = computed(() => {
   return `${dayLabel} · ${periodAbbr}`;
 });
 
-const dateChips = computed(() => createDateChips(campusISODate()));
+const dateChips = computed(() => createDateChips(props.today));
 
 const ariaLabel = computed(() => {
   let label = `${dateTimeBtnLabel.value}, Edifício: ${buildingName.value}`;

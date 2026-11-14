@@ -14,7 +14,7 @@ import BlockingTray from '@/components/BlockingTray.vue';
 import type { Space } from '@/types/space';
 import AppDateField from '@/components/AppDateField.vue';
 import type { PeriodKey } from '@/utils/period';
-import { campusISODate } from '@/utils/date';
+import { useCampusToday } from '@/composables/useCampusToday';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -52,7 +52,7 @@ const {
 } = useSpaceBrowser();
 
 const expandedId = ref<string | null>(null);
-const today = campusISODate();
+const today = useCampusToday();
 const filtersOpen = ref(false);
 
 // Contextual reservation tray, opened from a card's reserve action — same flow

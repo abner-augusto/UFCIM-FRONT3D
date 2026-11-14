@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { updatePinLabels } from '@/utils/updatePinLabels';
+import { updatePinLabels } from '@/utils/update-pin-labels';
 
 it('yields in batches and stops when superseded', async () => {
   let current = true;

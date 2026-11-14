@@ -18,8 +18,8 @@ import ViewerSearchSheet from '@/components/ViewerSearchSheet.vue';
 import BlockHeatmapCard from '@/components/BlockHeatmapCard.vue';
 import { useDateTimeFilter, formatShortDate } from '@/composables/useDateTimeFilter';
 import { usePinColors } from '@/composables/usePinColors';
-import { getBlockingReason } from '@/utils/getBlockingReason';
-import { normalizeBlockKey } from '@/utils/normalizeBlockKey';
+import { getBlockingReason } from '@/utils/blockings';
+import { normalizeBlockKey } from '@/utils/space-labels';
 import { useDarkMode } from '@/composables/useDarkMode';
 import { useViewerTestHarness } from '@/composables/useViewerTestHarness';
 import type { PeriodKey } from '@/composables/usePinAvailability';
@@ -95,7 +95,7 @@ const viewerError = ref(false);
 // Bumped to force-remount ThreeViewer (re-running its init) on retry.
 const viewerKey = ref(0);
 const spacesLoaded = ref(false);
-const { loading: availabilityLoading, applyPinColors, invalidate: invalidateAvailability, getStatus } = usePinColors({
+const { loading: availabilityLoading, applyPinColors, pinsLoaded, invalidate: invalidateAvailability, getStatus } = usePinColors({
   spacesByModelId,
   spacesLoaded,
   token: () => auth.token,
@@ -409,7 +409,7 @@ useViewerTestHarness({
       :key="viewerKey"
       ref="viewerRef"
       @ready="handleViewerReady"
-      @pins-loaded="applyPinColors"
+      @pins-loaded="pinsLoaded"
       @error="handleViewerError"
       @pin-click="handlePinClick"
     />
@@ -457,6 +457,7 @@ useViewerTestHarness({
       :viewer-ref="viewerRef"
       :ready="viewerReady"
       :selected-date="selectedDate"
+      :today="today"
       :selected-period="selectedPeriod"
       :period-auto-detected="periodAutoDetected"
       @update:selectedDate="handleDateChange"

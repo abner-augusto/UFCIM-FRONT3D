@@ -139,14 +139,16 @@ it('refetches after invalidation, expiry and rejection', async () => {
   const spaces = new Map([['m', { id: 's' } as Space]]);
   const fetch = () => availability.fetchStatuses(spaces, null, '2026-09-20', 'morning');
   const now = vi.spyOn(Date, 'now').mockReturnValue(1000);
-  await fetch(); await fetch();
+  await fetch();
+  await fetch();
   expect(get).toHaveBeenCalledTimes(1);
   now.mockReturnValue(61001);
   await fetch();
   expect(get).toHaveBeenCalledTimes(2);
   availability.invalidate();
   get.mockRejectedValueOnce(new Error('failed'));
-  await fetch(); await fetch();
+  await fetch();
+  await fetch();
   expect(get).toHaveBeenCalledTimes(4);
   now.mockRestore();
 });
@@ -183,4 +185,31 @@ it('releases a next-date slot after a rejected request', async () => {
   await usePinAvailability().fetchStatuses(spaces, null, '2026-09-20', 'morning', callback);
   await vi.waitFor(() => expect(callback).toHaveBeenCalledTimes(5));
   expect(get).toHaveBeenCalledTimes(12);
+});
+
+it('keeps loading until an invalidated in-flight request finishes', async () => {
+  let resolve!: (slots: ReturnType<typeof makeSlots>) => void;
+  vi.mocked(api.getAvailability).mockReset().mockImplementationOnce(() => new Promise(done => { resolve = done; }));
+  const availability = usePinAvailability();
+  const pending = availability.fetchStatuses(new Map([['m', { id: 's' } as Space]]), null, '2026-09-20', 'morning');
+  availability.invalidate();
+  expect(availability.loading.value).toBe(true);
+  resolve(makeSlots());
+  await pending;
+  expect(availability.loading.value).toBe(false);
+});
+
+it('reuses successful next-date candidates across period refreshes', async () => {
+  const reserved = makeSlots(Object.fromEntries(Array.from({ length: 15 }, (_, i) => [`${String(i + 7).padStart(2, '0')}:00`, 'reserved'])));
+  const get = vi.mocked(api.getAvailability).mockReset().mockImplementation(async (_token, _id, date) =>
+    date === '2026-09-20' ? reserved : makeSlots(),
+  );
+  const availability = usePinAvailability();
+  const spaces = new Map([['m', { id: 's' } as Space]]);
+  const callback = vi.fn();
+  await availability.fetchStatuses(spaces, null, '2026-09-20', 'morning', callback);
+  await vi.waitFor(() => expect(callback).toHaveBeenCalledTimes(1));
+  await availability.fetchStatuses(spaces, null, '2026-09-20', 'evening', callback);
+  await vi.waitFor(() => expect(callback).toHaveBeenCalledTimes(2));
+  expect(get).toHaveBeenCalledTimes(2);
 });

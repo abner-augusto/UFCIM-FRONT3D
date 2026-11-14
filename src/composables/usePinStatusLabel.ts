@@ -7,20 +7,14 @@ export interface PinLabelInfo {
   statusColor: string | null;
 }
 
-const COLOR_TOKENS: Record<string, { token: string; fallback: string }> = {
-  available: { token: '--success', fallback: '#3B6D11' },
-  partial: { token: '--warning', fallback: '#633806' },
-  reserved: { token: '--danger-fg', fallback: '#501313' },
-  blocked: { token: '--warning', fallback: '#7A3F03' },
-  closed: { token: '--danger-fg', fallback: '#501313' },
-  not_reservable: { token: '--muted-foreground', fallback: '#666' },
+const PIN_STATUS_COLORS: Record<PinStatus, string> = {
+  available: '#065f46',
+  partial: '#633806',
+  reserved: '#501313',
+  blocked: '#7A3F03',
+  closed: '#501313',
+  not_reservable: '#666666',
 };
-
-function resolvedColor(status: keyof typeof COLOR_TOKENS): string {
-  const { token, fallback } = COLOR_TOKENS[status];
-  if (typeof window === 'undefined') return fallback;
-  return getComputedStyle(document.documentElement).getPropertyValue(token).trim() || fallback;
-}
 
 /** `16:00` → `16h`, `16:30` → `16h30` (half-hour boundaries, MEL-024). */
 const formatHourLabel = formatTimeLabel;
@@ -49,11 +43,11 @@ export function buildPinStatusLabel(
   }
 
   if (status === 'blocked') {
-    return { statusText: 'Bloqueada', statusColor: resolvedColor('blocked') };
+    return { statusText: 'Bloqueada', statusColor: PIN_STATUS_COLORS.blocked };
   }
 
   if (status === 'available') {
-    return { statusText: 'Livre', statusColor: resolvedColor('available') };
+    return { statusText: 'Livre', statusColor: PIN_STATUS_COLORS.available };
   }
 
   if (status === 'reserved') {
@@ -61,15 +55,15 @@ export function buildPinStatusLabel(
       .filter(s => s.startTime >= period.endTime && s.status === 'available')
       .sort((a, b) => a.startTime.localeCompare(b.startTime))[0];
     if (nextAvailableSlot) {
-      return { statusText: `até ${formatHourLabel(nextAvailableSlot.startTime)}`, statusColor: resolvedColor('reserved') };
+      return { statusText: `até ${formatHourLabel(nextAvailableSlot.startTime)}`, statusColor: PIN_STATUS_COLORS.reserved };
     }
     if (options.nextAvailableDate) {
       return {
         statusText: `até ${formatDateLabel(options.nextAvailableDate, options.selectedDate)}`,
-        statusColor: resolvedColor('reserved'),
+        statusColor: PIN_STATUS_COLORS.reserved,
       };
     }
-    return { statusText: 'Ocupada', statusColor: resolvedColor('reserved') };
+    return { statusText: 'Ocupada', statusColor: PIN_STATUS_COLORS.reserved };
   }
 
   // partial — find the boundary
@@ -88,7 +82,7 @@ export function buildPinStatusLabel(
   }
 
   if (firstSlot?.status === 'reserved' && lastSlot?.status === 'available' && firstAvailable) {
-    return { statusText: `Livre ${formatHourLabel(firstAvailable)}`, statusColor: resolvedColor('partial') };
+    return { statusText: `Livre ${formatHourLabel(firstAvailable)}`, statusColor: PIN_STATUS_COLORS.partial };
   }
   if (firstSlot?.status === 'available') {
     const firstReservedAfterAvailable = periodSlots.findIndex((slot, index) =>
@@ -103,10 +97,10 @@ export function buildPinStatusLabel(
       }
       if (reservedBlock.every(s => s.status === 'reserved')) {
         const nextAvailableTime = reservedBlock[reservedBlock.length - 1].endTime;
-        return { statusText: `até ${formatHourLabel(nextAvailableTime)}`, statusColor: resolvedColor('partial') };
+        return { statusText: `até ${formatHourLabel(nextAvailableTime)}`, statusColor: PIN_STATUS_COLORS.partial };
       }
     }
   }
 
-  return { statusText: 'Parcial', statusColor: resolvedColor('partial') };
+  return { statusText: 'Parcial', statusColor: PIN_STATUS_COLORS.partial };
 }

@@ -11,7 +11,10 @@ describe('on-demand rendering', () => {
     let callback: FrameRequestCallback = () => {};
     const render = vi.fn();
     const cancel = vi.fn();
-    const scheduler = new RenderScheduler(render, (fn: FrameRequestCallback) => { callback = fn; return 1; }, cancel);
+    const scheduler = new RenderScheduler(render, (fn: FrameRequestCallback) => {
+      callback = fn;
+      return 1;
+    }, cancel);
     scheduler.invalidate();
     scheduler.invalidate();
     callback(0);
@@ -36,7 +39,10 @@ describe('on-demand rendering', () => {
     vi.spyOn(App.prototype, '_createRenderer').mockReturnValue(renderer);
     vi.spyOn(App.prototype, '_updateRendererSize').mockImplementation(() => {});
     vi.spyOn(App.prototype, '_createControls').mockReturnValue(controls);
-    vi.stubGlobal('requestAnimationFrame', (fn: FrameRequestCallback) => { callbacks.push(fn); return callbacks.length; });
+    vi.stubGlobal('requestAnimationFrame', (fn: FrameRequestCallback) => {
+      callbacks.push(fn);
+      return callbacks.length;
+    });
     const app = new App({});
     vi.spyOn(app.cameraManager.tweens, 'update').mockReturnValueOnce(true).mockReturnValue(false);
     app.invalidate();

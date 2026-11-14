@@ -1,6 +1,6 @@
 import { onUnmounted, watch, type Ref } from 'vue';
 import { usePinAvailability, PERIOD_COLORS, type PinAvailabilityData, type PeriodKey } from '@/composables/usePinAvailability';
-import { updatePinLabels } from '@/utils/updatePinLabels';
+import { updatePinLabels } from '@/utils/update-pin-labels';
 import { logger } from '@/utils/logger';
 import type { Space } from '@/types/space';
 
@@ -25,6 +25,7 @@ export function usePinColors(options: Options) {
   const availability = usePinAvailability();
   let statuses = new Map<string, PinAvailabilityData>();
   let sequence = 0;
+  let fetching = false;
 
   function refreshLabels(seq: number) {
     return updatePinLabels(statuses, options.periodRange.value, options.selectedDate.value,
@@ -35,6 +36,7 @@ export function usePinColors(options: Options) {
   async function applyPinColors() {
     const seq = ++sequence;
     if (!options.spacesLoaded.value) return;
+    fetching = true;
     try {
       const pendingDates = new Map<string, string>();
       let applied = false;
@@ -60,11 +62,28 @@ export function usePinColors(options: Options) {
       await refreshLabels(seq);
     } catch (error) {
       logger.error('Falha ao atualizar cores:', error);
+    } finally {
+      if (seq === sequence) fetching = false;
     }
   }
 
+  function pinsLoaded() {
+    if (fetching) return;
+    if (statuses.size === 0) {
+      void applyPinColors();
+      return;
+    }
+    const colors = new Map<string, string>();
+    statuses.forEach(({ status }, id) => colors.set(id, PERIOD_COLORS[status]));
+    options.viewer()?.applyBackendFilter(new Set(statuses.keys()), colors);
+    void refreshLabels(sequence);
+  }
+
   watch(options.trayOpen, ([reservation, blocking], [oldReservation, oldBlocking]) => {
-    if ((oldReservation && !reservation) || (oldBlocking && !blocking)) availability.invalidate();
+    if ((oldReservation && !reservation) || (oldBlocking && !blocking)) {
+      availability.invalidate();
+      void applyPinColors();
+    }
   });
   onUnmounted(() => {
     sequence++;
@@ -73,6 +92,7 @@ export function usePinColors(options: Options) {
   return {
     loading: availability.loading,
     applyPinColors,
+    pinsLoaded,
     invalidate: availability.invalidate,
     getStatus: (id: string) => statuses.get(id),
   };
