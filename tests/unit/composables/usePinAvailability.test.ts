@@ -104,8 +104,10 @@ it('limits concurrent next-date searches to four', async () => {
     return makeSlots();
   });
   const spaces = new Map(Array.from({ length: 9 }, (_, i) => [`model${i}`, { id: `space${i}` } as Space]));
-  await usePinAvailability().fetchStatuses(spaces, null, '2026-09-20', 'morning');
-  await vi.waitFor(() => expect(peak).toBe(4));
+  const onNextDate = vi.fn();
+  await usePinAvailability().fetchStatuses(spaces, null, '2026-09-20', 'morning', onNextDate);
+  await vi.waitFor(() => expect(onNextDate).toHaveBeenCalledTimes(9));
+  expect(peak).toBe(4);
 });
 
 
@@ -122,11 +124,13 @@ it('shares the next-date limit across simultaneous lookups', async () => {
     return makeSlots();
   });
   const spaces = (prefix: string) => new Map(Array.from({ length: 6 }, (_, i) => [`${prefix}${i}`, { id: `${prefix}${i}` } as Space]));
+  const onNextDate = vi.fn();
   await Promise.all([
-    usePinAvailability().fetchStatuses(spaces('a'), null, '2026-09-20', 'morning'),
-    usePinAvailability().fetchStatuses(spaces('b'), null, '2026-09-20', 'morning'),
+    usePinAvailability().fetchStatuses(spaces('a'), null, '2026-09-20', 'morning', onNextDate),
+    usePinAvailability().fetchStatuses(spaces('b'), null, '2026-09-20', 'morning', onNextDate),
   ]);
-  await vi.waitFor(() => expect(peak).toBe(4));
+  await vi.waitFor(() => expect(onNextDate).toHaveBeenCalledTimes(12));
+  expect(peak).toBe(4);
 });
 
 it('refetches after invalidation, expiry and rejection', async () => {

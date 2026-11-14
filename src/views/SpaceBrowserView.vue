@@ -26,8 +26,7 @@ const router = useRouter();
 const auth = useAuthStore();
 
 const campusId = route.params.campusId as string;
-const campus = campuses.find((c) => c.id === campusId);
-const campusFilter = campus?.shortName ?? campusId;
+const campusFilter = campuses.find((c) => c.id === campusId)?.shortName ?? campusId;
 
 const {
   loading,
@@ -173,7 +172,8 @@ onMounted(async () => {
         <div class="flex items-end gap-2 max-[480px]:flex-col max-[480px]:items-stretch">
           <Input
             v-model="searchQuery"
-            type="search" enterkeyhint="search"
+            type="search"
+            enterkeyhint="search"
             class="h-11 flex-1 bg-background"
             placeholder="Buscar por nome ou número..."
             aria-label="Buscar por nome ou número"

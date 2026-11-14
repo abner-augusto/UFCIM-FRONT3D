@@ -17,11 +17,9 @@ import ViewerDesktopControls from '@/components/ViewerDesktopControls.vue';
 import ViewerSearchSheet from '@/components/ViewerSearchSheet.vue';
 import BlockHeatmapCard from '@/components/BlockHeatmapCard.vue';
 import { useDateTimeFilter, formatShortDate } from '@/composables/useDateTimeFilter';
-import { updatePinLabels } from '@/utils/updatePinLabels';
+import { usePinColors } from '@/composables/usePinColors';
 import { getBlockingReason } from '@/utils/getBlockingReason';
 import { normalizeBlockKey } from '@/utils/normalizeBlockKey';
-import { watchViewerTheme } from '@/composables/watchViewerTheme';
-import { usePinAvailability, PERIOD_COLORS, type PinAvailabilityData } from '@/composables/usePinAvailability';
 import { useDarkMode } from '@/composables/useDarkMode';
 import { useViewerTestHarness } from '@/composables/useViewerTestHarness';
 import type { PeriodKey } from '@/composables/usePinAvailability';
@@ -50,7 +48,6 @@ const showPopup = ref(false);
 // flips `showPopup` (drives the Dialog/Drawer `open`), and we only drop the
 // space data once the close transition has finished.
 let popupUnmountTimer: ReturnType<typeof setTimeout> | null = null;
-const { loading: availabilityLoading, fetchStatuses, invalidate: invalidateAvailability, cancel: cancelAvailability } = usePinAvailability();
 const popupReserveDisabled = ref(false);
 const popupReserveDisabledReason = ref<string | null>(null);
 const popupBlockingReason = ref<string | null>(null);
@@ -83,6 +80,7 @@ interface BlockingTrayContext {
 const blockingTrayOpen = ref(false);
 const blockingTrayContext = ref<BlockingTrayContext | null>(null);
 
+
 const viewerOverlayOpen = computed(() => showPopup.value || searchSheetOpen.value || reservationTrayOpen.value || blockingTrayOpen.value);
 
 const mql = window.matchMedia('(max-width: 480px)');
@@ -92,13 +90,22 @@ const onResize = (e: MediaQueryListEvent | MediaQueryList) => {
 
 // Map<modelId, Space> — built on mount, used for O(1) pin lookup
 const spacesByModelId = new Map<string, Space>();
-let cachedStatusMap = new Map<string, PinAvailabilityData>();
 const viewerReady = ref(false);
 const viewerError = ref(false);
 // Bumped to force-remount ThreeViewer (re-running its init) on retry.
 const viewerKey = ref(0);
 const spacesLoaded = ref(false);
-let colorUpdateSeq = 0;
+const { loading: availabilityLoading, applyPinColors, invalidate: invalidateAvailability, getStatus } = usePinColors({
+  spacesByModelId,
+  spacesLoaded,
+  token: () => auth.token,
+  selectedDate,
+  selectedPeriod,
+  periodRange,
+  viewer: () => viewerRef.value,
+  trayOpen: [reservationTrayOpen, blockingTrayOpen],
+});
+
 let popupStateSeq = 0;
 let popupDetailSeq = 0;
 
@@ -148,7 +155,7 @@ async function updatePopupReservationState(space: Space) {
     return;
   }
 
-  const pinData = space.modelId ? cachedStatusMap.get(space.modelId) : undefined;
+  const pinData = space.modelId ? getStatus(space.modelId) : undefined;
   const pinStatus = pinData?.status;
 
   if (pinStatus === 'not_reservable') {
@@ -187,37 +194,6 @@ async function updatePopupReservationState(space: Space) {
     return;
   }
 }
-
-function refreshPinLabels(seq: number) {
-  return updatePinLabels(cachedStatusMap, periodRange.value, selectedDate.value,
-    (id, text, color) => viewerRef.value?.updatePinLabelStatus?.(id, text, color), () => seq === colorUpdateSeq);
-}
-
-async function applyPinColors() {
-  const seq = ++colorUpdateSeq;
-  if (!spacesLoaded.value) return;
-  try {
-    const pendingDates = new Map<string, string>();
-    let applied = false;
-    const statuses = await fetchStatuses(spacesByModelId, auth.token, selectedDate.value, selectedPeriod.value, (id, date) => {
-      pendingDates.set(id, date);
-      if (applied && seq === colorUpdateSeq) { const data = cachedStatusMap.get(id); if (data) data.nextAvailableDate = date; void refreshPinLabels(seq); }
-    });
-    if (seq !== colorUpdateSeq) return;
-    pendingDates.forEach((date, id) => { const data = statuses.get(id); if (data) data.nextAvailableDate = date; });
-    cachedStatusMap = statuses; applied = true;
-    const colorMap = new Map<string, string>();
-    cachedStatusMap.forEach(({ status }, modelId) => {
-      colorMap.set(modelId, PERIOD_COLORS[status]);
-    });
-    viewerRef.value?.applyBackendFilter(new Set(cachedStatusMap.keys()), colorMap);
-
-    await refreshPinLabels(seq);
-  } catch (e) {
-    logger.error('Falha ao atualizar cores:', e);
-  }
-}
-
 
 function handlePeriodChange(period: PeriodKey) {
   setPeriod(period);
@@ -283,11 +259,7 @@ watch(viewerOverlayOpen, (open) => {
   viewerRef.value?.setInteractive(!open);
 }, { immediate: true });
 
-watch([reservationTrayOpen, blockingTrayOpen], ([reservation, blocking], [oldReservation, oldBlocking]) => {
-  if ((oldReservation && !reservation) || (oldBlocking && !blocking)) invalidateAvailability();
-});
-
-watchViewerTheme(isDark, (dark) => viewerRef.value?.setThemeMode(dark));
+watch(isDark, (dark) => viewerRef.value?.setThemeMode(dark), { immediate: true });
 
 onMounted(async () => {
   mql.addEventListener('change', onResize);
@@ -317,8 +289,6 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  colorUpdateSeq++;
-  cancelAvailability();
   mql.removeEventListener('change', onResize);
   if (popupUnmountTimer) clearTimeout(popupUnmountTimer);
 });
@@ -435,7 +405,8 @@ useViewerTestHarness({
 <template>
   <div class="viewer-view" :class="{ 'viewer-view--fullscreen': fullscreen }">
     <h1 class="sr-only">Maquete 3D</h1>
-    <ThreeViewer :key="viewerKey"
+    <ThreeViewer
+      :key="viewerKey"
       ref="viewerRef"
       @ready="handleViewerReady"
       @pins-loaded="applyPinColors"

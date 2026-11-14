@@ -3,9 +3,7 @@ import * as THREE from 'three';
 import { RenderScheduler, observeContainer } from '@/three/RenderScheduler.js';
 import { CameraManager } from '@/three/CameraManager.js';
 import { App } from '@/three/App.js';
-import { InteractionManager } from '@/three/InteractionManager.js';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 afterEach(() => vi.unstubAllGlobals());
 
 describe('on-demand rendering', () => {
@@ -32,16 +30,21 @@ describe('on-demand rendering', () => {
   it('continues rendering a camera tween when an overlay disables interactions', () => {
     const callbacks: FrameRequestCallback[] = [];
     const renderer = { render: vi.fn() };
-    const app = { renderer, scene: {}, camera: { position: { y: 100 } },
-      controls: { update: () => false }, cameraManager: { tweens: { update: vi.fn().mockReturnValueOnce(true).mockReturnValue(false) } },
-      _applyPendingResize: vi.fn(), invalidate: () => scheduler.invalidate() } as any;
-    const scheduler = new RenderScheduler(() => App.prototype.animate.call(app), (fn: FrameRequestCallback) => { callbacks.push(fn); return callbacks.length; }, () => {});
-    const interaction = new InteractionManager({} as any, {} as any, {} as any);
-    scheduler.invalidate();
-    interaction.setInteractionsEnabled(false);
+    const controls = { update: () => false, minDistance: 1, maxDistance: 2 };
+    vi.spyOn(App.prototype, '_getPerformanceConfiguration').mockReturnValue({});
+    vi.spyOn(App.prototype, '_createCamera').mockReturnValue(new THREE.PerspectiveCamera());
+    vi.spyOn(App.prototype, '_createRenderer').mockReturnValue(renderer);
+    vi.spyOn(App.prototype, '_updateRendererSize').mockImplementation(() => {});
+    vi.spyOn(App.prototype, '_createControls').mockReturnValue(controls);
+    vi.stubGlobal('requestAnimationFrame', (fn: FrameRequestCallback) => { callbacks.push(fn); return callbacks.length; });
+    const app = new App({});
+    vi.spyOn(app.cameraManager.tweens, 'update').mockReturnValueOnce(true).mockReturnValue(false);
+    app.invalidate();
+    app.interactionManager.setInteractionsEnabled(false);
     callbacks.shift()!(0);
     callbacks.shift()!(1);
     expect(renderer.render).toHaveBeenCalledTimes(2);
+    vi.restoreAllMocks();
   });
 
   it('invalidates when restoring without a saved camera', () => {
@@ -59,7 +62,7 @@ describe('on-demand rendering', () => {
     const cancel = vi.fn();
     const scheduler = new RenderScheduler(() => {}, () => 7, cancel);
     scheduler.invalidate();
-    const app = { _resizeObserver: observer, scheduler, controls: { removeEventListener: vi.fn(), dispose: vi.fn() }, scene: { traverse: vi.fn(), children: [] }, renderer: { dispose: vi.fn() } } as any;
+    const app = { _resizeObserver: observer, scheduler, controls: { removeEventListener: vi.fn(), dispose: vi.fn() }, scene: { traverse: vi.fn(), children: [] }, renderer: { dispose: vi.fn() } } as unknown as App;
     vi.stubGlobal('document', { removeEventListener: vi.fn() });
     App.prototype.dispose.call(app);
     expect(observe).toHaveBeenCalledOnce();

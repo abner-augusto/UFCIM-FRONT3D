@@ -4,12 +4,13 @@ import { PinFactory } from '../../../src/three/PinFactory.js';
 import { InteractionManager } from '../../../src/three/InteractionManager.js';
 
 it('reuses real pin textures until the label changes', () => {
-  const manager = new InteractionManager(new THREE.PerspectiveCamera(), new THREE.Scene(), { removeEventListener: vi.fn() });
+  const scene = new THREE.Scene();
+  const manager = new InteractionManager(new THREE.PerspectiveCamera(), scene, { removeEventListener: vi.fn() });
   const factory = new PinFactory();
   vi.spyOn(factory, 'createLabelCanvas').mockReturnValue({ width: 20, height: 10 });
   manager.pinFactory = factory;
   manager.addPins([{ id: 'id', displayName: 'Sala', position: [0, 0, 0], building: 'a', floorLevel: 0 }]);
-  const sprite = manager.labelsById.get('id');
+  const sprite = scene.getObjectByName('id_label') as THREE.Sprite;
   const oldMap = sprite.material.map;
   const dispose = vi.spyOn(oldMap, 'dispose');
   manager.onChange = vi.fn();

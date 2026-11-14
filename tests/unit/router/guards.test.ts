@@ -71,6 +71,13 @@ describe('authGuard', () => {
     expect(auth.unreadCount).toBe(2);
   });
 
+  it('redirects to login when hydration fails on a protected route', async () => {
+    const auth = useAuthStore();
+    auth.token = 'fake-token';
+    vi.spyOn(api, 'getMe').mockRejectedValueOnce(new Error('offline'));
+    expect(await authGuard(makeTo({ requiresAuth: true, roles: CAN_RESERVE }))).toEqual({ name: 'login' });
+  });
+
   it('allows professor to access CAN_BLOCK route', async () => {
     const auth = useAuthStore();
     auth.setAuth('fake-token', 'fake-refresh', {

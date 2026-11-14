@@ -32,7 +32,13 @@ test.describe('ViewerView', () => {
     await floor.focus();
     await page.keyboard.press('Enter');
     await expect(floor).toHaveAttribute('aria-pressed', 'true');
-    const date = page.getByRole('button', { name: /Hoje · / }); await date.focus();
+  });
+
+  test('mobile date and search controls receive focus', async ({ studentPage: page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/#/campus/${CAMPUS}/viewer`);
+    const date = page.getByRole('button', { name: /Hoje · / });
+    await date.focus();
     await page.keyboard.press('Enter');
     const dateDialog = page.getByRole('dialog', { name: /Hoje · / });
     await expect(dateDialog).toHaveCSS('width', '175px');
