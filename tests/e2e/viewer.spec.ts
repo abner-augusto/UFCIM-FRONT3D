@@ -16,6 +16,7 @@ test.describe('ViewerView', () => {
     await page.keyboard.press('Enter');
     await expect(building).toHaveAttribute('aria-expanded', 'true');
     const dialog = page.getByRole('dialog');
+    await expect(dialog).toHaveCSS('width', '180px');
     await expect(dialog.getByRole('button', { name: 'Todos' })).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(building).toBeFocused();
@@ -26,15 +27,16 @@ test.describe('ViewerView', () => {
     await page.keyboard.press('Tab');
     await expect(dialog.getByRole('button', { name: 'Bloco1' })).toBeFocused();
     await page.keyboard.press('Enter');
-    const floors = page.locator('.floor-btn');
-    await expect(floors.first()).toBeVisible();
-    await floors.first().focus();
+    const floor = page.getByRole('button', { name: 'Térreo' });
+    await expect(floor).toBeVisible();
+    await floor.focus();
     await page.keyboard.press('Enter');
-    await expect(floors.first()).toHaveAttribute('aria-pressed', 'true');
-    const date = page.locator('.rail-btn--wide');
+    await expect(floor).toHaveAttribute('aria-pressed', 'true');
+    const date = page.getByRole('button', { name: /Hoje · / });
     await date.focus();
     await page.keyboard.press('Enter');
-    await expect(dialog.locator('.popover-date-chips button').first()).toBeFocused();
+    await expect(dialog).toHaveCSS('width', '175px');
+    await expect(dialog.getByRole('button', { name: 'Hoje' })).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(date).toBeFocused();
     await page.getByRole('button', { name: 'Pesquisar', exact: true }).click();
@@ -45,12 +47,10 @@ test.describe('ViewerView', () => {
   test('hidden date input is skipped by Tab', async ({ studentPage: page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`/#/campus/${CAMPUS}/viewer`);
-    const trigger = page.locator('.rail-btn--wide');
+    const trigger = page.getByRole('button', { name: /Hoje · / });
     await trigger.focus();
     await page.keyboard.press('Enter');
     const hiddenDate = page.locator('.hidden-date-input');
-    await expect(hiddenDate).toHaveAttribute('tabindex', '-1');
-    await expect(hiddenDate).toHaveAttribute('aria-hidden', 'true');
     for (let i = 0; i < 12; i++) {
       await page.keyboard.press('Tab');
       expect(await hiddenDate.evaluateAll(elements => elements.some(element => element === document.activeElement))).toBe(false);

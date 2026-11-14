@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import { useViewerSync } from '@/composables/useViewerSync';
 import { PERIOD_LABELS, type PeriodKey } from '@/utils/period';
 import { TIME_SLOT_RANGES } from '@/types/reservation';
@@ -59,15 +59,8 @@ const buildingOptionsRef = ref<HTMLElement | null>(null);
 
 function focusFirstOption(event: Event, options: 'date' | 'building') {
   event.preventDefault();
-  focusOptions(options);
-}
-
-function focusOptions(options: 'date' | 'building') {
   nextTick(() => (options === 'date' ? dateOptionsRef.value : buildingOptionsRef.value)?.querySelector<HTMLButtonElement>('button')?.focus());
 }
-
-watch(dateTimePopoverOpen, open => { if (open) focusOptions('date'); }, { flush: 'post' });
-watch(buildingPopoverOpen, open => { if (open) focusOptions('building'); }, { flush: 'post' });
 
 const rangeOf = (key: PeriodKey) => `${TIME_SLOT_RANGES[key].startTime.slice(0, 2)}h–${TIME_SLOT_RANGES[key].endTime.slice(0, 2)}h`;
 
@@ -186,7 +179,7 @@ function onFloorPick(level: number) {
             <span class="rail-btn-label">{{ dateTimeBtnLabel }}</span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent side="left" align="start" class="popover popover--datetime" @open-auto-focus="focusFirstOption($event, 'date')">
+        <PopoverContent side="left" align="start" class="w-[175px] gap-0 rounded-xl p-2 shadow-[0_4px_20px_rgb(var(--shadow-color)/0.2)]" @open-auto-focus="focusFirstOption($event, 'date')">
         <div class="popover-section">
           <div class="popover-label">
             <span>Data</span>
@@ -237,7 +230,7 @@ function onFloorPick(level: number) {
         <PopoverTrigger as-child>
           <Button variant="ghost" size="icon" class="rail-btn" :class="{ active: buildingPopoverOpen }" title="Edifício" aria-label="Edifício"><Building2 :size="20" /></Button>
         </PopoverTrigger>
-        <PopoverContent side="left" align="start" class="popover popover--building" @open-auto-focus="focusFirstOption($event, 'building')">
+        <PopoverContent side="left" align="start" class="w-[180px] gap-0 rounded-xl p-2 shadow-[0_4px_20px_rgb(var(--shadow-color)/0.2)]" @open-auto-focus="focusFirstOption($event, 'building')">
         <div ref="buildingOptionsRef" class="popover-grid">
           <Button type="button" variant="ghost" class="popover-item" :class="{ active: !activeBuildingId }" :aria-pressed="!activeBuildingId" @click="onBuildingPick(null)">Todos</Button>
           <Button v-for="b in buildings" :key="b.id"
@@ -415,30 +408,6 @@ function onFloorPick(level: number) {
   font-weight: bold;
 }
 
-.popover {
-  background: var(--popover);
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgb(var(--shadow-color) / 0.2);
-  padding: 8px;
-  pointer-events: auto;
-  z-index: var(--z-popover);
-  /* Both popovers sit just left of the right-edge rail, so growing from the
-     top-right makes them feel like they spring out of the button that opened
-     them rather than zooming in from their own center. */
-  transform-origin: top right;
-}
-
-.popover--datetime {
-  width: 175px;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.popover--building {
-  width: 180px;
-}
-
 .popover-section {
   display: flex;
   flex-direction: column;
@@ -535,15 +504,4 @@ function onFloorPick(level: number) {
   transform: translateX(20px);
 }
 
-.popover-enter-active {
-  transition: opacity 0.18s ease, transform 0.18s var(--ease-out-expo, ease);
-}
-.popover-leave-active {
-  transition: opacity 0.12s ease, transform 0.12s ease;
-}
-.popover-enter-from,
-.popover-leave-to {
-  opacity: 0;
-  transform: scale(0.9);
-}
 </style>
