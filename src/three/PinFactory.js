@@ -33,6 +33,7 @@ export class PinFactory {
         this._textureCache = new Map();
         this._canvasCache = new Map();
         this._lineHeight = null;
+        this._labelStyle = null;
     }
 
     async loadAssets() {
@@ -205,19 +206,9 @@ export class PinFactory {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
 
-        // Get computed style from a temporary DOM element
-        const tempLabel = document.createElement('div');
-        tempLabel.className = 'pin-label'; // match your CSS class
-        tempLabel.style.position = 'absolute'; // off-screen
-        tempLabel.style.visibility = 'hidden';
-
-        // Build text: displayName always, statusText on second line if present
         const hasStatus = statusText != null && statusText !== '';
         const labelText = hasStatus ? `${displayName}\n${statusText}` : displayName;
-        tempLabel.textContent = labelText;
-        document.body.appendChild(tempLabel);
-        try {
-            const style = getComputedStyle(tempLabel);
+        const style = this._getLabelStyle();
             const font = LABEL_STYLE.font || `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
             // Status line font: smaller (10px vs 12px)
             const statusFont = hasStatus ? '400 10px Roboto, sans-serif' : font;
@@ -296,8 +287,23 @@ export class PinFactory {
             });
 
             return canvas;
+    }
+
+    _getLabelStyle() {
+        if (this._labelStyle) return this._labelStyle;
+        const element = document.createElement('div');
+        element.className = 'pin-label';
+        element.style.position = 'absolute';
+        element.style.visibility = 'hidden';
+        document.body.appendChild(element);
+        try {
+            const style = getComputedStyle(element);
+            const keys = ['fontWeight', 'fontSize', 'fontFamily', 'lineHeight', 'paddingLeft', 'paddingRight',
+                'paddingTop', 'paddingBottom', 'borderRadius', 'borderWidth', 'backgroundColor', 'borderColor', 'color'];
+            this._labelStyle = Object.fromEntries(keys.map(key => [key, style[key]]));
+            return this._labelStyle;
         } finally {
-            tempLabel.remove();
+            element.remove();
         }
     }
 

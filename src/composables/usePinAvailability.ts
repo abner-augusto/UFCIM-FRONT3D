@@ -60,10 +60,22 @@ function isDayFullyReserved(slots: Array<{ status: string }>): boolean {
 const nextDateQueue: Array<() => void> = [];
 let activeNextDateRequests = 0;
 
-async function limitNextDate<T>(task: () => Promise<T>): Promise<T> {
-  if (activeNextDateRequests >= 4) await new Promise<void>(resolve => nextDateQueue.push(resolve));
-  else activeNextDateRequests++;
+async function limitNextDate<T>(task: () => Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) throw new DOMException('Cancelled', 'AbortError');
+  if (activeNextDateRequests >= 4) {
+    await new Promise<void>((resolve, reject) => {
+      const start = () => { signal.removeEventListener('abort', cancel); resolve(); };
+      const cancel = () => {
+        const index = nextDateQueue.indexOf(start);
+        if (index >= 0) nextDateQueue.splice(index, 1);
+        reject(new DOMException('Cancelled', 'AbortError'));
+      };
+      nextDateQueue.push(start);
+      signal.addEventListener('abort', cancel, { once: true });
+    });
+  } else activeNextDateRequests++;
   try {
+    if (signal.aborted) throw new DOMException('Cancelled', 'AbortError');
     return await task();
   } finally {
     const next = nextDateQueue.shift();
@@ -76,11 +88,13 @@ async function findNextAvailableDate(
   token: string | null,
   spaceId: string,
   date: string,
-  getSlots: (token: string | null, id: string, date: string, low?: boolean) => Promise<PinAvailabilityData['slots']>,
+  getSlots: (token: string | null, id: string, date: string, signal?: AbortSignal) => Promise<PinAvailabilityData['slots']>,
+  signal: AbortSignal,
 ): Promise<string | undefined> {
   for (let offset = 1; offset <= 31; offset++) {
+    if (signal.aborted) return undefined;
     const candidateDate = addLocalDays(date, offset);
-    const slots = await getSlots(token, spaceId, candidateDate, true);
+    const slots = await getSlots(token, spaceId, candidateDate, signal);
     const hasAvailableSlot = slots.some((slot) => slot.status === 'available');
     if (hasAvailableSlot) return candidateDate;
   }
@@ -90,20 +104,19 @@ async function findNextAvailableDate(
 export function usePinAvailability() {
   const loading = ref(false);
   const error = ref<string | null>(null);
-  const cache = new Map<string, Promise<PinAvailabilityData['slots']>>();
-  let generation = 0;
-  function invalidate() { generation++; cache.clear(); }
-  function getSlots(token: string | null, id: string, date: string, low = false) {
+  const cache = new Map<string, { promise: Promise<PinAvailabilityData['slots']>; at: number }>();
+  let controller = new AbortController();
+  function cancel() { controller.abort(); controller = new AbortController(); }
+  function invalidate() { cancel(); cache.clear(); }
+  function getSlots(token: string | null, id: string, date: string, signal?: AbortSignal) {
+    if (signal) return limitNextDate(() => api.getAvailability(token, id, date, { priority: 'low' }), signal);
     const key = JSON.stringify([token, id, date]);
-    let pending = cache.get(key);
-    if (!pending) {
-      pending = low
-        ? limitNextDate(() => api.getAvailability(token, id, date, { priority: 'low' }))
-        : api.getAvailability(token, id, date);
-      cache.set(key, pending);
-      pending.catch(() => { if (cache.get(key) === pending) cache.delete(key); });
-    }
-    return pending;
+    const entry = cache.get(key);
+    if (entry && Date.now() - entry.at < 60_000) return entry.promise;
+    const promise = api.getAvailability(token, id, date);
+    cache.set(key, { promise, at: Date.now() });
+    promise.catch(() => { if (cache.get(key)?.promise === promise) cache.delete(key); });
+    return promise;
   }
 
   async function fetchStatuses(
@@ -111,7 +124,10 @@ export function usePinAvailability() {
     token: string | null,
     date: string,
     period: PeriodKey,
+    onNextDate?: (modelId: string, date: string) => void,
   ): Promise<Map<string, PinAvailabilityData>> {
+    cancel();
+    const signal = controller.signal;
     loading.value = true;
     error.value = null;
 
@@ -138,18 +154,14 @@ export function usePinAvailability() {
       const needsNextDate = [...statusMap.entries()].filter(([, data]) =>
         data.status === 'reserved' && isDayFullyReserved(data.slots),
       );
-      let nextIndex = 0;
-      const currentGeneration = generation;
-      await Promise.all(Array.from({ length: Math.min(4, needsNextDate.length) }, async () => {
-        while (nextIndex < needsNextDate.length && currentGeneration === generation) {
-          const [modelId, data] = needsNextDate[nextIndex++];
-          const space = spaces.get(modelId);
-          if (!space) continue;
-          try {
-            data.nextAvailableDate = await findNextAvailableDate(token, space.id, date, getSlots);
-          } catch (reason) {
-            logger.warn(`[Availability] Failed to find next available date for space "${modelId}":`, reason);
-          }
+      void Promise.all(needsNextDate.map(async ([modelId]) => {
+        const space = spaces.get(modelId);
+        if (!space || signal.aborted) return;
+        try {
+          const nextDate = await findNextAvailableDate(token, space.id, date, getSlots, signal);
+          if (!signal.aborted && nextDate) onNextDate?.(modelId, nextDate);
+        } catch (reason) {
+          if (!signal.aborted) logger.warn(`[Availability] Failed to find next available date for space "${modelId}":`, reason);
         }
       }));
 
@@ -158,9 +170,9 @@ export function usePinAvailability() {
       error.value = 'Não foi possível verificar disponibilidade.';
       return new Map();
     } finally {
-      loading.value = false;
+      if (!signal.aborted) loading.value = false;
     }
   }
 
-  return { loading, error, fetchStatuses, invalidate };
+  return { loading, error, fetchStatuses, invalidate, cancel };
 }
