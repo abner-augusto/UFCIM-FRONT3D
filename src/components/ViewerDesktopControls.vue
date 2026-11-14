@@ -69,6 +69,7 @@ function shortFloorLabel(name: string): string {
             variant="ghost"
             class="ctrl-btn ctrl-btn--sm"
             :class="{ active: f.level === activeFloorLevel }"
+            :aria-label="f.name" :aria-pressed="f.level === activeFloorLevel"
             @click="selectFloor(f.level)"
           >{{ shortFloorLabel(f.name) }}</Button>
         </div>
@@ -80,6 +81,7 @@ function shortFloorLabel(name: string): string {
           variant="ghost"
           class="ctrl-btn"
           :class="{ active: activeBuildingId === null }"
+          :aria-pressed="activeBuildingId === null"
           @click="selectBuilding(null)"
         >Todos</Button>
         <Button
@@ -87,10 +89,11 @@ function shortFloorLabel(name: string): string {
           variant="ghost"
           class="ctrl-btn"
           :class="{ active: b.id === activeBuildingId }"
+          :aria-pressed="b.id === activeBuildingId"
           @click="selectBuilding(b.id)"
         >{{ b.name }}</Button>
         <div class="controls-separator"></div>
-        <Button variant="ghost" size="icon" class="ctrl-btn ctrl-btn--icon" @click="$emit('open-search')" title="Pesquisar">
+        <Button variant="ghost" size="icon" class="ctrl-btn ctrl-btn--icon" @click="$emit('open-search')" title="Pesquisar" aria-label="Pesquisar">
           <Search :size="18" />
         </Button>
       </div>

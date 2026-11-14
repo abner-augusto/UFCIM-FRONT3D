@@ -113,7 +113,7 @@ defineExpose({
 </script>
 
 <template>
-  <canvas ref="canvasRef" class="webgl"></canvas>
+  <canvas ref="canvasRef" class="webgl" role="img" aria-label="Maquete 3D. Use Pesquisar ou Buscar Espaços para acessar os espaços."></canvas>
 </template>
 
 <style scoped>
