@@ -1,5 +1,3 @@
-import { onMounted, onUnmounted, ref } from 'vue';
-
 /**
  * Format a Date as a local-time ISO date string (`YYYY-MM-DD`).
  *
@@ -26,21 +24,6 @@ export function campusNow(now: Date = new Date()): { date: string; hour: number;
 export function campusInstant(date: string, time: string): Date {
   const normalizedDate = time === '24:00' ? addLocalDays(date, 1) : date;
   return new Date(`${normalizedDate}T${time === '24:00' ? '00:00' : time}:00-03:00`);
-}
-
-export function useCampusToday() {
-  const today = ref(toLocalISODate());
-  const refresh = () => { today.value = toLocalISODate(); };
-  let timer: ReturnType<typeof setInterval>;
-  onMounted(() => {
-    document.addEventListener('visibilitychange', refresh);
-    timer = setInterval(refresh, 60_000);
-  });
-  onUnmounted(() => {
-    document.removeEventListener('visibilitychange', refresh);
-    clearInterval(timer);
-  });
-  return today;
 }
 
 /** Add calendar days to a date-only ISO value without converting through UTC. */

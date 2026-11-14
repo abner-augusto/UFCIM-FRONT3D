@@ -1,7 +1,8 @@
 import { ref, computed } from 'vue';
 import { getCurrentPeriod, type PeriodKey } from '@/utils/period';
 import { TIME_SLOT_RANGES } from '@/types/reservation';
-import { addLocalDays, toLocalISODate, useCampusToday } from '@/utils/date';
+import { addLocalDays, toLocalISODate } from '@/utils/date';
+import { useCampusToday } from '@/composables/useCampusToday';
 import { slotStartAt } from '@/utils/slots';
 
 /** Pure function: format ISO date string to short pt-BR locale (e.g. "21 de mai.") */

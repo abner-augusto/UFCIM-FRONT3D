@@ -10,7 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import TimeRangeFields from '@/components/schedule/TimeRangeFields.vue';
 import { useTimeRangePicker } from '@/composables/useTimeRangePicker';
-import { addLocalDays, formatDateShort, useCampusToday } from '@/utils/date';
+import { addLocalDays, formatDateShort } from '@/utils/date';
+import { useCampusToday } from '@/composables/useCampusToday';
 import { buildOpenSlots } from '@/utils/slots';
 
 type BlockType = 'maintenance' | 'administrative';
