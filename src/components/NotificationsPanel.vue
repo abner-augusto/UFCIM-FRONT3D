@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { preventNavigationFocusRestore } from '@/utils/navigation-focus';
 import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
@@ -25,6 +26,8 @@ const PREVIEW_LIMIT = 5;
 
 const { notifications, loading, errorMsg, markingAll, load: loadShared, markRead, markAllRead, dateLabel, hasUnread } = useNotifications();
 const loaded = ref(false);
+const navigating = ref(false);
+function onCloseAutoFocus(event: Event) { if (navigating.value) preventNavigationFocusRestore(event); }
 
 async function load() {
   if (loaded.value) return;
@@ -39,6 +42,7 @@ const previewNotifications = computed(() => notifications.value.slice(0, PREVIEW
 const hasMore = computed(() => notifications.value.length > PREVIEW_LIMIT);
 
 function viewAll() {
+  navigating.value = true;
   emit('close');
   router.push({ name: 'notifications' });
 }
@@ -49,7 +53,7 @@ function handleOpenChange(open: boolean) {
 
 // Load when panel first opens
 watch(() => props.open, (val) => {
-  if (val) load();
+  if (val) { navigating.value = false; load(); }
 });
 </script>
 
@@ -65,6 +69,7 @@ watch(() => props.open, (val) => {
       id="notifications-panel"
       :side="(anchor ?? 'bottom') === 'top' ? 'bottom' : 'right'"
       class="notif-panel z-[var(--z-overlay)]"
+      @close-auto-focus="onCloseAutoFocus"
     >
         <!-- Header -->
         <component :is="(anchor ?? 'bottom') === 'top' ? DrawerHeader : SheetHeader" class="notif-panel__header">

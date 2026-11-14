@@ -6,7 +6,7 @@ import RouteProgressBar from './components/RouteProgressBar.vue';
 import PwaUpdateToast from './components/PwaUpdateToast.vue';
 import { useAuthStore } from './stores/auth';
 import { api } from './services/api';
-import { onMounted, onUnmounted, watch } from 'vue';
+import { onMounted, onUnmounted } from 'vue';
 import { useDarkMode } from './composables/useDarkMode';
 
 const auth = useAuthStore();
@@ -15,29 +15,28 @@ useDarkMode();
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-watch(() => route.path, () => {
-  refreshUnreadCount();
-});
-
 async function refreshUnreadCount() {
-  if (!auth.token) return;
+  if (!auth.token || document.hidden) return;
   try {
-    const me = await api.getMe(auth.token);
+    const me = await api.getMe(auth.token, { priority: 'low' });
     auth.setUnreadCount(me.unreadCount ?? 0);
   } catch {
     // Silently fail — the refresh token flow handles 401s
   }
 }
 
+function skipToContent() {
+  document.getElementById('conteudo')?.focus();
+}
+
 function onVisibilityChange() {
-  if (document.visibilityState === 'visible') {
+  if (!document.hidden) {
     refreshUnreadCount();
   }
 }
 
 onMounted(() => {
   // Poll every 60s
-  refreshUnreadCount();
   pollTimer = setInterval(refreshUnreadCount, 60_000);
   document.addEventListener('visibilitychange', onVisibilityChange);
 });
@@ -49,9 +48,10 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <a class="sr-only focus:not-sr-only focus:fixed focus:top-0 focus:left-0 focus:z-[10000] focus:bg-background focus:p-3 focus:text-foreground" href="#conteudo" @click.prevent="skipToContent">Pular para o conteúdo</a>
   <RouteProgressBar />
-  <AppHeader v-if="auth.isAuthenticated" />
-  <main class="app-main bg-background text-foreground">
+  <AppHeader v-if="auth.user" />
+  <main id="conteudo" tabindex="-1" class="app-main bg-background text-foreground">
     <RouterView v-slot="{ Component }">
       <Transition name="page">
         <component :is="Component" :key="route.path" />
@@ -101,3 +101,4 @@ onUnmounted(() => {
   transform: translateY(-6px);
 }
 </style>
+

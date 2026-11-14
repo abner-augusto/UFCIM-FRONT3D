@@ -30,7 +30,10 @@ export function useNotifications() {
     try {
       await api.markNotificationRead(auth.token, id);
       const n = notifications.value.find((n) => n.id === id);
-      if (n) n.read = true;
+      if (n && !n.read) {
+        n.read = true;
+        auth.setUnreadCount(Math.max(0, auth.unreadCount - 1));
+      }
     } catch {
       errorMsg.value = 'Erro ao marcar notificação como lida.';
     }
