@@ -44,7 +44,7 @@ function locationLabel(row: MaintenanceEquipmentRow): string {
 <template>
   <div class="bg-card border-border rounded-[12px] border p-5">
     <div class="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-      <h3 class="text-foreground m-0 text-base font-semibold">Equipamentos no período</h3>
+      <h3 id="maintenance-table-title" class="text-foreground m-0 text-base font-semibold">Equipamentos no período</h3>
       <label class="inline-flex items-center gap-2">
         <span class="text-muted-foreground text-xs whitespace-nowrap">Ordenar por</span>
         <NativeSelect v-model="sortBy" class="h-9 min-w-[170px] text-[0.8rem]" aria-label="Ordenar equipamentos por">
@@ -56,16 +56,17 @@ function locationLabel(row: MaintenanceEquipmentRow): string {
       </label>
     </div>
 
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto" role="region" aria-labelledby="maintenance-table-title" tabindex="0">
       <table class="w-full border-collapse text-[0.85rem]">
+        <caption class="sr-only">Equipamentos no período</caption>
         <thead>
           <tr class="text-muted-foreground border-border border-b-2 text-left text-[0.7rem] font-bold tracking-[0.06em] uppercase">
-            <th class="px-3 py-2.5">Equipamento</th>
-            <th class="px-3 py-2.5">Local</th>
-            <th class="px-3 py-2.5">Situação</th>
-            <th class="px-3 py-2.5">Reportes</th>
-            <th class="px-3 py-2.5">Último reporte</th>
-            <th class="px-3 py-2.5">Com defeito</th>
+            <th scope="col" class="px-3 py-2.5">Equipamento</th>
+            <th scope="col" class="px-3 py-2.5">Local</th>
+            <th scope="col" class="px-3 py-2.5">Situação</th>
+            <th scope="col" class="px-3 py-2.5">Reportes</th>
+            <th scope="col" class="px-3 py-2.5">Último reporte</th>
+            <th scope="col" class="px-3 py-2.5">Com defeito</th>
           </tr>
         </thead>
         <tbody>
@@ -75,7 +76,7 @@ function locationLabel(row: MaintenanceEquipmentRow): string {
             class="border-border hover:bg-accent focus-visible:bg-accent cursor-pointer border-b transition-colors outline-none"
             :class="{ 'bg-accent': row.id === selectedId }"
             tabindex="0"
-            :aria-selected="row.id === selectedId"
+            :aria-current="row.id === selectedId ? 'true' : undefined"
             @click="emit('select', row.id)"
             @keydown.enter.prevent="emit('select', row.id)"
             @keydown.space.prevent="emit('select', row.id)"

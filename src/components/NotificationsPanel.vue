@@ -4,9 +4,9 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useNotifications } from '@/composables/useNotifications';
 import { Button } from '@/components/ui/button';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const props = defineProps<{
@@ -62,12 +62,14 @@ watch(() => props.open, (val) => {
   >
     <component
       :is="(anchor ?? 'bottom') === 'top' ? DrawerContent : SheetContent"
+      id="notifications-panel"
       :side="(anchor ?? 'bottom') === 'top' ? 'bottom' : 'right'"
       class="notif-panel z-[var(--z-overlay)]"
     >
         <!-- Header -->
         <component :is="(anchor ?? 'bottom') === 'top' ? DrawerHeader : SheetHeader" class="notif-panel__header">
           <component :is="(anchor ?? 'bottom') === 'top' ? DrawerTitle : SheetTitle" class="notif-panel__title">Notificações</component>
+          <component :is="(anchor ?? 'bottom') === 'top' ? DrawerDescription : SheetDescription" class="sr-only">Notificações recentes da sua conta.</component>
           <div class="notif-panel__header-actions">
             <Button
               v-if="hasUnread()"

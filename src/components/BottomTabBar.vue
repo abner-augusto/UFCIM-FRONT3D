@@ -105,6 +105,7 @@ watch(
 
 <template>
   <nav
+    aria-label="Navegação inferior"
     class="bottom-tab-bar"
     :class="{ 'has-left-fade': showLeftFade, 'has-right-fade': showRightFade, hinting }"
   >
