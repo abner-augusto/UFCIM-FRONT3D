@@ -1,3 +1,22 @@
+<script lang="ts">
+let turnstileLoad: Promise<void> | null = null;
+
+function loadTurnstile(): Promise<void> {
+  if (!turnstileLoad) {
+    turnstileLoad = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.referrerPolicy = 'no-referrer';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Turnstile failed to load'));
+      document.head.appendChild(script);
+    });
+  }
+  return turnstileLoad;
+}
+</script>
+
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { api } from '@/services/api';
@@ -16,15 +35,20 @@ const submitted = ref(false);
 const turnstileToken = ref('');
 
 let turnstileWidgetId: string | null = null;
+let unmounted = false;
 
-onMounted(() => {
-  renderTurnstile();
+onMounted(async () => {
+  try {
+    await loadTurnstile();
+    if (!unmounted) renderTurnstile();
+  } catch {
+    if (!unmounted) errorMsg.value = 'Não foi possível carregar a verificação de segurança. Recarregue a página.';
+  }
 });
 
 onUnmounted(() => {
-  if (turnstileWidgetId && window.turnstile) {
-    window.turnstile.reset(turnstileWidgetId);
-  }
+  unmounted = true;
+  if (turnstileWidgetId !== null) window.turnstile?.remove(turnstileWidgetId);
 });
 
 function renderTurnstile() {
@@ -37,27 +61,20 @@ function renderTurnstile() {
   const el = document.getElementById('turnstile-container');
   if (!el) return;
 
-  const tryRender = () => {
-    if (window.turnstile) {
-      const id = window.turnstile.render(el, {
-        sitekey: siteKey,
-        callback: (token: string) => {
-          turnstileToken.value = token;
-        },
-        'expired-callback': () => {
-          turnstileToken.value = '';
-        },
-        'error-callback': () => {
-          turnstileToken.value = '';
-        },
-      });
-      turnstileWidgetId = id;
-    } else {
-      setTimeout(tryRender, 200);
-    }
-  };
-
-  tryRender();
+  if (window.turnstile) {
+    turnstileWidgetId = window.turnstile.render(el, {
+      sitekey: siteKey,
+      callback: (token: string) => {
+        turnstileToken.value = token;
+      },
+      'expired-callback': () => {
+        turnstileToken.value = '';
+      },
+      'error-callback': () => {
+        turnstileToken.value = '';
+      },
+    });
+  }
 }
 
 function resetTurnstile() {
