@@ -16,15 +16,27 @@ const submitted = ref(false);
 const turnstileToken = ref('');
 
 let turnstileWidgetId: string | null = null;
+let turnstileScript: HTMLScriptElement | null = null;
 
 onMounted(() => {
-  renderTurnstile();
+  if (window.turnstile) {
+    renderTurnstile();
+    return;
+  }
+  turnstileScript = document.createElement('script');
+  turnstileScript.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+  turnstileScript.async = true;
+  turnstileScript.referrerPolicy = 'no-referrer';
+  turnstileScript.onload = renderTurnstile;
+  document.head.appendChild(turnstileScript);
 });
 
 onUnmounted(() => {
-  if (turnstileWidgetId && window.turnstile) {
-    window.turnstile.reset(turnstileWidgetId);
+  if (turnstileScript) {
+    turnstileScript.onload = null;
+    if (!window.turnstile) turnstileScript.remove();
   }
+  if (turnstileWidgetId !== null) window.turnstile?.remove(turnstileWidgetId);
 });
 
 function renderTurnstile() {
@@ -37,9 +49,8 @@ function renderTurnstile() {
   const el = document.getElementById('turnstile-container');
   if (!el) return;
 
-  const tryRender = () => {
-    if (window.turnstile) {
-      const id = window.turnstile.render(el, {
+  if (window.turnstile) {
+      turnstileWidgetId = window.turnstile.render(el, {
         sitekey: siteKey,
         callback: (token: string) => {
           turnstileToken.value = token;
@@ -51,13 +62,7 @@ function renderTurnstile() {
           turnstileToken.value = '';
         },
       });
-      turnstileWidgetId = id;
-    } else {
-      setTimeout(tryRender, 200);
-    }
-  };
-
-  tryRender();
+  }
 }
 
 function resetTurnstile() {
