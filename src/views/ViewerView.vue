@@ -18,6 +18,7 @@ import ViewerSearchSheet from '@/components/ViewerSearchSheet.vue';
 import BlockHeatmapCard from '@/components/BlockHeatmapCard.vue';
 import { useDateTimeFilter, formatShortDate } from '@/composables/useDateTimeFilter';
 import { updatePinLabels } from '@/utils/updatePinLabels';
+import { watchViewerTheme } from '@/composables/watchViewerTheme';
 import { usePinAvailability, PERIOD_COLORS, type PinAvailabilityData } from '@/composables/usePinAvailability';
 import { useDarkMode } from '@/composables/useDarkMode';
 import { useViewerTestHarness } from '@/composables/useViewerTestHarness';
@@ -286,9 +287,7 @@ watch(viewerOverlayOpen, (open) => {
   viewerRef.value?.setInteractive(!open);
 }, { immediate: true });
 
-watch(isDark, (dark) => {
-  viewerRef.value?.setThemeMode(dark);
-}, { immediate: true });
+watchViewerTheme(isDark, (dark) => viewerRef.value?.setThemeMode(dark));
 
 onMounted(async () => {
   mql.addEventListener('change', onResize);

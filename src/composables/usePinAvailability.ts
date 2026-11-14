@@ -57,6 +57,21 @@ function isDayFullyReserved(slots: Array<{ status: string }>): boolean {
   return openSlots.length > 0 && openSlots.every((slot) => slot.status === 'reserved');
 }
 
+const nextDateQueue: Array<() => void> = [];
+let activeNextDateRequests = 0;
+
+async function limitNextDate<T>(task: () => Promise<T>): Promise<T> {
+  if (activeNextDateRequests >= 4) await new Promise<void>(resolve => nextDateQueue.push(resolve));
+  else activeNextDateRequests++;
+  try {
+    return await task();
+  } finally {
+    const next = nextDateQueue.shift();
+    if (next) next();
+    else activeNextDateRequests--;
+  }
+}
+
 async function findNextAvailableDate(
   token: string | null,
   spaceId: string,
@@ -82,7 +97,9 @@ export function usePinAvailability() {
     const key = JSON.stringify([token, id, date]);
     let pending = cache.get(key);
     if (!pending) {
-      pending = api.getAvailability(token, id, date, low ? { priority: 'low' } : undefined);
+      pending = low
+        ? limitNextDate(() => api.getAvailability(token, id, date, { priority: 'low' }))
+        : api.getAvailability(token, id, date);
       cache.set(key, pending);
       pending.catch(() => { if (cache.get(key) === pending) cache.delete(key); });
     }

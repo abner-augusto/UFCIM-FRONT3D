@@ -106,3 +106,24 @@ it('limits concurrent next-date searches to four', async () => {
   await usePinAvailability().fetchStatuses(spaces, null, '2026-09-20', 'morning');
   expect(peak).toBe(4);
 });
+
+
+it('shares the next-date limit across simultaneous lookups', async () => {
+  const reserved = makeSlots(Object.fromEntries(Array.from({ length: 15 }, (_, i) => [`${String(i + 7).padStart(2, '0')}:00`, 'reserved'])));
+  let active = 0;
+  let peak = 0;
+  vi.mocked(api.getAvailability).mockReset().mockImplementation(async (_token, _id, date) => {
+    if (date === '2026-09-20') return reserved;
+    active++;
+    peak = Math.max(peak, active);
+    await new Promise(resolve => setTimeout(resolve, 5));
+    active--;
+    return makeSlots();
+  });
+  const spaces = (prefix: string) => new Map(Array.from({ length: 6 }, (_, i) => [`${prefix}${i}`, { id: `${prefix}${i}` } as Space]));
+  await Promise.all([
+    usePinAvailability().fetchStatuses(spaces('a'), null, '2026-09-20', 'morning'),
+    usePinAvailability().fetchStatuses(spaces('b'), null, '2026-09-20', 'morning'),
+  ]);
+  expect(peak).toBe(4);
+});
