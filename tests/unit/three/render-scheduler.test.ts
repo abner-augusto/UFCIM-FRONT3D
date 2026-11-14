@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { RenderScheduler, observeContainer } from '@/three/RenderScheduler.js';
 import { CameraManager } from '@/three/CameraManager.js';
 import { App } from '@/three/App.js';
+import { InteractionManager } from '@/three/InteractionManager.js';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 afterEach(() => vi.unstubAllGlobals());
@@ -17,15 +18,37 @@ describe('on-demand rendering', () => {
     scheduler.invalidate();
     callback(0);
     expect(render).toHaveBeenCalledTimes(1);
-    scheduler.setPaused('overlay', true);
+    scheduler.setPaused('hidden', true);
     scheduler.invalidate();
     expect(render).toHaveBeenCalledTimes(1);
-    scheduler.setPaused('overlay', false);
+    scheduler.setPaused('hidden', false);
     callback(1);
     expect(render).toHaveBeenCalledTimes(2);
     scheduler.invalidate();
     scheduler.dispose();
     expect(cancel).toHaveBeenCalledWith(1);
+  });
+
+  it('continues rendering a camera tween when an overlay disables interactions', () => {
+    const callbacks: FrameRequestCallback[] = [];
+    const renderer = { render: vi.fn() };
+    const app = { renderer, scene: {}, camera: { position: { y: 100 } },
+      controls: { update: () => false }, cameraManager: { tweens: { update: vi.fn().mockReturnValueOnce(true).mockReturnValue(false) } },
+      _applyPendingResize: vi.fn(), invalidate: () => scheduler.invalidate() } as any;
+    const scheduler = new RenderScheduler(() => App.prototype.animate.call(app), (fn: FrameRequestCallback) => { callbacks.push(fn); return callbacks.length; }, () => {});
+    const interaction = new InteractionManager({} as any, {} as any, {} as any);
+    scheduler.invalidate();
+    interaction.setInteractionsEnabled(false);
+    callbacks.shift()!(0);
+    callbacks.shift()!(1);
+    expect(renderer.render).toHaveBeenCalledTimes(2);
+  });
+
+  it('invalidates when restoring without a saved camera', () => {
+    const invalidate = vi.fn();
+    const manager = new CameraManager(new THREE.PerspectiveCamera(), { minDistance: 1, maxDistance: 2 }, invalidate);
+    manager.restoreSavedState();
+    expect(invalidate).toHaveBeenCalledOnce();
   });
 
   it('disconnects the container observer and cancels the pending frame on dispose', () => {

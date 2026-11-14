@@ -44,16 +44,3 @@ export function observeContainer(canvas, onResize) {
   return observer;
 }
 
-export function invalidateInteractions(manager, invalidate) {
-  const methods = ['addPins', 'setPinsVisibility', 'resetPinsForBuilding', 'activateFloorPins',
-    'clearFloorSelections', 'changePinColor', 'setPinOpacity', 'applyBackendFilter',
-    'filterPins', 'updatePinLabelStatus'];
-  for (const name of methods) {
-    const original = manager[name];
-    manager[name] = function (...args) {
-      const result = original.apply(this, args);
-      invalidate();
-      return result;
-    };
-  }
-}

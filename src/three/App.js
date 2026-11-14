@@ -7,7 +7,7 @@ import { UIManager } from './UIManager.js';
 import { InteractionManager } from './InteractionManager.js';
 import { PopupManager } from './PopUpManager.js';
 import { CameraManager } from './CameraManager.js';
-import { RenderScheduler, observeContainer, invalidateInteractions } from './RenderScheduler.js';
+import { RenderScheduler, observeContainer } from './RenderScheduler.js';
 import { CAMERA_CONFIG, CONTROLS_CONFIG } from './config.js';
 import { logger } from '../utils/logger.ts';
 
@@ -39,8 +39,7 @@ export class App {
         this.modelManager = new ModelManager(this.scene);
         this.uiManager = new UIManager();
         this.interactionManager = new InteractionManager(this.camera, this.scene, this.canvas);
-        invalidateInteractions(this.interactionManager, () => this.invalidate());
-        this.interactionManager.onOverlayChange = (paused) => this.scheduler.setPaused('overlay', paused);
+        this.interactionManager.onChange = () => this.invalidate();
         this.popupManager = new PopupManager(
             this.camera,
             this.controls,
@@ -281,10 +280,10 @@ export class App {
         this.devTools?.beginFrame?.();
         const changed = this.controls.update();
         this.camera.position.y = Math.max(this.camera.position.y, CONTROLS_CONFIG.minCameraHeight);
-        this.cameraManager.tweens.update();
+        const tweening = this.cameraManager.tweens.update();
         this.renderer.render(this.scene, this.camera);
         this.devTools?.endFrame?.();
-        if (changed || this.cameraManager.tweens.getAll().length) this.invalidate();
+        if (changed || tweening) this.invalidate();
     }
 
     dispose() {

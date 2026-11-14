@@ -173,21 +173,32 @@ export class ModelManager {
   }
 
   async _loadUpperFloors(entries) {
-    for (let i = 0; i < entries.length && !this._disposed; i += 4) {
-      const batch = entries.slice(i, i + 4);
-      await Promise.all(batch.map(e => this._ensureLoaded(e.building, e.floor, true)));
-      if (this._disposed) return;
-      this._applyVisibility();
-      if (globalThis.scheduler?.yield) await globalThis.scheduler.yield();
-      else await new Promise(resolve => {
+    let next = 0;
+    const worker = async () => {
+      while (!this._disposed && next < entries.length) {
+        const entry = entries[next++];
+        await this._ensureLoaded(entry.building, entry.floor, true);
+        if (!this._disposed) this._scheduleVisibility();
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(4, entries.length) }, worker));
+    await this._visibilityPromise;
+  }
+
+  _scheduleVisibility() {
+    if (this._visibilityPromise) return;
+    const yieldToBrowser = globalThis.scheduler?.yield
+      ? globalThis.scheduler.yield()
+      : new Promise(resolve => {
         this._yieldResolve = resolve;
-        this._yieldTimer = setTimeout(() => {
-          this._yieldTimer = null;
-          this._yieldResolve = null;
-          resolve();
-        }, 0);
+        this._yieldTimer = setTimeout(resolve, 0);
       });
-    }
+    this._visibilityPromise = yieldToBrowser.then(() => {
+      this._yieldTimer = null;
+      this._yieldResolve = null;
+      this._visibilityPromise = null;
+      if (!this._disposed) this._applyVisibility();
+    });
   }
 
   getFloorObject(building, floor) {

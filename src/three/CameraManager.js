@@ -105,7 +105,10 @@ export class CameraManager {
    * Restores the camera to the last saved position and target.
    */
   restoreSavedState() {
-    if (!this.savedCameraState) return;
+    if (!this.savedCameraState) {
+      this.invalidate();
+      return;
+    }
 
     new TWEEN.Tween(this.camera.position, this.tweens)
       .to(this.savedCameraState.position, this._duration())
