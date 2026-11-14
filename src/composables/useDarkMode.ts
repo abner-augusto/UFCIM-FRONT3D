@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 
 const STORAGE_KEY = 'ufcim-theme';
 
@@ -8,18 +8,22 @@ type ThemeTransitionDocument = Document & {
 
 type ThemeToggleTrigger = MouseEvent | HTMLElement;
 
-function getInitialTheme(): boolean {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === 'dark') return true;
-  if (stored === 'light') return false;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+function readPreference(): boolean | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored === 'dark' ? true : stored === 'light' ? false : null;
+  } catch {
+    return null;
+  }
 }
 
-const isDark = ref(getInitialTheme());
+const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
+let preference = readPreference();
+const isDark = ref(preference ?? systemTheme.matches);
 
 function applyTheme(value: boolean) {
   document.documentElement.classList.toggle('dark', value);
-  localStorage.setItem(STORAGE_KEY, value ? 'dark' : 'light');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', value ? '#1c1c1c' : '#00697D');
 }
 
 function getTriggerElement(trigger?: ThemeToggleTrigger): HTMLElement | null {
@@ -44,13 +48,30 @@ function setThemeTransitionOrigin(trigger?: ThemeToggleTrigger) {
   root.style.setProperty('--theme-transition-radius', `${radius}px`);
 }
 
-watch(isDark, applyTheme, { immediate: true });
+applyTheme(isDark.value);
+systemTheme.addEventListener('change', (event) => {
+  if (preference === null) {
+    isDark.value = event.matches;
+    applyTheme(event.matches);
+  }
+});
+window.addEventListener('storage', (event) => {
+  if (event.key !== STORAGE_KEY && event.key !== null) return;
+  preference = event.newValue === 'dark' ? true : event.newValue === 'light' ? false : null;
+  isDark.value = preference ?? systemTheme.matches;
+  applyTheme(isDark.value);
+});
 
 export function useDarkMode() {
   function setDarkMode(value: boolean, trigger?: ThemeToggleTrigger) {
     if (isDark.value === value) return;
 
     const switchTheme = () => {
+      preference = value === systemTheme.matches ? null : value;
+      try {
+        if (preference === null) localStorage.removeItem(STORAGE_KEY);
+        else localStorage.setItem(STORAGE_KEY, value ? 'dark' : 'light');
+      } catch { void 0; }
       isDark.value = value;
       applyTheme(value);
     };
