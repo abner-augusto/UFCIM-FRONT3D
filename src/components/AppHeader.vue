@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { preventNavigationFocusRestore } from '@/utils/navigation-focus';
 import { ref, computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
@@ -26,6 +27,8 @@ const router = useRouter();
 
 const drawerOpen = ref(false);
 const notifOpen = ref(false);
+const menuNavigating = ref(false);
+function onMenuCloseAutoFocus(event: Event) { if (menuNavigating.value) preventNavigationFocusRestore(event); }
 const { isDark, toggleDarkMode } = useDarkMode();
 const themeToggleLabel = computed(() => isDark.value ? 'Ativar tema claro' : 'Ativar tema escuro');
 
@@ -92,15 +95,15 @@ function logout() {
               <NotificationBadge :count="authStore.unreadCount" />
             </span>
           </Button>
-          <DropdownMenu>
+          <DropdownMenu @update:open="(open) => { if (open) menuNavigating = false; }">
             <DropdownMenuTrigger as-child>
               <Button variant="ghost" class="header-user">{{ authStore.user?.name }}</Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" class="z-[var(--z-popover)]">
+            <DropdownMenuContent @close-auto-focus="onMenuCloseAutoFocus" align="end" class="z-[var(--z-popover)]">
               <DropdownMenuLabel>{{ authStore.user?.name }}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem @select="router.push({ name: 'profile' })">Perfil</DropdownMenuItem>
-              <DropdownMenuItem @select="logout">Sair</DropdownMenuItem>
+              <DropdownMenuItem @select="menuNavigating = true; router.push({ name: 'profile' })">Perfil</DropdownMenuItem>
+              <DropdownMenuItem @select="menuNavigating = true; logout()">Sair</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

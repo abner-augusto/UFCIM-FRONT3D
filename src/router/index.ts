@@ -1,7 +1,7 @@
 import { nextTick } from 'vue';
 import { createRouter, createWebHashHistory } from 'vue-router';
 import { authGuard } from './guards';
-import { restoreSession } from '@/services/session';
+import { focusPageHeading } from '@/utils/navigation-focus';
 import { CAN_VIEW_REPORTS, CAN_MANAGE_EQUIPMENT, CAN_BLOCK, CAN_RESERVE, CAN_VIEW_MAINTENANCE_HISTORY } from '@/utils/roles';
 
 const router = createRouter({
@@ -9,7 +9,6 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      meta: { title: 'Selecionar campus' },
       redirect: '/campus',
     },
     {
@@ -126,28 +125,19 @@ const router = createRouter({
       // Catch-all: undefined routes (bad deep-links, stale URLs) redirect home
       // instead of rendering a blank page. The guard then sends guests to /login.
       path: '/:pathMatch(.*)*',
-      meta: { title: 'Selecionar campus' },
       redirect: '/campus',
     },
   ],
 });
 
-router.beforeEach(async (to) => {
-  await restoreSession();
-  return authGuard(to);
-});
+router.beforeEach(authGuard);
 
 router.afterEach(async (to, from, failure) => {
   if (failure) return;
-  document.title = String(to.meta.title) + ' – UFCIM';
-  if (!from.matched.length) return;
+  document.title = `${to.meta.title} · UFCIM`;
+  if (!from.matched.length || to.path === from.path) return;
   await nextTick();
-  const headings = document.querySelectorAll<HTMLElement>('#conteudo h1');
-  const heading = headings[headings.length - 1];
-  if (heading) {
-    heading.tabIndex = -1;
-    heading.focus({ preventScroll: true });
-  }
+  focusPageHeading();
 });
 
 export default router;

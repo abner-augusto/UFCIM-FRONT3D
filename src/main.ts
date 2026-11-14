@@ -6,12 +6,10 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
-import { restoreSession } from './services/session';
 
 const pinia = createPinia();
 const app = createApp(App);
 app.use(pinia);
 
-void restoreSession();
 app.use(router);
 app.mount('#app');

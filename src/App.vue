@@ -48,9 +48,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <a class="skip-link" href="#conteudo" @click.prevent="skipToContent">Pular para o conteúdo</a>
+  <a class="sr-only focus:not-sr-only focus:fixed focus:top-0 focus:left-0 focus:z-[10000] focus:bg-background focus:p-3 focus:text-foreground" href="#conteudo" @click.prevent="skipToContent">Pular para o conteúdo</a>
   <RouteProgressBar />
-  <AppHeader v-if="auth.isAuthenticated" />
+  <AppHeader v-if="auth.user" />
   <main id="conteudo" tabindex="-1" class="app-main bg-background text-foreground">
     <RouterView v-slot="{ Component }">
       <Transition name="page">
@@ -63,18 +63,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.skip-link {
-  position: fixed;
-  z-index: 10000;
-  top: 0;
-  left: 0;
-  padding: 0.75rem;
-  background: var(--background);
-  color: var(--foreground);
-  transform: translateY(-150%);
-}
-.skip-link:focus { transform: translateY(0); }
-
 .app-main {
   position: relative; /* containing block for the leaving page during route crossfade */
   min-height: 100vh; /* fallback */

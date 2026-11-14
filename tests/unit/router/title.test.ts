@@ -12,11 +12,13 @@ import '@/router';
 
 describe('títulos das rotas', () => {
   it('define título nas rotas que exibem páginas e atualiza o documento', async () => {
-    expect(routes.every((route) => route.meta?.title)).toBe(true);
+    expect(routes.filter((route) => !route.redirect).every((route) => route.meta?.title)).toBe(true);
     const document = { title: '' };
     vi.stubGlobal('document', document);
     await hooks[0]!({ meta: { title: 'Notificações' } }, { matched: [] });
-    expect(document.title).toBe('Notificações – UFCIM');
+    expect(document.title).toBe('Notificações · UFCIM');
+    await hooks[0]!({ meta: { title: 'Reservas' }, path: '/reservas' }, { matched: [{}], path: '/reservas' });
+    expect(document.title).toBe('Reservas · UFCIM');
     vi.unstubAllGlobals();
   });
 });

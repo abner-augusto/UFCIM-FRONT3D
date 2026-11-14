@@ -113,7 +113,7 @@ test('a navegação anuncia a nova página e a sessão sobrevive ao recarregar',
   await page.evaluate(() => { window.location.hash = '#/notificacoes'; });
   await expect(page).toHaveURL(/#\/notificacoes/);
   await expect(page.locator('#conteudo h1').last()).toBeFocused();
-  await expect(page).toHaveTitle('Notificações – UFCIM');
+  await expect(page).toHaveTitle('Notificações · UFCIM');
   await page.goto('/#/relatorios');
   await page.reload();
   await expect(page).toHaveURL(/#\/relatorios/);
@@ -136,4 +136,19 @@ test('não consulta notificações enquanto a aba está oculta', async ({ studen
     document.dispatchEvent(new Event('visibilitychange'));
   });
   await expect.poll(() => requests).toBe(1);
+});
+
+test('o menu móvel entrega o foco ao título após navegar', async ({ studentPage: page }) => {
+  await page.setViewportSize({ width: 768, height: 900 });
+  await page.goto('/#/campus');
+  await expect(page.getByRole('heading', { name: 'Selecione seu campus' })).toBeVisible();
+  const menuButton = page.getByRole('button', { name: 'Abrir menu' });
+  await menuButton.click();
+  await page.keyboard.press('Escape');
+  await expect(menuButton).toBeFocused();
+  await menuButton.click();
+  await page.getByRole('dialog').getByRole('link', { name: 'Notificações' }).click();
+  await expect(page.getByRole('heading', { name: 'Notificações' })).toBeFocused();
+  await page.waitForTimeout(350);
+  await expect(page.getByRole('heading', { name: 'Notificações' })).toBeFocused();
 });
