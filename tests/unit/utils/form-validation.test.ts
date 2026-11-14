@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { invitationSecurityError, requesterSearchStatus, validateAcceptInvite, validateEquipmentReport, validateRecurringForm, validateReservationForm } from '@/utils/form-validation';
+import { requesterSearchStatus } from '@/utils/reservation-requester';
+import { invitationSecurityError, validateAcceptInvite, validateEquipmentReport, validateRecurringForm, validateReservationForm } from '@/utils/form-validation';
 
 describe('form validation', () => {
   it('reports missing security configuration before a missing token', () => {
@@ -9,13 +10,15 @@ describe('form validation', () => {
   });
 
   it('announces the current requester search status', () => {
-    expect(requesterSearchStatus(false, false, false, 0, 0)).toBe('');
-    expect(requesterSearchStatus(true, true, false, 0, 0)).toContain('Buscando');
-    expect(requesterSearchStatus(true, false, true, 0, 0)).toContain('Não foi possível');
-    expect(requesterSearchStatus(true, false, false, 0, 0)).toContain('Ninguém');
-    expect(requesterSearchStatus(true, false, false, 6, 7)).toContain('refinar');
-    expect(requesterSearchStatus(true, false, false, 1, 1)).toBe('');
+    const base = { active: true, searching: false, failed: false, visibleCount: 1, totalCount: 1 };
+    expect(requesterSearchStatus({ ...base, active: false })).toEqual({ message: '', showList: false });
+    expect(requesterSearchStatus({ ...base, searching: true }).message).toContain('Buscando');
+    expect(requesterSearchStatus({ ...base, failed: true }).message).toContain('Não foi possível');
+    expect(requesterSearchStatus({ ...base, visibleCount: 0 }).message).toContain('Ninguém');
+    expect(requesterSearchStatus({ ...base, totalCount: 2 }).message).toContain('refinar');
+    expect(requesterSearchStatus(base)).toEqual({ message: '', showList: true });
   });
+
   it('checks reservation fields in order', () => {
     const valid = { date: '2026-01-01', schedule: true, purpose: 'class' };
     expect(validateReservationForm({ ...valid, date: '' })?.field).toBe('date');

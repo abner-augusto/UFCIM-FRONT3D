@@ -27,7 +27,8 @@ defineEmits<{
       Data
     </Label>
     <AppDateField
-      id="period-date" label-id="period-date-label"
+      id="period-date"
+      label-id="period-date-label"
       class="mb-2"
       :model-value="selectedDate"
       min="2024-01-01"

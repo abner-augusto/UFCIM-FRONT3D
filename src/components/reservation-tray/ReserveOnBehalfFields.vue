@@ -5,13 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api } from '@/services/api';
-import { requesterSearchStatus } from '@/utils/form-validation';
 import { useAuthStore } from '@/stores/auth';
 import type { RequesterCandidate } from '@/types/reservation';
 import {
   REQUESTER_TEXT_MAX,
   emptyRequester,
   requesterRoleLabel,
+  requesterSearchStatus,
   type RequesterSelection,
 } from '@/utils/reservation-requester';
 
@@ -54,9 +54,13 @@ const ids = computed(() => ({
 const trimmedQuery = computed(() => props.modelValue.query.trim());
 const showResults = computed(() => !props.modelValue.user && trimmedQuery.value.length >= MIN_QUERY_LENGTH);
 const visibleResults = computed(() => results.value.slice(0, VISIBLE_RESULTS));
-const searchStatus = computed(() => requesterSearchStatus(
-  showResults.value, searching.value, searchFailed.value, visibleResults.value.length, results.value.length,
-));
+const searchStatus = computed(() => requesterSearchStatus({
+  active: showResults.value,
+  searching: searching.value,
+  failed: searchFailed.value,
+  visibleCount: visibleResults.value.length,
+  totalCount: results.value.length,
+}));
 
 function update(patch: Partial<RequesterSelection>) {
   emit('update:modelValue', { ...props.modelValue, ...patch });
@@ -183,12 +187,23 @@ async function changePerson() {
             Escolha alguém cadastrado na lista ou mantenha o nome digitado.
           </p>
 
-          <p role="status" class="on-behalf__status">{{ searchStatus }}</p>
-          <ul v-if="showResults && !searching && !searchFailed && visibleResults.length" class="on-behalf__list" aria-label="Usuários encontrados">
+          <p role="status" class="on-behalf__status">{{ searchStatus.message }}</p>
+          <ul
+            v-if="searchStatus.showList"
+            class="on-behalf__list"
+            aria-label="Usuários encontrados"
+          >
             <li v-for="candidate in visibleResults" :key="candidate.id">
-              <button type="button" class="on-behalf__option" data-testid="reserve-on-behalf-option" @click="pick(candidate)">
+              <button
+                type="button"
+                class="on-behalf__option"
+                data-testid="reserve-on-behalf-option"
+                @click="pick(candidate)"
+              >
                 <span class="on-behalf__option-name">{{ candidate.name }}</span>
-                <span class="on-behalf__meta">{{ requesterRoleLabel(candidate.role) }}<template v-if="candidate.department"> · {{ candidate.department }}</template></span>
+                <span class="on-behalf__meta">
+                  {{ requesterRoleLabel(candidate.role) }}<template v-if="candidate.department"> · {{ candidate.department }}</template>
+                </span>
               </button>
             </li>
           </ul>
@@ -269,12 +284,6 @@ async function changePerson() {
   margin: 0;
   color: var(--muted-foreground);
   font-size: 0.82rem;
-}
-
-.on-behalf__results {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
 }
 
 .on-behalf__list {

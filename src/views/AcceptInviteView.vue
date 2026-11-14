@@ -2,8 +2,8 @@
 import { ref, computed, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { api, ApiError } from '@/services/api';
-import { mapAcceptError } from '@/utils/api-errors';
+import { api } from '@/services/api';
+import { acceptFieldErrors, mapAcceptError } from '@/utils/api-errors';
 import { validateAcceptInvite } from '@/utils/form-validation';
 import type { UserRole } from '@/stores/auth';
 import { Card } from '@/components/ui/card';
@@ -61,17 +61,6 @@ async function focusError() {
   if (first) document.getElementById(first === 'passwordConfirm' ? 'invite-password-confirm' : `invite-${first}`)?.focus();
 }
 
-async function handleAcceptError(e: unknown) {
-    if (e instanceof ApiError && e.details?.length) {
-      for (const d of e.details) {
-        fieldErrors.value[d.field] = d.message;
-      }
-      await focusError();
-    } else {
-      submitError.value = mapAcceptError(e);
-    }
-}
-
 async function handleAccept() {
   const invalid = validateAcceptInvite({
     student: isStudent.value,
@@ -104,7 +93,13 @@ async function handleAccept() {
     router.push({ name: 'campus-select' });
   } catch (e) {
     state.value = 'ready';
-    await handleAcceptError(e);
+    const errors = acceptFieldErrors(e);
+    if (errors) {
+      fieldErrors.value = errors;
+      await focusError();
+    } else {
+      submitError.value = mapAcceptError(e);
+    }
   }
 }
 </script>

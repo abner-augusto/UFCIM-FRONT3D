@@ -67,7 +67,8 @@ const isDesktop = useMediaQuery('(min-width: 768px)');
             <div class="filters__range-item">
               <Label class="filters__sublabel" id="my-reservations-from-label" for="my-reservations-from">De</Label>
               <AppDateField
-                id="my-reservations-from" label-id="my-reservations-from-label"
+                id="my-reservations-from"
+                label-id="my-reservations-from-label"
                 :model-value="from ?? ''"
                 :max="until ?? undefined"
                 @update:model-value="from = $event || null"
@@ -76,7 +77,8 @@ const isDesktop = useMediaQuery('(min-width: 768px)');
             <div class="filters__range-item">
               <Label class="filters__sublabel" id="my-reservations-until-label" for="my-reservations-until">Até</Label>
               <AppDateField
-                id="my-reservations-until" label-id="my-reservations-until-label"
+                id="my-reservations-until"
+                label-id="my-reservations-until-label"
                 :model-value="until ?? ''"
                 :min="from ?? undefined"
                 @update:model-value="until = $event || null"

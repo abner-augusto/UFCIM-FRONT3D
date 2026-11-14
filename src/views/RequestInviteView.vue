@@ -159,7 +159,6 @@ async function handleSubmit() {
           />
         </div>
 
-        <p v-if="!siteKey" class="text-destructive text-sm">A verificação de segurança não está configurada. Entre em contato com o suporte.</p>
         <div id="turnstile-container" class="mt-2 flex min-h-[65px] justify-center"></div>
 
         <p v-if="errorMsg" class="text-destructive m-0 text-sm" role="alert">{{ errorMsg }}</p>

@@ -65,11 +65,11 @@ const occurrenceCount = computed(() =>
 );
 
 function focusInvalid(field: 'startDate' | 'endDate' | 'weekdays' | 'start' | 'end' | 'description') {
-    const ids = { startDate: 'rec-start', endDate: 'rec-end', start: 'rec-time-start', end: 'rec-time-end', description: 'rec-desc' };
-    const target = field === 'weekdays'
-      ? document.querySelector<HTMLElement>('#rec-weekdays button:not(:disabled)')
-      : document.getElementById(ids[field]);
-    target?.focus();
+  const ids = { startDate: 'rec-start', endDate: 'rec-end', start: 'rec-time-start', end: 'rec-time-end', description: 'rec-desc' };
+  const target = field === 'weekdays'
+    ? document.querySelector<HTMLElement>('#rec-weekdays button:not(:disabled)')
+    : document.getElementById(ids[field]);
+  target?.focus();
 }
 
 const submissionBlocked = computed(() => loading.value || !!successMsg.value || props.reservable === false);
@@ -178,7 +178,7 @@ async function handleSubmit() {
       <Button
         class="h-11 w-full"
         type="submit"
-        :disabled="loading || !!successMsg || reservable === false"
+        :disabled="submissionBlocked"
       >
         {{ loading ? 'Agendando...' : 'Agendar Reservas Recorrentes' }}
       </Button>

@@ -141,7 +141,8 @@ onUnmounted(() => {
     <div class="reservation-schedule-step__field">
       <Label class="reservation-schedule-step__label" id="tray-reservation-date-label" for="tray-reservation-date">Data da reserva</Label>
       <AppDateField
-        id="tray-reservation-date" label-id="tray-reservation-date-label"
+        id="tray-reservation-date"
+        label-id="tray-reservation-date-label"
         v-model="selectedDate"
         :min="today"
       />

@@ -11,14 +11,6 @@ export function invitationSecurityError(siteKey: string, token: string): string 
   return null;
 }
 
-export function requesterSearchStatus(active: boolean, searching: boolean, failed: boolean, count: number, total: number): string {
-  if (!active) return '';
-  if (searching) return 'Buscando…';
-  if (failed) return 'Não foi possível buscar agora. O nome digitado será usado.';
-  if (!count) return 'Ninguém cadastrado com esse nome. O nome digitado será usado.';
-  return total > count ? 'Continue digitando para refinar a busca.' : '';
-}
-
 export function validateReservationForm(input: {
   date: string;
   schedule: boolean;

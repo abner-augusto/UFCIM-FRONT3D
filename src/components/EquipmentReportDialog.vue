@@ -6,7 +6,7 @@ import {
   type MaintenanceCategory,
   type OpenReportStatus,
 } from '@/types/equipment-report';
-import { api, ApiError } from '@/services/api';
+import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
 import {
   Armchair,
@@ -24,7 +24,8 @@ import {
 } from '@lucide/vue';
 import type { Equipment } from '@/types/space';
 import type { ReportableEquipment, ReportedTarget } from '@/composables/useRoomDetail';
-import { isTicketDescriptionValid, OPEN_REPORT_STATUS_LABELS, type TicketTarget } from '@/utils/maintenance-tickets';
+import { OPEN_REPORT_STATUS_LABELS, type TicketTarget } from '@/utils/maintenance-tickets';
+import { mapReportError } from '@/utils/api-errors';
 import { validateEquipmentReport } from '@/utils/form-validation';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
@@ -126,7 +127,6 @@ const target = computed<TicketTarget>(() =>
 const descriptionOptional = computed(
   () => target.value.kind === 'room' && target.value.category !== 'other',
 );
-const descriptionValid = computed(() => isTicketDescriptionValid(target.value, description.value));
 const validationError = computed(() => submitted.value ? validateEquipmentReport(severity.value, target.value, description.value) : null);
 const descriptionCount = computed(() => description.value.length);
 const subject = computed(() =>
@@ -148,16 +148,6 @@ const title = computed(() => {
 const subtitle = computed(() =>
   step.value === 'form' && subject.value ? `${subject.value} · ${props.spaceName}` : props.spaceName,
 );
-
-function handleReportError(e: unknown) {
-    if (e instanceof ApiError) {
-      // 409: an open ticket already exists (MEL-015/MEL-026) or the same user
-      // reported it in the last 24h — the API message tells which.
-      error.value = e.message || (e.status === 409 ? 'Já existe um chamado em aberto para este problema.' : 'Erro ao enviar');
-    } else {
-      error.value = 'Erro ao enviar. Tente novamente.';
-    }
-}
 
 async function submitReport() {
   submitted.value = true;
@@ -194,7 +184,7 @@ async function submitReport() {
     // Auto-close after 1.5s on success
     setTimeout(() => emit('reported', reported), 1500);
   } catch (e) {
-    handleReportError(e);
+    error.value = mapReportError(e);
   } finally {
     loading.value = false;
   }
@@ -327,16 +317,16 @@ function handleOpenChange(open: boolean) {
                 id="report-desc"
                 v-model="description"
                 class="dialog__textarea"
-                :class="{ 'dialog__textarea--invalid': submitted && !descriptionValid }"
-                :aria-invalid="submitted && !descriptionValid"
+                :class="{ 'dialog__textarea--invalid': validationError?.field === 'description' }"
+                :aria-invalid="validationError?.field === 'description'"
                 aria-describedby="report-desc-help"
                 :placeholder="descriptionPlaceholder"
                 maxlength="500"
                 rows="4"
               />
               <div id="report-desc-help" class="dialog__field-footer">
-                <span v-if="submitted && !descriptionValid" class="dialog__field-error">
-                  Mínimo de 5 caracteres
+                <span v-if="validationError?.field === 'description'" class="dialog__field-error">
+                  {{ validationError.message }}
                 </span>
                 <span class="dialog__char-count">{{ descriptionCount }}/500</span>
               </div>

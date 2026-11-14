@@ -27,7 +27,10 @@ function focus() {
   const selector = mode.value === 'hours'
     ? (start.value ? '#reservation-end:not(:disabled)' : '#reservation-start:not(:disabled)')
     : '.slot-btn:not(:disabled)';
-  (root.value?.querySelector<HTMLElement>(selector) ?? root.value?.querySelector<HTMLElement>('#reservation-mode'))?.focus();
+  const target = root.value?.querySelector<HTMLElement>(selector)
+    ?? root.value?.querySelector<HTMLElement>('#reservation-start:not(:disabled)')
+    ?? root.value?.querySelector<HTMLElement>('#reservation-mode');
+  target?.focus();
 }
 defineExpose({ focus });
 </script>
