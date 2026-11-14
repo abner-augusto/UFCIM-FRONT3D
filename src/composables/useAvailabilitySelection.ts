@@ -27,7 +27,7 @@ export interface AvailabilityCellClass extends Record<string, boolean> {
  * contiguous run of bookable slots inside [startTime, endTime) that lasts at
  * least `minMinutes` (1 hour, MEL-024). Returns null when no such run exists.
  * A slot is bookable when its status is 'available' and it is not past
- * (slots already started are excluded).
+ * (in-progress slots count as bookable — same rule as the backend).
  */
 export function findBookableSubRange(
   slots: AvailabilitySlot[],
@@ -111,8 +111,8 @@ export function useAvailabilitySelection(options: AvailabilitySelectionOptions) 
 
   watch(selectedDate, resetSelection);
 
-  function isPastSlot(slot: Pick<AvailabilitySlot, 'startTime'>): boolean {
-    return campusInstant(selectedDate.value, slot.startTime).getTime() < nowTs.value;
+  function isPastSlot(slot: Pick<AvailabilitySlot, 'endTime'>): boolean {
+    return campusInstant(selectedDate.value, slot.endTime).getTime() <= nowTs.value;
   }
 
   function isHalfBookable(slot: AvailabilitySlot): boolean {

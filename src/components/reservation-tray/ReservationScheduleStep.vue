@@ -48,9 +48,9 @@ const openSlots = computed<AvailabilitySlot[]>(() =>
     .sort((a, b) => a.startTime.localeCompare(b.startTime)),
 );
 
-/** A slot is past after its start. */
+/** A slot is past once it ends: the in-progress half hour stays bookable (same rule as the backend). */
 function isPastSlot(slot: AvailabilitySlot): boolean {
-  return campusInstant(selectedDate.value, slot.startTime).getTime() < nowTs.value;
+  return campusInstant(selectedDate.value, slot.endTime).getTime() <= nowTs.value;
 }
 
 const { start, end, startOptions, endOptions, range, clear, applyRange } = useTimeRangePicker({
