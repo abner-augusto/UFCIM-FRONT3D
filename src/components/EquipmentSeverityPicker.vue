@@ -36,8 +36,19 @@ const severity = defineModel<'minor' | 'major' | 'blocking' | null>({ required: 
 
 <style scoped>
 .dialog__field { margin-bottom: 1.25rem; }
-.dialog__label { display: block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.06em; margin-bottom: 0.4rem; }
-.dialog__field-error { color: var(--destructive); font-size: 0.75rem; }
+.dialog__label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  letter-spacing: 0.06em;
+  margin-bottom: 0.4rem;
+}
+.dialog__field-error {
+  color: var(--destructive);
+  font-size: 0.75rem;
+}
 /* Severity buttons */
 .severity-options {
   display: flex;

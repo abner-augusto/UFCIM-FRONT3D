@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { preventNavigationFocusRestore } from '@/utils/navigation-focus';
+import { useNavigationCloseFocus } from '@/utils/navigation-focus';
 import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
@@ -26,8 +26,7 @@ const PREVIEW_LIMIT = 5;
 
 const { notifications, loading, errorMsg, markingAll, load: loadShared, markRead, markAllRead, dateLabel, hasUnread } = useNotifications();
 const loaded = ref(false);
-const navigating = ref(false);
-function onCloseAutoFocus(event: Event) { if (navigating.value) preventNavigationFocusRestore(event); }
+const { markNavigating, reset, onCloseAutoFocus } = useNavigationCloseFocus();
 
 async function load() {
   if (loaded.value) return;
@@ -42,7 +41,7 @@ const previewNotifications = computed(() => notifications.value.slice(0, PREVIEW
 const hasMore = computed(() => notifications.value.length > PREVIEW_LIMIT);
 
 function viewAll() {
-  navigating.value = true;
+  markNavigating();
   emit('close');
   router.push({ name: 'notifications' });
 }
@@ -53,7 +52,10 @@ function handleOpenChange(open: boolean) {
 
 // Load when panel first opens
 watch(() => props.open, (val) => {
-  if (val) { navigating.value = false; load(); }
+  if (val) {
+    reset();
+    load();
+  }
 });
 </script>
 

@@ -1,5 +1,5 @@
 import type { EquipmentReport } from '@/types/equipment-report';
-import type { Blocking } from '@/types/reservation';
+import { BLOCK_TYPE_LABELS, type Blocking } from '@/types/reservation';
 import { reportTitle } from '@/utils/maintenance-tickets';
 
 /** Max length accepted by the blocking `reason` field (mirrors the backend validator). */
@@ -72,4 +72,10 @@ export function groupBlockings(blockings: Blocking[]): BlockingGroup[] {
   return groups.sort(
     (a, b) => b.dateFrom.localeCompare(a.dateFrom) || b.createdAt.localeCompare(a.createdAt),
   );
+}
+
+export function getBlockingReason(blocking: Blocking): string {
+  const typeLabel = BLOCK_TYPE_LABELS[blocking.blockType];
+  const reason = blocking.reason?.trim();
+  return reason ? `${typeLabel}: ${reason}` : typeLabel;
 }

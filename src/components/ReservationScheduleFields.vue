@@ -73,8 +73,16 @@ defineExpose({ focus });
 
 <style scoped>
 .form-section { margin-bottom: 1.25rem; }
-.form-hint { margin: 0.5rem 0 0; font-size: 0.8rem; color: var(--muted-foreground); }
-.state-msg { color: var(--muted-foreground); font-size: 0.9rem; padding: 0.5rem 0; }
+.form-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+}
+.state-msg {
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+  padding: 0.5rem 0;
+}
 /* Mode toggle */
 .period-mode-bar {
   display: flex;
@@ -87,7 +95,11 @@ defineExpose({ focus });
 }
 
 /* Named slots */
-.slot-grid { display: flex; flex-direction: column; gap: 0.5rem; }
+.slot-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
 .slot-btn {
   text-align: left;
   min-height: var(--tap-min, 44px);

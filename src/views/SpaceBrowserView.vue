@@ -14,7 +14,7 @@ import BlockingTray from '@/components/BlockingTray.vue';
 import type { Space } from '@/types/space';
 import AppDateField from '@/components/AppDateField.vue';
 import type { PeriodKey } from '@/utils/period';
-import { campusISODate } from '@/utils/date';
+import { useCampusToday } from '@/composables/useCampusToday';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -26,8 +26,7 @@ const router = useRouter();
 const auth = useAuthStore();
 
 const campusId = route.params.campusId as string;
-const campus = campuses.find((c) => c.id === campusId);
-const campusFilter = campus?.shortName ?? campusId;
+const campusFilter = campuses.find((c) => c.id === campusId)?.shortName ?? campusId;
 
 const {
   loading,
@@ -53,7 +52,7 @@ const {
 } = useSpaceBrowser();
 
 const expandedId = ref<string | null>(null);
-const today = campusISODate();
+const today = useCampusToday();
 const filtersOpen = ref(false);
 
 // Contextual reservation tray, opened from a card's reserve action — same flow
@@ -173,7 +172,8 @@ onMounted(async () => {
         <div class="flex items-end gap-2 max-[480px]:flex-col max-[480px]:items-stretch">
           <Input
             v-model="searchQuery"
-            type="search" enterkeyhint="search"
+            type="search"
+            enterkeyhint="search"
             class="h-11 flex-1 bg-background"
             placeholder="Buscar por nome ou número..."
             aria-label="Buscar por nome ou número"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { preventNavigationFocusRestore } from '@/utils/navigation-focus';
+import { useNavigationCloseFocus } from '@/utils/navigation-focus';
 import { ref, computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
@@ -27,8 +27,7 @@ const router = useRouter();
 
 const drawerOpen = ref(false);
 const notifOpen = ref(false);
-const menuNavigating = ref(false);
-function onMenuCloseAutoFocus(event: Event) { if (menuNavigating.value) preventNavigationFocusRestore(event); }
+const { markNavigating, reset: resetMenuFocus, onCloseAutoFocus: onMenuCloseAutoFocus } = useNavigationCloseFocus();
 const { isDark, toggleDarkMode } = useDarkMode();
 const themeToggleLabel = computed(() => isDark.value ? 'Ativar tema claro' : 'Ativar tema escuro');
 
@@ -45,7 +44,13 @@ const spaceBrowserRoute = computed(() =>
     : { path: '/campus' }
 );
 
+function openProfile() {
+  markNavigating();
+  router.push({ name: 'profile' });
+}
+
 function logout() {
+  markNavigating();
   authStore.logout();
   router.push({ name: 'login' });
 }
@@ -94,15 +99,15 @@ function logout() {
               <NotificationBadge :count="authStore.unreadCount" />
             </span>
           </Button>
-          <DropdownMenu @update:open="(open) => { if (open) menuNavigating = false; }">
+          <DropdownMenu @update:open="(open) => { if (open) resetMenuFocus(); }">
             <DropdownMenuTrigger as-child>
               <Button variant="ghost" class="header-user">{{ authStore.user?.name }}</Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent @close-auto-focus="onMenuCloseAutoFocus" align="end" class="z-[var(--z-popover)]">
               <DropdownMenuLabel>{{ authStore.user?.name }}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem @select="menuNavigating = true; router.push({ name: 'profile' })">Perfil</DropdownMenuItem>
-              <DropdownMenuItem @select="menuNavigating = true; logout()">Sair</DropdownMenuItem>
+              <DropdownMenuItem @select="openProfile">Perfil</DropdownMenuItem>
+              <DropdownMenuItem @select="logout">Sair</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

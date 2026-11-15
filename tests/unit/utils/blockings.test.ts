@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getBlockingReason,
   BLOCKING_REASON_MAX_LENGTH,
   buildBlockingReasonFromReport,
   groupBlockings,
 } from '@/utils/blockings';
 import type { EquipmentReport } from '@/types/equipment-report';
-import type { Blocking } from '@/types/reservation';
+import { BLOCK_TYPE_LABELS, type Blocking } from '@/types/reservation';
 
 function report(overrides: Partial<EquipmentReport> = {}): EquipmentReport {
   return {
@@ -124,4 +125,9 @@ describe('groupBlockings', () => {
     ]);
     expect(groups[0]).toMatchObject({ dateFrom: '2099-06-15', dateTo: '2099-06-17' });
   });
+});
+
+it('includes the blocking reason when present', () => {
+  expect(getBlockingReason(blocking({ reason: ' reparo ' })))
+    .toBe(`${BLOCK_TYPE_LABELS.maintenance}: reparo`);
 });

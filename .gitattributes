@@ -4,3 +4,6 @@
 # Shell scripts run under bash; CRLF breaks them on Windows checkouts.
 scripts/check text eol=lf
 scripts/git-hooks/* text eol=lf
+
+# Keep the inline script bytes stable for the CSP hash.
+index.html text eol=lf

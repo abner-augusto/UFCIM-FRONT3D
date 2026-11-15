@@ -3,7 +3,8 @@ import { ref, watch } from 'vue';
 import { ChevronDown, ChevronUp } from '@lucide/vue';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
-import { campusNow, campusISODate } from '@/utils/date';
+import { campusNow } from '@/utils/date';
+import { useCampusToday } from '@/composables/useCampusToday';
 import type { Space } from '@/types/space';
 import type { AvailabilitySlot } from '@/types/reservation';
 import { hourlyRoomOccupancy } from '@/utils/slots';
@@ -19,6 +20,7 @@ const props = defineProps<{
 }>();
 
 const auth = useAuthStore();
+const today = useCampusToday();
 const collapsed = ref(false);
 const loading = ref(false);
 const hours = ref<Array<{ hour: string; occupiedCount: number; totalCount: number; cssClass: string; tooltip: string }>>([]);
@@ -48,7 +50,7 @@ async function loadHeatmap() {
 
     // Tint hours that have already elapsed — but only today (a past date is
     // legitimate history and should stay full-colour; future dates have none).
-    const isToday = props.date === campusISODate();
+    const isToday = props.date === today.value;
     const nowHour = campusNow().hour;
 
     // One cell per hour; each hour aggregates its two half-hour slots (MEL-024).
@@ -89,7 +91,7 @@ async function loadHeatmap() {
   }
 }
 
-watch(() => [props.visible, props.date, props.spaces], loadHeatmap, { immediate: true });
+watch(() => [props.visible, props.date, props.spaces, today.value], loadHeatmap, { immediate: true });
 </script>
 
 <template>

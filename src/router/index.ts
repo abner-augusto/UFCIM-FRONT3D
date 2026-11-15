@@ -39,7 +39,7 @@ const router = createRouter({
       path: '/campus/:campusId/viewer',
       name: 'viewer',
       component: () => import('@/views/ViewerView.vue'),
-      meta: { title: 'Visualizador', requiresAuth: true },
+      meta: { title: 'Maquete 3D', requiresAuth: true },
     },
     {
       path: '/campus/:campusId/espacos',

@@ -1,3 +1,4 @@
+import { labelCacheKey } from './LabelRegistry.js';
 import * as THREE from 'three';
 import { PIN_ASSET_PATH } from './config.js';
 import { logger } from '../utils/logger.ts';
@@ -133,13 +134,6 @@ export class PinFactory {
         return sprite;
     }
 
-    _getLabelCacheKey(labelParams) {
-        const displayName = labelParams.displayName ?? '';
-        const statusText = labelParams.statusText ?? '';
-        const statusColor = labelParams.statusColor ?? '';
-        return `${displayName}|${statusText}|${statusColor}`;
-    }
-
     _evictCache() {
         if (this._textureCache.size <= MAX_TEXTURE_CACHE) return;
         const keys = [...this._textureCache.keys()];
@@ -153,7 +147,7 @@ export class PinFactory {
     }
 
     _createLabelSprite(pinData, labelParams) {
-        const cacheKey = this._getLabelCacheKey(labelParams);
+        const cacheKey = labelCacheKey(labelParams);
 
         const { canvas: sourceCanvas, texture } = this.getLabelTexture(labelParams);
 
@@ -183,7 +177,7 @@ export class PinFactory {
     }
 
     getLabelTexture(params) {
-        const key = this._getLabelCacheKey(params);
+        const key = labelCacheKey(params);
         let canvas = this._canvasCache.get(key);
         if (!canvas) {
             canvas = this.createLabelCanvas(params);

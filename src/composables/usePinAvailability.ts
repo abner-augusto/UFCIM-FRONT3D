@@ -64,7 +64,10 @@ async function limitNextDate<T>(task: () => Promise<T>, signal: AbortSignal): Pr
   if (signal.aborted) throw new DOMException('Cancelled', 'AbortError');
   if (activeNextDateRequests >= 4) {
     await new Promise<void>((resolve, reject) => {
-      const start = () => { signal.removeEventListener('abort', cancel); resolve(); };
+      const start = () => {
+        signal.removeEventListener('abort', cancel);
+        resolve();
+      };
       const cancel = () => {
         const index = nextDateQueue.indexOf(start);
         if (index >= 0) nextDateQueue.splice(index, 1);
@@ -104,17 +107,25 @@ async function findNextAvailableDate(
 export function usePinAvailability() {
   const loading = ref(false);
   const error = ref<string | null>(null);
-  const cache = new Map<string, { promise: Promise<PinAvailabilityData['slots']>; at: number }>();
+  const cache = new Map<string, { promise: Promise<PinAvailabilityData['slots']>; at: number; signal?: AbortSignal }>();
   let controller = new AbortController();
-  function cancel() { controller.abort(); controller = new AbortController(); }
-  function invalidate() { cancel(); cache.clear(); }
+  function cancel() {
+    controller.abort();
+    controller = new AbortController();
+  }
+  function invalidate() { cache.clear(); }
   function getSlots(token: string | null, id: string, date: string, signal?: AbortSignal) {
-    if (signal) return limitNextDate(() => api.getAvailability(token, id, date, { priority: 'low' }), signal);
     const key = JSON.stringify([token, id, date]);
     const entry = cache.get(key);
-    if (entry && Date.now() - entry.at < 60_000) return entry.promise;
-    const promise = api.getAvailability(token, id, date);
-    cache.set(key, { promise, at: Date.now() });
+    if (entry && !entry.signal?.aborted && Date.now() - entry.at < 60_000) return entry.promise;
+    const promise = signal
+      ? limitNextDate(() => api.getAvailability(token, id, date, { priority: 'low', signal }), signal)
+      : api.getAvailability(token, id, date);
+    const cached = { promise, at: Date.now(), signal };
+    cache.set(key, cached);
+    void promise.then(() => {
+      if (!signal?.aborted) cached.signal = undefined;
+    }, () => {});
     promise.catch(() => { if (cache.get(key)?.promise === promise) cache.delete(key); });
     return promise;
   }

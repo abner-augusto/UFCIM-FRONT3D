@@ -1,3 +1,4 @@
+import { API_CACHE, AVAILABILITY_CACHE } from './src/utils/cache-names';
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
@@ -19,7 +20,7 @@ export default defineConfig({
             urlPattern: /\/api\/v1\/spaces\/[^/]+\/availability/,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'availability',
+              cacheName: AVAILABILITY_CACHE,
               networkTimeoutSeconds: 3,
               expiration: { maxAgeSeconds: 60 },
             },
@@ -28,7 +29,7 @@ export default defineConfig({
             urlPattern: /\/api\/v1\/.*/,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'api-cache',
+              cacheName: API_CACHE,
               expiration: { maxEntries: 50, maxAgeSeconds: 300 },
             },
           },

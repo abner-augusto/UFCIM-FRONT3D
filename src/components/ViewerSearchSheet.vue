@@ -109,8 +109,11 @@ function clear() {
           ref="inputRef"
           v-model="query"
           class="search-input"
-          type="search" aria-label="Pesquisar espaço" enterkeyhint="search"
-          placeholder="Pesquisar espaço..." autocomplete="off"
+          type="search"
+          aria-label="Pesquisar espaço"
+          enterkeyhint="search"
+          placeholder="Pesquisar espaço..."
+          autocomplete="off"
         />
         <button v-if="query" type="button" class="search-clear" @click="clear" aria-label="Limpar pesquisa">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -167,7 +170,10 @@ function clear() {
   gap: 6px;
 }
 
-.search-bar:focus-within { outline: 2px solid var(--ring); outline-offset: 2px; }
+.search-bar:focus-within {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
 
 .search-icon {
   width: 18px;
@@ -318,10 +324,6 @@ function clear() {
   flex-wrap: wrap;
 }
 
-.result-type {
-  color: var(--muted-foreground);
-}
-
 .result-badge {
   font-size: 0.65rem;
   background: var(--muted);
@@ -359,10 +361,5 @@ function clear() {
 .list-leave-to {
   opacity: 0;
   max-height: 0 !important;
-}
-.list-enter-to,
-.list-leave-from {
-  opacity: 1;
-  max-height: 38vh;
 }
 </style>

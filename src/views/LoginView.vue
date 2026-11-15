@@ -62,7 +62,10 @@ async function handleLogin() {
             type="email"
             placeholder="seu@email.com"
             autocomplete="username"
-            name="email" spellcheck="false" autocapitalize="none" enterkeyhint="next"
+            name="email"
+            spellcheck="false"
+            autocapitalize="none"
+            enterkeyhint="next"
             required
             :disabled="loading"
           />
@@ -77,7 +80,8 @@ async function handleLogin() {
             type="password"
             placeholder="••••••••••"
             autocomplete="current-password"
-            name="password" enterkeyhint="go"
+            name="password"
+            enterkeyhint="go"
             required
             :disabled="loading"
           />

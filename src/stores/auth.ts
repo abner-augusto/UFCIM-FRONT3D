@@ -1,3 +1,4 @@
+import { API_CACHE, AVAILABILITY_CACHE } from '@/utils/cache-names';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { api, setUnauthorizedHandler } from '@/services/api';
@@ -85,8 +86,8 @@ export const useAuthStore = defineStore('auth', () => {
     sessionStorage.removeItem('ufcim_token');
     sessionStorage.removeItem('ufcim_refresh');
     if (typeof window !== 'undefined' && 'caches' in window) {
-      void window.caches.delete('api-cache').catch(() => {});
-      void window.caches.delete('availability').catch(() => {});
+      void window.caches.delete(API_CACHE).catch(() => {});
+      void window.caches.delete(AVAILABILITY_CACHE).catch(() => {});
     }
   }
 

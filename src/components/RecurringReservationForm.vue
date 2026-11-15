@@ -3,7 +3,8 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
-import { addLocalDays, campusISODate } from '@/utils/date';
+import { addLocalDays } from '@/utils/date';
+import { useCampusToday } from '@/composables/useCampusToday';
 import { openingSlots } from '@/utils/slots';
 import AppDateField from '@/components/AppDateField.vue';
 import TimeRangeFields from '@/components/schedule/TimeRangeFields.vue';
@@ -29,7 +30,7 @@ const props = defineProps<{
 const router = useRouter();
 const auth = useAuthStore();
 const { canReserveOnBehalf } = usePermissions();
-const today = campusISODate();
+const today = useCampusToday();
 // Staff only (MEL-025): who the series is for, e.g. a professor's semester class.
 const requester = ref<RequesterSelection>(emptyRequester());
 
@@ -56,7 +57,7 @@ const successMsg = ref<string | null>(null);
 const errorMsg = ref<string | null>(null);
 
 const minEndDate = computed(() => {
-  if (!startDate.value) return today;
+  if (!startDate.value) return today.value;
   return addLocalDays(startDate.value, 1);
 });
 

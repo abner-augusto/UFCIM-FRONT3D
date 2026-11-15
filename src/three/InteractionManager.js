@@ -1,4 +1,4 @@
-import { updatePinLabel } from './updatePinLabel.js';
+import { LabelRegistry } from './LabelRegistry.js';
 import * as THREE from 'three';
 import { PinFactory } from './PinFactory.js'; // Import the new factory
 import { findBuildingId, isTap, pinWins } from './pointerIntent.js';
@@ -16,8 +16,7 @@ export class InteractionManager extends THREE.EventDispatcher {
         this.raycaster = new THREE.Raycaster();
         this.pointer = new THREE.Vector2();
         this.interactiveObjects = [];
-        this.labelSprites = [];
-        this.labelsById = new Map();
+        this.labels = new LabelRegistry(() => this.pinFactory, () => this.onChange?.());
         this.clickTargets = [];
         this.blockingMeshes = [];
         this.pinFactory = null;
@@ -74,7 +73,8 @@ export class InteractionManager extends THREE.EventDispatcher {
             const opensPopup = sprite.userData?.opensPopup !== false;
             sprite.visible = shouldDisplay && opensPopup;
         });
-        this.onChange?.(); group.labels.forEach((sprite) => {
+        this.onChange?.();
+        group.labels.forEach((sprite) => {
             const pinSprite = sprite.userData?.pinSprite;
             const pinOpensPopup = pinSprite ? pinSprite.userData?.opensPopup !== false : true;
             sprite.visible = shouldDisplay && pinOpensPopup;
@@ -108,8 +108,7 @@ export class InteractionManager extends THREE.EventDispatcher {
             parent.add(labelSprite);
 
             this.interactiveObjects.push(pinSprite);
-            this.labelSprites.push(labelSprite);
-            this.labelsById.set(pinData.id, labelSprite);
+            this.labels.add(pinData.id, labelSprite);
             labelSprite.userData.pinSprite = pinSprite;
             // applyBackendFilter can turn opensPopup on later; a pin that
             // does not open a popup is hidden, so the raycast skips it.
@@ -183,13 +182,15 @@ export class InteractionManager extends THREE.EventDispatcher {
     changePinColor(pinId, hexColor) {
         const sprite = this.interactiveObjects.find(s => s.userData.id === pinId);
         if (!sprite) return;
-        sprite.material.color.set(hexColor); this.onChange?.();
+        sprite.material.color.set(hexColor);
+        this.onChange?.();
     }
 
     setPinOpacity(pinId, opacity) {
         const sprite = this.interactiveObjects.find(s => s.userData.id === pinId);
         if (!sprite) return;
-        sprite.material.opacity = opacity; this.onChange?.();
+        sprite.material.opacity = opacity;
+        this.onChange?.();
         sprite.material.transparent = true;
         sprite.userData.opensPopup = opacity > 0;
         const building = sprite.userData.building;
@@ -322,7 +323,8 @@ export class InteractionManager extends THREE.EventDispatcher {
             }
         });
         // Re-apply floor/building visibility rules so the change takes effect
-        this.onChange?.(); this.pinGroups.forEach((buildingMap, building) => {
+        this.onChange?.();
+        this.pinGroups.forEach((buildingMap, building) => {
             buildingMap.forEach((group) => {
                 this._updateGroupVisibility(building, group);
             });
@@ -341,26 +343,25 @@ export class InteractionManager extends THREE.EventDispatcher {
     }
 
     updatePinLabelStatus(pinId, statusText, statusColor) {
-        updatePinLabel(this, pinId, statusText, statusColor);
+        this.labels.update(pinId, statusText, statusColor);
     }
 
     dispose() {
-        this._disposed = true; this.onChange = null;
+        this._disposed = true;
+        this.onChange = null;
         POINTER_EVENTS.forEach((type) => {
             this.canvas.removeEventListener(type, this._pointerHandlers[type]);
         });
         this._activePointers.clear();
         this._tapPointerId = null;
-        [...this.labelSprites, ...this.clickTargets].forEach((sprite) => {
-            sprite.material?.map?.dispose();
+        this.labels.dispose();
+        this.interactiveObjects.forEach((sprite) => {
             sprite.material?.dispose();
         });
         this.interactiveObjects = [];
-        this.labelSprites = [];
         this.clickTargets = [];
         this.blockingMeshes = [];
         this.pinGroups.clear();
-        this.labelsById.clear();
         this.pinFactory?.dispose();
         this.pinFactory?.pinTexture?.dispose();
     }
