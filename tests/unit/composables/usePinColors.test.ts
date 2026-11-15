@@ -117,3 +117,25 @@ it('colors pins loaded while labels are being updated', async () => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
+
+it('bumps the availability version when a tray closes or availability is invalidated', async () => {
+  vi.spyOn(api, 'getAvailability').mockResolvedValue([]);
+  const blockingOpen = ref(true);
+  const colors = usePinColors({
+    spacesByModelId: new Map(),
+    spacesLoaded: ref(true),
+    token: () => null,
+    selectedDate: ref('2026-01-01'),
+    selectedPeriod: ref('morning'),
+    periodRange: ref({ startTime: '07:00', endTime: '12:00' }),
+    viewer: () => null,
+    trayOpen: [ref(false), blockingOpen],
+  });
+  const initial = colors.availabilityVersion.value;
+  blockingOpen.value = false;
+  await nextTick();
+  expect(colors.availabilityVersion.value).toBe(initial + 1);
+  colors.invalidate();
+  expect(colors.availabilityVersion.value).toBe(initial + 2);
+  vi.restoreAllMocks();
+});

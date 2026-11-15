@@ -94,7 +94,14 @@ const viewerError = ref(false);
 // Bumped to force-remount ThreeViewer (re-running its init) on retry.
 const viewerKey = ref(0);
 const spacesLoaded = ref(false);
-const { loading: availabilityLoading, applyPinColors, pinsLoaded, invalidate: invalidateAvailability, getStatus } = usePinColors({
+const {
+  loading: availabilityLoading,
+  applyPinColors,
+  pinsLoaded,
+  invalidate: invalidateAvailability,
+  availabilityVersion,
+  getStatus,
+} = usePinColors({
   spacesByModelId,
   spacesLoaded,
   token: () => auth.token,
@@ -448,6 +455,7 @@ useViewerTestHarness({
         :date="selectedDate"
         :closed-from="'07:00'"
         :closed-to="'23:00'"
+        :refresh-key="availabilityVersion"
       />
     </div>
 

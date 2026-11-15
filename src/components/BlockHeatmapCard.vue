@@ -17,6 +17,7 @@ const props = defineProps<{
   date: string;
   closedFrom?: string;
   closedTo?: string;
+  refreshKey?: number;
 }>();
 
 const auth = useAuthStore();
@@ -91,7 +92,7 @@ async function loadHeatmap() {
   }
 }
 
-watch(() => [props.visible, props.date, props.spaces, today.value], loadHeatmap, { immediate: true });
+watch(() => [props.visible, props.date, props.spaces, today.value, props.refreshKey], loadHeatmap, { immediate: true });
 </script>
 
 <template>

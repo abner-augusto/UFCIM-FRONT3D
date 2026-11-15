@@ -1,4 +1,4 @@
-import { onUnmounted, watch, type Ref } from 'vue';
+import { onUnmounted, readonly, ref, watch, type Ref } from 'vue';
 import { usePinAvailability, PERIOD_COLORS, type PinAvailabilityData, type PeriodKey } from '@/composables/usePinAvailability';
 import { updatePinLabels } from '@/utils/update-pin-labels';
 import { logger } from '@/utils/logger';
@@ -27,6 +27,7 @@ export function usePinColors(options: Options) {
   let sequence = 0;
   let fetching = false;
   let pinsPending = false;
+  const availabilityVersion = ref(0);
 
   function refreshLabels(seq: number) {
     return updatePinLabels(statuses, options.periodRange.value, options.selectedDate.value,
@@ -89,9 +90,14 @@ export function usePinColors(options: Options) {
     void refreshLabels(sequence);
   }
 
+  function invalidate() {
+    availability.invalidate();
+    availabilityVersion.value++;
+  }
+
   watch(options.trayOpen, ([reservation, blocking], [oldReservation, oldBlocking]) => {
     if ((oldReservation && !reservation) || (oldBlocking && !blocking)) {
-      availability.invalidate();
+      invalidate();
       void applyPinColors();
     }
   });
@@ -103,7 +109,8 @@ export function usePinColors(options: Options) {
     loading: availability.loading,
     applyPinColors,
     pinsLoaded,
-    invalidate: availability.invalidate,
+    invalidate,
+    availabilityVersion: readonly(availabilityVersion),
     getStatus: (id: string) => statuses.get(id),
   };
 }
