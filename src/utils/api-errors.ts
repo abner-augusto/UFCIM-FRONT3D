@@ -1,5 +1,15 @@
 import { ApiError } from '@/services/api';
 
+export function mapReportError(e: unknown): string {
+  if (!(e instanceof ApiError)) return 'Erro ao enviar. Tente novamente.';
+  return e.message || (e.status === 409 ? 'Já existe um chamado em aberto para este problema.' : 'Erro ao enviar');
+}
+
+export function acceptFieldErrors(e: unknown): Record<string, string> | null {
+  if (!(e instanceof ApiError) || !e.details?.length) return null;
+  return Object.fromEntries(e.details.map(({ field, message }) => [field, message]));
+}
+
 export function mapLoginError(e: unknown): string {
   if (!(e instanceof ApiError)) {
     return 'Não foi possível conectar ao servidor.';

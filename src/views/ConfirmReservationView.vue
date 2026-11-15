@@ -130,7 +130,7 @@ function handleNewReservation() {
     </template>
 
     <template v-else>
-      <p v-if="errorMsg" class="text-destructive mb-4 text-sm" role="alert" aria-live="polite">{{ errorMsg }}</p>
+      <p v-if="errorMsg" class="text-destructive mb-4 text-sm" role="alert">{{ errorMsg }}</p>
 
       <StatefulActionButton
         :status="confirmStatus"

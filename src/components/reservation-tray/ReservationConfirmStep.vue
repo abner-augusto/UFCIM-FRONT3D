@@ -99,7 +99,7 @@ const description = computed(() => props.purpose.description.trim());
       </div>
     </dl>
 
-    <p v-if="error" class="reservation-confirm-step__error" role="alert" aria-live="polite">{{ error }}</p>
+    <p v-if="error" class="reservation-confirm-step__error" role="alert">{{ error }}</p>
 
     <StatefulActionButton
       v-if="isEditing"

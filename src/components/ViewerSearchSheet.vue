@@ -102,25 +102,27 @@ function clear() {
 
       <!-- Search input row -->
       <div class="search-bar">
-        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg aria-hidden="true" class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
         </svg>
         <input
           ref="inputRef"
           v-model="query"
           class="search-input"
-          type="text"
+          type="search"
+          aria-label="Pesquisar espaço"
+          enterkeyhint="search"
           placeholder="Pesquisar espaço..."
           autocomplete="off"
         />
-        <button v-if="query" class="search-clear" @click="clear" aria-label="Limpar pesquisa">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <button v-if="query" type="button" class="search-clear" @click="clear" aria-label="Limpar pesquisa">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M18 6 6 18M6 6l12 12"/>
           </svg>
         </button>
         <div class="search-divider"></div>
-        <button class="search-close" @click="$emit('close')" aria-label="Fechar pesquisa">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <button type="button" class="search-close" @click="$emit('close')" aria-label="Fechar pesquisa">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M18 6 6 18M6 6l12 12"/>
           </svg>
         </button>
@@ -166,6 +168,11 @@ function clear() {
   padding: 0 10px;
   height: 48px;
   gap: 6px;
+}
+
+.search-bar:focus-within {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 .search-icon {
@@ -317,10 +324,6 @@ function clear() {
   flex-wrap: wrap;
 }
 
-.result-type {
-  color: var(--muted-foreground);
-}
-
 .result-badge {
   font-size: 0.65rem;
   background: var(--muted);
@@ -358,10 +361,5 @@ function clear() {
 .list-leave-to {
   opacity: 0;
   max-height: 0 !important;
-}
-.list-enter-to,
-.list-leave-from {
-  opacity: 1;
-  max-height: 38vh;
 }
 </style>

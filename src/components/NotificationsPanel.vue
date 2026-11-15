@@ -1,12 +1,13 @@
 <script setup lang="ts">
+import { useNavigationCloseFocus } from '@/utils/navigation-focus';
 import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useNotifications } from '@/composables/useNotifications';
 import { Button } from '@/components/ui/button';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const props = defineProps<{
@@ -25,6 +26,7 @@ const PREVIEW_LIMIT = 5;
 
 const { notifications, loading, errorMsg, markingAll, load: loadShared, markRead, markAllRead, dateLabel, hasUnread } = useNotifications();
 const loaded = ref(false);
+const { markNavigating, reset, onCloseAutoFocus } = useNavigationCloseFocus();
 
 async function load() {
   if (loaded.value) return;
@@ -39,6 +41,7 @@ const previewNotifications = computed(() => notifications.value.slice(0, PREVIEW
 const hasMore = computed(() => notifications.value.length > PREVIEW_LIMIT);
 
 function viewAll() {
+  markNavigating();
   emit('close');
   router.push({ name: 'notifications' });
 }
@@ -49,7 +52,10 @@ function handleOpenChange(open: boolean) {
 
 // Load when panel first opens
 watch(() => props.open, (val) => {
-  if (val) load();
+  if (val) {
+    reset();
+    load();
+  }
 });
 </script>
 
@@ -62,12 +68,15 @@ watch(() => props.open, (val) => {
   >
     <component
       :is="(anchor ?? 'bottom') === 'top' ? DrawerContent : SheetContent"
+      id="notifications-panel"
       :side="(anchor ?? 'bottom') === 'top' ? 'bottom' : 'right'"
       class="notif-panel z-[var(--z-overlay)]"
+      @close-auto-focus="onCloseAutoFocus"
     >
         <!-- Header -->
         <component :is="(anchor ?? 'bottom') === 'top' ? DrawerHeader : SheetHeader" class="notif-panel__header">
           <component :is="(anchor ?? 'bottom') === 'top' ? DrawerTitle : SheetTitle" class="notif-panel__title">Notificações</component>
+          <component :is="(anchor ?? 'bottom') === 'top' ? DrawerDescription : SheetDescription" class="sr-only">Notificações recentes da sua conta.</component>
           <div class="notif-panel__header-actions">
             <Button
               v-if="hasUnread()"

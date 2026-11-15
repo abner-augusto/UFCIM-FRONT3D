@@ -2,7 +2,8 @@
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
-import { toLocalISODate } from '@/utils/date';
+import { campusMinutesNow, isSlotPast } from '@/utils/slots';
+import { followCampusToday, useCampusToday } from '@/composables/useCampusToday';
 import type { Availability, AvailabilitySlot } from '@/types/reservation';
 import AppDateField from '@/components/AppDateField.vue';
 import { Label } from '@/components/ui/label';
@@ -32,8 +33,9 @@ const emit = defineEmits<{
 }>();
 
 const auth = useAuthStore();
-const today = toLocalISODate();
-const selectedDate = ref(props.initialSchedule?.date ?? today);
+const today = useCampusToday();
+const selectedDate = ref(props.initialSchedule?.date ?? today.value);
+followCampusToday(today, selectedDate);
 const availability = ref<Availability | null>(null);
 const loadingAvailability = ref(false);
 const errorMsg = ref<string | null>(null);
@@ -49,7 +51,7 @@ const openSlots = computed<AvailabilitySlot[]>(() =>
 
 /** A slot is past once it ends: the in-progress half hour stays bookable (same rule as the backend). */
 function isPastSlot(slot: AvailabilitySlot): boolean {
-  return new Date(`${selectedDate.value}T${slot.endTime}:00`).getTime() <= nowTs.value;
+  return isSlotPast(selectedDate.value, slot.endTime, nowTs.value);
 }
 
 const { start, end, startOptions, endOptions, range, clear, applyRange } = useTimeRangePicker({
@@ -58,9 +60,7 @@ const { start, end, startOptions, endOptions, range, clear, applyRange } = useTi
 });
 
 const nowMinutes = computed(() => {
-  if (selectedDate.value !== today) return null;
-  const now = new Date(nowTs.value);
-  return now.getHours() * 60 + now.getMinutes();
+  return campusMinutesNow(selectedDate.value, nowTs.value);
 });
 
 function emitSchedule() {
@@ -116,7 +116,7 @@ watch(selectedDate, (date) => {
 }, { immediate: true });
 
 watch([() => props.spaceId, () => props.initialSchedule], () => {
-  const initialDate = props.initialSchedule?.date ?? today;
+  const initialDate = props.initialSchedule?.date ?? today.value;
   if (selectedDate.value === initialDate) {
     void loadAvailability(initialDate);
   } else {
@@ -139,12 +139,12 @@ onUnmounted(() => {
     </div>
 
     <div class="reservation-schedule-step__field">
-      <Label class="reservation-schedule-step__label" for="tray-reservation-date">Data da reserva</Label>
+      <Label class="reservation-schedule-step__label" id="tray-reservation-date-label" for="tray-reservation-date">Data da reserva</Label>
       <AppDateField
         id="tray-reservation-date"
+        label-id="tray-reservation-date-label"
         v-model="selectedDate"
         :min="today"
-        aria-label="Data da reserva"
       />
     </div>
 

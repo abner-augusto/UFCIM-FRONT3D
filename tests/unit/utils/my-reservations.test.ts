@@ -70,7 +70,7 @@ describe('describeSeries', () => {
 });
 
 // "Now" is mid-day on Thursday 15/10/2026, local time.
-const NOW = new Date('2026-10-15T12:00:00');
+const NOW = new Date('2026-10-15T12:00:00-03:00');
 
 const SALA = { id: 's1', number: '01', name: 'Sala 01' };
 const AUDITORIO = { id: 's2', number: 'AUD', name: 'Auditório' };

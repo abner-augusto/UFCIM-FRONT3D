@@ -6,7 +6,7 @@ import {
   type EquipmentMaintenanceReport,
 } from '@/types/maintenance-history';
 import { formatDays, formatHours } from '@/utils/maintenance-history';
-import { formatDateShort, toLocalISODate } from '@/utils/date';
+import { formatDateShort, campusISODate } from '@/utils/date';
 import { roomLabel, blockLabel } from '@/utils/space-labels';
 import { useDarkMode } from '@/composables/useDarkMode';
 import { chartColors } from '@/lib/chartColors';
@@ -42,7 +42,7 @@ const cards = computed(() => {
     { label: 'Reincidências', value: s.recurrences, icon: Repeat },
     {
       label: 'Última ocorrência',
-      value: s.lastOccurrenceAt ? formatDateShort(toLocalISODate(new Date(s.lastOccurrenceAt))) : '—',
+      value: s.lastOccurrenceAt ? formatDateShort(campusISODate(new Date(s.lastOccurrenceAt))) : '—',
       icon: CalendarClock,
     },
   ];

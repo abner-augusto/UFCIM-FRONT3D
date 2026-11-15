@@ -217,9 +217,7 @@ function intervalLabel(interval: BusyInterval): string {
 }
 
 .occupancy__list span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .occupancy__empty {

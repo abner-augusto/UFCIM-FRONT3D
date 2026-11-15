@@ -7,13 +7,14 @@ import { useReservationStore } from '@/stores/reservation';
 import { api } from '@/services/api';
 import type { Space } from '@/types/space';
 import type { Availability, AvailabilitySlot, Blocking, TimeSlot } from '@/types/reservation';
-import { BLOCK_TYPE_LABELS, TIME_SLOT_LABELS, TIME_SLOT_RANGES, PURPOSE_OPTIONS, isSlotAvailable } from '@/types/reservation';
+import { BLOCK_TYPE_LABELS, TIME_SLOT_RANGES, PURPOSE_OPTIONS, isSlotAvailable } from '@/types/reservation';
 import { usePermissions } from '@/composables/usePermissions';
 import { useTimeRangePicker } from '@/composables/useTimeRangePicker';
 import RecurringReservationForm from '@/components/RecurringReservationForm.vue';
-import TimeRangeFields from '@/components/schedule/TimeRangeFields.vue';
-import OccupancyBar from '@/components/schedule/OccupancyBar.vue';
-import { toLocalISODate } from '@/utils/date';
+import ReservationScheduleFields from '@/components/ReservationScheduleFields.vue';
+import { followCampusToday, useCampusToday } from '@/composables/useCampusToday';
+import { campusMinutesNow, isSlotPast } from '@/utils/slots';
+import { validateReservationForm } from '@/utils/form-validation';
 import AppDateField from '@/components/AppDateField.vue';
 import { blockLabel, departmentLabel } from '@/utils/space-labels';
 import SpaceHeaderSkeleton from '@/components/SpaceHeaderSkeleton.vue';
@@ -21,7 +22,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 const route = useRoute();
 const router = useRouter();
@@ -32,14 +32,17 @@ const spaceId = route.params.spaceId as string;
 
 const space = ref<Space | null>(null);
 const availability = ref<Availability | null>(null);
-const today = toLocalISODate();
+const today = useCampusToday();
 
-const selectedDate = ref(today);
+const selectedDate = ref(today.value);
+followCampusToday(today, selectedDate);
 const selectedPurpose = ref('');
 const loadingSpace = ref(true);
 const loadingAvailability = ref(false);
 const loadingBlockings = ref(false);
 const errorMsg = ref<string | null>(null);
+const validationError = ref<string | null>(null);
+const scheduleFields = ref<InstanceType<typeof ReservationScheduleFields> | null>(null);
 const blockings = ref<Blocking[]>([]);
 
 // ── Selection mode ──────────────────────────────────────────────
@@ -61,8 +64,7 @@ const nowTs = ref(Date.now());
 
 /** A time is past once reached; a slot stays bookable until it ends. */
 function isPastTime(time: string): boolean {
-  if (!selectedDate.value) return false;
-  return new Date(`${selectedDate.value}T${time}:00`).getTime() <= nowTs.value;
+  return isSlotPast(selectedDate.value, time, nowTs.value);
 }
 
 const openSlots = computed<AvailabilitySlot[]>(() =>
@@ -85,9 +87,7 @@ const {
 });
 
 const nowMinutes = computed(() => {
-  if (selectedDate.value !== today) return null;
-  const now = new Date(nowTs.value);
-  return now.getHours() * 60 + now.getMinutes();
+  return campusMinutesNow(selectedDate.value, nowTs.value);
 });
 
 onMounted(async () => {
@@ -189,17 +189,26 @@ const reservationStatusMessage = computed(() => {
 });
 
 
-// ── Can continue? ───────────────────────────────────────────────
-function canContinue(): boolean {
-  if (space.value?.reservable === false) return false;
-  if (!selectedDate.value || !selectedPurpose.value) return false;
-  if (selectionMode.value === 'slots') return !!selectedSlot.value;
-  return !!customRange.value;
+watch([selectedDate, selectedPurpose, selectedSlot, customStart, customEnd, selectionMode], () => { validationError.value = null; });
+
+function focusInvalid(field: 'date' | 'schedule' | 'purpose') {
+  if (field === 'schedule') scheduleFields.value?.focus();
+  else document.getElementById(field === 'date' ? 'reservation-date' : 'reservation-purpose')?.focus();
 }
 
 function handleContinue() {
-  if (!canContinue() || !space.value) return;
-  reservationStore.setSpace(spaceId, space.value.name);
+  if (space.value?.reservable === false) return;
+  const invalid = validateReservationForm({
+    date: selectedDate.value,
+    schedule: selectionMode.value === 'slots' ? !!selectedSlot.value : !!customRange.value,
+    purpose: selectedPurpose.value,
+  });
+  if (invalid) {
+    validationError.value = invalid.message;
+    focusInvalid(invalid.field);
+    return;
+  }
+  reservationStore.setSpace(spaceId, space.value!.name);
   if (selectionMode.value === 'slots') {
     reservationStore.setSchedule(selectedDate.value, selectedSlot.value!);
   } else {
@@ -246,10 +255,10 @@ function handleContinue() {
       </div>
 
       <!-- ── Non-recurring form ── -->
-      <template v-if="!isRecurring">
+      <form v-if="!isRecurring" novalidate @submit.prevent="handleContinue">
         <div class="form-section">
-          <Label class="form-label" for="reservation-date">Data da reserva</Label>
-          <AppDateField id="reservation-date" v-model="selectedDate" :min="today" aria-label="Data da reserva" />
+          <Label class="form-label" id="reservation-date-label" for="reservation-date">Data da reserva</Label>
+          <AppDateField id="reservation-date" label-id="reservation-date-label" v-model="selectedDate" :min="today" />
           <p v-if="loadingBlockings && selectedDate" class="form-hint">Verificando bloqueios do dia...</p>
           <div v-else-if="selectedDateBlockings.length" class="blocking-notice">
             <p class="blocking-notice__title">Bloqueios neste dia</p>
@@ -263,57 +272,25 @@ function handleContinue() {
           </div>
         </div>
 
-        <div v-if="selectedDate" class="form-section">
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            class="period-mode-bar"
-            :model-value="selectionMode"
-            @update:model-value="selectionMode = (($event || 'slots') as SelectionMode)"
-          >
-            <ToggleGroupItem value="slots" class="mode-btn">Períodos</ToggleGroupItem>
-            <ToggleGroupItem value="hours" class="mode-btn">Horários</ToggleGroupItem>
-          </ToggleGroup>
-
-          <div v-if="loadingAvailability" class="state-msg">Verificando disponibilidade...</div>
-
-          <!-- Named slots -->
-          <div v-else-if="selectionMode === 'slots'" class="slot-grid">
-            <Button
-              v-for="(label, slot) in TIME_SLOT_LABELS"
-              :key="slot"
-              type="button"
-              variant="outline"
-              class="slot-btn"
-              :class="{
-                'slot-btn--selected': selectedSlot === slot,
-                'slot-btn--unavailable': !checkSlotAvailable(slot as TimeSlot),
-              }"
-              :disabled="!checkSlotAvailable(slot as TimeSlot)"
-              @click="selectedSlot = slot as TimeSlot"
-            >
-              {{ label }} ({{ TIME_SLOT_RANGES[slot as TimeSlot].startTime }}–{{ TIME_SLOT_RANGES[slot as TimeSlot].endTime }})
-            </Button>
-          </div>
-
-          <!-- Início / Término in 30-minute steps (MEL-024) -->
-          <div v-else class="hour-picker">
-            <p class="hour-picker__hint">Escolha o início e o término. A reserva dura no mínimo 1 hora.</p>
-            <TimeRangeFields
-              v-model:start="customStart"
-              v-model:end="customEnd"
-              id-prefix="reservation"
-              :start-options="startOptions"
-              :end-options="endOptions"
-            />
-            <p v-if="!startOptions.length" class="form-hint">Não há 1 hora livre seguida nesta data.</p>
-            <OccupancyBar class="hour-picker__bar" :slots="openSlots" :selection="customRange" :now-minutes="nowMinutes" />
-          </div>
-        </div>
+        <ReservationScheduleFields
+          v-if="selectedDate"
+          ref="scheduleFields"
+          v-model:mode="selectionMode"
+          v-model:slot="selectedSlot"
+          v-model:start="customStart"
+          v-model:end="customEnd"
+          :loading="loadingAvailability"
+          :start-options="startOptions"
+          :end-options="endOptions"
+          :slots="openSlots"
+          :range="customRange"
+          :now-minutes="nowMinutes"
+          :available="checkSlotAvailable"
+        />
 
         <div v-if="selectedSlot || (selectionMode === 'hours' && customRange)" class="form-section">
-          <Label class="form-label" for="reservation-purpose">Finalidade</Label>
-          <NativeSelect id="reservation-purpose" v-model="selectedPurpose" class="form-input">
+          <Label class="form-label" for="reservation-purpose">Finalidade *</Label>
+          <NativeSelect id="reservation-purpose" v-model="selectedPurpose" class="form-input" required>
             <NativeSelectOption value="" disabled>Selecione uma finalidade</NativeSelectOption>
             <NativeSelectOption v-for="opt in PURPOSE_OPTIONS" :key="opt.value" :value="opt.value">
               {{ opt.label }}
@@ -336,13 +313,14 @@ function handleContinue() {
         </div>
 
         <p v-if="errorMsg" class="state-error">{{ errorMsg }}</p>
+        <p v-if="validationError" class="state-error" role="alert">{{ validationError }}</p>
 
         <div class="form-actions">
-          <Button class="continue-btn" :disabled="!canContinue()" @click="handleContinue">
+          <Button type="submit" class="continue-btn" :disabled="space.reservable === false">
             Continuar
           </Button>
         </div>
-      </template>
+      </form>
 
       <!-- ── Recurring form ── -->
       <template v-else>
@@ -434,45 +412,6 @@ function handleContinue() {
   font-size: 0.82rem;
   color: var(--muted-foreground);
 }
-
-/* Mode toggle */
-.period-mode-bar {
-  display: flex;
-  margin-bottom: 0.75rem;
-  width: 100%;
-}
-.mode-btn {
-  flex: 1;
-  min-height: var(--tap-min, 44px);
-}
-
-/* Named slots */
-.slot-grid { display: flex; flex-direction: column; gap: 0.5rem; }
-.slot-btn {
-  text-align: left;
-  min-height: var(--tap-min, 44px);
-  justify-content: flex-start;
-}
-.slot-btn--selected {
-  border-color: var(--primary);
-  background: var(--secondary);
-  color: var(--primary);
-  font-weight: 600;
-}
-.slot-btn--unavailable {
-  opacity: 0.4;
-  cursor: not-allowed;
-  background: var(--muted);
-}
-
-/* Hour picker */
-.hour-picker__hint {
-  font-size: 0.8rem;
-  color: var(--muted-foreground);
-  margin: 0 0 0.6rem;
-  min-height: 1.2em;
-}
-.hour-picker__bar { margin-top: 0.75rem; }
 
 /* Actions */
 .form-actions {

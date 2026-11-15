@@ -11,7 +11,7 @@ import { MapPin, Lock } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import BlockingTray from '@/components/BlockingTray.vue';
-import { formatDateTime, toLocalISODate } from '@/utils/date';
+import { formatDateTime, campusISODate } from '@/utils/date';
 import { buildBlockingReasonFromReport } from '@/utils/blockings';
 import { isRoomTicket, reportSpace, reportTitle } from '@/utils/maintenance-tickets';
 import { roomLabel, blockLabel } from '@/utils/space-labels';
@@ -55,7 +55,7 @@ const loading = ref(true);
 const errorMsg = ref<string | null>(null);
 const acting = ref<string | null>(null);
 const blockingReport = ref<EquipmentReport | null>(null);
-const today = toLocalISODate();
+const today = campusISODate();
 
 onMounted(async () => {
   if (!canManageEquipment.value) {

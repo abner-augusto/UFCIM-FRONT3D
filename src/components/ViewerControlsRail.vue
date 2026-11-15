@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, nextTick, watch, type Ref } from 'vue';
 import { useViewerSync } from '@/composables/useViewerSync';
 import { PERIOD_LABELS, type PeriodKey } from '@/utils/period';
 import { TIME_SLOT_RANGES } from '@/types/reservation';
 import { formatShortDate, createDateChips } from '@/composables/useDateTimeFilter';
-import { toLocalISODate } from '@/utils/date';
 import { Building2, Search, Maximize, Calendar } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface Building {
   id: string;
@@ -33,6 +33,7 @@ const props = defineProps<{
   viewerRef: ThreeViewerExposed | null;
   ready: boolean;
   selectedDate: string;
+  today: string;
   selectedPeriod: PeriodKey;
   periodAutoDetected: boolean;
   fullscreen: boolean;
@@ -45,7 +46,7 @@ const emit = defineEmits<{
   'open-search': [];
 }>();
 
-const isToday = computed(() => props.selectedDate === toLocalISODate());
+const isToday = computed(() => props.selectedDate === props.today);
 
 const { activeBuildingId, activeFloorLevel, buildings, floors } = useViewerSync(
   () => props.viewerRef,
@@ -53,6 +54,17 @@ const { activeBuildingId, activeFloorLevel, buildings, floors } = useViewerSync(
 );
 const dateTimePopoverOpen = ref(false);
 const buildingPopoverOpen = ref(false);
+const dateOptionsRef = ref<HTMLElement | null>(null);
+const buildingOptionsRef = ref<HTMLElement | null>(null);
+
+function focusOnOpen(open: Ref<boolean>, options: Ref<HTMLElement | null>) {
+  watch(open, isOpen => {
+    if (isOpen) nextTick(() => options.value?.querySelector<HTMLButtonElement>('button')?.focus());
+  }, { flush: 'post' });
+}
+
+focusOnOpen(dateTimePopoverOpen, dateOptionsRef);
+focusOnOpen(buildingPopoverOpen, buildingOptionsRef);
 
 const rangeOf = (key: PeriodKey) => `${TIME_SLOT_RANGES[key].startTime.slice(0, 2)}h–${TIME_SLOT_RANGES[key].endTime.slice(0, 2)}h`;
 
@@ -86,7 +98,7 @@ const dateTimeBtnLabel = computed(() => {
   return `${dayLabel} · ${periodAbbr}`;
 });
 
-const dateChips = computed(() => createDateChips());
+const dateChips = computed(() => createDateChips(props.today));
 
 const ariaLabel = computed(() => {
   let label = `${dateTimeBtnLabel.value}, Edifício: ${buildingName.value}`;
@@ -159,95 +171,31 @@ function onFloorPick(level: number) {
   props.viewerRef?.selectFloor(level);
 }
 
-function closeDateTime() {
-  dateTimePopoverOpen.value = false;
-}
-
-function closeBuilding() {
-  buildingPopoverOpen.value = false;
-}
-
-// Click outside logic
-const dateTimeRef = ref<HTMLElement | null>(null);
-const buildingRef = ref<HTMLElement | null>(null);
-
-function handleDocumentClick(e: MouseEvent) {
-  if (dateTimePopoverOpen.value && dateTimeRef.value && !dateTimeRef.value.contains(e.target as Node)) {
-    closeDateTime();
-  }
-  if (buildingPopoverOpen.value && buildingRef.value && !buildingRef.value.contains(e.target as Node)) {
-    closeBuilding();
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('mousedown', handleDocumentClick);
-});
-
-onUnmounted(() => {
-  document.removeEventListener('mousedown', handleDocumentClick);
-});
 </script>
 
 <template>
   <div class="rail-root">
     <!-- top stack: datetime, building, search -->
     <div class="rail-stack rail-stack--top">
-      <Button variant="ghost" class="rail-btn rail-btn--wide" :class="{ active: dateTimePopoverOpen }" @click="toggleDateTime" :title="dateTimeBtnLabel">
-        <span class="rail-btn-label">{{ dateTimeBtnLabel }}</span>
-      </Button>
-      <Button variant="ghost" size="icon" class="rail-btn" :class="{ active: buildingPopoverOpen }" @click="toggleBuilding" title="Edifício"><Building2 :size="20" /></Button>
-      <Button variant="ghost" size="icon" class="rail-btn" @click="$emit('open-search')" title="Pesquisar"><Search :size="20" /></Button>
-    </div>
-
-    <!-- floor stack: only when a building is selected -->
-    <Transition name="floor-stack">
-      <div v-if="activeBuildingId" class="floor-stack">
-        <Button v-for="f in floorsReversed" :key="f.level"
-                variant="ghost"
-                class="floor-btn"
-                :class="{ active: f.level === activeFloorLevel }"
-                @click="onFloorPick(f.level)">
-          {{ shortFloorLabel(f.name) }}
-        </Button>
-      </div>
-    </Transition>
-
-    <!-- bottom: fullscreen toggle -->
-    <div class="rail-stack rail-stack--bottom">
-      <Button variant="ghost" size="icon" class="rail-btn" :class="{ active: fullscreen }"
-              @click="$emit('update:fullscreen', !fullscreen)" title="Tela cheia"><Maximize :size="20" /></Button>
-    </div>
-
-    <!-- breadcrumb pill -->
-    <div class="breadcrumb-pill" :aria-label="ariaLabel">
-      <Button variant="ghost" class="crumb crumb--strong" @click="toggleDateTime">{{ isToday ? 'Hoje' : formatShortDate(selectedDate) }}</Button>
-      <span class="dot">·</span>
-      <span class="crumb crumb--passive">{{ periodLabel }}</span>
-      <template v-if="activeBuildingId">
-        <span class="dot">·</span>
-        <Button variant="ghost" class="crumb" @click="toggleBuilding">{{ buildingName }}</Button>
-      </template>
-      <template v-if="floorName">
-        <span class="dot">·</span>
-        <span class="crumb crumb--passive">{{ floorName }}</span>
-      </template>
-    </div>
-
-    <!-- datetime popover -->
-    <Transition name="popover">
-      <div v-if="dateTimePopoverOpen" ref="dateTimeRef" class="popover popover--datetime">
+      <Popover v-model:open="dateTimePopoverOpen">
+        <PopoverTrigger as-child>
+          <Button variant="ghost" class="rail-btn rail-btn--wide" :class="{ active: dateTimePopoverOpen }" :title="dateTimeBtnLabel">
+            <span class="rail-btn-label">{{ dateTimeBtnLabel }}</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent side="left" align="start" class="w-[175px] gap-0 rounded-xl p-2 shadow-[0_4px_20px_rgb(var(--shadow-color)/0.2)]">
         <div class="popover-section">
           <div class="popover-label">
             <span>Data</span>
           </div>
-          <div class="popover-date-chips">
+          <div ref="dateOptionsRef" class="popover-date-chips">
             <Button
               v-for="d in dateChips" :key="d.value"
               type="button"
               variant="ghost"
               class="popover-item popover-item--chip"
               :class="{ active: d.value === selectedDate }"
+              :aria-pressed="d.value === selectedDate"
               @click="onDatePick(d.value)"
             >{{ d.label }}</Button>
           </div>
@@ -257,6 +205,8 @@ onUnmounted(() => {
           <input
             ref="hiddenDateRef"
             type="date"
+            tabindex="-1"
+            aria-hidden="true"
             class="hidden-date-input"
             min="2024-01-01"
             @change="onHiddenDateChange"
@@ -275,25 +225,76 @@ onUnmounted(() => {
                   variant="ghost"
                   class="popover-item"
                   :class="{ active: p.key === selectedPeriod }"
+                  :aria-pressed="p.key === selectedPeriod"
                   @click="onPeriodPick(p.key)">{{ p.label }} · {{ p.range }}</Button>
         </div>
-      </div>
-    </Transition>
-
-    <!-- building popover -->
-    <Transition name="popover">
-      <div v-if="buildingPopoverOpen" ref="buildingRef" class="popover popover--building">
-        <div class="popover-grid">
-          <Button type="button" variant="ghost" class="popover-item" :class="{ active: !activeBuildingId }" @click="onBuildingPick(null)">Todos</Button>
+        </PopoverContent>
+      </Popover>
+      <Popover v-model:open="buildingPopoverOpen">
+        <PopoverTrigger as-child>
+          <Button variant="ghost" size="icon" class="rail-btn" :class="{ active: buildingPopoverOpen }" title="Edifício" aria-label="Edifício"><Building2 :size="20" /></Button>
+        </PopoverTrigger>
+        <PopoverContent side="left" align="start" class="w-[180px] gap-0 rounded-xl p-2 shadow-[0_4px_20px_rgb(var(--shadow-color)/0.2)]">
+        <div ref="buildingOptionsRef" class="popover-grid">
+          <Button type="button" variant="ghost" class="popover-item" :class="{ active: !activeBuildingId }" :aria-pressed="!activeBuildingId" @click="onBuildingPick(null)">Todos</Button>
           <Button v-for="b in buildings" :key="b.id"
                   type="button"
                   variant="ghost"
                   class="popover-item"
                   :class="{ active: b.id === activeBuildingId }"
+                  :aria-pressed="b.id === activeBuildingId"
                   @click="onBuildingPick(b.id)">{{ b.name }}</Button>
         </div>
+        </PopoverContent>
+      </Popover>
+      <Button variant="ghost" size="icon" class="rail-btn" @click="$emit('open-search')" title="Pesquisar" aria-label="Pesquisar"><Search :size="20" /></Button>
+    </div>
+
+    <!-- floor stack: only when a building is selected -->
+    <Transition name="floor-stack">
+      <div v-if="activeBuildingId" class="floor-stack">
+        <Button v-for="f in floorsReversed" :key="f.level"
+                variant="ghost"
+                class="floor-btn"
+                :class="{ active: f.level === activeFloorLevel }"
+                :aria-label="f.name"
+                :aria-pressed="f.level === activeFloorLevel"
+                @click="onFloorPick(f.level)">
+          {{ shortFloorLabel(f.name) }}
+        </Button>
       </div>
     </Transition>
+
+    <!-- bottom: fullscreen toggle -->
+    <div class="rail-stack rail-stack--bottom">
+      <Button
+        variant="ghost"
+        size="icon"
+        class="rail-btn"
+        :class="{ active: fullscreen }"
+        @click="$emit('update:fullscreen', !fullscreen)"
+        title="Tela cheia"
+        aria-label="Tela cheia"
+        :aria-pressed="fullscreen"
+      ><Maximize :size="20" /></Button>
+    </div>
+
+    <!-- breadcrumb pill -->
+    <div class="breadcrumb-pill">
+      <span class="sr-only">{{ ariaLabel }}</span>
+      <Button variant="ghost" class="crumb crumb--strong" @click="toggleDateTime">{{ isToday ? 'Hoje' : formatShortDate(selectedDate) }}</Button>
+      <span class="dot">·</span>
+      <span class="crumb crumb--passive">{{ periodLabel }}</span>
+      <template v-if="activeBuildingId">
+        <span class="dot">·</span>
+        <Button variant="ghost" class="crumb" @click="toggleBuilding">{{ buildingName }}</Button>
+      </template>
+      <template v-if="floorName">
+        <span class="dot">·</span>
+        <span class="crumb crumb--passive">{{ floorName }}</span>
+      </template>
+    </div>
+
   </div>
 </template>
 
@@ -420,35 +421,6 @@ onUnmounted(() => {
   font-weight: bold;
 }
 
-.popover {
-  position: absolute;
-  background: var(--popover);
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgb(var(--shadow-color) / 0.2);
-  padding: 8px;
-  pointer-events: auto;
-  z-index: var(--z-popover);
-  /* Both popovers sit just left of the right-edge rail, so growing from the
-     top-right makes them feel like they spring out of the button that opened
-     them rather than zooming in from their own center. */
-  transform-origin: top right;
-}
-
-.popover--datetime {
-  top: 8px;
-  right: calc(16px + var(--rail-w));
-  width: 175px;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.popover--building {
-  top: calc(8px + var(--rail-w) + var(--rail-gap));
-  right: calc(16px + var(--rail-w));
-  width: 180px;
-}
-
 .popover-section {
   display: flex;
   flex-direction: column;
@@ -545,15 +517,4 @@ onUnmounted(() => {
   transform: translateX(20px);
 }
 
-.popover-enter-active {
-  transition: opacity 0.18s ease, transform 0.18s var(--ease-out-expo, ease);
-}
-.popover-leave-active {
-  transition: opacity 0.12s ease, transform 0.12s ease;
-}
-.popover-enter-from,
-.popover-leave-to {
-  opacity: 0;
-  transform: scale(0.9);
-}
 </style>

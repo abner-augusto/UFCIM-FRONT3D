@@ -1,7 +1,27 @@
+<script lang="ts">
+let turnstileLoad: Promise<void> | null = null;
+
+function loadTurnstile(): Promise<void> {
+  if (!turnstileLoad) {
+    turnstileLoad = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.referrerPolicy = 'no-referrer';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Turnstile failed to load'));
+      document.head.appendChild(script);
+    });
+  }
+  return turnstileLoad;
+}
+</script>
+
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { api } from '@/services/api';
 import { mapRequestInviteError } from '@/utils/api-errors';
+import { invitationSecurityError } from '@/utils/form-validation';
 import { RouterLink } from 'vue-router';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,21 +34,26 @@ const loading = ref(false);
 const errorMsg = ref<string | null>(null);
 const submitted = ref(false);
 const turnstileToken = ref('');
+const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY as string;
 
 let turnstileWidgetId: string | null = null;
+let unmounted = false;
 
-onMounted(() => {
-  renderTurnstile();
-});
-
-onUnmounted(() => {
-  if (turnstileWidgetId && window.turnstile) {
-    window.turnstile.reset(turnstileWidgetId);
+onMounted(async () => {
+  try {
+    await loadTurnstile();
+    if (!unmounted) renderTurnstile();
+  } catch {
+    if (!unmounted) errorMsg.value = 'Não foi possível carregar a verificação de segurança. Recarregue a página.';
   }
 });
 
+onUnmounted(() => {
+  unmounted = true;
+  if (turnstileWidgetId !== null) window.turnstile?.remove(turnstileWidgetId);
+});
+
 function renderTurnstile() {
-  const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY as string;
   if (!siteKey) {
     console.warn('VITE_TURNSTILE_SITE_KEY not set');
     return;
@@ -37,27 +62,20 @@ function renderTurnstile() {
   const el = document.getElementById('turnstile-container');
   if (!el) return;
 
-  const tryRender = () => {
-    if (window.turnstile) {
-      const id = window.turnstile.render(el, {
-        sitekey: siteKey,
-        callback: (token: string) => {
-          turnstileToken.value = token;
-        },
-        'expired-callback': () => {
-          turnstileToken.value = '';
-        },
-        'error-callback': () => {
-          turnstileToken.value = '';
-        },
-      });
-      turnstileWidgetId = id;
-    } else {
-      setTimeout(tryRender, 200);
-    }
-  };
-
-  tryRender();
+  if (window.turnstile) {
+    turnstileWidgetId = window.turnstile.render(el, {
+      sitekey: siteKey,
+      callback: (token: string) => {
+        turnstileToken.value = token;
+      },
+      'expired-callback': () => {
+        turnstileToken.value = '';
+      },
+      'error-callback': () => {
+        turnstileToken.value = '';
+      },
+    });
+  }
 }
 
 function resetTurnstile() {
@@ -69,10 +87,8 @@ function resetTurnstile() {
 
 async function handleSubmit() {
   if (!name.value.trim() || !email.value.trim()) return;
-  if (!turnstileToken.value) {
-    errorMsg.value = 'Por favor, complete a verificação de segurança.';
-    return;
-  }
+  errorMsg.value = invitationSecurityError(siteKey, turnstileToken.value);
+  if (errorMsg.value) return;
 
   loading.value = true;
   errorMsg.value = null;
@@ -137,6 +153,10 @@ async function handleSubmit() {
             type="email"
             placeholder="seu@email.com"
             autocomplete="email"
+            name="email"
+            spellcheck="false"
+            autocapitalize="none"
+            enterkeyhint="go"
             required
             :disabled="loading"
           />
@@ -144,9 +164,9 @@ async function handleSubmit() {
 
         <div id="turnstile-container" class="mt-2 flex min-h-[65px] justify-center"></div>
 
-        <p v-if="errorMsg" class="text-destructive m-0 text-sm" role="alert" aria-live="polite">{{ errorMsg }}</p>
+        <p v-if="errorMsg" class="text-destructive m-0 text-sm" role="alert">{{ errorMsg }}</p>
 
-        <Button type="submit" class="mt-1 h-11" :disabled="loading || !turnstileToken">
+        <Button type="submit" class="mt-1 h-11" :disabled="loading">
           {{ loading ? 'Enviando...' : 'Solicitar convite' }}
         </Button>
       </form>

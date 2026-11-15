@@ -11,6 +11,7 @@ vi.stubGlobal('sessionStorage', {
 
 import { authGuard } from '@/router/guards';
 import { useAuthStore } from '@/stores/auth';
+import { api } from '@/services/api';
 import { CAN_MANAGE_EQUIPMENT, CAN_BLOCK, CAN_RESERVE, CAN_VIEW_MAINTENANCE_HISTORY } from '@/utils/roles';
 
 function makeTo(meta: Record<string, unknown> = {}): RouteLocationNormalized {
@@ -34,38 +35,50 @@ describe('authGuard', () => {
     setActivePinia(createPinia());
   });
 
-  it('redirects unauthenticated users to login on requiresAuth route', () => {
-    const result = authGuard(makeTo({ requiresAuth: true }));
+  it('redirects unauthenticated users to login on requiresAuth route', async () => {
+    const result = await authGuard(makeTo({ requiresAuth: true }));
 
     expect(result).toEqual({ name: 'login' });
   });
 
-  it('redirects student to campus-select on CAN_MANAGE_EQUIPMENT route', () => {
+  it('redirects student to campus-select on CAN_MANAGE_EQUIPMENT route', async () => {
     const auth = useAuthStore();
     auth.setAuth('fake-token', 'fake-refresh', makeStudentUser());
-    const result = authGuard(makeTo({ roles: CAN_MANAGE_EQUIPMENT }));
+    const result = await authGuard(makeTo({ roles: CAN_MANAGE_EQUIPMENT }));
 
     expect(result).toEqual({ name: 'campus-select' });
   });
 
-  it('redirects maintenance away from the CAN_RESERVE route (MEL-020)', () => {
+  it('redirects maintenance away from the CAN_RESERVE route (MEL-020)', async () => {
     const auth = useAuthStore();
     auth.setAuth('fake-token', 'fake-refresh', { ...makeStudentUser(), role: 'maintenance' as UserRole });
-    const result = authGuard(makeTo({ requiresAuth: true, roles: CAN_RESERVE }));
+    const result = await authGuard(makeTo({ requiresAuth: true, roles: CAN_RESERVE }));
 
     expect(result).toEqual({ name: 'campus-select' });
   });
 
-  it('redirects to campus-select when token present but user is null (BUG-006 regression)', () => {
+  it('waits for hydration before checking the user role', async () => {
     const auth = useAuthStore();
     auth.token = 'fake-token';
-    // user stays null — simulates cold load where getMe has not yet resolved
-    const result = authGuard(makeTo({ roles: CAN_MANAGE_EQUIPMENT }));
-
-    expect(result).toEqual({ name: 'campus-select' });
+    let resolve!: (value: Awaited<ReturnType<typeof api.getMe>>) => void;
+    vi.spyOn(api, 'getMe').mockImplementationOnce(() => new Promise((done) => { resolve = done; }));
+    const navigation = authGuard(makeTo({ requiresAuth: true, roles: CAN_RESERVE }));
+    expect(auth.user).toBeNull();
+    resolve({ ...makeStudentUser(), unreadCount: 2 });
+    expect(await navigation).toBeUndefined();
+    expect(auth.user?.role).toBe('student');
+    expect(auth.user).not.toHaveProperty('unreadCount');
+    expect(auth.unreadCount).toBe(2);
   });
 
-  it('allows professor to access CAN_BLOCK route', () => {
+  it('redirects to login when hydration fails on a protected route', async () => {
+    const auth = useAuthStore();
+    auth.token = 'fake-token';
+    vi.spyOn(api, 'getMe').mockRejectedValueOnce(new Error('offline'));
+    expect(await authGuard(makeTo({ requiresAuth: true, roles: CAN_RESERVE }))).toEqual({ name: 'login' });
+  });
+
+  it('allows professor to access CAN_BLOCK route', async () => {
     const auth = useAuthStore();
     auth.setAuth('fake-token', 'fake-refresh', {
       id: 'test-2',
@@ -76,7 +89,7 @@ describe('authGuard', () => {
       department: 'IAUD',
       isMasterAdmin: false,
     });
-    const result = authGuard(makeTo({ roles: CAN_BLOCK }));
+    const result = await authGuard(makeTo({ roles: CAN_BLOCK }));
 
     expect(result).toBeUndefined();
   });
@@ -86,16 +99,16 @@ describe('authGuard', () => {
     ['professor', { name: 'campus-select' }],
     ['staff', undefined],
     ['maintenance', undefined],
-  ] as const)('maintenance history route (MEL-013): %s → %o', (role, expected) => {
+  ] as const)('maintenance history route (MEL-013): %s → %o', async (role, expected) => {
     const auth = useAuthStore();
     auth.setAuth('fake-token', 'fake-refresh', { ...makeStudentUser(), role });
-    const result = authGuard(makeTo({ roles: CAN_VIEW_MAINTENANCE_HISTORY }));
+    const result = await authGuard(makeTo({ roles: CAN_VIEW_MAINTENANCE_HISTORY }));
 
     expect(result).toEqual(expected);
   });
 
-  it('allows navigation when no meta is set', () => {
-    const result = authGuard(makeTo());
+  it('allows navigation when no meta is set', async () => {
+    const result = await authGuard(makeTo());
 
     expect(result).toBeUndefined();
   });

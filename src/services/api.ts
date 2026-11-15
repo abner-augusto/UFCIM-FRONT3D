@@ -347,9 +347,9 @@ export const api = {
     ),
 
   // Users
-  getMe: (token: string | null) =>
+  getMe: (token: string | null, init?: RequestInit) =>
     request<PublicUser>(
-      '/users/me', token
+      '/users/me', token, init
     ),
 
   // MEL-025 (staff only): active users matching name or e-mail, at most 10,
@@ -368,8 +368,8 @@ export const api = {
   getSpace: (token: string | null, id: string) =>
     request<Space>(`/spaces/${id}`, token),
 
-  getAvailability: (token: string | null, spaceId: string, date: string) =>
-    request<Availability>(`/spaces/${spaceId}/availability?date=${date}`, token),
+  getAvailability: (token: string | null, spaceId: string, date: string, options?: RequestInit) =>
+    request<Availability>(`/spaces/${spaceId}/availability?date=${date}`, token, options),
 
   // Air quality: the room's sensor and its latest reading. A room without a
   // sensor answers 200 with `device: null`.

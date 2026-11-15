@@ -67,7 +67,7 @@ test.describe('BlockingCreateView', () => {
     );
 
     await page.getByRole('button', { name: /^Bloquear Espaço$/i }).click();
-    await expect(page.getByRole('status')).toContainText('3 dias bloqueados', { timeout: 10_000 });
+    await expect(page.getByRole('status').filter({ hasText: '3 dias bloqueados' })).toContainText('3 dias bloqueados', { timeout: 10_000 });
     await expect(page.getByRole('button', { name: 'Voltar para maquete' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Voltar para maquete' }).click();
@@ -89,9 +89,9 @@ test.describe('BlockingCreateView', () => {
 
     // The maintenance profile has no type selector — the backend forces 'maintenance'.
     await expect(page.locator('#blocking-type')).toHaveCount(0);
-    await expect(page.getByText('Manutenção', { exact: true })).toBeVisible();
+    await expect(page.getByRole('dialog').getByText('Manutenção', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: /^Bloquear Espaço$/i }).click();
-    await expect(page.getByRole('status')).toContainText('Espaço bloqueado', { timeout: 10_000 });
+    await expect(page.getByRole('status').filter({ hasText: 'Espaço bloqueado' })).toContainText('Espaço bloqueado', { timeout: 10_000 });
     await expect(page).toHaveURL(/#\/campus\/benfica\/viewer$/);
     await expect(page.getByRole('button', { name: 'Voltar para maquete' })).toBeVisible();
   });

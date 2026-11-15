@@ -3,6 +3,66 @@ import { test, expect } from './fixtures';
 const CAMPUS = 'pici';
 
 test.describe('ViewerView', () => {
+  test('mobile controls expose names, selection and keyboard popover focus', async ({ studentPage: page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/#/campus/${CAMPUS}/viewer`);
+    await expect(page.getByRole('heading', { name: 'Maquete 3D' })).toBeAttached();
+    await expect(page.getByRole('img', { name: /Maquete 3D.*Pesquisar.*Buscar Espaços/ })).toBeVisible();
+    await expect(page.locator('.viewer-loading[role="status"]')).toBeHidden();
+    await expect(page.locator('.viewer-loading--error')).toHaveCount(0);
+    const building = page.getByRole('button', { name: 'Edifício', includeHidden: true });
+    await expect(building).toBeVisible();
+    await building.focus();
+    await page.keyboard.press('Enter');
+    await expect(building).toHaveAttribute('aria-expanded', 'true');
+    const dialog = page.getByRole('dialog', { name: 'Edifício' });
+    await expect(dialog).toHaveCSS('width', '180px');
+    await expect(dialog.getByRole('button', { name: 'Todos' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(building).toBeFocused();
+    await expect(building).toHaveAttribute('aria-expanded', 'false');
+    await page.keyboard.press('Enter');
+    await expect(dialog.getByRole('button', { name: 'Todos' })).toBeFocused();
+    await expect(dialog.getByRole('button', { name: 'Bloco1' })).toBeVisible();
+    await page.keyboard.press('Tab');
+    await expect(dialog.getByRole('button', { name: 'Bloco1' })).toBeFocused();
+    await page.keyboard.press('Enter');
+    const floor = page.getByRole('button', { name: 'Térreo' });
+    await expect(floor).toBeVisible();
+    await floor.focus();
+    await page.keyboard.press('Enter');
+    await expect(floor).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('mobile date and search controls receive focus', async ({ studentPage: page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/#/campus/${CAMPUS}/viewer`);
+    const date = page.getByRole('button', { name: /Hoje · / });
+    await date.focus();
+    await page.keyboard.press('Enter');
+    const dateDialog = page.getByRole('dialog', { name: /Hoje · / });
+    await expect(dateDialog).toHaveCSS('width', '175px');
+    await expect(dateDialog.getByRole('button', { name: 'Hoje' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(date).toBeFocused();
+    await page.getByRole('button', { name: 'Pesquisar', exact: true }).click();
+    await expect(page.getByRole('searchbox', { name: 'Pesquisar espaço' })).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Fechar pesquisa' })).toBeVisible();
+  });
+
+  test('hidden date input is skipped by Tab', async ({ studentPage: page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/#/campus/${CAMPUS}/viewer`);
+    const trigger = page.getByRole('button', { name: /Hoje · / });
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    const hiddenDate = page.locator('.hidden-date-input');
+    for (let i = 0; i < 12; i++) {
+      await page.keyboard.press('Tab');
+      expect(await hiddenDate.evaluateAll(elements => elements.some(element => element === document.activeElement))).toBe(false);
+    }
+  });
+
   test('loads and renders the 3D canvas', async ({ studentPage: page }) => {
     await page.goto(`/#/campus/${CAMPUS}/viewer`);
     await page.waitForURL(/#\/campus\/.*\/viewer/, { timeout: 10_000 });

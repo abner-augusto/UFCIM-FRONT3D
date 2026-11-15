@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { buildPinStatusLabel } from '@/composables/usePinStatusLabel';
 
 const evening = { startTime: '19:00', endTime: '22:00' };
@@ -51,4 +51,19 @@ describe('buildPinStatusLabel', () => {
       nextAvailableDate: '2026-09-22',
     }).statusText).toBe('até 22/09');
   });
+});
+
+it('uses the fixed pin status color in light and dark themes', () => {
+  const classes = new Set<string>();
+  const element = { classList: classes };
+  vi.stubGlobal('document', { documentElement: element });
+  vi.stubGlobal('window', {});
+  vi.stubGlobal('getComputedStyle', () => ({
+    getPropertyValue: () => classes.has('dark') ? '#aabbcc' : '#112233',
+  }));
+  const range = { startTime: '07:00', endTime: '12:00' };
+  expect(buildPinStatusLabel('available', [], range).statusColor).toBe('#065f46');
+  classes.add('dark');
+  expect(buildPinStatusLabel('available', [], range).statusColor).toBe('#065f46');
+  vi.unstubAllGlobals();
 });

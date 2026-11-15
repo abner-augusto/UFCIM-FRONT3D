@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blockLabel, blockValue, campusLabel, departmentLabel, roomLabel } from '@/utils/space-labels';
+import { normalizeBlockKey, blockLabel, blockValue, campusLabel, departmentLabel, roomLabel } from '@/utils/space-labels';
 
 describe('blockLabel', () => {
   it('adds "Bloco" prefix when missing', () => {
@@ -61,4 +61,8 @@ describe('departmentLabel', () => {
   it('passes through unknown slug unchanged', () => {
     expect(departmentLabel('unknown-dept')).toBe('unknown-dept');
   });
+});
+
+it('matches manifest block ids to backend block names', () => {
+  expect(normalizeBlockKey('bloco1')).toBe(normalizeBlockKey('Bloco 1'));
 });

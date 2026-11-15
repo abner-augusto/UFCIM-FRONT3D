@@ -61,7 +61,11 @@ async function handleLogin() {
             class="h-11"
             type="email"
             placeholder="seu@email.com"
-            autocomplete="email"
+            autocomplete="username"
+            name="email"
+            spellcheck="false"
+            autocapitalize="none"
+            enterkeyhint="next"
             required
             :disabled="loading"
           />
@@ -76,12 +80,14 @@ async function handleLogin() {
             type="password"
             placeholder="••••••••••"
             autocomplete="current-password"
+            name="password"
+            enterkeyhint="go"
             required
             :disabled="loading"
           />
         </div>
 
-        <p v-if="errorMsg" class="text-destructive m-0 text-sm" role="alert" aria-live="polite">{{ errorMsg }}</p>
+        <p v-if="errorMsg" class="text-destructive m-0 text-sm" role="alert">{{ errorMsg }}</p>
 
         <Button type="submit" class="mt-1 h-11" :disabled="loading">
           {{ loading ? 'Entrando...' : 'Entrar' }}

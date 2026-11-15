@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { CAMPUS_TIME_ZONE } from '@/utils/date';
 /**
  * Air-quality history of the room report: one small line chart per metric, each
  * on its own axis, colored by level (green inside the acceptable band, yellow
@@ -75,7 +76,7 @@ const hourly = computed(() => {
 
 const labels = computed(() =>
   hourly.value.map(({ at }) =>
-    `${new Date(at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', hour12: false, timeZone: 'America/Fortaleza' }).replace(', ', ' ')}h`,
+    `${new Date(at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', hour12: false, timeZone: CAMPUS_TIME_ZONE }).replace(', ', ' ')}h`,
   ),
 );
 
@@ -224,9 +225,9 @@ const panels = computed(() =>
       </article>
     </div>
 
-    <div v-else class="aqh__table-wrap">
+    <div v-else class="aqh__table-wrap" role="region" aria-labelledby="air-quality-table-caption" tabindex="0">
       <table class="aqh__table">
-        <caption class="sr-only">Médias por hora das medições de qualidade do ar</caption>
+        <caption id="air-quality-table-caption" class="sr-only">Médias por hora das medições de qualidade do ar</caption>
         <thead>
           <tr>
             <th scope="col">Hora</th>

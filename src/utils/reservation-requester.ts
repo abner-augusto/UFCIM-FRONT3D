@@ -76,3 +76,17 @@ export function reservationRequesterNote(r: Reservation): RequesterNote | null {
   }
   return null;
 }
+export function requesterSearchStatus(input: {
+  active: boolean;
+  searching: boolean;
+  failed: boolean;
+  visibleCount: number;
+  totalCount: number;
+}): { message: string; showList: boolean } {
+  if (!input.active) return { message: '', showList: false };
+  if (input.searching) return { message: 'Buscando…', showList: false };
+  if (input.failed) return { message: 'Não foi possível buscar agora. O nome digitado será usado.', showList: false };
+  if (!input.visibleCount) return { message: 'Ninguém cadastrado com esse nome. O nome digitado será usado.', showList: false };
+  const message = input.totalCount > input.visibleCount ? 'Continue digitando para refinar a busca.' : '';
+  return { message, showList: true };
+}

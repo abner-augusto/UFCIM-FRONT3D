@@ -1,3 +1,4 @@
+import { API_CACHE, AVAILABILITY_CACHE } from '@/utils/cache-names';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { api, setUnauthorizedHandler } from '@/services/api';
@@ -31,6 +32,24 @@ export const useAuthStore = defineStore('auth', () => {
       return null;
     }
   });
+  let hydration: Promise<void> | undefined;
+  function hydrate(): Promise<void> {
+    if (!token.value || user.value) return Promise.resolve();
+    if (hydration) return hydration;
+    hydration = (async () => {
+      try {
+        const me = await api.getMe(token.value);
+        if (token.value) setAuth(token.value, refreshToken.value ?? 'dev', {
+          id: me.id, name: me.name, email: me.email, registration: me.registration,
+          role: me.role as UserRole, department: me.department, isMasterAdmin: me.isMasterAdmin ?? false,
+        }, me.unreadCount ?? 0);
+      } catch {
+        logout();
+      }
+    })().finally(() => { hydration = undefined; });
+    return hydration;
+  }
+
   function setAuth(jwt: string, refresh: string, userData: User, unread = 0) {
     token.value = jwt;
     refreshToken.value = refresh;
@@ -66,6 +85,10 @@ export const useAuthStore = defineStore('auth', () => {
     unreadCount.value = 0;
     sessionStorage.removeItem('ufcim_token');
     sessionStorage.removeItem('ufcim_refresh');
+    if (typeof window !== 'undefined' && 'caches' in window) {
+      void window.caches.delete(API_CACHE).catch(() => {});
+      void window.caches.delete(AVAILABILITY_CACHE).catch(() => {});
+    }
   }
 
   return {
@@ -76,6 +99,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     userRole,
     isMasterAdmin,
+    hydrate,
     setAuth,
     setTokens,
     setUnreadCount,

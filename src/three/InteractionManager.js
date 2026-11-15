@@ -1,3 +1,4 @@
+import { LabelRegistry } from './LabelRegistry.js';
 import * as THREE from 'three';
 import { PinFactory } from './PinFactory.js'; // Import the new factory
 import { findBuildingId, isTap, pinWins } from './pointerIntent.js';
@@ -15,7 +16,7 @@ export class InteractionManager extends THREE.EventDispatcher {
         this.raycaster = new THREE.Raycaster();
         this.pointer = new THREE.Vector2();
         this.interactiveObjects = [];
-        this.labelSprites = [];
+        this.labels = new LabelRegistry(() => this.pinFactory, () => this.onChange?.());
         this.clickTargets = [];
         this.blockingMeshes = [];
         this.pinFactory = null;
@@ -72,6 +73,7 @@ export class InteractionManager extends THREE.EventDispatcher {
             const opensPopup = sprite.userData?.opensPopup !== false;
             sprite.visible = shouldDisplay && opensPopup;
         });
+        this.onChange?.();
         group.labels.forEach((sprite) => {
             const pinSprite = sprite.userData?.pinSprite;
             const pinOpensPopup = pinSprite ? pinSprite.userData?.opensPopup !== false : true;
@@ -106,12 +108,11 @@ export class InteractionManager extends THREE.EventDispatcher {
             parent.add(labelSprite);
 
             this.interactiveObjects.push(pinSprite);
-            this.labelSprites.push(labelSprite);
+            this.labels.add(pinData.id, labelSprite);
             labelSprite.userData.pinSprite = pinSprite;
-            // Only make the pin sprite a click target if it opens a popup.
-            if (preparedData.opensPopup !== false) {
-                this.clickTargets.push(pinSprite);
-            }
+            // applyBackendFilter can turn opensPopup on later; a pin that
+            // does not open a popup is hidden, so the raycast skips it.
+            this.clickTargets.push(pinSprite);
             this.clickTargets.push(labelSprite);
 
             const building = pinData.building;
@@ -182,12 +183,14 @@ export class InteractionManager extends THREE.EventDispatcher {
         const sprite = this.interactiveObjects.find(s => s.userData.id === pinId);
         if (!sprite) return;
         sprite.material.color.set(hexColor);
+        this.onChange?.();
     }
 
     setPinOpacity(pinId, opacity) {
         const sprite = this.interactiveObjects.find(s => s.userData.id === pinId);
         if (!sprite) return;
         sprite.material.opacity = opacity;
+        this.onChange?.();
         sprite.material.transparent = true;
         sprite.userData.opensPopup = opacity > 0;
         const building = sprite.userData.building;
@@ -320,6 +323,7 @@ export class InteractionManager extends THREE.EventDispatcher {
             }
         });
         // Re-apply floor/building visibility rules so the change takes effect
+        this.onChange?.();
         this.pinGroups.forEach((buildingMap, building) => {
             buildingMap.forEach((group) => {
                 this._updateGroupVisibility(building, group);
@@ -338,51 +342,27 @@ export class InteractionManager extends THREE.EventDispatcher {
         });
     }
 
-    /**
-     * Updates the label text and status of an existing pin without rebuilding the sprite.
-     * Regenerates only the canvas texture.
-     */
     updatePinLabelStatus(pinId, statusText, statusColor) {
-        const labelSprite = this.labelSprites.find(
-            s => s.name === `${pinId}_label`
-        );
-        if (!labelSprite || !labelSprite.material?.map) return;
-
-        const displayName = labelSprite.userData.baseDisplayName ?? labelSprite.userData.displayName;
-        const canvas = this.pinFactory.createLabelCanvas({
-            displayName,
-            statusText: statusText ?? null,
-            statusColor: statusColor ?? null,
-        });
-
-        // Replace the texture
-        const newTexture = new THREE.CanvasTexture(canvas);
-        newTexture.needsUpdate = true;
-        labelSprite.material.map.dispose();
-        labelSprite.material.map = newTexture;
-        labelSprite.material.needsUpdate = true;
-
-        // Update scale if canvas dimensions changed
-        const pixelToWorldScale = 0.05;
-        labelSprite.scale.set(canvas.width * pixelToWorldScale, canvas.height * pixelToWorldScale, 1);
+        this.labels.update(pinId, statusText, statusColor);
     }
 
     dispose() {
         this._disposed = true;
+        this.onChange = null;
         POINTER_EVENTS.forEach((type) => {
             this.canvas.removeEventListener(type, this._pointerHandlers[type]);
         });
         this._activePointers.clear();
         this._tapPointerId = null;
-        [...this.labelSprites, ...this.clickTargets].forEach((sprite) => {
-            sprite.material?.map?.dispose();
+        this.labels.dispose();
+        this.interactiveObjects.forEach((sprite) => {
             sprite.material?.dispose();
         });
         this.interactiveObjects = [];
-        this.labelSprites = [];
         this.clickTargets = [];
         this.blockingMeshes = [];
         this.pinGroups.clear();
+        this.pinFactory?.dispose();
         this.pinFactory?.pinTexture?.dispose();
     }
 
