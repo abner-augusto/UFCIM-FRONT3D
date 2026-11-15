@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { ref } from 'vue';
+import { nextTick, ref } from 'vue';
 import { usePinColors } from '@/composables/usePinColors';
 import { api } from '@/services/api';
 
@@ -70,5 +70,36 @@ it('keeps the next-date search running when more pins load', async () => {
   expect(get).toHaveBeenCalledTimes(2);
   finish([{ startTime: '07:00', endTime: '08:00', status: 'available' }]);
   await vi.waitFor(() => expect(colors.getStatus('pin')?.nextAvailableDate).toBe('2026-01-02'));
+  vi.restoreAllMocks();
+});
+
+it('refetches and recolors the pin when the reservation tray closes', async () => {
+  const available = [{ startTime: '07:00', endTime: '08:00', status: 'available' }];
+  const partial = [
+    ...available,
+    { startTime: '08:00', endTime: '09:00', status: 'reserved' },
+  ];
+  const get = vi.spyOn(api, 'getAvailability').mockResolvedValueOnce(available).mockResolvedValueOnce(partial);
+  const viewer = { applyBackendFilter: vi.fn(), updatePinLabelStatus: vi.fn() };
+  const reservationOpen = ref(true);
+  const colors = usePinColors({
+    spacesByModelId: new Map([['pin', { id: 'room' } as never]]),
+    spacesLoaded: ref(true),
+    token: () => null,
+    selectedDate: ref('2026-01-01'),
+    selectedPeriod: ref('morning'),
+    periodRange: ref({ startTime: '07:00', endTime: '12:00' }),
+    viewer: () => viewer,
+    trayOpen: [reservationOpen, ref(false)],
+  });
+  await colors.applyPinColors();
+  expect(viewer.applyBackendFilter).toHaveBeenLastCalledWith(new Set(['pin']), new Map([['pin', '#00b050']]));
+  reservationOpen.value = false;
+  await nextTick();
+  await vi.waitFor(() => expect(viewer.applyBackendFilter).toHaveBeenLastCalledWith(
+    new Set(['pin']), new Map([['pin', '#f2c200']]),
+  ));
+  expect(get).toHaveBeenCalledTimes(2);
+  expect(colors.getStatus('pin')?.status).toBe('partial');
   vi.restoreAllMocks();
 });
