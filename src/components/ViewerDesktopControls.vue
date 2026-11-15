@@ -69,7 +69,8 @@ function shortFloorLabel(name: string): string {
             variant="ghost"
             class="ctrl-btn ctrl-btn--sm"
             :class="{ active: f.level === activeFloorLevel }"
-            :aria-label="f.name" :aria-pressed="f.level === activeFloorLevel"
+            :aria-label="f.name"
+            :aria-pressed="f.level === activeFloorLevel"
             @click="selectFloor(f.level)"
           >{{ shortFloorLabel(f.name) }}</Button>
         </div>

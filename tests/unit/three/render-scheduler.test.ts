@@ -32,8 +32,9 @@ describe('on-demand rendering', () => {
 
   it('continues rendering a camera tween when an overlay disables interactions', () => {
     const callbacks: FrameRequestCallback[] = [];
-    const renderer = { render: vi.fn() };
-    const controls = { update: () => false, minDistance: 1, maxDistance: 2 };
+    const renderer = { render: vi.fn(), dispose: vi.fn() };
+    const controls = { update: () => false, minDistance: 1, maxDistance: 2, removeEventListener: vi.fn(), dispose: vi.fn() };
+    vi.stubGlobal('document', { removeEventListener: vi.fn() });
     vi.spyOn(App.prototype, '_getPerformanceConfiguration').mockReturnValue({});
     vi.spyOn(App.prototype, '_createCamera').mockReturnValue(new THREE.PerspectiveCamera());
     vi.spyOn(App.prototype, '_createRenderer').mockReturnValue(renderer);
@@ -43,13 +44,14 @@ describe('on-demand rendering', () => {
       callbacks.push(fn);
       return callbacks.length;
     });
-    const app = new App({});
+    const app = new App({ removeEventListener: vi.fn() });
     vi.spyOn(app.cameraManager.tweens, 'update').mockReturnValueOnce(true).mockReturnValue(false);
     app.invalidate();
     app.interactionManager.setInteractionsEnabled(false);
     callbacks.shift()!(0);
     callbacks.shift()!(1);
     expect(renderer.render).toHaveBeenCalledTimes(2);
+    app.dispose();
     vi.restoreAllMocks();
   });
 

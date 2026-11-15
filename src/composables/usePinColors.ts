@@ -26,6 +26,7 @@ export function usePinColors(options: Options) {
   let statuses = new Map<string, PinAvailabilityData>();
   let sequence = 0;
   let fetching = false;
+  let pinsPending = false;
 
   function refreshLabels(seq: number) {
     return updatePinLabels(statuses, options.periodRange.value, options.selectedDate.value,
@@ -34,8 +35,8 @@ export function usePinColors(options: Options) {
   }
 
   async function applyPinColors() {
-    const seq = ++sequence;
     if (!options.spacesLoaded.value) return;
+    const seq = ++sequence;
     fetching = true;
     try {
       const pendingDates = new Map<string, string>();
@@ -63,12 +64,21 @@ export function usePinColors(options: Options) {
     } catch (error) {
       logger.error('Falha ao atualizar cores:', error);
     } finally {
-      if (seq === sequence) fetching = false;
+      if (seq === sequence) {
+        fetching = false;
+        if (pinsPending) {
+          pinsPending = false;
+          pinsLoaded();
+        }
+      }
     }
   }
 
   function pinsLoaded() {
-    if (fetching) return;
+    if (fetching) {
+      pinsPending = true;
+      return;
+    }
     if (statuses.size === 0) {
       void applyPinColors();
       return;

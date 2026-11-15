@@ -153,7 +153,10 @@ async function handleSubmit() {
             type="email"
             placeholder="seu@email.com"
             autocomplete="email"
-            name="email" spellcheck="false" autocapitalize="none" enterkeyhint="go"
+            name="email"
+            spellcheck="false"
+            autocapitalize="none"
+            enterkeyhint="go"
             required
             :disabled="loading"
           />

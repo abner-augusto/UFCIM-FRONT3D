@@ -257,7 +257,8 @@ function onFloorPick(level: number) {
                 variant="ghost"
                 class="floor-btn"
                 :class="{ active: f.level === activeFloorLevel }"
-                :aria-label="f.name" :aria-pressed="f.level === activeFloorLevel"
+                :aria-label="f.name"
+                :aria-pressed="f.level === activeFloorLevel"
                 @click="onFloorPick(f.level)">
           {{ shortFloorLabel(f.name) }}
         </Button>
@@ -266,8 +267,16 @@ function onFloorPick(level: number) {
 
     <!-- bottom: fullscreen toggle -->
     <div class="rail-stack rail-stack--bottom">
-      <Button variant="ghost" size="icon" class="rail-btn" :class="{ active: fullscreen }"
-              @click="$emit('update:fullscreen', !fullscreen)" title="Tela cheia" aria-label="Tela cheia" :aria-pressed="fullscreen"><Maximize :size="20" /></Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        class="rail-btn"
+        :class="{ active: fullscreen }"
+        @click="$emit('update:fullscreen', !fullscreen)"
+        title="Tela cheia"
+        aria-label="Tela cheia"
+        :aria-pressed="fullscreen"
+      ><Maximize :size="20" /></Button>
     </div>
 
     <!-- breadcrumb pill -->

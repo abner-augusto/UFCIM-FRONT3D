@@ -357,7 +357,6 @@ export class InteractionManager extends THREE.EventDispatcher {
         this._tapPointerId = null;
         this.labels.dispose();
         this.interactiveObjects.forEach((sprite) => {
-            sprite.material?.map?.dispose();
             sprite.material?.dispose();
         });
         this.interactiveObjects = [];

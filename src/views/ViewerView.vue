@@ -80,7 +80,6 @@ interface BlockingTrayContext {
 const blockingTrayOpen = ref(false);
 const blockingTrayContext = ref<BlockingTrayContext | null>(null);
 
-
 const viewerOverlayOpen = computed(() => showPopup.value || searchSheetOpen.value || reservationTrayOpen.value || blockingTrayOpen.value);
 
 const mql = window.matchMedia('(max-width: 480px)');

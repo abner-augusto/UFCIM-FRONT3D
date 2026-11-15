@@ -1,6 +1,7 @@
 import { expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { PinFactory } from '../../../src/three/PinFactory.js';
+import { LabelRegistry } from '../../../src/three/LabelRegistry.js';
 import { InteractionManager } from '../../../src/three/InteractionManager.js';
 
 it('reuses real pin textures until the label changes', () => {
@@ -24,4 +25,22 @@ it('reuses real pin textures until the label changes', () => {
   expect(factory.createLabelCanvas).toHaveBeenCalledTimes(2);
   expect(manager.onChange).toHaveBeenCalledOnce();
   manager.dispose();
+});
+
+it('disposes a replaced label and retains the replacement until teardown', () => {
+  const registry = new LabelRegistry(() => null, () => {});
+  const first = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.Texture() }));
+  const second = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.Texture() }));
+  const disposeTexture = vi.spyOn(first.material.map!, 'dispose');
+  const disposeMaterial = vi.spyOn(first.material, 'dispose');
+  const disposeReplacement = vi.spyOn(second.material.map!, 'dispose');
+  registry.add('id', first);
+  registry.add('id', first);
+  expect(disposeTexture).not.toHaveBeenCalled();
+  registry.add('id', second);
+  expect(disposeTexture).toHaveBeenCalledOnce();
+  expect(disposeMaterial).toHaveBeenCalledOnce();
+  registry.dispose();
+  expect(disposeTexture).toHaveBeenCalledOnce();
+  expect(disposeReplacement).toHaveBeenCalledOnce();
 });

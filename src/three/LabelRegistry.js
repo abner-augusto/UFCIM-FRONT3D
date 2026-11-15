@@ -10,6 +10,11 @@ export class LabelRegistry {
     }
 
     add(id, sprite) {
+        const previous = this.sprites.get(id);
+        if (previous && previous !== sprite) {
+            previous.material?.map?.dispose();
+            previous.material?.dispose();
+        }
         this.sprites.set(id, sprite);
     }
 
