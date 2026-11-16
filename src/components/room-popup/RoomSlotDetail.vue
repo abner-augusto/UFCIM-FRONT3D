@@ -53,7 +53,7 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
-.slot-detail { padding: 8px 10px; border-radius: 8px; margin-top: 6px; margin-bottom: 6px; font-size: 0.78rem; }
+.slot-detail { min-width: 0; padding: 8px 10px; border-radius: 8px; margin-top: 6px; margin-bottom: 6px; font-size: 0.78rem; }
 .slot-detail--reserved { background: var(--danger-surface); border: 1px solid var(--danger-border); }
 .slot-detail--blocked { background: var(--warning-surface); border: 1px solid var(--warning-border); }
 .slot-detail-head { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
@@ -61,7 +61,16 @@ const emit = defineEmits<{
 .slot-badge { font-size: 0.62rem; padding: 1px 6px; border-radius: 999px; font-weight: 600; }
 .slot-badge--recurring { background: var(--info-surface); color: var(--info); }
 .slot-badge--own { background: var(--success-surface); color: var(--success); }
-.slot-purpose { margin-bottom: 2px; color: var(--foreground); }
-.slot-author { color: var(--muted-foreground); }
+.slot-purpose {
+  margin-bottom: 2px;
+  color: var(--foreground);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.slot-author { color: var(--muted-foreground); overflow-wrap: anywhere; }
 .slot-link { color: var(--color-link); cursor: pointer; }
 </style>

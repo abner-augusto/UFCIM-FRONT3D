@@ -108,9 +108,9 @@ function handleNewReservation() {
         <span class="text-muted-foreground text-sm">Finalidade</span>
         <span class="max-w-[60%] text-right text-sm font-medium">{{ purposeLabel(reservationStore.purpose!) }}</span>
       </div>
-      <div v-if="reservationStore.description" class="flex items-center justify-between px-5 py-3.5">
+      <div v-if="reservationStore.description" class="flex flex-col items-start gap-1 px-5 py-3.5">
         <span class="text-muted-foreground text-sm">Descrição</span>
-        <span class="max-w-[60%] text-right text-sm font-medium">{{ reservationStore.description }}</span>
+        <span class="w-full text-sm font-medium [overflow-wrap:anywhere]">{{ reservationStore.description }}</span>
       </div>
     </Card>
 
