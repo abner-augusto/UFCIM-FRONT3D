@@ -5,7 +5,8 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
 import { usePermissions } from '@/composables/usePermissions';
-import { Building2, Search, Calendar, Ban, BarChart3, Wrench, History, Bell, User } from '@lucide/vue';
+import { useInstallPrompt } from '@/composables/useInstallPrompt';
+import { Building2, Search, Calendar, Ban, BarChart3, Wrench, History, Bell, User, Download } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -22,6 +23,7 @@ watch(() => props.open, (open) => {
 });
 
 const { canReserve, canBlock, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
+const { canInstall, install } = useInstallPrompt();
 
 const viewerTarget = computed(() =>
   campus.selectedCampusId
@@ -50,6 +52,11 @@ function handleLinkClick(event: MouseEvent) {
 
 function handleOpenChange(open: boolean) {
   if (!open) emit('close');
+}
+
+function handleInstall() {
+  emit('close');
+  void install();
 }
 </script>
 
@@ -101,6 +108,10 @@ function handleOpenChange(open: boolean) {
           <router-link to="/perfil" class="nav-item" @click="handleLinkClick">
             <span class="nav-icon"><User :size="20" /></span> Perfil
           </router-link>
+
+          <button v-if="canInstall" type="button" class="nav-item nav-action" @click="handleInstall">
+            <span class="nav-icon" aria-hidden="true"><Download :size="20" /></span> Instalar app
+          </button>
         </nav>
         </ScrollArea>
 
@@ -157,6 +168,15 @@ function handleOpenChange(open: boolean) {
   font-size: 1rem;
   gap: 12px;
   position: relative;
+}
+
+.nav-action {
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
 }
 
 .nav-item.router-link-active {
