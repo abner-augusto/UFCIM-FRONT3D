@@ -17,6 +17,7 @@ export const CAN_EXPORT_SENSOR_DATA: UserRole[] = ['professor', 'staff'];
 export const CAN_VIEW_MAINTENANCE_HISTORY: UserRole[] = ['staff', 'maintenance'];
 /** Reserve on behalf of another person (MEL-025); mirrors the backend 403. */
 export const CAN_RESERVE_ON_BEHALF: UserRole[] = ['staff'];
+export const CAN_VIEW_UNIT_RESERVATIONS: UserRole[] = ['staff'];
 
 export function hasRole(userRole: UserRole | null, allowed: UserRole[]): boolean {
   if (!userRole) return false;

@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
 import { usePermissions } from '@/composables/usePermissions';
-import { Building2, Search, Calendar, Ban, BarChart3, Wrench, History, Bell, User } from '@lucide/vue';
+import { Building2, Search, Calendar, ClipboardList, Ban, BarChart3, Wrench, History, Bell, User } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,7 +21,7 @@ watch(() => props.open, (open) => {
   if (open) reset();
 });
 
-const { canReserve, canBlock, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
+const { canReserve, canViewUnitReservations, canBlock, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
 
 const viewerTarget = computed(() =>
   campus.selectedCampusId
@@ -73,6 +73,10 @@ function handleOpenChange(open: boolean) {
 
           <router-link v-if="canReserve" to="/minhas-reservas" class="nav-item" @click="handleLinkClick">
             <span class="nav-icon"><Calendar :size="20" /></span> Minhas Reservas
+          </router-link>
+
+          <router-link v-if="canViewUnitReservations" to="/reservas-da-unidade" class="nav-item" @click="handleLinkClick">
+            <span class="nav-icon"><ClipboardList :size="20" /></span> Reservas da unidade
           </router-link>
 
           <router-link v-if="canBlock" to="/meus-bloqueios" class="nav-item" @click="handleLinkClick">

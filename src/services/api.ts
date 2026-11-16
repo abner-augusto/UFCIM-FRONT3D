@@ -10,6 +10,7 @@ import type {
   RequesterPayload,
 } from '@/types/reservation';
 import type { OccupancyReport, SpaceReportData } from '@/types/report';
+import type { DepartmentReservationsResponse } from '@/types/unit-reservations';
 import type { SpaceAirQuality, SpaceAirQualityHistory, HistoryBucket } from '@/types/air-quality';
 import type { EquipmentReport, MaintenanceCategory } from '@/types/equipment-report';
 import { collectAllPages } from '@/utils/pagination';
@@ -409,6 +410,8 @@ export const api = {
   // Reservas" can sort and filter the whole history client-side.
   getAllMyReservations: (token: string | null) =>
     collectAllPages((page, limit) => api.getMyReservations(token, page, limit), { pageSize: 100 }),
+
+  getDepartmentReservations: (token: string | null, params?: Record<string, string | undefined>) => request<DepartmentReservationsResponse>(`/reservations/department${qs(params)}`, token),
 
   // MEL-023: partial edit of date, time range and description; the space is fixed.
   // Owner or staff only; the backend revalidates the slot and replies 409 on conflict.
