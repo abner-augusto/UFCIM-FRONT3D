@@ -4,6 +4,7 @@ import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useNotifications } from '@/composables/useNotifications';
+import { useCloseWatcher } from '@/composables/useCloseWatcher';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -57,6 +58,8 @@ watch(() => props.open, (val) => {
     load();
   }
 });
+
+useCloseWatcher(() => props.open, () => emit('close'));
 </script>
 
 <template>

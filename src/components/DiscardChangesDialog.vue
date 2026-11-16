@@ -4,6 +4,7 @@ import { useMediaQuery } from '@vueuse/core';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
+import { useCloseWatcher } from '@/composables/useCloseWatcher';
 
 const props = defineProps<{
   open: boolean;
@@ -46,6 +47,8 @@ function handleDiscard() {
   emit('update:open', false);
   emit('discard');
 }
+
+useCloseWatcher(() => props.open, handleKeep);
 </script>
 
 <template>

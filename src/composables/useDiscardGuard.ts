@@ -1,4 +1,5 @@
 import { computed, ref, toValue, watch, type MaybeRefOrGetter } from 'vue';
+import { useCloseWatcher } from '@/composables/useCloseWatcher';
 
 export interface UseDiscardGuardOptions {
   isDirty: MaybeRefOrGetter<boolean>;
@@ -62,6 +63,10 @@ export function useDiscardGuard(options: UseDiscardGuardOptions) {
   function keepEditing() {
     discardDialogOpen.value = false;
   }
+
+  const isOverlayOpen = () => (options.open === undefined ? true : Boolean(toValue(options.open)));
+  const shouldWatchClose = () => isOverlayOpen() && !discardDialogOpen.value && closable();
+  useCloseWatcher(shouldWatchClose, requestClose);
 
   return {
     discardDialogOpen,

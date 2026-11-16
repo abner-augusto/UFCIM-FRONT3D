@@ -6,6 +6,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
 import { SPACE_TYPE_LABELS } from '@/types/space';
+import { useCloseWatcher } from '@/composables/useCloseWatcher';
 import type { PinStatus } from '@/composables/usePinAvailability';
 import type { PeriodKey } from '@/utils/period';
 
@@ -48,6 +49,10 @@ onUnmounted(() => {
 });
 
 const hasActive = computed(() => props.activeCount > 0);
+
+useCloseWatcher(open, () => {
+  open.value = false;
+});
 </script>
 
 <template>

@@ -1,6 +1,10 @@
-import { describe, expect, it, vi } from 'vitest';
-import { nextTick, ref } from 'vue';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { effectScope, nextTick, ref } from 'vue';
 import { useDiscardGuard } from '@/composables/useDiscardGuard';
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('useDiscardGuard', () => {
   it('closes immediately when clean and unlocked', () => {
@@ -82,5 +86,41 @@ describe('useDiscardGuard', () => {
     open.value = false;
     await nextTick();
     expect(guard.discardDialogOpen.value).toBe(false);
+  });
+
+  it('wires CloseWatcher to requestClose and re-arms after keeping edits', async () => {
+    const instances: { onclose: ((event: Event) => void) | null; destroy: ReturnType<typeof vi.fn> }[] = [];
+    class FakeCloseWatcher {
+      onclose: ((event: Event) => void) | null = null;
+      destroy = vi.fn();
+      constructor() {
+        instances.push(this);
+      }
+    }
+    vi.stubGlobal('window', { CloseWatcher: FakeCloseWatcher });
+
+    const open = ref(true);
+    const isDirty = ref(true);
+    const onDiscard = vi.fn();
+    const scope = effectScope();
+    const guard = scope.run(() => useDiscardGuard({ isDirty, open, onDiscard }))!;
+
+    expect(instances).toHaveLength(1);
+
+    instances[0].onclose?.({} as Event);
+    await nextTick();
+    expect(guard.discardDialogOpen.value).toBe(true);
+    expect(onDiscard).not.toHaveBeenCalled();
+    expect(instances[0].destroy).toHaveBeenCalledTimes(1);
+
+    guard.keepEditing();
+    await nextTick();
+    expect(instances).toHaveLength(2);
+
+    isDirty.value = false;
+    instances[1].onclose?.({} as Event);
+    expect(onDiscard).toHaveBeenCalledTimes(1);
+
+    scope.stop();
   });
 });

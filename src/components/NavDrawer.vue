@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
 import { usePermissions } from '@/composables/usePermissions';
+import { useCloseWatcher } from '@/composables/useCloseWatcher';
 import { Building2, Search, Calendar, Ban, BarChart3, Wrench, History, Bell, User } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -51,6 +52,8 @@ function handleLinkClick(event: MouseEvent) {
 function handleOpenChange(open: boolean) {
   if (!open) emit('close');
 }
+
+useCloseWatcher(() => props.open, () => emit('close'));
 </script>
 
 <template>

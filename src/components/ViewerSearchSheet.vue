@@ -3,6 +3,7 @@ import { ref, computed, watch, nextTick } from 'vue';
 import type { Space } from '@/types/space';
 import { SPACE_TYPE_LABELS } from '@/types/space';
 import { blockLabel } from '@/utils/space-labels';
+import { useCloseWatcher } from '@/composables/useCloseWatcher';
 
 const props = defineProps<{
   open: boolean;
@@ -40,18 +41,17 @@ watch(results, (r) => {
   if (r.length > 0) collapsed.value = false;
 });
 
-watch(
-  () => props.open,
-  async (open) => {
-    if (open) {
-      await nextTick();
-      inputRef.value?.focus();
-    } else {
-      query.value = '';
-      collapsed.value = false;
-    }
-  },
-);
+watch(() => props.open, async (open) => {
+  if (open) {
+    await nextTick();
+    inputRef.value?.focus();
+  } else {
+    query.value = '';
+    collapsed.value = false;
+  }
+});
+
+useCloseWatcher(() => props.open, () => emit('close'));
 
 function select(space: Space) {
   if (!space.modelId) return;
