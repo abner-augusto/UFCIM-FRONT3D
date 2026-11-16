@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useMediaQuery } from '@vueuse/core';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
 import BlockingForm, { type BlockingPayload } from '@/components/BlockingForm.vue';
 import DiscardChangesDialog from '@/components/DiscardChangesDialog.vue';
-import { useDesktopBreakpoint } from '@/composables/useDesktopBreakpoint';
 import { useDiscardGuard } from '@/composables/useDiscardGuard';
 import { api, ApiError } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
@@ -34,7 +34,7 @@ const emit = defineEmits<{
 const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
-const { isDesktop } = useDesktopBreakpoint();
+const isDesktop = useMediaQuery('(min-width: 768px)');
 const submitStatus = ref<ActionStatus>('idle');
 const errorMsg = ref<string | null>(null);
 const createdDays = ref(0);

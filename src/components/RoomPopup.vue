@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, toRef } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useMediaQuery } from '@vueuse/core';
 import type { Space } from '@/types/space';
 import { usePermissions } from '@/composables/usePermissions';
 import { useRoomDetail } from '@/composables/useRoomDetail';
-import { useDesktopBreakpoint } from '@/composables/useDesktopBreakpoint';
 import { useDiscardGuard } from '@/composables/useDiscardGuard';
 import DiscardChangesDialog from './DiscardChangesDialog.vue';
 import EquipmentReportDialog from './EquipmentReportDialog.vue';
@@ -41,7 +41,7 @@ const router = useRouter();
 const route = useRoute();
 const overlayReady = ref(false);
 const detailsExpanded = ref(false);
-const { isDesktop } = useDesktopBreakpoint();
+const isDesktop = useMediaQuery('(min-width: 768px)');
 onMounted(() => setTimeout(() => { overlayReady.value = true; }, 300));
 
 const { canReserve, canBlock, canViewReports } = usePermissions();

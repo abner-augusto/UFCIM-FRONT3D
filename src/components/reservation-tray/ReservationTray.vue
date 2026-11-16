@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useMediaQuery } from '@vueuse/core';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
@@ -10,7 +11,6 @@ import ReservationConfirmStep from './ReservationConfirmStep.vue';
 import ReservationSuccessStep from './ReservationSuccessStep.vue';
 import RecurringReservationForm from '@/components/RecurringReservationForm.vue';
 import DiscardChangesDialog from '@/components/DiscardChangesDialog.vue';
-import { useDesktopBreakpoint } from '@/composables/useDesktopBreakpoint';
 import { useDiscardGuard } from '@/composables/useDiscardGuard';
 import { isReservationTrayDirty, resolveScheduleBaseline } from '@/utils/reservation-tray-dirty';
 import { useInteractionStore } from '@/stores/interaction';
@@ -88,7 +88,7 @@ const EDIT_STEP_TITLES: Record<ReservationTrayStep, string> = {
 };
 const stepTitles = computed(() => (isEditing.value ? EDIT_STEP_TITLES : CREATE_STEP_TITLES));
 
-const { isDesktop } = useDesktopBreakpoint();
+const isDesktop = useMediaQuery('(min-width: 768px)');
 const currentStep = ref<ReservationTrayStep>('schedule');
 const reservationMode = ref<'single' | 'recurring'>('single');
 const selectedSchedule = ref<ReservationScheduleSelection | null>(null);

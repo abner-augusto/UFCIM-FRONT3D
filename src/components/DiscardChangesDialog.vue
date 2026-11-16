@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { nextTick, ref, watch, type ComponentPublicInstance } from 'vue';
+import { useMediaQuery } from '@vueuse/core';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
-import { useDesktopBreakpoint } from '@/composables/useDesktopBreakpoint';
 
 const props = defineProps<{
   open: boolean;
@@ -15,7 +15,7 @@ const emit = defineEmits<{
   discard: [];
 }>();
 
-const { isDesktop } = useDesktopBreakpoint();
+const isDesktop = useMediaQuery('(min-width: 768px)');
 const keepButtonRef = ref<ComponentPublicInstance | null>(null);
 
 function focusKeepButton() {
