@@ -144,7 +144,7 @@ function logout() {
 
 <style scoped>
 .app-header {
-  height: var(--header-offset);
+  min-height: var(--header-offset);
   background: var(--background);
   border-bottom: 1px solid var(--border);
   position: fixed;
@@ -159,8 +159,9 @@ function logout() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 100%;
-  padding: 0 1.5rem;
+  gap: 0.75rem;
+  min-height: var(--top-bar-h);
+  padding: 0.25rem 1.5rem;
   max-width: 1440px;
   margin: 0 auto;
 }
@@ -192,7 +193,9 @@ function logout() {
 
 .header-nav {
   display: flex;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.5rem;
 }
 
 .header-nav a {
@@ -221,7 +224,7 @@ function logout() {
   font-size: 0.85rem;
   color: var(--muted-foreground);
   text-decoration: none;
-  max-width: 140px;
+  max-width: 10rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -225,9 +225,8 @@ function handleToggle() {
         </p>
       </div>
       <div class="space-card__right">
-        <span v-if="statusLoaded && statusLabel" class="status-label" :style="{ color: statusColor }">
-          {{ statusLabel }}
-        </span>
+        <span v-if="statusLoaded && statusLabel" class="status-label" :style="{ color: statusColor }">{{ statusLabel }}</span>
+        <span v-else-if="!statusLoaded" class="status-label status-label--loading" role="status">Carregando…</span>
         <span class="expand-chevron" :class="{ rotated: expanded }">›</span>
       </div>
     </button>
@@ -411,20 +410,11 @@ function handleToggle() {
   gap: 0.5rem;
   flex-shrink: 0;
 }
-.status-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-.expand-chevron {
-  font-size: 1.1rem;
-  color: var(--muted-foreground);
-  transform: rotate(90deg);
-  transition: transform 0.2s ease;
-  display: inline-block;
-}
-.expand-chevron.rotated {
-  transform: rotate(-90deg);
-}
+.status-label { font-size: 0.75rem; font-weight: 600; }
+.status-label--loading { color: var(--muted-foreground); font-weight: 500; }
+.expand-chevron { font-size: 1.1rem; color: var(--muted-foreground); transform: rotate(90deg); display: inline-block; }
+.expand-chevron.rotated { transform: rotate(-90deg); }
+@media (prefers-reduced-motion: no-preference) { .expand-chevron { transition: transform 0.2s ease; } }
 
 /* Detail — reveal motion handled by the shared .reveal-collapse utility (motion.css) */
 .space-card__detail {

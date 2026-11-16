@@ -225,18 +225,12 @@ function spaceOf(g: BlockingGroup) {
 
 /* FLIP: siblings glide when a card expands or one is removed. Entrance is
    handled by `.stagger-item`. */
-.blist-move {
-  transition: transform 300ms var(--ease-out-quart, ease);
-}
-.blist-leave-active {
-  transition: opacity 200ms ease, transform 200ms ease;
-  position: absolute;
-  left: 0;
-  right: 0;
-}
-.blist-leave-to {
-  opacity: 0;
-  transform: translateY(-6px);
+.blist-leave-active { transition: opacity 200ms ease; position: absolute; left: 0; right: 0; }
+.blist-leave-to { opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .blist-move { transition: transform 300ms var(--ease-out-quart, ease); }
+  .blist-leave-active { transition: opacity 200ms ease, transform 200ms ease; }
+  .blist-leave-to { transform: translateY(-6px); }
 }
 
 /* Card */
@@ -296,17 +290,9 @@ function spaceOf(g: BlockingGroup) {
 }
 
 /* Chevron */
-.expand-chevron {
-  font-size: 1.1rem;
-  color: var(--muted-foreground);
-  line-height: 1;
-  transform: rotate(90deg);
-  transition: transform 0.2s ease;
-  display: inline-block;
-}
-.expand-chevron.rotated {
-  transform: rotate(-90deg);
-}
+.expand-chevron { font-size: 1.1rem; color: var(--muted-foreground); line-height: 1; transform: rotate(90deg); display: inline-block; }
+.expand-chevron.rotated { transform: rotate(-90deg); }
+@media (prefers-reduced-motion: no-preference) { .expand-chevron { transition: transform 0.2s ease; } }
 
 /* Type badges */
 .type-badge {

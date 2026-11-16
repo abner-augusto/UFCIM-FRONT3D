@@ -1,8 +1,9 @@
 /* ============================================================
    UFCIM shared motion utilities
    Easing/duration tokens live in tokens.css; this file holds the
-   reusable entrance choreography. The global prefers-reduced-motion
-   kill-switch in tokens.css neutralizes everything here.
+   reusable entrance choreography. Spatial motion is gated by
+   (prefers-reduced-motion: no-preference) so color/opacity transitions
+   continue working under reduced motion.
 
    MOTION RULE — continuity, not decoration.
    Every animation here must explain an origin, a destination, or a state
@@ -10,8 +11,7 @@
    reveal grows the same object (`.reveal-collapse`); an entrance shows where
    items arrive from (`.stagger-item`); a press confirms the tap landed
    (`.press-feedback`); a success pop says "done" (`.success-pop`). If a motion
-   can't name which of those it serves, it's decoration — leave it out. All of
-   it stays subject to the prefers-reduced-motion kill-switch above.
+   can't name which of those it serves, it's decoration — leave it out.
    ============================================================ */
 
 /* List / card entrance: each item rises + fades, staggered by its index.
@@ -23,32 +23,35 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.stagger-item {
-  animation: list-rise 0.4s var(--ease-out-quart, cubic-bezier(0.25, 1, 0.5, 1)) backwards;
-  animation-delay: calc(min(var(--i, 0), 7) * 40ms);
-}
+@media (prefers-reduced-motion: no-preference) {
+  .stagger-item {
+    animation: list-rise 0.4s var(--ease-out-quart, cubic-bezier(0.25, 1, 0.5, 1)) backwards;
+    animation-delay: calc(min(var(--i, 0), 7) * 40ms);
+  }
 
-/* Tactile press for custom tappable rows/cards that aren't shadcn Buttons
-   (those already nudge on :active). A gentle scale acknowledges the tap. */
-.press-feedback {
-  transition: transform var(--duration-fast, 0.12s) var(--ease-out-quart, ease);
-}
-.press-feedback:active:not(:disabled) {
-  transform: scale(0.985);
+  /* Tactile press for custom tappable rows/cards that aren't shadcn Buttons
+     (those already nudge on :active). A gentle scale acknowledges the tap. */
+  .press-feedback {
+    transition: transform var(--duration-fast, 0.12s) var(--ease-out-quart, ease);
+  }
+  .press-feedback:active:not(:disabled) {
+    transform: scale(0.985);
+  }
 }
 
 /* Success affirmation: one meaningful pop when an action completes — it
    conveys "done", it is not decorative. Apply `.success-pop` to the success
-   mark. The global prefers-reduced-motion kill-switch in tokens.css neutralizes
-   the animation, leaving the static success mark fully legible. */
+   mark. Under reduced motion the static success mark renders immediately. */
 @keyframes success-pop {
   0%   { opacity: 0; transform: scale(0.6); }
   60%  { transform: scale(1.08); }
   100% { opacity: 1; transform: scale(1); }
 }
 
-.success-pop {
-  animation: success-pop 0.42s var(--ease-out-quart, cubic-bezier(0.25, 1, 0.5, 1)) both;
+@media (prefers-reduced-motion: no-preference) {
+  .success-pop {
+    animation: success-pop 0.42s var(--ease-out-quart, cubic-bezier(0.25, 1, 0.5, 1)) both;
+  }
 }
 
 /* Same-object reveal: an expandable region grows from nothing to its true
@@ -64,15 +67,19 @@
      </div>
 
    The inner wrapper owns overflow:hidden + min-height:0 so the content slides
-   cleanly; `:inert` keeps the hidden content out of tab/AT order. The global
-   prefers-reduced-motion kill-switch in tokens.css collapses the transition to
-   an instant state change. */
+   cleanly; `:inert` keeps the hidden content out of tab/AT order. Under
+   reduced motion only opacity transitions while height changes instantly. */
 .reveal-collapse {
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
-  transition: grid-template-rows var(--duration-slow, 0.35s) var(--ease-out-quart, ease),
-              opacity var(--duration-med, 0.22s) ease;
+  transition: opacity var(--duration-med, 0.22s) ease;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .reveal-collapse {
+    transition: grid-template-rows var(--duration-slow, 0.35s) var(--ease-out-quart, ease),
+                opacity var(--duration-med, 0.22s) ease;
+  }
 }
 .reveal-collapse--open {
   grid-template-rows: 1fr;
@@ -92,14 +99,16 @@
   --theme-transition-radius: 150vmax;
 }
 
-::view-transition-group(root) {
-  animation-duration: var(--duration-slow, 350ms);
-  animation-timing-function: var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
-}
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-group(root) {
+    animation-duration: var(--duration-slow, 350ms);
+    animation-timing-function: var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+  }
 
-::view-transition-new(root) {
-  animation: theme-circle-reveal var(--duration-slow, 350ms) var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
-  clip-path: circle(0 at var(--theme-transition-x) var(--theme-transition-y));
+  ::view-transition-new(root) {
+    animation: theme-circle-reveal var(--duration-slow, 350ms) var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
+    clip-path: circle(0 at var(--theme-transition-x) var(--theme-transition-y));
+  }
 }
 
 ::view-transition-old(root),

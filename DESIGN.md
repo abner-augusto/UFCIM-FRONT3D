@@ -15,11 +15,12 @@ colors:
   link: "#185FA5"
   ink: "#111111"
   ink-soft: "#666666"
-  muted: "#999999"
+  muted: "#636363"
   bg: "#FFFFFF"
   surface: "#F7F9F8"
   surface-alt: "#F5F5F5"
-  border: "#DDDDDD"
+  border: "#E5E5E5"
+  input: "#808080"
 typography:
   display:
     fontFamily: "Roboto, 'Segoe UI', sans-serif"
@@ -126,10 +127,10 @@ Equipment-status pills reuse the same semantics with soft tints: working (`#D1FA
 ### Neutral
 - **Ink** (`#111111`): primary text, headings.
 - **Ink Soft** (`#666666`): secondary text, supporting copy.
-- **Muted** (`#999999`): meta, captions, axis labels. Floor at this lightness for text on white — never lighter for body copy.
+- **Muted** (`#636363` / `oklch(0.5 0 0)` light, `oklch(0.70 0 0)` dark): meta, captions, axis labels (`--muted-foreground`). Meets ≥4.5:1 across canvas, card, muted, and secondary surfaces — never lighter for body copy.
 - **Canvas** (`#FFFFFF`): app background in the light theme. The dark theme uses the semantic `--background`, `--card`, and `--popover` tokens rather than direct hex values.
 - **Surface** (`#F7F9F8`) / **Surface Alt** (`#F5F5F5`): stat cards, toolbars, resting tinted panels.
-- **Border** (`#DDDDDD`) with lighter hairlines (`#EEEEEE`, `#F0F0F0`) for dividers.
+- **Border** (`#E5E5E5` / `--border`) for hairline dividers; **Input Border** (`#808080` / `oklch(0.60 0 0)` light, `oklch(0.62 0 0)` dark / `--input`) for interactive field and outline-control boundaries (≥3:1 non-text contrast in both themes).
 
 ### Named Rules
 **The Brand-vs-Available Rule.** The brand teal and the availability palette never trade jobs. `#00697D` is identity and action; the availability green `#00B050` means "available". Don't tint UI chrome with the availability green, and don't render a status with the brand teal. (The teal/green split now makes the two read as clearly different hues, not near-twins.)
@@ -189,13 +190,13 @@ Components are calm and efficient: rounded but not bubbly, generously tappable, 
 - Cards are used sparingly. Never nest a card in a card.
 
 ### Inputs / Fields
-- **Style:** white fill, 1px (`#DDD`) border, `8–10px` radius. Mobile font-size 16px to prevent iOS zoom; desktop drops to 0.95rem.
+- **Style:** transparent/surface fill, 1px `--input` (`#808080` light / `oklch(0.62 0 0)` dark, ≥3:1) border, `8–10px` radius. Mobile font-size `1rem` (16px at default scale) to prevent iOS zoom while scaling with OS text settings; desktop drops to `0.95rem`.
 - **Focus:** border shifts to Campus Teal (`#00697D`); keep a clearly visible focus state.
 - **Date picker:** native input opened via `showPicker()`; appearance normalized across platforms.
 
 ### Navigation
-- **Bottom tab bar (mobile, 64px):** the primary nav on phones; icon + label, active item in Campus Teal. Respects `--safe-bottom`.
-- **App header (56px):** the UFCIM logo at the left, drawer + notifications; brand teal for active/icon accents.
+- **Bottom tab bar (mobile, min-height `4rem` / 64px):** the primary nav on phones; icon + label, active item in Campus Teal. Respects `--safe-bottom`.
+- **App header (min-height `3.5rem` / 56px):** the UFCIM logo at the left, drawer + notifications; brand teal for active/icon accents.
 - **Nav drawer:** list items with Campus Teal Mist (`#E6F1F3`) active background and teal text.
 
 ### Signature Component — The 3D Viewer surface
@@ -211,10 +212,10 @@ The defining surface. A full-bleed Three.js campus canvas with floating chrome l
 - **Do** spend the brand teal (`#00697D`) on the one primary action per screen and on identity; keep everything else in the neutral ramp.
 - **Do** use the separate availability palette (`#00B050` / `#F2C200` / `#D32F2F` / `#E8650A` / `#9E9E9E`) only for status, and always pair it with text or an icon — color is never the only signal.
 - **Do** keep every tappable control ≥44px (`--tap-min`) and design phone-first.
-- **Do** keep body text at Ink (`#111`) or Ink Soft (`#666`); never lighter than Muted (`#999`) for reading copy. Hit AA (4.5:1 body, 3:1 large).
+- **Do** keep body text at Ink (`#111`) or Ink Soft (`#666`); never lighter than Muted (`#636363`, `--muted-foreground`) for reading copy. Hit AA (4.5:1 body, 3:1 large and component borders).
 - **Do** earn shadows: flat in flow, lifted only when floating above the map or acting as a modal.
 - **Do** write labels as verb + object in plain Brazilian Portuguese ("Reservar 09:00–11:00", not "OK").
-- **Do** provide a `prefers-reduced-motion` alternative for every animation, including 3D camera moves and the sheet's spring entrance.
+- **Do** gate spatial motion behind `prefers-reduced-motion: no-preference` (including 3D camera moves and sheet entrances), while keeping color/opacity transitions and static busy labels on loading indicators.
 
 ### Don't:
 - **Don't** drift toward **generic SaaS**: no purple-to-blue gradients, no Inter, no hero-metric dashboard template, no endless identical card grids, no rounded-icon tile above every heading.

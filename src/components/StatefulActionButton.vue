@@ -173,12 +173,22 @@ function onClick() {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .stateful-action-button,
-  .stateful-action-button__label,
+  .stateful-action-button {
+    animation: none !important;
+    transform: none !important;
+    transition:
+      background-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      color 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
   .stateful-action-label-enter-active,
   .stateful-action-label-leave-active {
-    animation: none !important;
-    transition: none !important;
+    transition: opacity 150ms linear;
+  }
+  .stateful-action-label-enter-from,
+  .stateful-action-label-leave-to {
+    filter: none;
+    transform: none;
   }
 }
 </style>

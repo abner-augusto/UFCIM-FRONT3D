@@ -339,9 +339,13 @@ function handleOpenChange(open: boolean) {
             <Button
               class="dialog__submit"
               :disabled="loading"
+              :aria-busy="loading"
               @click="submitReport"
             >
-              <span v-if="loading" class="dialog__spinner" />
+              <span v-if="loading" class="dialog__loading" role="status">
+                <span class="dialog__spinner" aria-hidden="true" />
+                <span>Enviando…</span>
+              </span>
               <span v-else>Enviar</span>
             </Button>
           </div>
@@ -659,6 +663,12 @@ function handleOpenChange(open: boolean) {
 }
 
 /* Spinner */
+.dialog__loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .dialog__spinner {
   display: inline-block;
   width: 1rem;
@@ -666,7 +676,12 @@ function handleOpenChange(open: boolean) {
   border: 2px solid color-mix(in srgb, var(--primary-foreground) 35%, transparent);
   border-top-color: var(--primary-foreground);
   border-radius: 50%;
-  animation: spin 0.6s linear infinite;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dialog__spinner {
+    animation: spin 0.6s linear infinite;
+  }
 }
 
 @keyframes spin {
