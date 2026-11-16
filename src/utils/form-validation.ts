@@ -42,12 +42,10 @@ export function validateAcceptInvite(input: {
   student: boolean;
   registration: string;
   password: string;
-  confirmation: string;
-}): FormError<'registration' | 'password' | 'passwordConfirm'> | null {
+}): FormError<'registration' | 'password'> | null {
   if (input.student && !input.registration.trim()) return { field: 'registration', message: 'A matrícula é obrigatória para alunos.' };
   if (input.password.length < 8) return { field: 'password', message: 'A senha deve ter ao menos 8 caracteres.' };
   if (!/[a-zA-Z]/.test(input.password) || !/[0-9]/.test(input.password)) return { field: 'password', message: 'A senha deve conter ao menos uma letra e um número.' };
-  if (input.password !== input.confirmation) return { field: 'passwordConfirm', message: 'As senhas não coincidem.' };
   return null;
 }
 
