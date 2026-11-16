@@ -16,7 +16,7 @@ const RESERVATION_ID = 'mel023-e2e-reservation';
 type SlotStatus = 'available' | 'reserved';
 
 /** 07:00–22:00 in half hours: own reservation 09:00–10:00, someone else's 11:00–12:00. */
-function availability() {
+function availability(ownReservationId = RESERVATION_ID) {
   const pad = (n: number) => String(n).padStart(2, '0');
   const time = (minutes: number) => `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;
   const reservedBy = (id: string, isSelf: boolean) => ({
@@ -31,7 +31,7 @@ function availability() {
     const startTime = time(7 * 60 + i * 30);
     const endTime = time(7 * 60 + (i + 1) * 30);
     if (startTime >= '09:00' && startTime < '10:00') {
-      return { startTime, endTime, status: 'reserved' as SlotStatus, reservation: reservedBy(RESERVATION_ID, true) };
+      return { startTime, endTime, status: 'reserved' as SlotStatus, reservation: reservedBy(ownReservationId, true) };
     }
     if (startTime >= '11:00' && startTime < '12:00') {
       return { startTime, endTime, status: 'reserved' as SlotStatus, reservation: reservedBy('someone-else', false) };
@@ -140,7 +140,7 @@ test.describe('MyReservationsView: editar reserva (MEL-023)', () => {
       route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([SERIES_RESERVATION, SECOND_OCCURRENCE]) }),
     );
     await page.route('**/api/v1/spaces/*/availability?**', (route) =>
-      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(availability()) }),
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(availability(SERIES_RESERVATION.id)) }),
     );
     await page.route('**/api/v1/users/search?**', (route) =>
       route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }),

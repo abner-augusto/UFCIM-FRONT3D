@@ -32,6 +32,7 @@ async function openSpaceCard(page: Page): Promise<Locator> {
 
   const card = page.locator('.space-card').filter({ hasText: SPACE_NUMBER }).first();
   await card.locator('.space-card__summary').click();
+  await expect(card.getByRole('button', { name: 'Mais detalhes' })).toBeVisible();
   return card;
 }
 
@@ -63,11 +64,13 @@ test.describe('Overlay discard confirmation', () => {
     await expect(page.getByRole('dialog', { name: 'Descartar o que foi preenchido?' })).toHaveCount(0);
     await expect(cleanByEsc).toBeHidden();
 
-    const dialog = await openEquipmentReportFromCard(card, page);
-    await dialog.getByRole('button', { name: /A sala \(outro problema\)/ }).click();
-    await dialog.locator('.category-grid button:not([disabled])').first().click();
+    await openEquipmentReportFromCard(card, page);
+    const dialogAcrossStepNames = page.locator('[role="dialog"]');
+    await dialogAcrossStepNames.getByRole('button', { name: /A sala \(outro problema\)/ }).click();
+    await dialogAcrossStepNames.locator('.category-grid button:not([disabled])').first().click();
 
-    const desc = dialog.locator('#report-desc');
+    const desc = page.locator('#report-desc');
+    const dialog = dialogAcrossStepNames.filter({ has: desc });
     await desc.fill('Lâmpada piscando na frente da sala');
 
     await page.mouse.click(8, 8);
@@ -123,7 +126,8 @@ test.describe('Overlay discard confirmation', () => {
     await page.keyboard.press('Escape');
     const confirm = page.getByRole('dialog', { name: 'Descartar o que foi preenchido?' });
     await expect(confirm).toBeVisible();
-    await expect(tray).toBeVisible();
+    const trayHiddenFromA11yTreeByConfirm = page.locator('[role="dialog"]').filter({ hasText: 'Fazer reserva' });
+    await expect(trayHiddenFromA11yTreeByConfirm).toBeVisible();
 
     const keepBtn = confirm.getByRole('button', { name: 'Continuar editando' });
     await expect(keepBtn).toBeFocused();

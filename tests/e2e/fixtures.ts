@@ -81,3 +81,8 @@ export const test = base.extend<AuthFixtures>({
 });
 
 export { expect };
+
+export async function gotoCampusAfterRouterSettles(page: Page) {
+  await page.goto('/#/campus');
+  await expect(page.getByRole('heading', { name: 'Selecione seu campus' })).toBeVisible();
+}

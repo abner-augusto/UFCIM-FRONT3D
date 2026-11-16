@@ -1,4 +1,4 @@
-import { test, expect, type Page } from './fixtures';
+import { test, expect, gotoCampusAfterRouterSettles, type Page } from './fixtures';
 
 const LOGS_FIXTURE = [
   {
@@ -65,7 +65,7 @@ async function mockLogsEndpoint(page: Page) {
 }
 
 async function assertForbiddenForRole(page: Page) {
-  await page.goto('/#/campus');
+  await gotoCampusAfterRouterSettles(page);
   await page.waitForURL(/#\/campus/, { timeout: 5000 });
   await expect(page.locator('a[href="#/historico-acoes"]')).toHaveCount(0);
 
@@ -78,7 +78,7 @@ test.describe('Histórico de ações (/historico-acoes)', () => {
     staffPage: page,
   }) => {
     await mockLogsEndpoint(page);
-    await page.goto('/#/campus');
+    await gotoCampusAfterRouterSettles(page);
     await expect(page.locator('a[href="#/historico-acoes"]').first()).toBeAttached();
 
     await page.goto('/#/historico-acoes');

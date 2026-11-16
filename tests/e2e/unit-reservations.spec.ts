@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, gotoCampusAfterRouterSettles } from './fixtures';
 
 const UNIT_RESERVATIONS_FIXTURE = [
   {
@@ -93,7 +93,7 @@ test.describe('Reservas da unidade (/reservas-da-unidade)', () => {
       });
     });
 
-    await page.goto('/#/campus');
+    await gotoCampusAfterRouterSettles(page);
     await expect(page.locator('a[href="#/reservas-da-unidade"]').first()).toBeAttached();
 
     await page.goto('/#/reservas-da-unidade');
@@ -117,7 +117,7 @@ test.describe('Reservas da unidade (/reservas-da-unidade)', () => {
   });
 
   test('student: navegação oculta a entrada e rota redireciona para /campus', async ({ studentPage: page }) => {
-    await page.goto('/#/campus');
+    await gotoCampusAfterRouterSettles(page);
     await page.waitForURL(/#\/campus/, { timeout: 5000 });
     await expect(page.locator('a[href="#/reservas-da-unidade"]')).toHaveCount(0);
 
@@ -126,7 +126,7 @@ test.describe('Reservas da unidade (/reservas-da-unidade)', () => {
   });
 
   test('professor: navegação oculta a entrada e rota redireciona para /campus', async ({ professorPage: page }) => {
-    await page.goto('/#/campus');
+    await gotoCampusAfterRouterSettles(page);
     await page.waitForURL(/#\/campus/, { timeout: 5000 });
     await expect(page.locator('a[href="#/reservas-da-unidade"]')).toHaveCount(0);
 
@@ -137,7 +137,7 @@ test.describe('Reservas da unidade (/reservas-da-unidade)', () => {
   test('maintenance: navegação oculta a entrada e rota redireciona para /campus', async ({
     maintenancePage: page,
   }) => {
-    await page.goto('/#/campus');
+    await gotoCampusAfterRouterSettles(page);
     await page.waitForURL(/#\/campus/, { timeout: 5000 });
     await expect(page.locator('a[href="#/reservas-da-unidade"]')).toHaveCount(0);
 
