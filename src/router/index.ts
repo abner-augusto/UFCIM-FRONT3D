@@ -2,7 +2,15 @@ import { nextTick } from 'vue';
 import { createRouter, createWebHashHistory } from 'vue-router';
 import { authGuard } from './guards';
 import { focusPageHeading } from '@/utils/navigation-focus';
-import { CAN_VIEW_REPORTS, CAN_MANAGE_EQUIPMENT, CAN_BLOCK, CAN_RESERVE, CAN_VIEW_MAINTENANCE_HISTORY } from '@/utils/roles';
+import {
+  CAN_VIEW_REPORTS,
+  CAN_MANAGE_EQUIPMENT,
+  CAN_BLOCK,
+  CAN_RESERVE,
+  CAN_VIEW_MAINTENANCE_HISTORY,
+  CAN_VIEW_UNIT_RESERVATIONS,
+  CAN_VIEW_ACTION_HISTORY,
+} from '@/utils/roles';
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -65,6 +73,18 @@ const router = createRouter({
       component: () => import('@/views/MyReservationsView.vue'),
       // MEL-020: maintenance never holds reservations.
       meta: { title: 'Minhas reservas', requiresAuth: true, roles: CAN_RESERVE },
+    },
+    {
+      path: '/reservas-da-unidade',
+      name: 'unit-reservations',
+      component: () => import('@/views/UnitReservationsView.vue'),
+      meta: { title: 'Reservas da unidade', requiresAuth: true, roles: CAN_VIEW_UNIT_RESERVATIONS },
+    },
+    {
+      path: '/historico-acoes',
+      name: 'action-history',
+      component: () => import('@/views/ActionHistoryView.vue'),
+      meta: { title: 'Histórico de ações', requiresAuth: true, roles: CAN_VIEW_ACTION_HISTORY },
     },
     {
       path: '/notificacoes',

@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router';
 import { useCampusStore } from '@/stores/campus';
 import { usePermissions } from '@/composables/usePermissions';
-import { Building2, Search, Calendar, Ban, BarChart3, Wrench, History, User } from '@lucide/vue';
+import { Building2, Search, Calendar, ClipboardList, ScrollText, Ban, BarChart3, Wrench, History, User } from '@lucide/vue';
 
 const campus = useCampusStore();
 const route = useRoute();
@@ -19,7 +19,7 @@ const browserTarget = computed(() =>
     : '/campus'
 );
 
-const { canReserve, canBlock, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
+const { canReserve, canViewUnitReservations, canViewActionHistory, canBlock, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
 const isActive = (name: string) => route.name === name;
 
 // Horizontal-scroll affordance: edge fades that show only when there's more
@@ -123,6 +123,16 @@ watch(
       <router-link v-if="canReserve" to="/minhas-reservas" class="tab-item" :class="{ active: isActive('my-reservations') }">
         <span class="tab-icon"><Calendar :size="20" /></span>
         <span class="tab-label">Reservas</span>
+      </router-link>
+
+      <router-link v-if="canViewUnitReservations" to="/reservas-da-unidade" class="tab-item" :class="{ active: isActive('unit-reservations') }">
+        <span class="tab-icon"><ClipboardList :size="20" /></span>
+        <span class="tab-label">Unidade</span>
+      </router-link>
+
+      <router-link v-if="canViewActionHistory" to="/historico-acoes" class="tab-item" :class="{ active: isActive('action-history') }">
+        <span class="tab-icon"><ScrollText :size="20" /></span>
+        <span class="tab-label">Ações</span>
       </router-link>
 
       <router-link v-if="canBlock" to="/meus-bloqueios" class="tab-item" :class="{ active: isActive('my-blockings') }">
