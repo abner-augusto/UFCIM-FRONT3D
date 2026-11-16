@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted, toRef } from 'vue';
+import { computed, ref, onMounted, toRef } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import type { Space } from '@/types/space';
 import { usePermissions } from '@/composables/usePermissions';
 import { useRoomDetail } from '@/composables/useRoomDetail';
+import { useDesktopBreakpoint } from '@/composables/useDesktopBreakpoint';
+import { useDiscardGuard } from '@/composables/useDiscardGuard';
+import DiscardChangesDialog from './DiscardChangesDialog.vue';
 import EquipmentReportDialog from './EquipmentReportDialog.vue';
 import { Dialog, DialogContent, DialogDescription } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription } from '@/components/ui/drawer';
@@ -38,25 +41,8 @@ const router = useRouter();
 const route = useRoute();
 const overlayReady = ref(false);
 const detailsExpanded = ref(false);
-const isDesktop = ref(window.matchMedia('(min-width: 768px)').matches);
+const { isDesktop } = useDesktopBreakpoint();
 onMounted(() => setTimeout(() => { overlayReady.value = true; }, 300));
-
-const mediaQuery = window.matchMedia('(min-width: 768px)');
-const handleMediaChange = (event: MediaQueryListEvent | MediaQueryList) => {
-  isDesktop.value = event.matches;
-};
-
-onMounted(() => {
-  mediaQuery.addEventListener('change', handleMediaChange);
-});
-
-onUnmounted(() => {
-  mediaQuery.removeEventListener('change', handleMediaChange);
-});
-
-function handleOpenChange(open: boolean) {
-  if (!open && overlayReady.value) emit('close');
-}
 
 const { canReserve, canBlock, canViewReports } = usePermissions();
 
@@ -103,6 +89,26 @@ const {
 
 const { data: airQuality, loading: loadingAirQuality } = useAirQuality(() => props.space.id);
 
+const canClose = computed(() => overlayReady.value && !reportDialogOpen.value);
+const {
+  discardDialogOpen,
+  drawerBind,
+  requestClose,
+  handleOpenChange,
+  handleOutsideDismiss,
+  confirmDiscard,
+  keepEditing,
+} = useDiscardGuard({
+  isDirty: hasUserSelection,
+  canClose,
+  isDesktop,
+  open: () => props.open ?? true,
+  onDiscard: () => {
+    clearSelection();
+    emit('close');
+  },
+});
+
 const actionReserveRangeBookable = computed(() => loadingAvailability.value || reserveRangeBookable.value);
 
 function emitReserve() {
@@ -129,7 +135,7 @@ function goToReport() {
 </script>
 
 <template>
-  <component :is="isDesktop ? Dialog : Drawer" :open="open ?? true" @update:open="handleOpenChange">
+  <component :is="isDesktop ? Dialog : Drawer" :open="open ?? true" v-bind="drawerBind" @update:open="handleOpenChange">
     <component
       :is="isDesktop ? DialogContent : DrawerContent"
       class="room-popup z-[var(--z-modal)]"
@@ -138,6 +144,9 @@ function goToReport() {
         : 'overflow-hidden rounded-xl mx-2 mb-[calc(0.5rem_+_var(--safe-bottom))]'"
       overlay-class="supports-backdrop-filter:backdrop-blur-none"
       :show-close-button="false"
+      @interact-outside="handleOutsideDismiss"
+      @escape-key-down="handleOutsideDismiss"
+      @pointer-down-outside="handleOutsideDismiss"
     >
       <component :is="isDesktop ? DialogDescription : DrawerDescription" class="sr-only">Detalhes e disponibilidade do espaço.</component>
       <!-- On mobile this is the scroll region; on the desktop dialog it's
@@ -150,7 +159,7 @@ function goToReport() {
         :space="space"
         :type-label="typeLabel"
         :is-desktop="isDesktop"
-        @close="$emit('close')"
+        @close="requestClose"
       />
 
       <!-- Schedule grid -->
@@ -230,6 +239,13 @@ function goToReport() {
       @reported="onReportSent"
     />
   </component>
+
+  <DiscardChangesDialog
+    :open="discardDialogOpen"
+    @update:open="discardDialogOpen = $event"
+    @keep="keepEditing"
+    @discard="confirmDiscard"
+  />
 </template>
 
 <!-- Non-scoped: targets the vaul drawer element (it carries the .room-popup class

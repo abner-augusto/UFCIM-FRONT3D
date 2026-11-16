@@ -49,6 +49,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   submit: [payload: BlockingPayload];
+  'dirty-change': [dirty: boolean];
 }>();
 
 const selectedDateFrom = ref(props.initialDate);
@@ -106,6 +107,18 @@ const canSubmit = computed(() =>
   resolvedEnd.value !== null &&
   resolvedStart.value < resolvedEnd.value,
 );
+
+const isDirty = computed(() =>
+  selectedDateFrom.value !== props.initialDate ||
+  selectedDateTo.value !== props.initialDate ||
+  selectedBlockType.value !== props.initialBlockType ||
+  reason.value !== props.initialReason ||
+  hourMode.value !== 'full_day' ||
+  customStart.value !== '' ||
+  customEnd.value !== '',
+);
+
+watch(isDirty, (dirty) => emit('dirty-change', dirty), { immediate: true });
 
 // Keep "Até" coherent with "De": never before it, never empty.
 watch(selectedDateFrom, (from) => {
