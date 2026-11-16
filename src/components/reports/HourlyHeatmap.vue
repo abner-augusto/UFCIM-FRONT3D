@@ -75,8 +75,12 @@ function color(rate: number): string {
   max-width: 32px;
   border-radius: 4px 4px 0 0;
   border: 1px solid;
-  transition: height 0.2s ease;
   min-height: 4px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .heatbar-fill {
+    transition: height 0.2s ease;
+  }
 }
 
 .heatbar-label {

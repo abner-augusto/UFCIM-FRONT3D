@@ -62,12 +62,15 @@ describe('overallAirLevel', () => {
 });
 
 describe('formatting', () => {
-  it('describes the reading age in Portuguese', () => {
+  it('describes the reading age in Portuguese with Intl.RelativeTimeFormat', () => {
     const now = new Date('2026-11-03T18:00:00.000Z');
     expect(formatReadingAge('2026-11-03T17:59:40.000Z', now)).toBe('agora');
-    expect(formatReadingAge('2026-11-03T17:57:00.000Z', now)).toBe('há 3 min');
-    expect(formatReadingAge('2026-11-03T16:00:00.000Z', now)).toBe('há 2 h');
-    expect(formatReadingAge('2026-11-02T17:00:00.000Z', now)).toBe('há 1 dia');
+    expect(formatReadingAge('2026-11-03T17:59:00.000Z', now)).toBe('há 1 minuto');
+    expect(formatReadingAge('2026-11-03T17:57:00.000Z', now)).toBe('há 3 minutos');
+    expect(formatReadingAge('2026-11-03T17:00:00.000Z', now)).toBe('há 1 hora');
+    expect(formatReadingAge('2026-11-03T16:00:00.000Z', now)).toBe('há 2 horas');
+    expect(formatReadingAge('2026-11-02T17:00:00.000Z', now)).toBe('ontem');
+    expect(formatReadingAge('2026-10-30T18:00:00.000Z', now)).toBe('há 4 dias');
   });
 
   it('formats TVOC with three decimals and a comma', () => {

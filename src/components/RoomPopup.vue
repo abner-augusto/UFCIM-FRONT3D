@@ -274,13 +274,14 @@ function goToReport() {
 
 /* Desktop dialog entrance + exit, keyed to reka-ui's data-state so the popup
    springs in AND eases out (reka keeps it mounted until the close animation
-   ends). The mobile drawer ignores these — vaul owns its slide — and the
-   global reduced-motion kill-switch collapses both to ~instant. */
-.room-popup[data-state="open"] {
-  animation: popup-in 0.34s var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
-}
-.room-popup[data-state="closed"] {
-  animation: popup-out 0.18s ease-in both;
+   ends). The mobile drawer ignores these — vaul owns its slide. */
+@media (prefers-reduced-motion: no-preference) {
+  .room-popup[data-state="open"] {
+    animation: popup-in 0.34s var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
+  }
+  .room-popup[data-state="closed"] {
+    animation: popup-out 0.18s ease-in both;
+  }
 }
 
 .room-popup::before {

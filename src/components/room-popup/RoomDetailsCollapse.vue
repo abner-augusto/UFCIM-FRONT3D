@@ -145,8 +145,12 @@ const emit = defineEmits<{
 }
 .details-toggle__chevron {
   font-size: 1rem;
-  transition: transform 0.2s ease;
   transform: rotate(90deg);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .details-toggle__chevron {
+    transition: transform 0.2s ease;
+  }
 }
 .details-toggle__chevron.rotated {
   transform: rotate(-90deg);

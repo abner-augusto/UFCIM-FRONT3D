@@ -82,10 +82,10 @@ onUnmounted(() => {
    (absolute, pinned to the content box below the header) so the two overlap
    without the layout jumping or scroll height collapsing mid-transition. */
 .page-enter-active {
-  transition: opacity 220ms var(--ease-out-expo, ease), transform 220ms var(--ease-out-expo, ease);
+  transition: opacity 220ms var(--ease-out-expo, ease);
 }
 .page-leave-active {
-  transition: opacity 140ms ease-in, transform 140ms ease-in;
+  transition: opacity 140ms ease-in;
   position: absolute;
   top: var(--header-offset);
   left: 0;
@@ -94,11 +94,24 @@ onUnmounted(() => {
 }
 .page-enter-from {
   opacity: 0;
-  transform: translateY(10px);
 }
 .page-leave-to {
   opacity: 0;
-  transform: translateY(-6px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .page-enter-active {
+    transition: opacity 220ms var(--ease-out-expo, ease), transform 220ms var(--ease-out-expo, ease);
+  }
+  .page-leave-active {
+    transition: opacity 140ms ease-in, transform 140ms ease-in;
+  }
+  .page-enter-from {
+    transform: translateY(10px);
+  }
+  .page-leave-to {
+    transform: translateY(-6px);
+  }
 }
 </style>
 

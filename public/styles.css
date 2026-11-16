@@ -26,6 +26,9 @@
 body {
   font-family: 'Roboto', 'Segoe UI', sans-serif;
 }
+body {
+  font-size-adjust: from-font;
+}
 /* Theme background/text color and color-scheme are owned by the Tailwind base
    layer in src/styles/tokens.css (bg-background / text-foreground + the .dark
    overrides). Do NOT hard-code them here: this file is linked statically from
@@ -35,7 +38,7 @@ body {
 /* Legacy floor-UI styles removed — now handled by ViewerDesktopControls.vue */
 
 .pin-label {
-  font: 600 12px 'Roboto', sans-serif;
+  font: 600 0.75rem 'Roboto', sans-serif;
   padding: 8px 5px;
   height: auto;
   background: rgba(255, 255, 255, 0.98);

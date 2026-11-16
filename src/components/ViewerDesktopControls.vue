@@ -125,6 +125,9 @@ function shortFloorLabel(name: string): string {
 
 .controls-row {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: calc(100vw - 2rem);
   gap: 5px;
   background: color-mix(in oklab, var(--popover) 88%, transparent);
   backdrop-filter: blur(8px);
@@ -141,15 +144,15 @@ function shortFloorLabel(name: string): string {
 }
 
 .ctrl-btn {
-  padding: 8px 14px;
+  padding: 0.5rem 0.875rem;
   border-radius: 8px;
   background: transparent;
   color: var(--foreground);
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
   white-space: nowrap;
-  min-height: 36px;
+  min-height: 2.25rem;
 }
 
 .ctrl-btn:hover {
@@ -174,29 +177,47 @@ function shortFloorLabel(name: string): string {
 }
 
 .ctrl-btn--sm {
-  padding: 6px 10px;
-  min-height: 32px;
-  font-size: 12px;
+  padding: 0.375rem 0.625rem;
+  min-height: 2rem;
+  font-size: 0.75rem;
 }
 
 /* Transitions */
 .controls-fade-enter-active,
 .controls-fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 .controls-fade-enter-from,
 .controls-fade-leave-to {
   opacity: 0;
-  transform: translateX(-50%) translateY(8px);
 }
 
 .floor-slide-enter-active,
 .floor-slide-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 .floor-slide-enter-from,
 .floor-slide-leave-to {
   opacity: 0;
-  transform: translateY(4px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .controls-fade-enter-active,
+  .controls-fade-leave-active {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .controls-fade-enter-from,
+  .controls-fade-leave-to {
+    transform: translateX(-50%) translateY(8px);
+  }
+
+  .floor-slide-enter-active,
+  .floor-slide-leave-active {
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  .floor-slide-enter-from,
+  .floor-slide-leave-to {
+    transform: translateY(4px);
+  }
 }
 </style>

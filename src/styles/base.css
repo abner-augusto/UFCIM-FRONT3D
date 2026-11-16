@@ -8,16 +8,28 @@
     font-family: var(--font-body);
   }
 
+  body {
+    font-size-adjust: from-font;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
   /* Remove iOS tap flash on all buttons */
   button {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
 
-  /* ≥16px on mobile prevents iOS Safari auto-zoom on focus.
-     Desktop restores the original smaller size. */
+  /* ≥1rem (16px at default scale) on mobile prevents iOS Safari auto-zoom on focus
+     while still scaling with OS text-size settings. */
   input, select, textarea {
-    font-size: 16px;
+    font-size: 1rem;
   }
 
   @media (min-width: 768px) {

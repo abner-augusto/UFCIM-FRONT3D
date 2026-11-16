@@ -152,7 +152,8 @@ const batteryIcon = computed(() => {
 .air__co2 { white-space: nowrap; }
 .air__co2 strong { font-variant-numeric: tabular-nums; }
 .air__comfort { margin-left: auto; color: var(--muted-foreground); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.air__chevron { flex-shrink: 0; color: var(--muted-foreground); transition: transform 0.2s var(--ease-out-expo, ease); }
+.air__chevron { flex-shrink: 0; color: var(--muted-foreground); }
+@media (prefers-reduced-motion: no-preference) { .air__chevron { transition: transform 0.2s var(--ease-out-expo, ease); } }
 .air__chevron--open { transform: rotate(180deg); }
 .air__summary:has(.air__comfort) .air__chevron { margin-left: 0; }
 .air__summary:not(:has(.air__comfort)) .air__chevron { margin-left: auto; }

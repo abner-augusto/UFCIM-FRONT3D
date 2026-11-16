@@ -879,18 +879,12 @@ h1 {
 
 /* FLIP: when a card expands or one is removed, the others glide to their new
    spot instead of snapping. Entrance is handled by `.stagger-item`. */
-.rlist-move {
-  transition: transform 300ms var(--ease-out-quart, ease);
-}
-.rlist-leave-active {
-  transition: opacity 200ms ease, transform 200ms ease;
-  position: absolute;
-  left: 0;
-  right: 0;
-}
-.rlist-leave-to {
-  opacity: 0;
-  transform: translateY(-6px);
+.rlist-leave-active { transition: opacity 200ms ease; position: absolute; left: 0; right: 0; }
+.rlist-leave-to { opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .rlist-move { transition: transform 300ms var(--ease-out-quart, ease); }
+  .rlist-leave-active { transition: opacity 200ms ease, transform 200ms ease; }
+  .rlist-leave-to { transform: translateY(-6px); }
 }
 
 /* Card */
@@ -971,17 +965,9 @@ h1 {
 }
 
 /* Chevron */
-.expand-chevron {
-  font-size: 1.1rem;
-  color: var(--muted-foreground);
-  line-height: 1;
-  transform: rotate(90deg);
-  transition: transform 0.2s ease;
-  display: inline-block;
-}
-.expand-chevron.rotated {
-  transform: rotate(-90deg);
-}
+.expand-chevron { font-size: 1.1rem; color: var(--muted-foreground); line-height: 1; transform: rotate(90deg); display: inline-block; }
+.expand-chevron.rotated { transform: rotate(-90deg); }
+@media (prefers-reduced-motion: no-preference) { .expand-chevron { transition: transform 0.2s ease; } }
 
 /* Status badges */
 /* Detail panel — reveal motion handled by the shared .reveal-collapse utility (motion.css) */
