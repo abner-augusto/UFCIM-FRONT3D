@@ -162,7 +162,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(
+export async function request<T>(
   path: string,
   token: string | null,
   options: RequestInit = {},

@@ -11,6 +11,7 @@ import { formatReservationPeriod, reservationActors } from '@/utils/unit-reserva
 const props = defineProps<{
   reservation: Reservation;
   expanded: boolean;
+  highlighted?: boolean;
 }>();
 
 const emit = defineEmits<{ toggle: [] }>();
@@ -38,7 +39,7 @@ const completed = computed(
 <template>
   <li
     class="unit-card"
-    :class="{ 'unit-card--expanded': expanded }"
+    :class="{ 'unit-card--expanded': expanded, 'unit-card--highlighted': highlighted }"
     data-testid="unit-reservation-card"
   >
     <button class="unit-card__summary press-feedback" :aria-expanded="expanded" @click="emit('toggle')">
@@ -164,6 +165,11 @@ const completed = computed(
 <style scoped>
 .unit-card { border: 1px solid var(--border); border-radius: 12px; background: var(--card); overflow: hidden; }
 .unit-card--expanded { border-color: var(--primary); }
+.unit-card--highlighted {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent);
+}
 .unit-card__summary {
   display: flex;
   justify-content: space-between;

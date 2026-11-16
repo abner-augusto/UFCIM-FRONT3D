@@ -9,6 +9,7 @@ import {
   CAN_RESERVE,
   CAN_VIEW_MAINTENANCE_HISTORY,
   CAN_VIEW_UNIT_RESERVATIONS,
+  CAN_VIEW_ACTION_HISTORY,
 } from '@/utils/roles';
 
 const router = createRouter({
@@ -78,6 +79,12 @@ const router = createRouter({
       name: 'unit-reservations',
       component: () => import('@/views/UnitReservationsView.vue'),
       meta: { title: 'Reservas da unidade', requiresAuth: true, roles: CAN_VIEW_UNIT_RESERVATIONS },
+    },
+    {
+      path: '/historico-acoes',
+      name: 'action-history',
+      component: () => import('@/views/ActionHistoryView.vue'),
+      meta: { title: 'Histórico de ações', requiresAuth: true, roles: CAN_VIEW_ACTION_HISTORY },
     },
     {
       path: '/notificacoes',

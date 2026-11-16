@@ -134,3 +134,32 @@ export function formatReservationPeriod(startTime: string, endTime: string): str
   const range = `${startTime}–${endTime}`;
   return namedSlot ? `${range} (${TIME_SLOT_LABELS[namedSlot[0]]})` : range;
 }
+
+function queryString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+export function unitFiltersFromRouteQuery(query: Record<string, unknown>): UnitReservationsFilters {
+  const rawStatus = queryString(query.status);
+  const status: ReservationStatusFilter =
+    rawStatus === 'canceled' || rawStatus === 'all' ? rawStatus : 'active';
+  return {
+    spaceId: queryString(query.spaceId),
+    from: queryString(query.from),
+    until: queryString(query.until),
+    status,
+    createdBy: queryString(query.createdBy),
+  };
+}
+
+export function readRouteHighlight(query: Record<string, unknown>): string | null {
+  return queryString(query.highlight);
+}
+
+export function resolveHighlightedReservationId(
+  items: Pick<Reservation, 'id'>[],
+  highlightId: string | null,
+): string | null {
+  if (!highlightId) return null;
+  return items.some((r) => r.id === highlightId) ? highlightId : null;
+}

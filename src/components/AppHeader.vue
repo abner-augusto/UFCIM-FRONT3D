@@ -31,7 +31,7 @@ const { markNavigating, reset: resetMenuFocus, onCloseAutoFocus: onMenuCloseAuto
 const { isDark, toggleDarkMode } = useDarkMode();
 const themeToggleLabel = computed(() => isDark.value ? 'Ativar tema claro' : 'Ativar tema escuro');
 
-const { canReserve, canViewUnitReservations, canBlock, canAdmin, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
+const { canReserve, canViewUnitReservations, canViewActionHistory, canBlock, canAdmin, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
 const adminUrl = '/admin';
 const viewerRoute = computed(() =>
   campusStore.selectedCampusId
@@ -74,6 +74,7 @@ function logout() {
         <router-link :to="spaceBrowserRoute">Buscar Espaços</router-link>
         <router-link v-if="canReserve" to="/minhas-reservas">Minhas Reservas</router-link>
         <router-link v-if="canViewUnitReservations" to="/reservas-da-unidade">Reservas da unidade</router-link>
+        <router-link v-if="canViewActionHistory" to="/historico-acoes">Histórico de ações</router-link>
         <router-link v-if="canBlock" to="/meus-bloqueios">Meus Bloqueios</router-link>
         <router-link v-if="canViewReports" to="/relatorios">Relatórios</router-link>
         <router-link v-if="canManageEquipment" to="/manutencao/chamados">Chamados</router-link>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { SlidersHorizontalIcon, XIcon } from '@lucide/vue';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
@@ -24,11 +25,15 @@ import {
   clearUnitFilter,
   countUnitActiveFilters,
   unitCreatorOptions,
+  unitFiltersFromRouteQuery,
+  readRouteHighlight,
+  resolveHighlightedReservationId,
   unitSpaceOptions,
   type UnitFilterKey,
 } from '@/utils/unit-reservations';
 
 const auth = useAuthStore();
+const route = useRoute();
 
 const reservations = ref<Reservation[]>([]);
 const spaces = ref<DepartmentReservationSpaceOption[]>([]);
@@ -43,7 +48,9 @@ const loading = ref(true);
 const errorMsg = ref<string | null>(null);
 const expandedId = ref<string | null>(null);
 const filtersOpen = ref(false);
-const filters = reactive<UnitReservationsFilters>({ ...DEFAULT_UNIT_RESERVATIONS_FILTERS });
+const filters = reactive<UnitReservationsFilters>(unitFiltersFromRouteQuery(route.query));
+
+const highlightId = computed(() => readRouteHighlight(route.query));
 
 let requestSeq = 0;
 
@@ -64,7 +71,7 @@ async function loadReservations(page = 1) {
     pagination.value = res.pagination;
     spaces.value = res.spaces;
     creators.value = res.creators;
-    expandedId.value = null;
+    expandedId.value = resolveHighlightedReservationId(res.data, highlightId.value);
   } catch {
     if (seq === requestSeq) {
       errorMsg.value = 'Não foi possível carregar as reservas da unidade.';
@@ -164,6 +171,7 @@ watch(
           :key="r.id"
           :reservation="r"
           :expanded="expandedId === r.id"
+          :highlighted="highlightId === r.id"
           @toggle="toggleExpand(r.id)"
         />
       </ul>

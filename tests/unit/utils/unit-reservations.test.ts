@@ -8,7 +8,10 @@ import {
   countUnitActiveFilters,
   formatReservationPeriod,
   reservationActors,
+  readRouteHighlight,
+  resolveHighlightedReservationId,
   unitCreatorOptions,
+  unitFiltersFromRouteQuery,
   unitPeriodChipLabel,
   unitSpaceOptions,
 } from '@/utils/unit-reservations';
@@ -176,5 +179,36 @@ describe('reservationActors and formatReservationPeriod', () => {
   it('formats named shifts and custom time ranges', () => {
     expect(formatReservationPeriod('07:00', '12:00')).toBe('07:00–12:00 (Manhã)');
     expect(formatReservationPeriod('09:00', '10:30')).toBe('09:00–10:30');
+  });
+
+  it('hydrates initial filters from route query', () => {
+    expect(unitFiltersFromRouteQuery({})).toEqual({
+      spaceId: null,
+      from: null,
+      until: null,
+      status: 'active',
+      createdBy: null,
+    });
+    expect(
+      unitFiltersFromRouteQuery({
+        spaceId: 'sp-1',
+        from: '2026-06-10',
+        until: '2026-06-10',
+        status: 'all',
+        createdBy: 'u-1',
+      }),
+    ).toEqual({
+      spaceId: 'sp-1',
+      from: '2026-06-10',
+      until: '2026-06-10',
+      status: 'all',
+      createdBy: 'u-1',
+    });
+
+    expect(readRouteHighlight({ highlight: 'res-1' })).toBe('res-1');
+    expect(readRouteHighlight({ highlight: '  ' })).toBeNull();
+    expect(resolveHighlightedReservationId([{ id: 'res-1' }], 'res-1')).toBe('res-1');
+    expect(resolveHighlightedReservationId([{ id: 'res-1' }], 'missing')).toBeNull();
+    expect(resolveHighlightedReservationId([{ id: 'res-1' }], null)).toBeNull();
   });
 });
