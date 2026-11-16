@@ -121,27 +121,28 @@ describe('design tokens contrast & accessibility invariants', () => {
     }
   });
 
-  it('meets >= 3:1 for --input field borders across light and dark surfaces', () => {
+  it('meets >= 3:1 for --field-border across light and dark surfaces', () => {
     const surfaces = ['--background', '--card', '--popover', '--muted', '--secondary'] as const;
 
-    const lightInput = parseOklch(lightVars['--input']);
+    const lightBorder = parseOklch(lightVars['--field-border']);
     for (const surface of surfaces) {
-      const ratio = contrastRatio(lightInput, parseOklch(lightVars[surface]));
-      expect(ratio, `light --input on ${surface}`).toBeGreaterThanOrEqual(3);
+      const ratio = contrastRatio(lightBorder, parseOklch(lightVars[surface]));
+      expect(ratio, `light --field-border on ${surface}`).toBeGreaterThanOrEqual(3);
     }
-    expect(lightVars['--input']).not.toBe(lightVars['--border']);
+    expect(lightVars['--field-border']).not.toBe(lightVars['--border']);
 
-    const darkInput = parseOklch(darkVars['--input']);
+    const darkBorder = parseOklch(darkVars['--field-border']);
     for (const surface of surfaces) {
-      const ratio = contrastRatio(darkInput, parseOklch(darkVars[surface]));
-      expect(ratio, `dark --input on ${surface}`).toBeGreaterThanOrEqual(3);
+      const ratio = contrastRatio(darkBorder, parseOklch(darkVars[surface]));
+      expect(ratio, `dark --field-border on ${surface}`).toBeGreaterThanOrEqual(3);
     }
+    const darkInput = parseOklch(darkVars['--input']);
     const darkCardRgb = oklchToLinearRgb(parseOklch(darkVars['--card']));
     const inputFillOnCard = compositeOver(darkInput, darkCardRgb, 0.3);
-    const borderRgb = oklchToLinearRgb(darkInput);
+    const borderRgb = oklchToLinearRgb(darkBorder);
     const l1 = relativeLuminance(borderRgb);
     const l2 = relativeLuminance(inputFillOnCard);
-    expect((Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05), 'dark --input vs bg-input/30').toBeGreaterThanOrEqual(3);
+    expect((Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05), 'dark --field-border vs bg-input/30').toBeGreaterThanOrEqual(3);
   });
 
   it('meets >= 3:1 for ScrollBar thumb (bg-muted-foreground/70) in both themes', () => {
@@ -179,7 +180,7 @@ describe('design tokens contrast & accessibility invariants', () => {
 
     expect(buttonVariants).not.toMatch(/['"]h-[6789]\b/);
     expect(buttonVariants).toContain('min-h-8');
-    expect(buttonVariants).toContain('border-input');
+    expect(buttonVariants).toContain('border-field-border');
     expect(badgeVariants).toContain('min-h-5');
     expect(badgeVariants).not.toContain('overflow-hidden');
 

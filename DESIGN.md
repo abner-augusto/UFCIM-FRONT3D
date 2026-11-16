@@ -20,7 +20,7 @@ colors:
   surface: "#F7F9F8"
   surface-alt: "#F5F5F5"
   border: "#E5E5E5"
-  input: "#808080"
+  field-border: "#808080"
 typography:
   display:
     fontFamily: "Roboto, 'Segoe UI', sans-serif"
@@ -130,7 +130,7 @@ Equipment-status pills reuse the same semantics with soft tints: working (`#D1FA
 - **Muted** (`#636363` / `oklch(0.5 0 0)` light, `oklch(0.70 0 0)` dark): meta, captions, axis labels (`--muted-foreground`). Meets ≥4.5:1 across canvas, card, muted, and secondary surfaces — never lighter for body copy.
 - **Canvas** (`#FFFFFF`): app background in the light theme. The dark theme uses the semantic `--background`, `--card`, and `--popover` tokens rather than direct hex values.
 - **Surface** (`#F7F9F8`) / **Surface Alt** (`#F5F5F5`): stat cards, toolbars, resting tinted panels.
-- **Border** (`#E5E5E5` / `--border`) for hairline dividers; **Input Border** (`#808080` / `oklch(0.60 0 0)` light, `oklch(0.62 0 0)` dark / `--input`) for interactive field and outline-control boundaries (≥3:1 non-text contrast in both themes).
+- **Border** (`#E5E5E5` / `--border`) for hairline dividers; **Field Border** (`#808080` / `oklch(0.60 0 0)` light, `oklch(0.62 0 0)` dark / `--field-border`) for interactive field and outline-control boundaries (≥3:1 non-text contrast in both themes).
 
 ### Named Rules
 **The Brand-vs-Available Rule.** The brand teal and the availability palette never trade jobs. `#00697D` is identity and action; the availability green `#00B050` means "available". Don't tint UI chrome with the availability green, and don't render a status with the brand teal. (The teal/green split now makes the two read as clearly different hues, not near-twins.)
@@ -190,7 +190,7 @@ Components are calm and efficient: rounded but not bubbly, generously tappable, 
 - Cards are used sparingly. Never nest a card in a card.
 
 ### Inputs / Fields
-- **Style:** transparent/surface fill, 1px `--input` (`#808080` light / `oklch(0.62 0 0)` dark, ≥3:1) border, `8–10px` radius. Mobile font-size `1rem` (16px at default scale) to prevent iOS zoom while scaling with OS text settings; desktop drops to `0.95rem`.
+- **Style:** transparent/surface fill, 1px `--field-border` (`#808080` light / `oklch(0.62 0 0)` dark, ≥3:1) border, `8–10px` radius. Mobile font-size `1rem` (16px at default scale) to prevent iOS zoom while scaling with OS text settings; desktop drops to `0.95rem`.
 - **Focus:** border shifts to Campus Teal (`#00697D`); keep a clearly visible focus state.
 - **Date picker:** native input opened via `showPicker()`; appearance normalized across platforms.
 

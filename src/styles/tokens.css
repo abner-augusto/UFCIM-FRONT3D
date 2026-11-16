@@ -27,7 +27,8 @@
   --destructive:          oklch(0.5433 0.174 29.7);     /* #c0392b */
   --destructive-foreground: oklch(1 0 0);
   --border:               oklch(0.9219 0 0);            /* #e5e5e5 — hairline dividers */
-  --input:                oklch(0.60 0 0);              /* #808080 — field borders >= 3:1 */
+  --input:                oklch(0.9219 0 0);
+  --field-border:         oklch(0.60 0 0);              /* #808080 — field borders >= 3:1 */
   --ring:                 oklch(0.4802 0.0857 216.9);
   --radius:               0.75rem;
   color-scheme: light;
@@ -130,7 +131,8 @@
   --destructive:          oklch(0.62 0.19 29.7);
   --destructive-foreground: oklch(1 0 0);
   --border:               oklch(1 0 0 / 12%);
-  --input:                oklch(0.62 0 0);              /* >= 3:1 field borders on dark surfaces */
+  --input:                oklch(1 0 0 / 15%);
+  --field-border:         oklch(0.62 0 0);              /* >= 3:1 field borders on dark surfaces */
   --ring:                 oklch(0.72 0.10 210);
   color-scheme: dark;
 
@@ -188,6 +190,7 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border:                var(--border);
   --color-input:                 var(--input);
+  --color-field-border:          var(--field-border);
   --color-ring:                  var(--ring);
   --color-success:               var(--success);
   --color-success-surface:       var(--success-surface);
