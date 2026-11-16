@@ -134,12 +134,6 @@ const isEmpty = computed(() => !loading.value && !errorMsg.value && reports.valu
 
 const datetimeLabel = formatDateTime;
 
-// Full location line, e.g. "Sala 03 · Bloco 2 · Instituto de Arquitetura, Urbanismo e Design".
-// Built defensively so it degrades gracefully when parts are missing — multiple blocks and
-// departments may share the same maintenance team, so the department matters for triage.
-
-const spaceLabel = reportSpaceLabel;
-
 // Builds a viewer route that opens this report's space on the 3D model.
 // Requires the space to have a modelId (a pin in the GLB) and a known campus.
 function viewerLink(report: EquipmentReport) {
@@ -246,7 +240,7 @@ const blockingReason = computed(() =>
 
         <p v-if="isRoomTicket(r)" class="report-card__kind">Problema na sala</p>
         <h3 class="report-card__title">{{ reportTitle(r) }}</h3>
-        <p class="report-card__space">{{ spaceLabel(r) }}</p>
+        <p class="report-card__space">{{ reportSpaceLabel(r) }}</p>
 
         <p v-if="r.description" class="report-card__desc">{{ r.description }}</p>
 
