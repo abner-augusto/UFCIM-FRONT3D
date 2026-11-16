@@ -84,15 +84,17 @@ export const AIR_METRICS: AirMetricDisplay[] = [
   { key: 'humidityPct', label: 'Umidade', unit: '%', format: (v) => INTEGER.format(v) },
 ];
 
-/** "agora", "há 3 min", "há 2 h", "há 4 dias". */
+const RELATIVE_TIME = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' });
+
+/** "agora", "há 3 minutos", "há 2 horas", "ontem", "há 4 dias". */
 export function formatReadingAge(measuredAt: string, now = new Date()): string {
   const minutes = Math.max(0, Math.floor((now.getTime() - new Date(measuredAt).getTime()) / 60_000));
-  if (minutes < 1) return 'agora';
-  if (minutes < 60) return `há ${minutes} min`;
+  if (minutes < 1) return RELATIVE_TIME.format(0, 'second');
+  if (minutes < 60) return RELATIVE_TIME.format(-minutes, 'minute');
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `há ${hours} h`;
+  if (hours < 24) return RELATIVE_TIME.format(-hours, 'hour');
   const days = Math.floor(hours / 24);
-  return `há ${days} ${days === 1 ? 'dia' : 'dias'}`;
+  return RELATIVE_TIME.format(-days, 'day');
 }
 
 /**
