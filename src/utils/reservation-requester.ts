@@ -1,4 +1,4 @@
-import type { RequesterCandidate, RequesterPayload, Reservation } from '@/types/reservation';
+import type { RequesterCandidate, RequesterPayload, RequesterUpdatePayload, Reservation } from '@/types/reservation';
 
 // ─── Reserving on someone's behalf (MEL-025) ────────────────────────────────
 
@@ -17,6 +17,73 @@ export const REQUESTER_TEXT_MAX = 100;
 
 export function emptyRequester(): RequesterSelection {
   return { user: null, query: '', contact: '' };
+}
+
+export function initialRequesterSelection(reservation?: Reservation | null): RequesterSelection {
+  if (!reservation) return emptyRequester();
+  const contact = reservation.requesterContact ?? '';
+  if (reservation.requesterUserId) {
+    const name = reservation.requester?.name ?? '';
+    return {
+      user: { id: reservation.requesterUserId, name, role: '', department: '' },
+      query: name,
+      contact,
+    };
+  }
+  const freeName = reservation.requesterName ?? reservation.requester?.name ?? '';
+  if (freeName) {
+    return { user: null, query: freeName, contact };
+  }
+  return emptyRequester();
+}
+
+export function hasOrphanRequesterContact(selection: RequesterSelection | null): boolean {
+  return !!selection && !selection.user && !selection.query.trim() && !!selection.contact.trim();
+}
+
+export function confirmRequesterSummary(
+  offersRequester: boolean,
+  selection: RequesterSelection,
+  editing?: Reservation | null,
+): { name: string; contact: string | null } | null {
+  if (!offersRequester) return null;
+  const name = requesterLabel(selection);
+  if (name) return { name, contact: selection.contact.trim() || null };
+  if (editing?.requesterUserId || editing?.requesterName || editing?.requester) {
+    return { name: 'Removido (reserva em seu nome)', contact: null };
+  }
+  return null;
+}
+
+function normalizedRequesterColumns(selection: RequesterSelection): Required<RequesterUpdatePayload> {
+  const requesterUserId = selection.user?.id ?? null;
+  const requesterName = requesterUserId ? null : (selection.query.trim().slice(0, REQUESTER_TEXT_MAX) || null);
+  const hasRequester = !!(requesterUserId || requesterName);
+  const requesterContact = hasRequester ? (selection.contact.trim().slice(0, REQUESTER_TEXT_MAX) || null) : null;
+  return { requesterUserId, requesterName, requesterContact };
+}
+
+function originalRequesterColumns(reservation: Reservation): Required<RequesterUpdatePayload> {
+  const requesterUserId = reservation.requesterUserId ?? null;
+  const requesterName = requesterUserId ? null : (reservation.requesterName ?? reservation.requester?.name ?? null);
+  const requesterContact = requesterUserId || requesterName ? (reservation.requesterContact ?? null) : null;
+  return { requesterUserId, requesterName, requesterContact };
+}
+
+export function requesterDiffPayload(
+  original: Reservation,
+  selection: RequesterSelection,
+): Required<RequesterUpdatePayload> | null {
+  const prev = originalRequesterColumns(original);
+  const next = normalizedRequesterColumns(selection);
+  if (
+    prev.requesterUserId === next.requesterUserId
+    && prev.requesterName === next.requesterName
+    && prev.requesterContact === next.requesterContact
+  ) {
+    return null;
+  }
+  return next;
 }
 
 /** The requester's display name, or null when the block is empty. */

@@ -108,6 +108,12 @@ export interface RequesterPayload {
   requesterContact?: string;
 }
 
+export interface RequesterUpdatePayload {
+  requesterUserId?: string | null;
+  requesterName?: string | null;
+  requesterContact?: string | null;
+}
+
 export interface RecurringReservationSkipped {
   date: string;
   startTime: string;

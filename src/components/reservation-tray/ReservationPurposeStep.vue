@@ -16,6 +16,7 @@ const props = defineProps<{
   initialPurpose?: ReservationPurposeSelection | null;
   /** Edit mode (MEL-023): the purpose is fixed, only the description changes. */
   descriptionOnly?: boolean;
+  isSeries?: boolean;
   /** Staff only (MEL-025): who the reservation is for; omit to hide the block. */
   requester?: RequesterSelection | null;
 }>();
@@ -78,9 +79,11 @@ watch([selectedPurpose, descriptionInput], () => {
     </div>
 
     <ReserveOnBehalfFields
-      v-if="requester && !descriptionOnly"
+      v-if="requester"
       :model-value="requester"
       id-prefix="tray-requester"
+      :editing="descriptionOnly"
+      :is-series="isSeries"
       @update:model-value="emit('update:requester', $event)"
     />
   </section>

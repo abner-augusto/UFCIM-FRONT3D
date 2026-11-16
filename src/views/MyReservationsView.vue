@@ -31,9 +31,9 @@ import {
   reservationDescription,
   reservationSpaceOptions,
   type MyReservationsFilters,
-  type ReservationGroup,
-  type ReservationStatusFilter,
+  type ReservationGroup, type ReservationStatusFilter,
 } from '@/utils/my-reservations';
+import { applyUpdatedReservation } from '@/utils/reservation-edit';
 import { reservationRequesterNote } from '@/utils/reservation-requester';
 
 const route = useRoute();
@@ -342,9 +342,7 @@ function handleEditOpenChange(open: boolean) {
 // Swap the edited reservation in place (keeping the space it was listed with)
 // and point the user at it; no reload needed.
 function handleReservationUpdated(updated: Reservation) {
-  reservations.value = reservations.value.map(r =>
-    r.id === updated.id ? { ...r, ...updated, space: updated.space ?? r.space } : r,
-  );
+  reservations.value = applyUpdatedReservation(reservations.value, updated);
   flashHighlight(updated.id);
 }
 

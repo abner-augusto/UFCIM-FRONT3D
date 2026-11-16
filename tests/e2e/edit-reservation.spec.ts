@@ -100,8 +100,9 @@ test.describe('MyReservationsView: editar reserva (MEL-023)', () => {
     await tray.locator('#tray-reservation-end').selectOption('15:30');
     await tray.getByRole('button', { name: /^Continuar$/i }).click();
 
-    // Description only: the purpose is not editable.
+    // Description only: the purpose is not editable, and non-staff do not see requester fields.
     await expect(tray.locator('#tray-reservation-purpose')).toHaveCount(0);
+    await expect(tray.getByTestId('reserve-on-behalf')).toHaveCount(0);
     const description = tray.locator('#tray-description-input');
     await expect(description).toHaveValue('Aula de projeto');
     await description.fill('Banca de TCC');
@@ -115,6 +116,89 @@ test.describe('MyReservationsView: editar reserva (MEL-023)', () => {
     await expect(page.getByRole('button', { name: /Sala de Leitura.*14:00[–-]15:30/i })).toBeVisible();
     await expect(page.getByText('Banca de TCC').first()).toBeVisible();
     expect(mineRequests).toBe(1); // updated in place, no reload
+  });
+
+  async function setupSeriesRequesterEdit(page: import('@playwright/test').Page) {
+    const STAFF_ID = '00000000-0000-0000-0000-000000000003';
+    const SERIES_RESERVATION = {
+      ...OWN_RESERVATION,
+      id: 'mel027-occ-1',
+      userId: STAFF_ID,
+      createdBy: STAFF_ID,
+      recurrenceId: 'mel027-series-1',
+      requesterUserId: PROFESSOR_ID,
+      requesterName: null,
+      requesterContact: 'maria@ufc.br',
+      requester: { userId: PROFESSOR_ID, name: 'Dra. Maria Costa' },
+      registeredBy: { id: STAFF_ID, name: 'Carlos Oliveira' },
+      onBehalfOfMe: false,
+    };
+    const SECOND_OCCURRENCE = { ...SERIES_RESERVATION, id: 'mel027-occ-2', date: '2099-04-13' };
+    const state: { patchBody?: Record<string, unknown> } = {};
+
+    await page.route('**/api/v1/reservations/mine**', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([SERIES_RESERVATION, SECOND_OCCURRENCE]) }),
+    );
+    await page.route('**/api/v1/spaces/*/availability?**', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(availability()) }),
+    );
+    await page.route('**/api/v1/users/search?**', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }),
+    );
+    await page.route('**/api/v1/reservations/mel027-occ-1', async (route) => {
+      if (route.request().method() !== 'PATCH') return route.fallback();
+      state.patchBody = route.request().postDataJSON() as Record<string, unknown>;
+      const { space: _space, requester: _req, registeredBy: _reg, onBehalfOfMe: _me, ...row } = SERIES_RESERVATION;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ...row, ...state.patchBody, updatedAt: '2026-10-10T12:00:00.000Z' }),
+      });
+    });
+
+    await page.goto('/#/minhas-reservas');
+    const summary = page.getByRole('button', { name: /Sala de Leitura/i }).first();
+    await expect(summary).toBeVisible({ timeout: 15_000 });
+    await summary.click();
+    await page.getByRole('button', { name: /Editar a ocorrência/i }).first().click();
+    const tray = page.getByRole('dialog', { name: /Editar reserva/i });
+    await expect(tray.locator('#tray-reservation-start')).toHaveValue('09:00', { timeout: 10_000 });
+    await tray.getByRole('button', { name: /^Continuar$/i }).click();
+    return { tray, state };
+  }
+
+  test('staff: vê solicitante preenchido na série e troca por nome livre com contato (#27)', async ({ staffPage: page }) => {
+    const { tray, state } = await setupSeriesRequesterEdit(page);
+    await expect(tray.getByTestId('reserve-on-behalf-series-note')).toBeVisible();
+    await expect(tray.getByTestId('reserve-on-behalf-picked')).toContainText('Dra. Maria Costa');
+    await expect(tray.getByTestId('reserve-on-behalf-contact')).toHaveValue('maria@ufc.br');
+
+    await tray.getByTestId('reserve-on-behalf-picked').getByRole('button', { name: /Trocar/i }).click();
+    await tray.getByTestId('reserve-on-behalf-search').fill('Centro Acadêmico');
+    await tray.getByTestId('reserve-on-behalf-contact').fill('85 3366-0000');
+    await tray.getByRole('button', { name: /^Continuar$/i }).click();
+    await expect(tray.getByTestId('reservation-confirm-requester')).toContainText('Centro Acadêmico');
+    await tray.getByRole('button', { name: /^Salvar alterações$/i }).click();
+
+    await expect(tray).toBeHidden({ timeout: 10_000 });
+    expect(state.patchBody).toEqual({
+      requesterUserId: null,
+      requesterName: 'Centro Acadêmico',
+      requesterContact: '85 3366-0000',
+    });
+    await expect(page.getByTestId('reservation-requester-name').first()).toHaveText('Centro Acadêmico');
+    await expect(page.getByTestId('reservation-requester-contact').first()).toHaveText('85 3366-0000');
+  });
+
+  test('staff: remove o solicitante na série e envia os três campos nulos (#27)', async ({ staffPage: page }) => {
+    const { tray, state } = await setupSeriesRequesterEdit(page);
+    await tray.getByTestId('reserve-on-behalf-remove').click();
+    await tray.getByRole('button', { name: /^Continuar$/i }).click();
+    await tray.getByRole('button', { name: /^Salvar alterações$/i }).click();
+
+    await expect(tray).toBeHidden({ timeout: 10_000 });
+    expect(state.patchBody).toEqual({ requesterUserId: null, requesterName: null, requesterContact: null });
+    await expect(page.getByTestId('reservation-requester-name')).toHaveCount(0);
   });
 });
 

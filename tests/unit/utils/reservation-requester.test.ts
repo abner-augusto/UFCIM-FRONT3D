@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  confirmRequesterSummary,
   emptyRequester,
+  hasOrphanRequesterContact,
+  initialRequesterSelection,
+  requesterDiffPayload,
   requesterLabel,
   requesterPayload,
   requesterRoleLabel,
@@ -96,5 +100,74 @@ describe('reservationRequesterNote (MEL-025)', () => {
   it('returns null for a reservation made for oneself', () => {
     expect(reservationRequesterNote(reservation())).toBeNull();
     expect(reservationRequesterNote(reservation({ requester: null }))).toBeNull();
+  });
+});
+
+describe('initialRequesterSelection and requesterDiffPayload (#27)', () => {
+  it('prefills a registered requester and contact', () => {
+    const r = reservation({
+      requesterUserId: 'prof-1',
+      requester: { userId: 'prof-1', name: 'Dra. Maria Costa' },
+      requesterContact: 'maria@ufc.br',
+    });
+    expect(initialRequesterSelection(r)).toEqual({
+      user: { id: 'prof-1', name: 'Dra. Maria Costa', role: '', department: '' },
+      query: 'Dra. Maria Costa',
+      contact: 'maria@ufc.br',
+    });
+  });
+
+  it('prefills a free-text requester and contact, or empty when none', () => {
+    const r = reservation({
+      requesterName: 'Centro Acadêmico',
+      requester: { userId: null, name: 'Centro Acadêmico' },
+      requesterContact: '85 3366-0000',
+    });
+    expect(initialRequesterSelection(r)).toEqual({
+      user: null,
+      query: 'Centro Acadêmico',
+      contact: '85 3366-0000',
+    });
+    expect(initialRequesterSelection(reservation())).toEqual(emptyRequester());
+  });
+
+  it('detects orphan contact when no requester is set', () => {
+    expect(hasOrphanRequesterContact({ user: null, query: '  ', contact: '85 9999' })).toBe(true);
+    expect(hasOrphanRequesterContact({ user: MARIA, query: '', contact: '85 9999' })).toBe(false);
+    expect(hasOrphanRequesterContact({ user: null, query: 'Fulano', contact: '85 9999' })).toBe(false);
+  });
+
+  it('returns null when requester is unchanged, and returns all 3 fields when changed or removed', () => {
+    const r = reservation({
+      requesterUserId: 'prof-1',
+      requester: { userId: 'prof-1', name: 'Dra. Maria Costa' },
+      requesterContact: 'maria@ufc.br',
+    });
+
+    expect(requesterDiffPayload(r, initialRequesterSelection(r))).toBeNull();
+    expect(requesterDiffPayload(r, { user: null, query: 'Centro Acadêmico', contact: '85 3366-0000' })).toEqual({
+      requesterUserId: null,
+      requesterName: 'Centro Acadêmico',
+      requesterContact: '85 3366-0000',
+    });
+    expect(requesterDiffPayload(r, emptyRequester())).toEqual({
+      requesterUserId: null,
+      requesterName: null,
+      requesterContact: null,
+    });
+  });
+
+  it('builds confirm summary for selected and removed requesters', () => {
+    const r = reservation({ requesterUserId: 'prof-1', requester: { userId: 'prof-1', name: 'Dra. Maria Costa' } });
+    expect(confirmRequesterSummary(false, emptyRequester(), r)).toBeNull();
+    expect(confirmRequesterSummary(true, { user: MARIA, query: '', contact: ' 85 9999 ' }, r)).toEqual({
+      name: 'Dra. Maria Costa',
+      contact: '85 9999',
+    });
+    expect(confirmRequesterSummary(true, emptyRequester(), r)).toEqual({
+      name: 'Removido (reserva em seu nome)',
+      contact: null,
+    });
+    expect(confirmRequesterSummary(true, emptyRequester(), reservation())).toBeNull();
   });
 });
