@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import BlockingTray from '@/components/BlockingTray.vue';
 import { formatDateTime, campusISODate } from '@/utils/date';
 import { buildBlockingReasonFromReport } from '@/utils/blockings';
-import { isRoomTicket, reportSpace, reportTitle } from '@/utils/maintenance-tickets';
+import { isRoomTicket, reportResolutionLabel, reportSpace, reportSpaceLabel, reportTitle } from '@/utils/maintenance-tickets';
 import { roomLabel, blockLabel } from '@/utils/space-labels';
 import StatusBadge, { type StatusBadgeVariant } from '@/components/StatusBadge.vue';
 
@@ -138,16 +138,7 @@ const datetimeLabel = formatDateTime;
 // Built defensively so it degrades gracefully when parts are missing — multiple blocks and
 // departments may share the same maintenance team, so the department matters for triage.
 
-function spaceLabel(report: EquipmentReport): string {
-  const space = reportSpace(report);
-  if (!space) return '—';
-  const parts = [
-    roomLabel(space),
-    blockLabel(space.block),
-    space.department?.name,
-  ].filter(Boolean);
-  return parts.length ? parts.join(' · ') : '—';
-}
+const spaceLabel = reportSpaceLabel;
 
 // Builds a viewer route that opens this report's space on the 3D model.
 // Requires the space to have a modelId (a pin in the GLB) and a known campus.
@@ -262,6 +253,7 @@ const blockingReason = computed(() =>
         <div class="report-card__meta">
           <span v-if="r.reporter">Reportado por {{ r.reporter.name }}</span>
           <span>{{ datetimeLabel(r.createdAt) }}</span>
+          <span v-if="reportResolutionLabel(r)">{{ reportResolutionLabel(r) }}</span>
         </div>
 
         <router-link v-if="viewerLink(r)" :to="viewerLink(r)!" class="report-card__viewer-link">
