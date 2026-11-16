@@ -216,7 +216,7 @@ onMounted(async () => {
           </Badge>
         </div>
         <div class="flex flex-wrap items-center gap-3 max-[480px]:flex-col max-[480px]:items-stretch">
-          <div class="flex gap-2.5">
+          <div class="flex flex-wrap gap-x-2.5 gap-y-1">
             <span class="flex items-center gap-[3px] text-[0.72rem] text-muted-foreground">
               <span class="size-2 shrink-0 rounded-full" :style="{ background: PERIOD_COLORS.available }"></span>
               Disponível
