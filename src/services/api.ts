@@ -415,7 +415,7 @@ export const api = {
   updateReservation: (
     token: string | null,
     id: string,
-    body: { date?: string; startTime?: string; endTime?: string; description?: string }
+    body: { date?: string; startTime?: string; endTime?: string; description?: string } & import('@/types/reservation').RequesterUpdatePayload
   ) => request<Reservation>(`/reservations/${id}`, token, { method: 'PATCH', body: JSON.stringify(body) }),
 
   cancelReservation: (token: string | null, id: string) =>

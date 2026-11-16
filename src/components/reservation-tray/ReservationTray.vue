@@ -16,10 +16,11 @@ import type { ActionStatus } from '@/components/StatefulActionButton.vue';
 import { campusLabel } from '@/utils/space-labels';
 import { usePermissions } from '@/composables/usePermissions';
 import type { Reservation } from '@/types/reservation';
-import { buildReservationUpdate, reservationEditDraft } from '@/utils/reservation-edit';
+import { buildReservationUpdate, reservationEditDraft, withResolvedRequester } from '@/utils/reservation-edit';
 import {
-  emptyRequester,
-  requesterLabel,
+  confirmRequesterSummary,
+  hasOrphanRequesterContact,
+  initialRequesterSelection,
   requesterPayload,
   type RequesterSelection,
 } from '@/utils/reservation-requester';
@@ -98,15 +99,13 @@ function initialPurpose(): ReservationPurposeSelection {
 }
 
 const selectedPurpose = ref<ReservationPurposeSelection>(initialPurpose());
-// Staff only (MEL-025): who the new reservation is for. Not editable afterwards.
-const selectedRequester = ref<RequesterSelection>(emptyRequester());
-const offersRequester = computed(() => canReserveOnBehalf.value && !isEditing.value);
-const confirmRequester = computed(() => {
-  if (!offersRequester.value) return null;
-  const name = requesterLabel(selectedRequester.value);
-  if (!name) return null;
-  return { name, contact: selectedRequester.value.contact.trim() || null };
-});
+const offersRequester = computed(() => canReserveOnBehalf.value);
+const selectedRequester = ref<RequesterSelection>(
+  initialRequesterSelection(offersRequester.value ? props.editingReservation : null),
+);
+const confirmRequester = computed(() =>
+  confirmRequesterSummary(offersRequester.value, selectedRequester.value, props.editingReservation),
+);
 const reservationId = ref<string | null>(null);
 const confirmStatus = ref<ActionStatus>('idle');
 const confirmError = ref<string | null>(null);
@@ -118,6 +117,7 @@ const pendingUpdate = computed(() => {
   return buildReservationUpdate(props.editingReservation, {
     schedule: selectedSchedule.value,
     description: selectedPurpose.value.description,
+    requester: offersRequester.value ? selectedRequester.value : undefined,
   });
 });
 const editHasNoChanges = computed(() => isEditing.value && !!selectedSchedule.value && !pendingUpdate.value);
@@ -127,7 +127,10 @@ const currentTitle = computed(() => reservationMode.value === 'recurring' ? 'Con
 const canGoBack = computed(() => currentStepIndex.value > 0 && currentStep.value !== 'success');
 const scheduleIsValid = computed(() => !!selectedSchedule.value?.date && !!selectedSchedule.value?.startTime && !!selectedSchedule.value?.endTime);
 // The purpose is not editable, so edit mode only needs something to have changed.
-const purposeIsValid = computed(() => (isEditing.value ? !!pendingUpdate.value : !!selectedPurpose.value.purpose));
+const purposeIsValid = computed(
+  () => !(offersRequester.value && hasOrphanRequesterContact(selectedRequester.value))
+    && (isEditing.value ? !!pendingUpdate.value : !!selectedPurpose.value.purpose),
+);
 const canGoNext = computed(() => {
   if (currentStepIndex.value >= steps.value.length - 1) return false;
   if (currentStep.value === 'schedule') return scheduleIsValid.value;
@@ -159,7 +162,7 @@ function resetFlow() {
   reservationMode.value = 'single';
   selectedSchedule.value = null;
   selectedPurpose.value = initialPurpose();
-  selectedRequester.value = emptyRequester();
+  selectedRequester.value = initialRequesterSelection(offersRequester.value ? props.editingReservation : null);
   reservationId.value = null;
   confirmStatus.value = 'idle';
   confirmError.value = null;
@@ -251,7 +254,7 @@ async function handleConfirmEdit(reservation: Reservation) {
     // Hold on "Alterações salvas" briefly, then hand the result back and close.
     successStepTimer = window.setTimeout(() => {
       successStepTimer = null;
-      emit('updated', updated);
+      emit('updated', withResolvedRequester(updated, reservation, selectedRequester.value));
       closeTray();
     }, 1200);
   } catch (e) {
@@ -401,6 +404,7 @@ function handleBackToMap() {
           :requester="offersRequester ? selectedRequester : null"
           :initial-purpose="selectedPurpose"
           :description-only="isEditing"
+          :is-series="!!editingReservation?.recurrenceId"
           @purpose-change="handlePurposeChange"
           @update:requester="selectedRequester = $event"
         />
@@ -435,7 +439,7 @@ function handleBackToMap() {
           class="reservation-tray__hint"
           aria-live="polite"
         >
-          Altere a data, o horário ou a descrição para continuar.
+          {{ offersRequester ? 'Altere a data, o horário, a descrição ou o solicitante para continuar.' : 'Altere a data, o horário ou a descrição para continuar.' }}
         </p>
 
         <footer v-if="reservationMode === 'single' && currentStep !== 'success'" class="reservation-tray__actions">

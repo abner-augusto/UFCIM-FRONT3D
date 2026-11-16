@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, nextTick, ref, toRef } from 'vue';
 import { ChevronDownIcon, XIcon } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { api } from '@/services/api';
-import { useAuthStore } from '@/stores/auth';
+import { MIN_REQUESTER_QUERY, useRequesterSearch } from '@/composables/useRequesterSearch';
 import type { RequesterCandidate } from '@/types/reservation';
 import {
   REQUESTER_TEXT_MAX,
   emptyRequester,
+  hasOrphanRequesterContact,
   requesterRoleLabel,
   requesterSearchStatus,
   type RequesterSelection,
@@ -24,25 +24,19 @@ const props = defineProps<{
   modelValue: RequesterSelection;
   /** Prefix for element ids, so the block can appear in more than one form. */
   idPrefix: string;
+  editing?: boolean;
+  isSeries?: boolean;
 }>();
 
 const emit = defineEmits<{
   'update:modelValue': [selection: RequesterSelection];
 }>();
 
-const SEARCH_DELAY_MS = 300;
-const MIN_QUERY_LENGTH = 2;
 const VISIBLE_RESULTS = 6;
-
-const auth = useAuthStore();
 const hasContent = (s: RequesterSelection) => !!(s.user || s.query.trim() || s.contact.trim());
 const expanded = ref(hasContent(props.modelValue));
-const results = ref<RequesterCandidate[]>([]);
-const searching = ref(false);
-const searchFailed = ref(false);
 const searchInput = ref<InstanceType<typeof Input> | null>(null);
-let searchTimer: ReturnType<typeof setTimeout> | null = null;
-let searchAbort: AbortController | null = null;
+const { results, searching, searchFailed, resetSearch } = useRequesterSearch(toRef(props, 'modelValue'));
 
 const ids = computed(() => ({
   panel: `${props.idPrefix}-panel`,
@@ -52,7 +46,8 @@ const ids = computed(() => ({
 }));
 
 const trimmedQuery = computed(() => props.modelValue.query.trim());
-const showResults = computed(() => !props.modelValue.user && trimmedQuery.value.length >= MIN_QUERY_LENGTH);
+const orphanContact = computed(() => hasOrphanRequesterContact(props.modelValue));
+const showResults = computed(() => !props.modelValue.user && trimmedQuery.value.length >= MIN_REQUESTER_QUERY);
 const visibleResults = computed(() => results.value.slice(0, VISIBLE_RESULTS));
 const searchStatus = computed(() => requesterSearchStatus({
   active: showResults.value,
@@ -66,64 +61,19 @@ function update(patch: Partial<RequesterSelection>) {
   emit('update:modelValue', { ...props.modelValue, ...patch });
 }
 
-function cancelSearch() {
-  if (searchTimer) {
-    clearTimeout(searchTimer);
-    searchTimer = null;
-  }
-  searchAbort?.abort();
-  searchAbort = null;
+function removeRequester() {
+  resetSearch();
+  emit('update:modelValue', emptyRequester());
+  expanded.value = false;
 }
-
-async function runSearch(q: string) {
-  const controller = new AbortController();
-  searchAbort = controller;
-  searching.value = true;
-  searchFailed.value = false;
-  try {
-    const found = await api.searchUsers(auth.token, q, { signal: controller.signal });
-    if (!controller.signal.aborted) results.value = found;
-  } catch {
-    if (!controller.signal.aborted) {
-      results.value = [];
-      searchFailed.value = true;
-    }
-  } finally {
-    if (searchAbort === controller) {
-      searching.value = false;
-      searchAbort = null;
-    }
-  }
-}
-
-watch(
-  () => [props.modelValue.query, props.modelValue.user] as const,
-  ([query, user]) => {
-    cancelSearch();
-    const q = query.trim();
-    if (user || q.length < MIN_QUERY_LENGTH) {
-      results.value = [];
-      searching.value = false;
-      return;
-    }
-    searching.value = true;
-    searchTimer = setTimeout(() => {
-      searchTimer = null;
-      void runSearch(q);
-    }, SEARCH_DELAY_MS);
-  },
-);
-
-onBeforeUnmount(cancelSearch);
 
 function toggle() {
   if (expanded.value) {
     // Closing the block drops the requester: the reservation is for oneself again.
-    cancelSearch();
-    results.value = [];
-    emit('update:modelValue', emptyRequester());
+    removeRequester();
+    return;
   }
-  expanded.value = !expanded.value;
+  expanded.value = true;
 }
 
 function pick(candidate: RequesterCandidate) {
@@ -148,11 +98,14 @@ async function changePerson() {
       data-testid="reserve-on-behalf-toggle"
       @click="toggle"
     >
-      <span>Reservar para outra pessoa</span>
+      <span>{{ editing ? (hasContent(modelValue) ? 'Alterar solicitante' : 'Definir solicitante') : 'Reservar para outra pessoa' }}</span>
       <ChevronDownIcon class="on-behalf__chevron" :class="{ 'on-behalf__chevron--open': expanded }" aria-hidden="true" />
     </Button>
 
     <div v-if="expanded" :id="ids.panel" class="on-behalf__panel">
+      <p v-if="editing && isSeries" class="on-behalf__hint" data-testid="reserve-on-behalf-series-note">
+        A alteração do solicitante vale para toda a série.
+      </p>
       <div class="on-behalf__field">
         <Label class="on-behalf__label" :for="ids.search">Solicitante</Label>
 
@@ -160,7 +113,7 @@ async function changePerson() {
           <div class="on-behalf__picked-text">
             <span class="on-behalf__picked-name">{{ modelValue.user.name }}</span>
             <span class="on-behalf__meta">
-              {{ requesterRoleLabel(modelValue.user.role) }}<template v-if="modelValue.user.department"> · {{ modelValue.user.department }}</template>
+              {{ modelValue.user.role ? requesterRoleLabel(modelValue.user.role) : 'Usuário cadastrado' }}<template v-if="modelValue.user.department"> · {{ modelValue.user.department }}</template>
             </span>
           </div>
           <Button type="button" variant="ghost" class="on-behalf__change" @click="changePerson">
@@ -224,7 +177,18 @@ async function changePerson() {
           @update:model-value="update({ contact: String($event) })"
         />
         <p class="on-behalf__hint">Só funcionários veem o contato.</p>
+        <p v-if="orphanContact" class="on-behalf__hint" role="alert">Informe o solicitante para registrar o contato.</p>
       </div>
+      <Button
+        v-if="editing && hasContent(modelValue)"
+        type="button"
+        variant="outline"
+        class="on-behalf__toggle"
+        data-testid="reserve-on-behalf-remove"
+        @click="removeRequester"
+      >
+        Remover solicitante
+      </Button>
     </div>
   </div>
 </template>

@@ -1,15 +1,17 @@
 import { campusInstant } from '@/utils/date';
-import type { AvailabilitySlot, Reservation } from '@/types/reservation';
+import type { AvailabilitySlot, RequesterRef, RequesterUpdatePayload, Reservation } from '@/types/reservation';
 import type { TimeRange } from '@/utils/slots';
+import { requesterDiffPayload, type RequesterSelection } from '@/utils/reservation-requester';
 
 /** What the edit tray holds for a reservation (MEL-023). The space is fixed. */
 export interface ReservationEditDraft {
   schedule: TimeRange & { date: string };
   description: string;
+  requester?: RequesterSelection | null;
 }
 
 /** Partial body for `PATCH /reservations/:id`: only what changed. */
-export interface ReservationUpdate {
+export interface ReservationUpdate extends RequesterUpdatePayload {
   date?: string;
   startTime?: string;
   endTime?: string;
@@ -58,7 +60,46 @@ export function buildReservationUpdate(
   const description = draft.description.trim();
   if (description !== (original.description ?? '').trim()) update.description = description;
 
+  if (draft.requester) {
+    const requesterPatch = requesterDiffPayload(original, draft.requester);
+    if (requesterPatch) Object.assign(update, requesterPatch);
+  }
+
   return Object.keys(update).length ? update : null;
+}
+
+export function withResolvedRequester(
+  updated: Reservation,
+  original: Reservation,
+  draftRequester?: RequesterSelection | null,
+): Reservation {
+  if (updated.requester !== undefined) return updated;
+  let requester: RequesterRef | null = null;
+  if (updated.requesterUserId) {
+    const name = draftRequester?.user?.id === updated.requesterUserId
+      ? draftRequester.user.name
+      : (original.requester?.name ?? '');
+    requester = { userId: updated.requesterUserId, name };
+  } else if (updated.requesterName) {
+    requester = { userId: null, name: updated.requesterName };
+  }
+  return { ...updated, requester };
+}
+
+export function applyUpdatedReservation(list: Reservation[], updated: Reservation): Reservation[] {
+  return list.map((r) => {
+    if (r.id === updated.id) return { ...r, ...updated, space: updated.space ?? r.space };
+    if (updated.recurrenceId && r.recurrenceId === updated.recurrenceId && r.status !== 'canceled') {
+      return {
+        ...r,
+        requesterUserId: updated.requesterUserId,
+        requesterName: updated.requesterName,
+        requesterContact: updated.requesterContact,
+        requester: updated.requester,
+      };
+    }
+    return r;
+  });
 }
 
 /** True from the reservation's start onwards (campus time). */

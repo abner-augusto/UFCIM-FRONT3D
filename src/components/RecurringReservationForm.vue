@@ -161,8 +161,13 @@ async function handleSubmit() {
         v-model="description"
         class="h-11"
         type="text"
+        maxlength="300"
         placeholder="Ex: Aula de Algoritmos — Semestre 2026.1"
+        aria-describedby="rec-desc-count"
       />
+      <p id="rec-desc-count" class="text-muted-foreground mt-1.5 text-right text-xs tabular-nums" data-testid="rec-description-count">
+        {{ description.length }}/300
+      </p>
     </div>
 
     <ReserveOnBehalfFields
