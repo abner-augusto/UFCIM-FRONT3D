@@ -6,6 +6,8 @@ import {
   type OpenReportStatus,
   type ReportSpace,
 } from '@/types/equipment-report';
+import { formatDateTime } from '@/utils/date';
+import { blockLabel, roomLabel } from '@/utils/space-labels';
 
 /** What a new ticket is about: one equipment, or the room by category (MEL-026). */
 export type TicketTarget =
@@ -66,4 +68,22 @@ export function openRoomReportList(
       ? [{ category, label: MAINTENANCE_CATEGORY_LABELS[category], status: s, statusLabel: OPEN_REPORT_STATUS_LABELS[s] }]
       : [];
   });
+}
+
+const RESOLUTION_PREFIX: Partial<Record<EquipmentReport['status'], string>> = {
+  resolved: 'Resolvido em',
+  dismissed: 'Descartado em',
+};
+
+export function reportResolutionLabel(report: EquipmentReport): string | null {
+  const prefix = RESOLUTION_PREFIX[report.status];
+  if (!prefix || !report.resolvedAt) return null;
+  return `${prefix} ${formatDateTime(report.resolvedAt)}`;
+}
+
+export function reportSpaceLabel(report: EquipmentReport): string {
+  const space = reportSpace(report);
+  if (!space) return '—';
+  const parts = [roomLabel(space), blockLabel(space.block), space.department?.name].filter(Boolean);
+  return parts.length ? parts.join(' · ') : '—';
 }

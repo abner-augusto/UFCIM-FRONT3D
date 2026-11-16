@@ -6,6 +6,7 @@ import { api } from '@/services/api';
 import { acceptFieldErrors, mapAcceptError } from '@/utils/api-errors';
 import { validateAcceptInvite } from '@/utils/form-validation';
 import type { UserRole } from '@/stores/auth';
+import { Eye, EyeOff } from '@lucide/vue';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,7 +34,7 @@ const roleLabel = ref('');
 
 const registration = ref('');
 const password = ref('');
-const passwordConfirm = ref('');
+const showPassword = ref(false);
 const fieldErrors = ref<Record<string, string>>({});
 const submitError = ref<string | null>(null);
 
@@ -57,8 +58,8 @@ onMounted(async () => {
 
 async function focusError() {
   await nextTick();
-  const first = ['registration', 'password', 'passwordConfirm'].find((field) => fieldErrors.value[field]);
-  if (first) document.getElementById(first === 'passwordConfirm' ? 'invite-password-confirm' : `invite-${first}`)?.focus();
+  const first = ['registration', 'password'].find((field) => fieldErrors.value[field]);
+  if (first) document.getElementById(`invite-${first}`)?.focus();
 }
 
 async function handleAccept() {
@@ -66,7 +67,6 @@ async function handleAccept() {
     student: isStudent.value,
     registration: registration.value,
     password: password.value,
-    confirmation: passwordConfirm.value,
   });
   fieldErrors.value = {};
   if (invalid) {
@@ -148,37 +148,35 @@ async function handleAccept() {
 
         <div class="flex flex-col gap-1">
           <Label for="invite-password">Senha</Label>
-          <Input
-            id="invite-password"
-            v-model="password"
-            class="h-11"
-            type="password"
-            placeholder="••••••••••"
-            autocomplete="new-password"
-            :disabled="state === 'submitting'"
-            required
-            :aria-invalid="!!fieldErrors.password"
-            :aria-describedby="`invite-password-hint${fieldErrors.password ? ' err-password' : ''}`"
-          />
+          <div class="relative">
+            <Input
+              id="invite-password"
+              v-model="password"
+              class="h-11 pr-11"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="••••••••••"
+              autocomplete="new-password"
+              :disabled="state === 'submitting'"
+              required
+              :aria-invalid="!!fieldErrors.password"
+              :aria-describedby="`invite-password-hint${fieldErrors.password ? ' err-password' : ''}`"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              class="text-muted-foreground absolute top-0 right-0 size-11"
+              :disabled="state === 'submitting'"
+              :aria-label="showPassword ? 'Ocultar senha' : 'Mostrar senha'"
+              :aria-pressed="showPassword"
+              @click="showPassword = !showPassword"
+            >
+              <EyeOff v-if="showPassword" aria-hidden="true" />
+              <Eye v-else aria-hidden="true" />
+            </Button>
+          </div>
           <span id="invite-password-hint" class="text-muted-foreground text-[0.78rem]">≥8 caracteres, ao menos uma letra e um número</span>
           <span v-if="fieldErrors.password" id="err-password" class="text-destructive text-[0.8rem]">{{ fieldErrors.password }}</span>
-        </div>
-
-        <div class="flex flex-col gap-1">
-          <Label for="invite-password-confirm">Confirmar senha</Label>
-          <Input
-            id="invite-password-confirm"
-            v-model="passwordConfirm"
-            class="h-11"
-            type="password"
-            placeholder="••••••••••"
-            autocomplete="new-password"
-            :disabled="state === 'submitting'"
-            required
-            :aria-invalid="!!fieldErrors.passwordConfirm"
-            :aria-describedby="fieldErrors.passwordConfirm ? 'err-password-confirm' : undefined"
-          />
-          <span v-if="fieldErrors.passwordConfirm" id="err-password-confirm" class="text-destructive text-[0.8rem]">{{ fieldErrors.passwordConfirm }}</span>
         </div>
 
         <p v-if="submitError" class="text-destructive m-0 text-sm" role="alert">{{ submitError }}</p>

@@ -39,12 +39,12 @@ describe('form validation', () => {
   });
 
   it('validates invitation fields in order', () => {
-    const valid = { student: true, registration: '123', password: 'senha123', confirmation: 'senha123' };
+    const valid = { student: true, registration: '123', password: 'senha123' };
     expect(validateAcceptInvite({ ...valid, registration: ' ' })?.field).toBe('registration');
     expect(validateAcceptInvite({ ...valid, password: 'short' })?.field).toBe('password');
     expect(validateAcceptInvite({ ...valid, password: 'abcdefgh' })?.message).toContain('número');
-    expect(validateAcceptInvite({ ...valid, confirmation: 'different' })?.field).toBe('passwordConfirm');
     expect(validateAcceptInvite({ ...valid, student: false, registration: '' })).toBeNull();
+    expect(validateAcceptInvite(valid)).toBeNull();
   });
 
   it('checks severity before the description', () => {

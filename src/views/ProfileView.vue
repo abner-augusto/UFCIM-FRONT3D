@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { Check, X } from '@lucide/vue';
+import { Check, X, Download } from '@lucide/vue';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
 import { capabilitiesFor, roleSummary, whoHasCapability } from '@/utils/permissions';
+import { useInstallPrompt } from '@/composables/useInstallPrompt';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const router = useRouter();
 const auth = useAuthStore();
+const { canInstall, install } = useInstallPrompt();
 
 // MEL-008: what the current role allows, with denied capabilities kept visible
 // (dimmed, with who has them) so the user learns the limit before hitting it.
@@ -128,6 +130,24 @@ function handleLogout() {
             </div>
           </li>
         </ul>
+      </Card>
+    </section>
+
+    <section v-if="canInstall" id="instalar-app" class="mb-6" aria-labelledby="install-heading">
+      <h2 id="install-heading" class="text-muted-foreground mx-1 mb-2 text-[0.7rem] font-bold tracking-[0.06em] uppercase">
+        Aplicativo
+      </h2>
+      <Card class="flex-row items-center justify-between gap-4 px-5 py-3.5">
+        <div class="min-w-0">
+          <p class="m-0 text-sm font-medium">UFCIM no dispositivo</p>
+          <p class="text-muted-foreground m-0 text-xs leading-snug">
+            Acesse o sistema direto da tela inicial.
+          </p>
+        </div>
+        <Button size="sm" class="shrink-0" @click="install">
+          <Download :size="16" aria-hidden="true" />
+          Instalar app
+        </Button>
       </Card>
     </section>
 

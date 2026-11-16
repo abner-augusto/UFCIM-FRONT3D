@@ -8,10 +8,12 @@ import { useAuthStore } from './stores/auth';
 import { api } from './services/api';
 import { onMounted, onUnmounted } from 'vue';
 import { useDarkMode } from './composables/useDarkMode';
+import { useInstallPrompt } from './composables/useInstallPrompt';
 
 const auth = useAuthStore();
 const route = useRoute();
 useDarkMode();
+useInstallPrompt();
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 

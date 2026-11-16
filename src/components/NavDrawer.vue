@@ -6,7 +6,8 @@ import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
 import { usePermissions } from '@/composables/usePermissions';
 import { useCloseWatcher } from '@/composables/useCloseWatcher';
-import { Building2, Search, Calendar, ClipboardList, ScrollText, Ban, BarChart3, Wrench, History, Bell, User } from '@lucide/vue';
+import { useInstallPrompt } from '@/composables/useInstallPrompt';
+import { Building2, Search, Calendar, ClipboardList, ScrollText, Ban, BarChart3, Wrench, History, Bell, User, Download } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -23,6 +24,7 @@ watch(() => props.open, (open) => {
 });
 
 const { canReserve, canViewUnitReservations, canViewActionHistory, canBlock, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
+const { canInstall, install } = useInstallPrompt();
 
 const viewerTarget = computed(() =>
   campus.selectedCampusId
@@ -54,6 +56,11 @@ function handleOpenChange(open: boolean) {
 }
 
 useCloseWatcher(() => props.open, () => emit('close'));
+
+function handleInstall() {
+  emit('close');
+  void install();
+}
 </script>
 
 <template>
@@ -112,6 +119,10 @@ useCloseWatcher(() => props.open, () => emit('close'));
           <router-link to="/perfil" class="nav-item" @click="handleLinkClick">
             <span class="nav-icon"><User :size="20" /></span> Perfil
           </router-link>
+
+          <button v-if="canInstall" type="button" class="nav-item nav-action" @click="handleInstall">
+            <span class="nav-icon" aria-hidden="true"><Download :size="20" /></span> Instalar app
+          </button>
         </nav>
         </ScrollArea>
 
@@ -168,6 +179,15 @@ useCloseWatcher(() => props.open, () => emit('close'));
   font-size: 1rem;
   gap: 12px;
   position: relative;
+}
+
+.nav-action {
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
 }
 
 .nav-item.router-link-active {
