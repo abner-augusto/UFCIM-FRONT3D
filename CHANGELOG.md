@@ -1,5 +1,67 @@
 # Changelog
 
+## [3.5.0](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v3.4.0...v3.5.0) (2026-11-19)
+
+
+### Features
+
+* **air-quality:** compact popup line with bands, and level-colored history ([bc039c7](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/bc039c7d2c8bfff6327f83a7016e2aeb76b089e3))
+* **air-quality:** export the room's sensor history as CSV for professors and staff ([4867c46](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/4867c46331af3a66f72b031ff7be2e40e20192e2))
+* **air-quality:** show the room's air quality in the popup ([e1322f3](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/e1322f3fc9afbb7935ac30810e536054c10fd6d3))
+* **audit-logs:** add staff-only action history view ([ad9c0d9](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/ad9c0d94022f233ecd40c1616d74e9805c9ae670)), closes [#60](https://github.com/abner-augusto/UFCIM-FRONT3D/issues/60)
+* **auth:** replace invite password confirmation with visibility toggle ([4cd5c47](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/4cd5c47f8c9efe43e9a7253e9664f8436574d9ac)), closes [#64](https://github.com/abner-augusto/UFCIM-FRONT3D/issues/64)
+* **forms:** use Intl.RelativeTimeFormat and style user-invalid fields ([82e3ca6](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/82e3ca68710bdbbbfa99d2cf79f22b8638e75bc6)), closes [#63](https://github.com/abner-augusto/UFCIM-FRONT3D/issues/63)
+* lote 15/11 — 12 tickets (reservas da unidade, histórico, overlays, visual, PWA) ([f22db2f](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/f22db2f4865a151699b4f19d2baa020d4f0ff98b))
+* **maintenance:** show resolution date on resolved and dismissed tickets ([f5240b1](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/f5240b1b526acbd90f1616c5e12bb01d7f1d706a)), closes [#26](https://github.com/abner-augusto/UFCIM-FRONT3D/issues/26)
+* **overlays:** confirm before discarding dirty form overlays ([4cdcbcd](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/4cdcbcd85651873fded200ffd15c5401f9af2e55)), closes [#57](https://github.com/abner-augusto/UFCIM-FRONT3D/issues/57)
+* **overlays:** dismiss overlays on Android back via CloseWatcher ([9692eab](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/9692eab4b193df9aec018018f4705743c740dd30)), closes [#61](https://github.com/abner-augusto/UFCIM-FRONT3D/issues/61)
+* **pwa:** add install app prompt and menu triggers ([e3e2a25](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/e3e2a25def1c31918b33e5fcca8afe87aef87c98)), closes [#62](https://github.com/abner-augusto/UFCIM-FRONT3D/issues/62)
+* **reservations:** add staff-only unit reservations view ([3268ef0](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/3268ef02e6dd9e8322e6de92d3a629019fc4aa25)), closes [#30](https://github.com/abner-augusto/UFCIM-FRONT3D/issues/30)
+* **reservations:** allow staff to edit or remove requester in edit tray ([cbcd7f0](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/cbcd7f0e15133a790a7f7b23230f01d931e70389)), closes [#27](https://github.com/abner-augusto/UFCIM-FRONT3D/issues/27)
+* **reservations:** raise description limit to 300 chars with counter ([bf77512](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/bf775124ea7022c2e3ce9756fb644ecc8cb37fdc)), closes [#28](https://github.com/abner-augusto/UFCIM-FRONT3D/issues/28)
+* web platform audit — PWA, security, campus time, 3D viewer, accessibility and forms ([#44](https://github.com/abner-augusto/UFCIM-FRONT3D/issues/44)–[#55](https://github.com/abner-augusto/UFCIM-FRONT3D/issues/55)) ([371515f](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/371515ff4512c6757e5a59d5b8a8018a318051e1))
+
+
+### Bug Fixes
+
+* **a11y:** address overlay and keyboard review ([6ad45bb](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/6ad45bb2a78c8b371199d05cde63c8431941372c))
+* **a11y:** improve form validation and labels ([23a8af2](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/23a8af22e44dcd33c223ca513753d23328771b65))
+* **a11y:** improve navigation overlays and tables ([d47b88f](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/d47b88fb2871a431c9192767f88c7095ad3b67b8))
+* allow early theme script in CSP ([7772fb8](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/7772fb8c5c69b15992e04c4cdaf15ef0e56e72c7))
+* follow system theme safely on startup ([2d95441](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/2d95441fe8c6f91ea20134dd1fa4e0f7aef0aaf4))
+* **forms:** address validation review ([8e6d874](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/8e6d87429306b827d5453e1ca7bde7b5468ff360))
+* harden asset headers and defer Turnstile ([ffbab6a](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/ffbab6ad67c982d318aacc0309b35b3804d06232))
+* melhorar acessibilidade na navegação ([d07c88f](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/d07c88f7ea7c1a2c558bbb241ebae60a90426c84))
+* preservar foco e hidratação ao navegar ([e2c7c7b](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/e2c7c7bc4053dcd2396daa9a55b7a50a03213cdd))
+* preserve focus outlines in high contrast ([ff55e6f](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/ff55e6f2a1d9437aab7f111b5120590fef78057d))
+* **pwa:** clear API caches on logout and correct precache ([8d2525d](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/8d2525d1d49450561de3e94b5a816dc9e5efb6e6))
+* **reservations:** keep ongoing slots bookable ([4dcd214](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/4dcd21422d5bc8df737ddb484447dab9bf772d2d))
+* **reservations:** use campus time across views and tests ([d11db32](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/d11db32c173494d1590cffe32bdc63d433436ec9))
+* **reservations:** use campus time for scheduling ([38cffc2](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/38cffc23da7565ce6f60fc680e6e4e13d7336d5e))
+* share Turnstile script loading across visits ([9cb1776](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/9cb177630abbe5b1ddbb2c703291c316cd5141a1))
+* **three:** call requestAnimationFrame unbound in RenderScheduler ([ffc51c6](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/ffc51c6aa7cdd42509dcf1824a387e6959aa69f8)), closes [#52](https://github.com/abner-augusto/UFCIM-FRONT3D/issues/52)
+* **three:** dispose pending camera and load work ([69af4cc](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/69af4cc35be35396132e9590666a651491ddaaec))
+* **three:** keep camera animation active under overlays ([c9e30fc](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/c9e30fc584621ae0084e960220deaafd27a39f8b))
+* **ui:** improve contrast, text scaling and reduced-motion support ([cb2a5f1](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/cb2a5f1aa7f7241ee453aa6ef9ada564bc1f9495)), closes [#56](https://github.com/abner-augusto/UFCIM-FRONT3D/issues/56)
+* **ui:** split field border token from input background ([de12b9b](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/de12b9bdbb2d7d78ebca3410372cc93f68df25c3)), closes [#56](https://github.com/abner-augusto/UFCIM-FRONT3D/issues/56)
+* **ui:** wrap availability legend at large text sizes ([0e5a29b](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/0e5a29b6d760e42bbb328b293b5561e12e1ddd4a)), closes [#56](https://github.com/abner-augusto/UFCIM-FRONT3D/issues/56)
+* **viewer:** ajustar popovers após revisão ([0ffaccf](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/0ffaccf84bf185ea69be1d77407fc8f7853ddbef))
+* **viewer:** atualizar disponibilidade sem buscas obsoletas ([93d7337](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/93d7337ec11cb6cc1c959d1cfbbda3337e86c614))
+* **viewer:** atualizar pins carregados durante pintura ([67da9d6](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/67da9d6f5b7e548767bdb9b1dc5775fb4d60b401))
+* **viewer:** corrigir disponibilidade e revisão integrada ([eafcd94](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/eafcd94d9c84655690636439223db9873d016ca0))
+* **viewer:** dispose Draco and guard unmount races ([46eec2c](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/46eec2ce421eb37d64b5302ee0389da218a666c6))
+* **viewer:** limitar buscas simultâneas de disponibilidade ([e52f9f3](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/e52f9f3a5569e8511b59a89ddcec283701066800))
+* **viewer:** open the popup from the pin dot of a manifest-silent pin ([c02f1fa](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/c02f1faad7d0e1460d06559b6bdebf39b618bebe))
+* **viewer:** refresh the block summary card after a reservation ([eac5f14](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/eac5f14506f15dfc6c218d91c31f395fb96a3a23))
+* **viewer:** restaurar foco ao abrir popovers ([a2cc830](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/a2cc830f5fe9b55e6e31e5eed8ef40c18c1a9fb3))
+* **viewer:** tornar controles acessíveis por teclado ([45fde2d](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/45fde2df09a5fee1cfff0f584196c181d94b3cee))
+
+
+### Performance Improvements
+
+* **three:** render scene on demand ([68c0067](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/68c0067f983399c726a0e2efbd04d97cd9ba1f9e))
+* **viewer:** reduzir trabalho de disponibilidade e rótulos ([6484b13](https://github.com/abner-augusto/UFCIM-FRONT3D/commit/6484b13c3d77c6b6b265d7d1df44182e65e0bad7))
+
 ## [3.4.0](https://github.com/abner-augusto/UFCIM-FRONT3D/compare/v3.3.0...v3.4.0) (2026-10-10)
 
 
