@@ -21,13 +21,14 @@
   --secondary:            oklch(0.9505 0.0120 209.8);  /* #e6f1f3 teal mist */
   --secondary-foreground: oklch(0.4309 0.0767 216.4);  /* #00566a brand teal deep */
   --muted:                oklch(0.9551 0 0);            /* #f0f0f0 */
-  --muted-foreground:     oklch(0.6268 0 0);            /* #888 */
+  --muted-foreground:     oklch(0.5 0 0);               /* #636363 — >= 4.5:1 on white/muted */
   --accent:               oklch(0.9505 0.0120 209.8);
   --accent-foreground:    oklch(0.4309 0.0767 216.4);
   --destructive:          oklch(0.5433 0.174 29.7);     /* #c0392b */
   --destructive-foreground: oklch(1 0 0);
-  --border:               oklch(0.9219 0 0);            /* #e5e5e5 */
+  --border:               oklch(0.9219 0 0);            /* #e5e5e5 — hairline dividers */
   --input:                oklch(0.9219 0 0);
+  --field-border:         oklch(0.60 0 0);              /* #808080 — field borders >= 3:1 */
   --ring:                 oklch(0.4802 0.0857 216.9);
   --radius:               0.75rem;
   color-scheme: light;
@@ -80,7 +81,7 @@
   --font-body: 'Roboto', 'Segoe UI', sans-serif;
 
   /* ── Layout ──────────────────────────────────────────── */
-  --top-bar-h:      56px;
+  --top-bar-h:      3.5rem;
   --bottom-bar-h:   0px;
   --header-offset:  calc(var(--top-bar-h) + var(--safe-top));
 
@@ -108,7 +109,7 @@
 /* Phones and tablets get a bottom tab bar */
 @media (max-width: 1023px) {
   :root {
-    --bottom-bar-h: 64px;
+    --bottom-bar-h: 4rem;
   }
 }
 
@@ -124,13 +125,14 @@
   --secondary:            oklch(0.32 0.040 215);
   --secondary-foreground: oklch(0.88 0.05 210);
   --muted:                oklch(0.27 0 0);
-  --muted-foreground:     oklch(0.65 0 0);
+  --muted-foreground:     oklch(0.70 0 0);              /* >= 4.5:1 across dark surfaces */
   --accent:               oklch(0.32 0.040 215);
   --accent-foreground:    oklch(0.88 0.05 210);
   --destructive:          oklch(0.62 0.19 29.7);
   --destructive-foreground: oklch(1 0 0);
   --border:               oklch(1 0 0 / 12%);
   --input:                oklch(1 0 0 / 15%);
+  --field-border:         oklch(0.62 0 0);              /* >= 3:1 field borders on dark surfaces */
   --ring:                 oklch(0.72 0.10 210);
   color-scheme: dark;
 
@@ -157,7 +159,7 @@
   /* Legacy semantic refs that components still reference via var(). */
   --color-link:       oklch(0.72 0.1 235);
   --color-danger:     oklch(0.7 0.16 25);
-  --color-muted:      oklch(0.65 0 0);
+  --color-muted:      oklch(0.70 0 0);
 
   /* Data-viz — brighten the cooler hues for contrast on dark. */
   --chart-1: oklch(0.72 0.10 210);
@@ -188,6 +190,7 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border:                var(--border);
   --color-input:                 var(--input);
+  --color-field-border:          var(--field-border);
   --color-ring:                  var(--ring);
   --color-success:               var(--success);
   --color-success-surface:       var(--success-surface);
@@ -232,14 +235,5 @@
   --duration-slow:  350ms;
 }
 
-/* Global reduced-motion fallback */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
+/* Spatial motion is gated per component via (prefers-reduced-motion: no-preference)
+   so color and opacity transitions continue working when reduced motion is active. */

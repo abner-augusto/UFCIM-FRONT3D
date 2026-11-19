@@ -198,9 +198,11 @@ const description = computed(() => props.purpose.description.trim());
 
 .reservation-confirm-step__row--stacked dd {
   max-width: none;
+  width: 100%;
   color: var(--foreground);
   font-weight: 500;
   text-align: left;
+  overflow-wrap: anywhere;
 }
 
 .reservation-confirm-step__error {

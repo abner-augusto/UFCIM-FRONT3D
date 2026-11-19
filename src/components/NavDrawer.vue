@@ -5,7 +5,9 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useCampusStore } from '@/stores/campus';
 import { usePermissions } from '@/composables/usePermissions';
-import { Building2, Search, Calendar, Ban, BarChart3, Wrench, History, Bell, User } from '@lucide/vue';
+import { useCloseWatcher } from '@/composables/useCloseWatcher';
+import { useInstallPrompt } from '@/composables/useInstallPrompt';
+import { Building2, Search, Calendar, ClipboardList, ScrollText, Ban, BarChart3, Wrench, History, Bell, User, Download } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,7 +23,8 @@ watch(() => props.open, (open) => {
   if (open) reset();
 });
 
-const { canReserve, canBlock, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
+const { canReserve, canViewUnitReservations, canViewActionHistory, canBlock, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
+const { canInstall, install } = useInstallPrompt();
 
 const viewerTarget = computed(() =>
   campus.selectedCampusId
@@ -51,6 +54,13 @@ function handleLinkClick(event: MouseEvent) {
 function handleOpenChange(open: boolean) {
   if (!open) emit('close');
 }
+
+useCloseWatcher(() => props.open, () => emit('close'));
+
+function handleInstall() {
+  emit('close');
+  void install();
+}
 </script>
 
 <template>
@@ -73,6 +83,14 @@ function handleOpenChange(open: boolean) {
 
           <router-link v-if="canReserve" to="/minhas-reservas" class="nav-item" @click="handleLinkClick">
             <span class="nav-icon"><Calendar :size="20" /></span> Minhas Reservas
+          </router-link>
+
+          <router-link v-if="canViewUnitReservations" to="/reservas-da-unidade" class="nav-item" @click="handleLinkClick">
+            <span class="nav-icon"><ClipboardList :size="20" /></span> Reservas da unidade
+          </router-link>
+
+          <router-link v-if="canViewActionHistory" to="/historico-acoes" class="nav-item" @click="handleLinkClick">
+            <span class="nav-icon"><ScrollText :size="20" /></span> Histórico de ações
           </router-link>
 
           <router-link v-if="canBlock" to="/meus-bloqueios" class="nav-item" @click="handleLinkClick">
@@ -101,6 +119,10 @@ function handleOpenChange(open: boolean) {
           <router-link to="/perfil" class="nav-item" @click="handleLinkClick">
             <span class="nav-icon"><User :size="20" /></span> Perfil
           </router-link>
+
+          <button v-if="canInstall" type="button" class="nav-item nav-action" @click="handleInstall">
+            <span class="nav-icon" aria-hidden="true"><Download :size="20" /></span> Instalar app
+          </button>
         </nav>
         </ScrollArea>
 
@@ -157,6 +179,15 @@ function handleOpenChange(open: boolean) {
   font-size: 1rem;
   gap: 12px;
   position: relative;
+}
+
+.nav-action {
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
 }
 
 .nav-item.router-link-active {

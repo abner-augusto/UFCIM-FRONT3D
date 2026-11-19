@@ -304,12 +304,15 @@ function handleContinue() {
             id="description-input"
             type="text"
             class="form-input"
-            maxlength="100"
+            maxlength="300"
             v-model="descriptionInput"
             placeholder="Ex: Modelagem Tridimensional"
             aria-describedby="description-hint"
           />
-          <p id="description-hint" class="form-hint">opcional · visível a professores · ex: Modelagem Tridimensional</p>
+          <div class="mt-2 flex items-baseline justify-between gap-2">
+            <p id="description-hint" class="form-hint m-0!">opcional · visível a professores · ex: Modelagem Tridimensional</p>
+            <span class="text-muted-foreground shrink-0 text-xs tabular-nums" data-testid="description-count">{{ descriptionInput.length }}/300</span>
+          </div>
         </div>
 
         <p v-if="errorMsg" class="state-error">{{ errorMsg }}</p>

@@ -10,6 +10,7 @@ import type {
   RequesterPayload,
 } from '@/types/reservation';
 import type { OccupancyReport, SpaceReportData } from '@/types/report';
+import type { DepartmentReservationsResponse } from '@/types/unit-reservations';
 import type { SpaceAirQuality, SpaceAirQualityHistory, HistoryBucket } from '@/types/air-quality';
 import type { EquipmentReport, MaintenanceCategory } from '@/types/equipment-report';
 import { collectAllPages } from '@/utils/pagination';
@@ -161,7 +162,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(
+export async function request<T>(
   path: string,
   token: string | null,
   options: RequestInit = {},
@@ -410,12 +411,14 @@ export const api = {
   getAllMyReservations: (token: string | null) =>
     collectAllPages((page, limit) => api.getMyReservations(token, page, limit), { pageSize: 100 }),
 
+  getDepartmentReservations: (token: string | null, params?: Record<string, string | undefined>) => request<DepartmentReservationsResponse>(`/reservations/department${qs(params)}`, token),
+
   // MEL-023: partial edit of date, time range and description; the space is fixed.
   // Owner or staff only; the backend revalidates the slot and replies 409 on conflict.
   updateReservation: (
     token: string | null,
     id: string,
-    body: { date?: string; startTime?: string; endTime?: string; description?: string }
+    body: { date?: string; startTime?: string; endTime?: string; description?: string } & import('@/types/reservation').RequesterUpdatePayload
   ) => request<Reservation>(`/reservations/${id}`, token, { method: 'PATCH', body: JSON.stringify(body) }),
 
   cancelReservation: (token: string | null, id: string) =>

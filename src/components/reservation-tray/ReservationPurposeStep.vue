@@ -16,6 +16,7 @@ const props = defineProps<{
   initialPurpose?: ReservationPurposeSelection | null;
   /** Edit mode (MEL-023): the purpose is fixed, only the description changes. */
   descriptionOnly?: boolean;
+  isSeries?: boolean;
   /** Staff only (MEL-025): who the reservation is for; omit to hide the block. */
   requester?: RequesterSelection | null;
 }>();
@@ -25,6 +26,7 @@ const emit = defineEmits<{
   'update:requester': [selection: RequesterSelection];
 }>();
 
+const DESCRIPTION_MAX = 300;
 const selectedPurpose = ref(props.initialPurpose?.purpose ?? '');
 const descriptionInput = ref(props.initialPurpose?.description ?? '');
 
@@ -68,19 +70,26 @@ watch([selectedPurpose, descriptionInput], () => {
         id="tray-description-input"
         v-model="descriptionInput"
         class="reservation-purpose-step__textarea"
-        maxlength="100"
+        :maxlength="DESCRIPTION_MAX"
         placeholder="Ex: Modelagem Tridimensional"
         aria-describedby="tray-description-hint"
       />
-      <p id="tray-description-hint" class="reservation-purpose-step__hint">
-        opcional · visível a professores · ex: Modelagem Tridimensional
-      </p>
+      <div class="reservation-purpose-step__footer">
+        <p id="tray-description-hint" class="reservation-purpose-step__hint">
+          opcional · visível a professores · ex: Modelagem Tridimensional
+        </p>
+        <span class="reservation-purpose-step__char-count" data-testid="tray-description-count">
+          {{ descriptionInput.length }}/{{ DESCRIPTION_MAX }}
+        </span>
+      </div>
     </div>
 
     <ReserveOnBehalfFields
-      v-if="requester && !descriptionOnly"
+      v-if="requester"
       :model-value="requester"
       id-prefix="tray-requester"
+      :editing="descriptionOnly"
+      :is-series="isSeries"
       @update:model-value="emit('update:requester', $event)"
     />
   </section>
@@ -111,6 +120,21 @@ watch([selectedPurpose, descriptionInput], () => {
   margin: 0;
   color: var(--muted-foreground);
   font-size: 0.82rem;
+}
+
+.reservation-purpose-step__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.reservation-purpose-step__char-count {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .reservation-purpose-step__field {

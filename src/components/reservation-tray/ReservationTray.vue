@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, onUnmounted, ref, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useMediaQuery } from '@vueuse/core';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
@@ -9,6 +10,9 @@ import ReservationPurposeStep from './ReservationPurposeStep.vue';
 import ReservationConfirmStep from './ReservationConfirmStep.vue';
 import ReservationSuccessStep from './ReservationSuccessStep.vue';
 import RecurringReservationForm from '@/components/RecurringReservationForm.vue';
+import DiscardChangesDialog from '@/components/DiscardChangesDialog.vue';
+import { useDiscardGuard } from '@/composables/useDiscardGuard';
+import { isReservationTrayDirty, resolveScheduleBaseline } from '@/utils/reservation-tray-dirty';
 import { useInteractionStore } from '@/stores/interaction';
 import { useAuthStore } from '@/stores/auth';
 import { api, ApiError } from '@/services/api';
@@ -16,10 +20,11 @@ import type { ActionStatus } from '@/components/StatefulActionButton.vue';
 import { campusLabel } from '@/utils/space-labels';
 import { usePermissions } from '@/composables/usePermissions';
 import type { Reservation } from '@/types/reservation';
-import { buildReservationUpdate, reservationEditDraft } from '@/utils/reservation-edit';
+import { buildReservationUpdate, reservationEditDraft, withResolvedRequester } from '@/utils/reservation-edit';
 import {
-  emptyRequester,
-  requesterLabel,
+  confirmRequesterSummary,
+  hasOrphanRequesterContact,
+  initialRequesterSelection,
   requesterPayload,
   type RequesterSelection,
 } from '@/utils/reservation-requester';
@@ -84,8 +89,7 @@ const EDIT_STEP_TITLES: Record<ReservationTrayStep, string> = {
 };
 const stepTitles = computed(() => (isEditing.value ? EDIT_STEP_TITLES : CREATE_STEP_TITLES));
 
-const isDesktop = ref(window.matchMedia('(min-width: 768px)').matches);
-const mediaQuery = window.matchMedia('(min-width: 768px)');
+const isDesktop = useMediaQuery('(min-width: 768px)');
 const currentStep = ref<ReservationTrayStep>('schedule');
 const reservationMode = ref<'single' | 'recurring'>('single');
 const selectedSchedule = ref<ReservationScheduleSelection | null>(null);
@@ -98,18 +102,18 @@ function initialPurpose(): ReservationPurposeSelection {
 }
 
 const selectedPurpose = ref<ReservationPurposeSelection>(initialPurpose());
-// Staff only (MEL-025): who the new reservation is for. Not editable afterwards.
-const selectedRequester = ref<RequesterSelection>(emptyRequester());
-const offersRequester = computed(() => canReserveOnBehalf.value && !isEditing.value);
-const confirmRequester = computed(() => {
-  if (!offersRequester.value) return null;
-  const name = requesterLabel(selectedRequester.value);
-  if (!name) return null;
-  return { name, contact: selectedRequester.value.contact.trim() || null };
-});
+const offersRequester = computed(() => canReserveOnBehalf.value);
+const selectedRequester = ref<RequesterSelection>(
+  initialRequesterSelection(offersRequester.value ? props.editingReservation : null),
+);
+const confirmRequester = computed(() =>
+  confirmRequesterSummary(offersRequester.value, selectedRequester.value, props.editingReservation),
+);
 const reservationId = ref<string | null>(null);
 const confirmStatus = ref<ActionStatus>('idle');
 const confirmError = ref<string | null>(null);
+const baselineSchedule = ref<ReservationScheduleSelection | null | undefined>(undefined);
+const recurringState = ref({ dirty: false, locked: false });
 let successStepTimer: ReturnType<typeof window.setTimeout> | null = null;
 
 // Edit mode: only the fields that changed, or null when nothing did.
@@ -118,6 +122,7 @@ const pendingUpdate = computed(() => {
   return buildReservationUpdate(props.editingReservation, {
     schedule: selectedSchedule.value,
     description: selectedPurpose.value.description,
+    requester: offersRequester.value ? selectedRequester.value : undefined,
   });
 });
 const editHasNoChanges = computed(() => isEditing.value && !!selectedSchedule.value && !pendingUpdate.value);
@@ -127,7 +132,10 @@ const currentTitle = computed(() => reservationMode.value === 'recurring' ? 'Con
 const canGoBack = computed(() => currentStepIndex.value > 0 && currentStep.value !== 'success');
 const scheduleIsValid = computed(() => !!selectedSchedule.value?.date && !!selectedSchedule.value?.startTime && !!selectedSchedule.value?.endTime);
 // The purpose is not editable, so edit mode only needs something to have changed.
-const purposeIsValid = computed(() => (isEditing.value ? !!pendingUpdate.value : !!selectedPurpose.value.purpose));
+const purposeIsValid = computed(
+  () => !(offersRequester.value && hasOrphanRequesterContact(selectedRequester.value))
+    && (isEditing.value ? !!pendingUpdate.value : !!selectedPurpose.value.purpose),
+);
 const canGoNext = computed(() => {
   if (currentStepIndex.value >= steps.value.length - 1) return false;
   if (currentStep.value === 'schedule') return scheduleIsValid.value;
@@ -158,8 +166,10 @@ const successSummary = computed(() => {
 function resetFlow() {
   reservationMode.value = 'single';
   selectedSchedule.value = null;
+  baselineSchedule.value = undefined;
+  recurringState.value = { dirty: false, locked: false };
   selectedPurpose.value = initialPurpose();
-  selectedRequester.value = emptyRequester();
+  selectedRequester.value = initialRequesterSelection(offersRequester.value ? props.editingReservation : null);
   reservationId.value = null;
   confirmStatus.value = 'idle';
   confirmError.value = null;
@@ -184,26 +194,22 @@ watch(() => props.open, (open, wasOpen) => {
   if (open && wasOpen === false) resetFlow();
 });
 
-function handleMediaChange(event: MediaQueryListEvent | MediaQueryList) {
-  isDesktop.value = event.matches;
-}
-
-onMounted(() => {
-  mediaQuery.addEventListener('change', handleMediaChange);
-});
-
 onUnmounted(() => {
-  mediaQuery.removeEventListener('change', handleMediaChange);
   if (successStepTimer) window.clearTimeout(successStepTimer);
 });
-
-function handleOpenChange(open: boolean) {
-  emit('update:open', open);
-}
 
 function closeTray() {
   emit('update:open', false);
 }
+
+const isLocked = computed(() => confirmStatus.value === 'submitting' || (reservationMode.value === 'recurring' && recurringState.value.locked));
+const isDirty = computed(() => isReservationTrayDirty({
+  reservationMode: reservationMode.value, recurringDirty: recurringState.value.dirty, isEditing: isEditing.value,
+  editingReservation: props.editingReservation, pendingUpdate: pendingUpdate.value, confirmStatus: confirmStatus.value,
+  currentStep: currentStep.value, baselineSchedule: baselineSchedule.value, selectedSchedule: selectedSchedule.value,
+  selectedPurpose: selectedPurpose.value, selectedRequester: selectedRequester.value,
+}));
+const guard = useDiscardGuard({ isDirty, isLocked, isDesktop, open: () => props.open, onDiscard: closeTray });
 
 function next() {
   if (!canGoNext.value) return;
@@ -221,6 +227,7 @@ function back() {
 
 function handleScheduleChange(schedule: ReservationScheduleSelection | null) {
   if (!props.open) return;
+  baselineSchedule.value = resolveScheduleBaseline(baselineSchedule.value, schedule);
   selectedSchedule.value = schedule;
   if (!schedule || isEditing.value) return;
 
@@ -251,7 +258,7 @@ async function handleConfirmEdit(reservation: Reservation) {
     // Hold on "Alterações salvas" briefly, then hand the result back and close.
     successStepTimer = window.setTimeout(() => {
       successStepTimer = null;
-      emit('updated', updated);
+      emit('updated', withResolvedRequester(updated, reservation, selectedRequester.value));
       closeTray();
     }, 1200);
   } catch (e) {
@@ -324,15 +331,16 @@ function handleBackToMap() {
 </script>
 
 <template>
-  <component :is="isDesktop ? Dialog : Drawer" :open="open" @update:open="handleOpenChange">
+  <component :is="isDesktop ? Dialog : Drawer" :open="open" v-bind="guard.drawerBind.value" @update:open="guard.handleOpenChange">
     <component
       :is="isDesktop ? DialogContent : DrawerContent"
       class="reservation-tray z-[var(--z-modal)]"
-      :class="isDesktop
-        ? 'top-auto! bottom-[7dvh]! translate-y-0! max-h-[86dvh]! overflow-y-auto'
-        : 'mx-2 mb-[calc(0.5rem_+_var(--safe-bottom))] px-6'"
-      :show-close-button="true"
+      :class="isDesktop ? 'top-auto! bottom-[7dvh]! translate-y-0! max-h-[86dvh]! overflow-y-auto' : 'mx-2 mb-[calc(0.5rem_+_var(--safe-bottom))] px-6'"
+      :show-close-button="!isLocked"
       overlay-class="supports-backdrop-filter:backdrop-blur-none"
+      @interact-outside="guard.handleOutsideDismiss"
+      @escape-key-down="guard.handleOutsideDismiss"
+      @pointer-down-outside="guard.handleOutsideDismiss"
     >
       <!-- On mobile the body is the drawer's scroll region (the drawer caps at
            80vh): taller steps scroll instead of pushing the actions off-screen.
@@ -401,6 +409,7 @@ function handleBackToMap() {
           :requester="offersRequester ? selectedRequester : null"
           :initial-purpose="selectedPurpose"
           :description-only="isEditing"
+          :is-series="!!editingReservation?.recurrenceId"
           @purpose-change="handlePurposeChange"
           @update:requester="selectedRequester = $event"
         />
@@ -428,33 +437,22 @@ function handleBackToMap() {
           v-else-if="reservationMode === 'recurring'"
           :space-id="spaceId"
           :reservable="reservable"
+          @state-change="recurringState = $event"
         />
 
-        <p
-          v-if="editHasNoChanges && currentStep === 'purpose'"
-          class="reservation-tray__hint"
-          aria-live="polite"
-        >
-          Altere a data, o horário ou a descrição para continuar.
+        <p v-if="editHasNoChanges && currentStep === 'purpose'" class="reservation-tray__hint" aria-live="polite">
+          {{ offersRequester ? 'Altere a data, o horário, a descrição ou o solicitante para continuar.' : 'Altere a data, o horário ou a descrição para continuar.' }}
         </p>
 
         <footer v-if="reservationMode === 'single' && currentStep !== 'success'" class="reservation-tray__actions">
-          <Button
-            type="button"
-            variant="outline"
-            class="reservation-tray__button"
-            :disabled="!canGoBack || confirmStatus === 'submitting' || confirmStatus === 'success'"
-            @click="back"
-          >
-            Voltar
-          </Button>
-          <Button v-if="currentStep !== 'confirm'" type="button" class="reservation-tray__button" :disabled="!canGoNext" @click="next">
-            Continuar
-          </Button>
+          <Button type="button" variant="outline" class="reservation-tray__button" :disabled="!canGoBack || confirmStatus === 'submitting' || confirmStatus === 'success'" @click="back">Voltar</Button>
+          <Button v-if="currentStep !== 'confirm'" type="button" class="reservation-tray__button" :disabled="!canGoNext" @click="next">Continuar</Button>
         </footer>
       </div>
     </component>
   </component>
+
+  <DiscardChangesDialog :open="guard.discardDialogOpen.value" @update:open="guard.discardDialogOpen.value = $event" @keep="guard.keepEditing" @discard="guard.confirmDiscard" />
 </template>
 
 <!-- Non-scoped: targets the vaul drawer root, which does not receive this component's scoped attr. -->

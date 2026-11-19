@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useMediaQuery } from '@vueuse/core';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
 import BlockingForm, { type BlockingPayload } from '@/components/BlockingForm.vue';
+import DiscardChangesDialog from '@/components/DiscardChangesDialog.vue';
+import { useDiscardGuard } from '@/composables/useDiscardGuard';
 import { api, ApiError } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
 import { forcedBlockTypeFor } from '@/utils/roles';
@@ -31,11 +34,11 @@ const emit = defineEmits<{
 const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
-const isDesktop = ref(window.matchMedia('(min-width: 768px)').matches);
-const mediaQuery = window.matchMedia('(min-width: 768px)');
+const isDesktop = useMediaQuery('(min-width: 768px)');
 const submitStatus = ref<ActionStatus>('idle');
 const errorMsg = ref<string | null>(null);
 const createdDays = ref(0);
+const formDirty = ref(false);
 const forcedBlockType = computed(() => forcedBlockTypeFor(auth.userRole));
 
 const onViewer = computed(() => route.name === 'viewer');
@@ -45,6 +48,7 @@ function resetFlow() {
   submitStatus.value = 'idle';
   errorMsg.value = null;
   createdDays.value = 0;
+  formDirty.value = false;
 }
 
 watch(() => [props.campusId, props.spaceId], resetFlow);
@@ -52,20 +56,26 @@ watch(() => props.open, (open, wasOpen) => {
   if (open && wasOpen === false) resetFlow();
 });
 
-function handleMediaChange(event: MediaQueryListEvent | MediaQueryList) {
-  isDesktop.value = event.matches;
-}
-
-onMounted(() => mediaQuery.addEventListener('change', handleMediaChange));
-onUnmounted(() => mediaQuery.removeEventListener('change', handleMediaChange));
-
-function handleOpenChange(open: boolean) {
-  emit('update:open', open);
-}
-
 function closeTray() {
   emit('update:open', false);
 }
+
+const isLocked = computed(() => submitStatus.value === 'submitting');
+const isDirty = computed(() => submitStatus.value !== 'success' && formDirty.value);
+const {
+  discardDialogOpen,
+  drawerBind,
+  handleOpenChange,
+  handleOutsideDismiss,
+  confirmDiscard,
+  keepEditing,
+} = useDiscardGuard({
+  isDirty,
+  isLocked,
+  isDesktop,
+  open: () => props.open,
+  onDiscard: closeTray,
+});
 
 async function handleSubmit(payload: BlockingPayload) {
   if (submitStatus.value === 'submitting' || submitStatus.value === 'success') return;
@@ -103,15 +113,18 @@ function handleBackToMap() {
 </script>
 
 <template>
-  <component :is="isDesktop ? Dialog : Drawer" :open="open" @update:open="handleOpenChange">
+  <component :is="isDesktop ? Dialog : Drawer" :open="open" v-bind="drawerBind" @update:open="handleOpenChange">
     <component
       :is="isDesktop ? DialogContent : DrawerContent"
       class="blocking-tray z-[var(--z-modal)]"
       :class="isDesktop
         ? 'top-auto! bottom-[7dvh]! translate-y-0! max-h-[86dvh]! overflow-y-auto'
         : 'mx-2 mb-[calc(0.5rem_+_var(--safe-bottom))] px-6'"
-      :show-close-button="true"
+      :show-close-button="!isLocked"
       overlay-class="supports-backdrop-filter:backdrop-blur-none"
+      @interact-outside="handleOutsideDismiss"
+      @escape-key-down="handleOutsideDismiss"
+      @pointer-down-outside="handleOutsideDismiss"
     >
       <!-- On mobile the body is the drawer's scroll region (the drawer caps at
            80vh), as in ReservationTray: a tall form scrolls instead of pushing
@@ -134,6 +147,7 @@ function handleBackToMap() {
           :initial-reason="initialReason"
           :initial-block-type="initialBlockType"
           :forced-block-type="forcedBlockType"
+          @dirty-change="formDirty = $event"
           @submit="handleSubmit"
         />
 
@@ -155,6 +169,13 @@ function handleBackToMap() {
       </div>
     </component>
   </component>
+
+  <DiscardChangesDialog
+    :open="discardDialogOpen"
+    @update:open="discardDialogOpen = $event"
+    @keep="keepEditing"
+    @discard="confirmDiscard"
+  />
 </template>
 
 <style>

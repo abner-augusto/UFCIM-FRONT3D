@@ -31,7 +31,7 @@ const { markNavigating, reset: resetMenuFocus, onCloseAutoFocus: onMenuCloseAuto
 const { isDark, toggleDarkMode } = useDarkMode();
 const themeToggleLabel = computed(() => isDark.value ? 'Ativar tema claro' : 'Ativar tema escuro');
 
-const { canReserve, canBlock, canAdmin, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
+const { canReserve, canViewUnitReservations, canViewActionHistory, canBlock, canAdmin, canViewReports, canManageEquipment, canViewMaintenanceHistory } = usePermissions();
 const adminUrl = '/admin';
 const viewerRoute = computed(() =>
   campusStore.selectedCampusId
@@ -73,6 +73,8 @@ function logout() {
         <router-link :to="viewerRoute">Maquete 3D</router-link>
         <router-link :to="spaceBrowserRoute">Buscar Espaços</router-link>
         <router-link v-if="canReserve" to="/minhas-reservas">Minhas Reservas</router-link>
+        <router-link v-if="canViewUnitReservations" to="/reservas-da-unidade">Reservas da unidade</router-link>
+        <router-link v-if="canViewActionHistory" to="/historico-acoes">Histórico de ações</router-link>
         <router-link v-if="canBlock" to="/meus-bloqueios">Meus Bloqueios</router-link>
         <router-link v-if="canViewReports" to="/relatorios">Relatórios</router-link>
         <router-link v-if="canManageEquipment" to="/manutencao/chamados">Chamados</router-link>
@@ -144,7 +146,7 @@ function logout() {
 
 <style scoped>
 .app-header {
-  height: var(--header-offset);
+  min-height: var(--header-offset);
   background: var(--background);
   border-bottom: 1px solid var(--border);
   position: fixed;
@@ -159,8 +161,9 @@ function logout() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 100%;
-  padding: 0 1.5rem;
+  gap: 0.75rem;
+  min-height: var(--top-bar-h);
+  padding: 0.25rem 1.5rem;
   max-width: 1440px;
   margin: 0 auto;
 }
@@ -192,7 +195,9 @@ function logout() {
 
 .header-nav {
   display: flex;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.5rem;
 }
 
 .header-nav a {
@@ -221,7 +226,7 @@ function logout() {
   font-size: 0.85rem;
   color: var(--muted-foreground);
   text-decoration: none;
-  max-width: 140px;
+  max-width: 10rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

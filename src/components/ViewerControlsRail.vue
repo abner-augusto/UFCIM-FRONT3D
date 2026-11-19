@@ -332,20 +332,22 @@ function onFloorPick(level: number) {
 }
 
 .rail-btn {
-  width: var(--rail-w);
-  height: var(--rail-w);
+  width: auto;
+  height: auto;
+  min-width: var(--rail-w);
+  min-height: var(--rail-w);
   background: var(--popover);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgb(var(--shadow-color) / 0.15);
-  font-size: 20px;
-  transition: all 0.2s ease;
+  font-size: 1.25rem;
+  transition: background-color 0.2s ease, color 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
 .rail-btn--wide {
   width: auto;
-  padding: 0 8px;
-  font-size: 11px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -371,14 +373,17 @@ function onFloorPick(level: number) {
 }
 
 .floor-btn {
-  width: 36px;
-  height: 36px;
+  width: auto;
+  height: auto;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.45rem;
   background: var(--popover);
   border-radius: 10px;
   box-shadow: 0 2px 6px rgb(var(--shadow-color) / 0.12);
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .floor-btn.active {
@@ -390,11 +395,13 @@ function onFloorPick(level: number) {
   position: absolute;
   bottom: 8px;
   left: 8px;
+  max-width: calc(100% - var(--rail-w) - 1.5rem);
   background: color-mix(in oklab, var(--popover) 94%, transparent);
   padding: 6px 10px;
   border-radius: 6px;
   box-shadow: 0 2px 8px rgb(var(--shadow-color) / 0.1);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 4px;
   pointer-events: auto;
@@ -466,7 +473,7 @@ function onFloorPick(level: number) {
   font-size: 0.85rem;
   font-weight: 500;
   text-align: center;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
   height: auto;
   min-height: var(--tap-min);
 }
@@ -509,12 +516,21 @@ function onFloorPick(level: number) {
 /* Animations */
 .floor-stack-enter-active,
 .floor-stack-leave-active {
-  transition: all 0.2s ease-out;
+  transition: opacity 0.2s ease-out;
 }
 .floor-stack-enter-from,
 .floor-stack-leave-to {
   opacity: 0;
-  transform: translateX(20px);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .floor-stack-enter-active,
+  .floor-stack-leave-active {
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+  }
+  .floor-stack-enter-from,
+  .floor-stack-leave-to {
+    transform: translateX(20px);
+  }
 }
 
 </style>

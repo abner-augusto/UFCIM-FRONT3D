@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/services/api';
@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import ReserveOnBehalfFields from '@/components/reservation-tray/ReserveOnBehalfFields.vue';
 import { usePermissions } from '@/composables/usePermissions';
 import { emptyRequester, requesterPayload, type RequesterSelection } from '@/utils/reservation-requester';
+import { isRecurringFormDirty } from '@/utils/reservation-tray-dirty';
 
 const props = defineProps<{
   spaceId: string;
@@ -25,6 +26,10 @@ const props = defineProps<{
   /** The space's closed hours; the opening hours default to 07:00–22:00. */
   closedFrom?: string | null;
   closedTo?: string | null;
+}>();
+
+const emit = defineEmits<{
+  'state-change': [state: { dirty: boolean; locked: boolean }];
 }>();
 
 const router = useRouter();
@@ -74,6 +79,23 @@ function focusInvalid(field: 'startDate' | 'endDate' | 'weekdays' | 'start' | 'e
 }
 
 const submissionBlocked = computed(() => loading.value || !!successMsg.value || props.reservable === false);
+
+const isDirty = computed(() => isRecurringFormDirty({
+  startDate: startDate.value,
+  endDate: endDate.value,
+  daysOfWeek: daysOfWeek.value,
+  seriesStart: seriesStart.value,
+  seriesEnd: seriesEnd.value,
+  description: description.value,
+  requester: requester.value,
+  successMsg: successMsg.value,
+}));
+
+watch(
+  [isDirty, loading],
+  ([dirty, isLoading]) => emit('state-change', { dirty, locked: isLoading }),
+  { immediate: true },
+);
 
 async function handleSubmit() {
   if (submissionBlocked.value) return;
@@ -161,8 +183,13 @@ async function handleSubmit() {
         v-model="description"
         class="h-11"
         type="text"
+        maxlength="300"
         placeholder="Ex: Aula de Algoritmos — Semestre 2026.1"
+        aria-describedby="rec-desc-count"
       />
+      <p id="rec-desc-count" class="text-muted-foreground mt-1.5 text-right text-xs tabular-nums" data-testid="rec-description-count">
+        {{ description.length }}/300
+      </p>
     </div>
 
     <ReserveOnBehalfFields

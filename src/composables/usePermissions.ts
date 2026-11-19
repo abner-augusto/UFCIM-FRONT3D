@@ -10,6 +10,8 @@ import {
   CAN_VIEW_REPORTS,
   CAN_VIEW_MAINTENANCE_HISTORY,
   CAN_RESERVE_ON_BEHALF,
+  CAN_VIEW_UNIT_RESERVATIONS,
+  CAN_VIEW_ACTION_HISTORY,
   canCancelReservation as canCancelReservationFor,
   canEditReservation as canEditReservationFor,
   type ReservationActor,
@@ -32,6 +34,8 @@ export function usePermissions() {
   const canViewReports = computed(() => hasRole(auth.userRole, CAN_VIEW_REPORTS));
   const canViewMaintenanceHistory = computed(() => hasRole(auth.userRole, CAN_VIEW_MAINTENANCE_HISTORY));
   const canReserveOnBehalf = computed(() => hasRole(auth.userRole, CAN_RESERVE_ON_BEHALF));
+  const canViewUnitReservations = computed(() => hasRole(auth.userRole, CAN_VIEW_UNIT_RESERVATIONS));
+  const canViewActionHistory = computed(() => hasRole(auth.userRole, CAN_VIEW_ACTION_HISTORY));
 
   // Per-reservation checks: owner or staff (MEL-023), the registered requester
   // may cancel only (MEL-025), and the reservation's state.
@@ -54,5 +58,7 @@ export function usePermissions() {
     canViewReports,
     canViewMaintenanceHistory,
     canReserveOnBehalf,
+    canViewUnitReservations,
+    canViewActionHistory,
   };
 }

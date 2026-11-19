@@ -4,12 +4,15 @@ import {
   MAINTENANCE_CATEGORY_LABELS,
   type EquipmentReport,
 } from '@/types/equipment-report';
+import { formatDateTime } from '@/utils/date';
 import {
   categoryLabel,
   isRoomTicket,
   isTicketDescriptionValid,
   openRoomReportList,
+  reportResolutionLabel,
   reportSpace,
+  reportSpaceLabel,
   reportTitle,
 } from '@/utils/maintenance-tickets';
 
@@ -104,5 +107,42 @@ describe('openRoomReportList (MEL-026)', () => {
   it('is empty when nothing is open', () => {
     expect(openRoomReportList(undefined)).toEqual([]);
     expect(openRoomReportList({})).toEqual([]);
+  });
+});
+
+describe('reportResolutionLabel (ticket #26)', () => {
+  const resolvedAt = '2026-10-12T15:45:00.000Z';
+
+  it('formats "Resolvido em" with formatDateTime for resolved tickets', () => {
+    expect(reportResolutionLabel(report({ status: 'resolved', resolvedAt }))).toBe(
+      `Resolvido em ${formatDateTime(resolvedAt)}`,
+    );
+  });
+
+  it('formats "Descartado em" with formatDateTime for dismissed tickets', () => {
+    expect(reportResolutionLabel(report({ status: 'dismissed', resolvedAt }))).toBe(
+      `Descartado em ${formatDateTime(resolvedAt)}`,
+    );
+  });
+
+  it('returns null for open tickets or missing resolvedAt', () => {
+    expect(reportResolutionLabel(report({ status: 'pending', resolvedAt }))).toBeNull();
+    expect(reportResolutionLabel(report({ status: 'acknowledged', resolvedAt }))).toBeNull();
+    expect(reportResolutionLabel(report({ status: 'resolved', resolvedAt: null }))).toBeNull();
+    expect(reportResolutionLabel(report({ status: 'dismissed', resolvedAt: null }))).toBeNull();
+  });
+});
+
+describe('reportSpaceLabel', () => {
+  it('formats room, block and department, or falls back to em dash', () => {
+    expect(
+      reportSpaceLabel(
+        report({
+          space: { ...SPACE, department: { id: 'd-1', name: 'IAUD' } },
+        }),
+      ),
+    ).toBe('Sala 03 · Bloco 2 · IAUD');
+    expect(reportSpaceLabel(report({ equipment: undefined }))).toBe('—');
+    expect(reportSpaceLabel(report({ space: { id: 's-2', name: '', number: '', block: '' } }))).toBe('—');
   });
 });

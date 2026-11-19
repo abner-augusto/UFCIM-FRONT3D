@@ -31,7 +31,9 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import DiscardChangesDialog from '@/components/DiscardChangesDialog.vue';
 import EquipmentSeverityPicker from '@/components/EquipmentSeverityPicker.vue';
+import { useDiscardGuard } from '@/composables/useDiscardGuard';
 
 /**
  * Maintenance ticket dialog. Opened on an equipment row, it goes straight to
@@ -190,14 +192,25 @@ async function submitReport() {
   }
 }
 
-function handleOpenChange(open: boolean) {
-  if (!open && !loading.value) emit('close');
-}
+const isDirty = computed(() => !loading.value && !success.value && (severity.value !== null || description.value !== ''));
+const {
+  discardDialogOpen,
+  handleOpenChange,
+  handleOutsideDismiss,
+  confirmDiscard,
+  keepEditing,
+} = useDiscardGuard({ isDirty, isLocked: loading, onDiscard: () => emit('close') });
 </script>
 
 <template>
   <Dialog :open="true" @update:open="handleOpenChange">
-    <DialogContent class="dialog z-[var(--z-modal)]" :show-close-button="!loading">
+    <DialogContent
+      class="dialog z-[var(--z-modal)]"
+      :show-close-button="!loading"
+      @interact-outside="handleOutsideDismiss"
+      @escape-key-down="handleOutsideDismiss"
+      @pointer-down-outside="handleOutsideDismiss"
+    >
       <!-- Success state -->
       <template v-if="success">
         <DialogTitle class="sr-only">Problema reportado</DialogTitle>
@@ -339,9 +352,13 @@ function handleOpenChange(open: boolean) {
             <Button
               class="dialog__submit"
               :disabled="loading"
+              :aria-busy="loading"
               @click="submitReport"
             >
-              <span v-if="loading" class="dialog__spinner" />
+              <span v-if="loading" class="dialog__loading" role="status">
+                <span class="dialog__spinner" aria-hidden="true" />
+                <span>Enviando…</span>
+              </span>
               <span v-else>Enviar</span>
             </Button>
           </div>
@@ -349,6 +366,8 @@ function handleOpenChange(open: boolean) {
       </template>
     </DialogContent>
   </Dialog>
+
+  <DiscardChangesDialog :open="discardDialogOpen" @update:open="discardDialogOpen = $event" @keep="keepEditing" @discard="confirmDiscard" />
 </template>
 
 <style scoped>
@@ -659,6 +678,12 @@ function handleOpenChange(open: boolean) {
 }
 
 /* Spinner */
+.dialog__loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .dialog__spinner {
   display: inline-block;
   width: 1rem;
@@ -666,7 +691,12 @@ function handleOpenChange(open: boolean) {
   border: 2px solid color-mix(in srgb, var(--primary-foreground) 35%, transparent);
   border-top-color: var(--primary-foreground);
   border-radius: 50%;
-  animation: spin 0.6s linear infinite;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dialog__spinner {
+    animation: spin 0.6s linear infinite;
+  }
 }
 
 @keyframes spin {

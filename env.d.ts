@@ -30,6 +30,19 @@ interface TurnstileApi {
   remove(widgetId: string): void;
 }
 
+interface CloseWatcher {
+  oncancel: ((event: Event) => void) | null;
+  onclose: ((event: Event) => void) | null;
+  close(): void;
+  destroy(): void;
+  requestClose(): void;
+}
+
+interface CloseWatcherConstructor {
+  new (): CloseWatcher;
+}
+
 interface Window {
   turnstile?: TurnstileApi;
+  CloseWatcher?: CloseWatcherConstructor;
 }

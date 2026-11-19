@@ -3,6 +3,7 @@ import { ref, computed, watch, nextTick } from 'vue';
 import type { Space } from '@/types/space';
 import { SPACE_TYPE_LABELS } from '@/types/space';
 import { blockLabel } from '@/utils/space-labels';
+import { useCloseWatcher } from '@/composables/useCloseWatcher';
 
 const props = defineProps<{
   open: boolean;
@@ -40,18 +41,17 @@ watch(results, (r) => {
   if (r.length > 0) collapsed.value = false;
 });
 
-watch(
-  () => props.open,
-  async (open) => {
-    if (open) {
-      await nextTick();
-      inputRef.value?.focus();
-    } else {
-      query.value = '';
-      collapsed.value = false;
-    }
-  },
-);
+watch(() => props.open, async (open) => {
+  if (open) {
+    await nextTick();
+    inputRef.value?.focus();
+  } else {
+    query.value = '';
+    collapsed.value = false;
+  }
+});
+
+useCloseWatcher(() => props.open, () => emit('close'));
 
 function select(space: Space) {
   if (!space.modelId) return;
@@ -342,24 +342,14 @@ function clear() {
   opacity: 0;
 }
 
-.panel-enter-active,
-.panel-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-.panel-enter-from,
-.panel-leave-to {
-  opacity: 0;
-  transform: translateY(8px);
-}
-
-.list-enter-active,
-.list-leave-active {
-  transition: opacity 0.15s ease, max-height 0.25s ease;
-  overflow: hidden;
-}
-.list-enter-from,
-.list-leave-to {
-  opacity: 0;
-  max-height: 0 !important;
+.panel-enter-active, .panel-leave-active { transition: opacity 0.2s ease; }
+.panel-enter-from, .panel-leave-to { opacity: 0; }
+.list-enter-active, .list-leave-active { transition: opacity 0.15s ease; overflow: hidden; }
+.list-enter-from, .list-leave-to { opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .panel-enter-active, .panel-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
+  .panel-enter-from, .panel-leave-to { transform: translateY(8px); }
+  .list-enter-active, .list-leave-active { transition: opacity 0.15s ease, max-height 0.25s ease; }
+  .list-enter-from, .list-leave-to { max-height: 0 !important; }
 }
 </style>

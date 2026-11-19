@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { ref } from 'vue';
 import { useTimeRangePicker } from '@/composables/useTimeRangePicker';
 import {
+  applyUpdatedReservation,
   buildReservationUpdate,
   freeOwnReservation,
   hasReservationStarted,
   reservationEditDraft,
+  withResolvedRequester,
 } from '@/utils/reservation-edit';
+import { emptyRequester } from '@/utils/reservation-requester';
 import { minutesToTime, timeToMinutes } from '@/utils/slots';
 import type { AvailabilitySlot, Reservation } from '@/types/reservation';
 
@@ -155,6 +158,63 @@ describe('buildReservationUpdate (MEL-023)', () => {
         description: 'Aula de projeto',
       }),
     ).toEqual({ date: '2026-10-21' });
+  });
+
+  it('includes requester changes and clearing when staff edits requester (#27)', () => {
+    const onBehalf = reservation({
+      requesterUserId: 'prof-1',
+      requester: { userId: 'prof-1', name: 'Dra. Maria Costa' },
+      requesterContact: 'maria@ufc.br',
+    });
+    const unchangedDraft = {
+      schedule: { date: '2026-10-20', startTime: '09:00', endTime: '10:30' },
+      description: 'Aula de projeto',
+      requester: {
+        user: { id: 'prof-1', name: 'Dra. Maria Costa', role: '', department: '' },
+        query: 'Dra. Maria Costa',
+        contact: 'maria@ufc.br',
+      },
+    };
+    expect(buildReservationUpdate(onBehalf, unchangedDraft)).toBeNull();
+    expect(buildReservationUpdate(onBehalf, { ...unchangedDraft, requester: emptyRequester() })).toEqual({
+      requesterUserId: null,
+      requesterName: null,
+      requesterContact: null,
+    });
+  });
+});
+
+describe('withResolvedRequester (#27)', () => {
+  it('resolves the requester summary for registered, free-text and cleared updates', () => {
+    const base = reservation({ requesterUserId: 'prof-1', requester: { userId: 'prof-1', name: 'Dra. Maria Costa' } });
+    const cleared = withResolvedRequester(
+      { ...base, requester: undefined, requesterUserId: null, requesterName: null, requesterContact: null },
+      base,
+      emptyRequester(),
+    );
+    expect(cleared.requester).toBeNull();
+
+    const freeText = withResolvedRequester(
+      { ...base, requester: undefined, requesterUserId: null, requesterName: 'CA', requesterContact: '85 3366' },
+      base,
+      { user: null, query: 'CA', contact: '85 3366' },
+    );
+    expect(freeText.requester).toEqual({ userId: null, name: 'CA' });
+  });
+});
+
+describe('applyUpdatedReservation (#27)', () => {
+  it('propagates requester changes to non-canceled occurrences of the same series only', () => {
+    const occ1 = reservation({ id: 'occ-1', recurrenceId: 's-1', requesterUserId: 'prof-1', requester: { userId: 'prof-1', name: 'Maria' } });
+    const occ2 = reservation({ id: 'occ-2', recurrenceId: 's-1', requesterUserId: 'prof-1', requester: { userId: 'prof-1', name: 'Maria' } });
+    const occCanceled = reservation({ id: 'occ-3', recurrenceId: 's-1', status: 'canceled', requesterUserId: 'prof-1', requester: { userId: 'prof-1', name: 'Maria' } });
+    const updated = { ...occ1, requesterUserId: null, requesterName: 'CA', requesterContact: '85 3366', requester: { userId: null, name: 'CA' } };
+
+    const next = applyUpdatedReservation([occ1, occ2, occCanceled], updated);
+    expect(next[0].requester).toEqual({ userId: null, name: 'CA' });
+    expect(next[1].requester).toEqual({ userId: null, name: 'CA' });
+    expect(next[1].requesterContact).toBe('85 3366');
+    expect(next[2].requesterUserId).toBe('prof-1');
   });
 });
 

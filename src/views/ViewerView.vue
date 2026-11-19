@@ -423,7 +423,7 @@ useViewerTestHarness({
     <!-- Maquette load state: covers the canvas until the 3D models finish
          loading (the in-component half of MEL-012, after the route chunk). -->
     <Transition name="viewer-loading-fade">
-      <div v-if="!viewerReady && !viewerError" class="viewer-loading" role="status" aria-live="polite">
+      <div v-if="!viewerReady && !viewerError" class="viewer-loading" role="status" aria-live="polite" aria-busy="true">
         <div class="viewer-loading__spinner" aria-hidden="true"></div>
         <p class="viewer-loading__label">Carregando maquete 3D…</p>
       </div>
@@ -594,14 +594,11 @@ useViewerTestHarness({
 }
 
 /* Reduced motion: no spin, no transform. A gentle opacity pulse on the ring
-   still signals activity without vestibular-triggering movement. */
+   plus the static busy label still signals activity without vestibular-triggering movement. */
 @media (prefers-reduced-motion: reduce) {
   .viewer-loading__spinner {
     animation: viewer-pulse 1.4s ease-in-out infinite;
     border-top-color: color-mix(in srgb, var(--primary) 20%, transparent);
-  }
-  .viewer-loading-fade-leave-active {
-    transition: none;
   }
 }
 @keyframes viewer-pulse {
